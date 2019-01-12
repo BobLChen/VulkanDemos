@@ -5,8 +5,6 @@
 
 struct GLFWwindow;
 
-NS_MONKEY_BEGIN
-
 class GLFWApplication : public Application
 {
 public:
@@ -33,5 +31,3 @@ protected:
 protected:
 	GLFWwindow* m_Window;
 };
-
-NS_MONKEY_END

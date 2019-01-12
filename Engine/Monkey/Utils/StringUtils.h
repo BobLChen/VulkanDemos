@@ -1,0 +1,103 @@
+#pragma once
+
+#include "Common/Common.h"
+#include "Math/Math.h"
+
+#include <string>
+#include <stdarg.h>
+#include <memory>
+
+#define STARTING_BUFFER_SIZE 512
+
+static FORCEINLINE int32 GetVarArgs(char* dest, SIZE_T destSize, int32 count, const char*& fmt, va_list argPtr)
+{
+	int32 Result = vsnprintf(dest, count, fmt, argPtr);
+	va_end(argPtr);
+	return Result;
+}
+
+#define GET_VARARGS(msg, msgsize, len, lastarg, fmt) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		GetVarArgs(msg, msgsize, len, fmt, ap); \
+	}
+#define GET_VARARGS_WIDE(msg, msgsize, len, lastarg, fmt) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		GetVarArgs(msg, msgsize, len, fmt, ap); \
+	}
+#define GET_VARARGS_ANSI(msg, msgsize, len, lastarg, fmt) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		GetVarArgs(msg, msgsize, len, fmt, ap); \
+	}
+#define GET_VARARGS_RESULT(msg, msgsize, len, lastarg, fmt, result) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		result = GetVarArgs(msg, msgsize, len, fmt, ap); \
+		if (result >= msgsize) \
+		{ \
+			result = -1; \
+		} \
+	}
+#define GET_VARARGS_RESULT_WIDE(msg, msgsize, len, lastarg, fmt, result) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		result = GetVarArgs(msg, msgsize, len, fmt, ap); \
+		if (result >= msgsize) \
+		{ \
+			result = -1; \
+		} \
+	}
+#define GET_VARARGS_RESULT_ANSI(msg, msgsize, len, lastarg, fmt, result) \
+	{ \
+		va_list ap; \
+		va_start(ap, lastarg); \
+		result = GetVarArgs(msg, msgsize, len, fmt, ap); \
+		if (result >= msgsize) \
+		{ \
+			result = -1; \
+		} \
+	}
+
+struct StringUtils
+{
+	static std::string Printf(const char* fmt, ...)
+	{
+		int32 bufferSize = STARTING_BUFFER_SIZE;
+		char  startingBuffer[STARTING_BUFFER_SIZE];
+		char* buffer = startingBuffer;
+		int32 result = -1;
+
+		GET_VARARGS_RESULT(buffer, bufferSize, bufferSize - 1, fmt, fmt, result);
+
+		if (result == -1)
+		{
+			buffer = nullptr;
+			while (result == -1)
+			{
+				bufferSize *= 2;
+				buffer = (char*)realloc(buffer, bufferSize * sizeof(char));
+				GET_VARARGS_RESULT(buffer, bufferSize, bufferSize - 1, fmt, fmt, result);
+			};
+		}
+
+		buffer[result] = 0;
+		std::string resultString(buffer);
+
+		if (bufferSize != STARTING_BUFFER_SIZE)
+		{
+			free(buffer);
+		}
+
+		return resultString;
+	}
+
+};
+
+

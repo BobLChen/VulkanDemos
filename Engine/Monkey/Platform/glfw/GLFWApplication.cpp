@@ -8,11 +8,9 @@
 
 #include "Sample.h"
 
-NS_MONKEY_BEGIN
-
 GLFWApplication::~GLFWApplication()
 {
-
+    
 }
 
 bool GLFWApplication::InitWindow()
@@ -92,7 +90,6 @@ void GLFWApplication::OnMouseDown(int x, int y, int type)
 
 void GLFWApplication::OnMouseUP(int x, int y, int type)
 {
-
+    
 }
 
-NS_MONKEY_END

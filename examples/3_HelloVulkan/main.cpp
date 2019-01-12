@@ -11,8 +11,6 @@
 #include "Sample.h"
 #include "Platform/glfw/GLFWApplication.h"
 
-using namespace monkey;
-
 class HelloVulkan : public Sample
 {
 public:

@@ -3,8 +3,6 @@
 #include "Common/Common.h"
 #include <vulkan/vulkan.h>
 
-NS_MONKEY_BEGIN
-
 class Application;
 
 class Sample
@@ -28,4 +26,4 @@ protected:
     Application* m_Application;
 };
 
-NS_MONKEY_END
+

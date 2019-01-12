@@ -4,8 +4,6 @@
 #include <set>
 #include <vector>
 
-NS_MONKEY_BEGIN
-
 #define VK_DESTORY_DEBUG_REPORT_CALLBACK_EXT_NAME "vkDestroyDebugReportCallbackEXT"
 #define VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME  "vkCreateDebugReportCallbackEXT"
 
@@ -591,4 +589,4 @@ void Application::DestoryDebugCallBack()
     }
 }
 
-NS_MONKEY_END
+
