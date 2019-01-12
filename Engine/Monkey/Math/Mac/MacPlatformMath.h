@@ -6,95 +6,95 @@
 
 struct MacPlatformMath : public GenericPlatformMath
 {
-    static FORCEINLINE uint32 CountLeadingZeros(uint32 Value)
+    static FORCEINLINE uint32 CountLeadingZeros(uint32 value)
     {
-        if (Value == 0)
+        if (value == 0)
         {
             return 32;
         }
-        return __builtin_clz(Value);
+        return __builtin_clz(value);
     }
     
-    static FORCEINLINE uint64 CountLeadingZeros64(uint64 Value)
+    static FORCEINLINE uint64 CountLeadingZeros64(uint64 value)
     {
-        if (Value == 0)
+        if (value == 0)
         {
             return 64;
         }
-        return __builtin_clzll(Value);
+        return __builtin_clzll(value);
     }
     
-    static FORCEINLINE uint32 CountTrailingZeros(uint32 Value)
+    static FORCEINLINE uint32 CountTrailingZeros(uint32 value)
     {
-        if (Value == 0)
+        if (value == 0)
         {
             return 32;
         }
-        return __builtin_ctz(Value);
+        return __builtin_ctz(value);
     }
     
-    static FORCEINLINE uint64 CountTrailingZeros64(uint64 Value)
+    static FORCEINLINE uint64 CountTrailingZeros64(uint64 value)
     {
-        if (Value == 0)
+        if (value == 0)
         {
             return 64;
         }
-        return __builtin_ctzll(Value);
+        return __builtin_ctzll(value);
     }
     
-    static FORCEINLINE int32 TruncToInt(float F)
+    static FORCEINLINE int32 TruncToInt(float f)
     {
-        return _mm_cvtt_ss2si(_mm_set_ss(F));
+        return _mm_cvtt_ss2si(_mm_set_ss(f));
     }
     
-    static FORCEINLINE float TruncToFloat(float F)
+    static FORCEINLINE float TruncToFloat(float f)
     {
-        return (float)TruncToInt(F);
+        return (float)TruncToInt(f);
     }
     
-    static FORCEINLINE int32 RoundToInt(float F)
+    static FORCEINLINE int32 RoundToInt(float f)
     {
-        return _mm_cvt_ss2si(_mm_set_ss(F + F + 0.5f)) >> 1;
+        return _mm_cvt_ss2si(_mm_set_ss(f + f + 0.5f)) >> 1;
     }
     
-    static FORCEINLINE float RoundToFloat(float F)
+    static FORCEINLINE float RoundToFloat(float f)
     {
-        return (float)RoundToInt(F);
+        return (float)RoundToInt(f);
     }
     
-    static FORCEINLINE int32 FloorToInt(float F)
+    static FORCEINLINE int32 FloorToInt(float f)
     {
-        return _mm_cvt_ss2si(_mm_set_ss(F + F - 0.5f)) >> 1;
+        return _mm_cvt_ss2si(_mm_set_ss(f + f - 0.5f)) >> 1;
     }
     
-    static FORCEINLINE float FloorToFloat(float F)
+    static FORCEINLINE float FloorToFloat(float f)
     {
-        return (float)FloorToInt(F);
+        return (float)FloorToInt(f);
     }
     
-    static FORCEINLINE int32 CeilToInt(float F)
+    static FORCEINLINE int32 CeilToInt(float f)
     {
-        return -(_mm_cvt_ss2si(_mm_set_ss(-0.5f - (F + F))) >> 1);
+        return -(_mm_cvt_ss2si(_mm_set_ss(-0.5f - (f + f))) >> 1);
     }
     
-    static FORCEINLINE int32 CountBits(uint64 Bits)
+    static FORCEINLINE int32 CountBits(uint64 bits)
     {
-        return __builtin_popcountll(Bits);
+        return __builtin_popcountll(bits);
     }
     
-    static FORCEINLINE float CeilToFloat(float F)
+    static FORCEINLINE float CeilToFloat(float f)
     {
-        return (float)CeilToInt(F);
+        return (float)CeilToInt(f);
     }
     
-    static FORCEINLINE bool IsNaN( float A )
+    static FORCEINLINE bool IsNaN(float a)
     {
-        return isnan(A) != 0;
+        return isnan(a) != 0;
     }
     
-    static FORCEINLINE bool IsFinite( float A )
+    static FORCEINLINE bool IsFinite(float a)
     {
-        return isfinite(A);
+        return isfinite(a);
     }
 };
 

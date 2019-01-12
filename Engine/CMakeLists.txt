@@ -15,10 +15,10 @@ set(Monkey_Common_SRCS
 )
 
 set(Monkey_Platform_GLFW_HDRS
-	Monkey/Platform/glfw/GLFWApplication.h
+	Monkey/Platform/glfw/GLFWApplicationExample.h
 )
 set(Monkey_Platform_GLFW_SRCS
-	Monkey/Platform/glfw/GLFWApplication.cpp
+	Monkey/Platform/glfw/GLFWApplicationExample.cpp
 )
 
 set(Monkey_App_HDRS

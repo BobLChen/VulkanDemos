@@ -7,7 +7,7 @@
 
 std::shared_ptr<GLFWApplication> GCurrentPlatformApplication = nullptr;
 
-void GLFWApplication::OnGLFWkeyCallback(GLFWwindow*, int key, int scancode, int action, int mods)
+void GLFWApplication::OnGLFWkeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	GCurrentPlatformApplication->ProcessKey(key, scancode, action, mods);
 }
@@ -57,7 +57,7 @@ std::shared_ptr<GenericWindow> GLFWApplication::GetWindow()
 	return m_MainWindow;
 }
 
-void GLFWApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& inParent, const bool showImmediately)
+void GLFWApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& parent, const bool showImmediately)
 {
 	m_MainWindow = std::dynamic_pointer_cast<GLFWWindow>(window);
 	m_MainWindow->Initialize(this);

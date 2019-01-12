@@ -15,23 +15,23 @@ namespace WindowMode
 
 	static FORCEINLINE Type ConvertIntToWindowMode(int32 windowMode)
 	{
-		Type WindowMode = Windowed;
+		Type mode = Windowed;
 		switch (windowMode)
 		{
 		case 0:
-			WindowMode = Fullscreen;
+			mode = Fullscreen;
 			break;
 		case 1:
-			WindowMode = WindowedFullscreen;
+			mode = WindowedFullscreen;
 			break;
 		case 2:
 		default:
-			WindowMode = Windowed;
+			mode = Windowed;
 			break;
 		}
-		return WindowMode;
+		return mode;
 	}
-
+	
 	FORCEINLINE const char* LexToString(Type windowMode)
 	{
 		switch (windowMode)

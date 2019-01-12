@@ -123,10 +123,10 @@ struct GenericPlatformMath
 			intPortion = x;
 		}
 
-		const float Result = x - intPortion;
-		return Result;
+		const float result = x - intPortion;
+		return result;
 	}
-
+	
 	static FORCEINLINE float Sin(float value) 
 	{ 
 		return sinf(value);

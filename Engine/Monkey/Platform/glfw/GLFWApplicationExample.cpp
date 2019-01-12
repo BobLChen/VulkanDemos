@@ -1,4 +1,4 @@
-#include "GLFWApplication.h"
+#include "GLFWApplicationExample.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -8,12 +8,12 @@
 
 #include "Sample.h"
 
-GLFWApplication::~GLFWApplication()
+GLFWApplicationExample::~GLFWApplicationExample()
 {
     
 }
 
-bool GLFWApplication::InitWindow()
+bool GLFWApplicationExample::InitWindow()
 {
 	if (glfwInit() != GLFW_TRUE) {
 		printf("Failed init glfw.\n");
@@ -39,7 +39,7 @@ bool GLFWApplication::InitWindow()
 	return true;
 }
 
-bool GLFWApplication::InitVulkanSurface()
+bool GLFWApplicationExample::InitVulkanSurface()
 {
     if (glfwCreateWindowSurface(m_VkInstance, m_Window, nullptr, &m_VKSurface) != VK_SUCCESS) {
         printf("Failed to create window surface.\n");
@@ -48,7 +48,7 @@ bool GLFWApplication::InitVulkanSurface()
     return true;
 }
 
-void GLFWApplication::OnLoop()
+void GLFWApplicationExample::OnLoop()
 {
 	while (!glfwWindowShouldClose(m_Window)) {
 		glfwPollEvents();
@@ -56,39 +56,39 @@ void GLFWApplication::OnLoop()
 	}
 }
 
-void GLFWApplication::OnUpdate()
+void GLFWApplicationExample::OnUpdate()
 {
 	m_Sample->OnUpdate();
 	m_Sample->OnRender();
 }
 
-void GLFWApplication::OnDestory()
+void GLFWApplicationExample::OnDestory()
 {
 	glfwDestroyWindow(m_Window);
 	glfwTerminate();
 }
 
-void GLFWApplication::OnKeyDown(int key)
+void GLFWApplicationExample::OnKeyDown(int key)
 {
 
 }
 
-void GLFWApplication::OnKeyUP(int key)
+void GLFWApplicationExample::OnKeyUP(int key)
 {
 
 }
 
-void GLFWApplication::OnMouseMove(int x, int y)
+void GLFWApplicationExample::OnMouseMove(int x, int y)
 {
 
 }
 
-void GLFWApplication::OnMouseDown(int x, int y, int type)
+void GLFWApplicationExample::OnMouseDown(int x, int y, int type)
 {
 
 }
 
-void GLFWApplication::OnMouseUP(int x, int y, int type)
+void GLFWApplicationExample::OnMouseUP(int x, int y, int type)
 {
     
 }

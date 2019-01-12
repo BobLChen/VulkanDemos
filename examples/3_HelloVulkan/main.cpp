@@ -9,7 +9,7 @@
 
 #include "Common/Common.h"
 #include "Sample.h"
-#include "Platform/glfw/GLFWApplication.h"
+#include "Platform/glfw/GLFWApplicationExample.h"
 
 class HelloVulkan : public Sample
 {
@@ -403,7 +403,7 @@ private:
 
 int main()
 {
-	GLFWApplication* app = new GLFWApplication(800, 600, "HelloVulkan");
+	GLFWApplicationExample* app = new GLFWApplicationExample(800, 600, "HelloVulkan");
 	app->AddValidationLayer("VK_LAYER_LUNARG_standard_validation");
 	app->AddInstanceExtension(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	app->Run(new HelloVulkan());

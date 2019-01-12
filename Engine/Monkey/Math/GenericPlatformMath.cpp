@@ -2,21 +2,21 @@
 #include "PlatformMath.h"
 #include "Math.h"
 
-static int32 GSRandSeed;
+static int32 G_SRandSeed;
 
 void GenericPlatformMath::SRandInit(int32 seed)
 {
-	GSRandSeed = seed;
+	G_SRandSeed = seed;
 }
 
 int32 GenericPlatformMath::GetRandSeed()
 {
-	return GSRandSeed;
+	return G_SRandSeed;
 }
 
 float GenericPlatformMath::SRand()
 {
-	GSRandSeed = (GSRandSeed * 196314165) + 907633515;
+	G_SRandSeed = (G_SRandSeed * 196314165) + 907633515;
 	union 
 	{ 
 		float f; 
@@ -29,9 +29,9 @@ float GenericPlatformMath::SRand()
 		int32 i;
 	} temp;
 
-	const float SRandTemp = 1.0f;
-	temp.f = SRandTemp;
-	result.i = (temp.i & 0xff800000) | (GSRandSeed & 0x007fffff);
+	const float randTemp = 1.0f;
+	temp.f = randTemp;
+	result.i = (temp.i & 0xff800000) | (G_SRandSeed & 0x007fffff);
 
 	return PlatformMath::Fractional(result.f);
 }

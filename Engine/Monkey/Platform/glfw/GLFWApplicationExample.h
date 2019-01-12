@@ -5,16 +5,16 @@
 
 struct GLFWwindow;
 
-class GLFWApplication : public Application
+class GLFWApplicationExample : public Application
 {
 public:
-	GLFWApplication(int width, int height, const std::string& title) :
+	GLFWApplicationExample(int width, int height, const std::string& title) :
 		Application(width, height, title)
 	{
 
 	}
     
-	virtual ~GLFWApplication();
+	virtual ~GLFWApplicationExample();
     
 protected:
     virtual bool InitVulkanSurface();

@@ -26,24 +26,18 @@ public:
     static bool LoadVulkanInstanceFunctions(VkInstance inInstance);
     static void FreeVulkanLibrary();
     
-    static void GetInstanceExtensions(TArray<const ANSICHAR*>& OutExtensions);
-    static void GetDeviceExtensions(TArray<const ANSICHAR*>& OutExtensions);
+    static void GetInstanceExtensions(TArray<const ANSICHAR*>& outExtensions);
+    static void GetDeviceExtensions(TArray<const ANSICHAR*>& outExtensions);
     
-    static void CreateSurface(void* WindowHandle, VkInstance Instance, VkSurfaceKHR* OutSurface);
+    static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface);
     
     static bool SupportsDeviceLocalHostVisibleWithNoPenalty();
     
-    static void WriteCrashMarker(const FOptionalVulkanDeviceExtensions& OptionalExtensions, VkCommandBuffer CmdBuffer, VkBuffer DestBuffer, const TArrayView<uint32>& Entries, bool bAdding);
+    static void WriteCrashMarker(const OptionalVulkanDeviceExtensions& optionalExtensions, VkCommandBuffer cmdBuffer, VkBuffer destBuffer, const TArrayView<uint32>& entries, bool adding);
     
-    // Some platforms only support real or non-real UBs, so this function can optimize it out
-    static bool UseRealUBsOptimization(bool bCodeHeaderUseRealUBs)
+    static bool UseRealUBsOptimization(bool codeHeaderUseRealUBs)
     {
-#if UE_BUILD_DEBUG || UE_BUILD_DEVELOPMENT
-        static auto* CVar = IConsoleManager::Get().FindTConsoleVariableDataInt(TEXT("r.Vulkan.UseRealUBs"));
-        return (CVar && CVar->GetValueOnAnyThread() == 0) ? false : bCodeHeaderUseRealUBs;
-#else
-        return GMaxRHIFeatureLevel >= ERHIFeatureLevel::ES3_1 ? bCodeHeaderUseRealUBs : false;
-#endif
+        return true;
     }
 };
 

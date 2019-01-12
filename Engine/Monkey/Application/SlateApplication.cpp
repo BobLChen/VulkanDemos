@@ -3,7 +3,7 @@
 
 std::shared_ptr<SlateApplication> SlateApplication::m_CurrentApplication = nullptr;
 
-std::shared_ptr<GenericApplication> GPlatformApplication = nullptr;
+std::shared_ptr<GenericApplication> G_PlatformApplication = nullptr;
 
 SlateApplication::SlateApplication()
 	: GenericApplicationMessageHandler()
@@ -32,15 +32,15 @@ std::shared_ptr<SlateApplication> SlateApplication::Create(const std::shared_ptr
 	m_CurrentApplication = std::shared_ptr<SlateApplication>(new SlateApplication());
 	m_CurrentApplication->SetUpEngine(engine);
 
-	GPlatformApplication = platformApplication;
-	GPlatformApplication->SetMessageHandler(m_CurrentApplication);
+	G_PlatformApplication = platformApplication;
+	G_PlatformApplication->SetMessageHandler(m_CurrentApplication);
 
 	return m_CurrentApplication;
 }
 
 std::shared_ptr<GenericApplication> SlateApplication::GetPlatformApplication()
 {
-	return GPlatformApplication;
+	return G_PlatformApplication;
 }
 
 void SlateApplication::Shutdown(bool shutdownPlatform)
@@ -49,8 +49,8 @@ void SlateApplication::Shutdown(bool shutdownPlatform)
 	{
 		m_CurrentApplication->OnShutdown();
 		if (shutdownPlatform) {
-			GPlatformApplication->Destroy();
-			GPlatformApplication = nullptr;
+			G_PlatformApplication->Destroy();
+			G_PlatformApplication = nullptr;
 		}
 		m_CurrentApplication = nullptr;
 	}
@@ -75,7 +75,7 @@ void SlateApplication::Tick(float detalTime)
 
 void SlateApplication::PumpMessages()
 {
-	GPlatformApplication->PumpMessages(m_DeltaTime);
+	G_PlatformApplication->PumpMessages(m_DeltaTime);
 }
 
 void SlateApplication::OnShutdown()
@@ -90,14 +90,14 @@ void SlateApplication::OnRequestingExit()
 
 std::shared_ptr<GenericWindow> SlateApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
-	std::shared_ptr<GenericWindow> newWindow = GPlatformApplication->MakeWindow(width, height, title);
-	GPlatformApplication->InitializeWindow(newWindow, nullptr, true);
+	std::shared_ptr<GenericWindow> newWindow = G_PlatformApplication->MakeWindow(width, height, title);
+	G_PlatformApplication->InitializeWindow(newWindow, nullptr, true);
 	return newWindow;
 }
 
 void SlateApplication::TickPlatform(float deltaTime)
 {
-	GPlatformApplication->Tick(deltaTime);
+	G_PlatformApplication->Tick(deltaTime);
 }
 
 void SlateApplication::DrawWindows()

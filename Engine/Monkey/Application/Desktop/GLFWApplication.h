@@ -34,7 +34,7 @@ protected:
 
 	void ProcessKey(int key, int scancode, int action, int mods);
 
-	void static OnGLFWkeyCallback(GLFWwindow*, int key, int scancode, int action, int mods);
+	void static OnGLFWkeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 private:
 
