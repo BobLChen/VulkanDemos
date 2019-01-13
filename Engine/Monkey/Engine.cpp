@@ -3,8 +3,8 @@
 
 
 Engine::Engine()
-	: m_IsRequestingExit(false)
-	, m_VulkanRHI(nullptr)
+    : m_VulkanRHI(nullptr)
+	, m_IsRequestingExit(false)
 {
 
 }

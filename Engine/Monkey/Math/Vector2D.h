@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/Common.h"
-#include "Math/intPoint.h"
+#include "Math/IntPoint.h"
 
 struct Vector2D
 {

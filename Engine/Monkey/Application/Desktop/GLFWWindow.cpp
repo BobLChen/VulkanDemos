@@ -9,12 +9,12 @@
 GLFWWindow::GLFWWindow(int32 width, int32 height, const char* title)
 	: GenericWindow()
     , m_Window(nullptr)
+    , m_WindowMode(WindowMode::Windowed)
 	, m_MasterApplication(nullptr)
 	, m_Width(width)
 	, m_Height(height)
 	, m_Title(title)
     , m_Visible(false)
-	, m_WindowMode(WindowMode::Windowed)
 	, m_AspectRatio(1.0f)
 	, m_DPIScaleFactor(1.0f)
 {

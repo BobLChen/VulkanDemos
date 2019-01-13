@@ -261,6 +261,10 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 		outInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 #endif
+    if (!outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+    {
+        outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    }
 
 	TrimDuplicates(outInstanceLayers);
 	if (outInstanceLayers.size() > 0)

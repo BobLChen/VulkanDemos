@@ -164,7 +164,7 @@ void GenericWindow::SetManualManageDPIChanges(const bool autoHandle)
 
 }
 
-const std::string& GenericWindow::GetTitle() const
+const char* GenericWindow::GetTitle() const
 {
-	return "GenericWindow";
+    return "GenericWindow";
 }

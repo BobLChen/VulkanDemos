@@ -51,7 +51,7 @@ public:
 
 	virtual ~GenericWindow();
 
-	virtual const std::string& GetTitle() const;
+	virtual const char* GetTitle() const;
 
 	virtual void ReshapeWindow(int32 x, int32 y, int32 width, int32 height);
 

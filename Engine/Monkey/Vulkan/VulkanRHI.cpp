@@ -67,7 +67,7 @@ void VulkanRHI::CreateInstance()
 
 	VkApplicationInfo appInfo;
 	ZeroVulkanStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
-	appInfo.pApplicationName = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle().c_str();
+	appInfo.pApplicationName = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle();
 	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
 	appInfo.pEngineName = ENGINE_NAME;
 	appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
@@ -85,7 +85,7 @@ void VulkanRHI::CreateInstance()
 
 	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
 	{
-		MLOG("%s" "Cannot find a compatible Vulkan driver (ICD).");
+		MLOG("%s", "Cannot find a compatible Vulkan driver (ICD).");
 	}
 	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
 	{
