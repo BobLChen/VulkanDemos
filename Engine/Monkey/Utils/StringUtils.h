@@ -4,6 +4,7 @@
 #include "Math/Math.h"
 
 #include <string>
+#include <vector>
 #include <stdarg.h>
 #include <memory>
 
@@ -96,6 +97,34 @@ struct StringUtils
 		}
 
 		return resultString;
+	}
+
+	static void AddUnique(std::vector<std::string>& arr, const std::string& val)
+	{
+		bool found = false;
+		for (int32 i = 0; i < arr.size(); ++i) {
+			if (arr[i] == val) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			arr.push_back(val);
+		}
+	}
+
+	static void AddUnique(std::vector<const char*>& arr, const char* val)
+	{
+		bool found = false;
+		for (int32 i = 0; i < arr.size(); ++i) {
+			if (strcmp(arr[i], val) == 0) {
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			arr.push_back(val);
+		}
 	}
 
 };

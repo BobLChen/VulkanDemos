@@ -5,11 +5,11 @@
 #include <map>
 #include <string>
 
-std::shared_ptr<GLFWApplication> GCurrentPlatformApplication = nullptr;
+std::shared_ptr<GLFWApplication> G_CurrentPlatformApplication = nullptr;
 
 void GLFWApplication::OnGLFWkeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	GCurrentPlatformApplication->ProcessKey(key, scancode, action, mods);
+	G_CurrentPlatformApplication->ProcessKey(key, scancode, action, mods);
 }
 
 GLFWApplication::GLFWApplication()
@@ -79,11 +79,11 @@ void GLFWApplication::Destroy()
 
 std::shared_ptr<GenericApplication> GenericApplication::Create()
 {
-	GCurrentPlatformApplication = std::make_shared<GLFWApplication>();
-	return GCurrentPlatformApplication;
+	G_CurrentPlatformApplication = std::make_shared<GLFWApplication>();
+	return G_CurrentPlatformApplication;
 }
 
 GenericApplication& GenericApplication::GetApplication()
 {
-	return *GCurrentPlatformApplication;
+	return *G_CurrentPlatformApplication;
 }

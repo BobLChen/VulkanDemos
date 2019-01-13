@@ -3,7 +3,7 @@
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
 
-static PFN_vkGetInstanceProcAddr GGetInstanceProcAddr = nullptr;
+static PFN_vkGetInstanceProcAddr G_GetInstanceProcAddr = nullptr;
 
 bool VulkanWindowsPlatform::LoadVulkanLibrary()
 {
@@ -12,7 +12,7 @@ bool VulkanWindowsPlatform::LoadVulkanLibrary()
 
 bool VulkanWindowsPlatform::LoadVulkanInstanceFunctions(VkInstance instance)
 {
-	GGetInstanceProcAddr = vkGetInstanceProcAddr;
+	G_GetInstanceProcAddr = vkGetInstanceProcAddr;
 	return true;
 }
 

@@ -4,20 +4,13 @@
 
 #include <vector>
 
-struct VKLayerExtension
+struct VulkanLayerExtension
 {
-	VKLayerExtension()
-	{
+	VulkanLayerExtension();
 
-	}
+	void AddUniqueExtensionNames(std::vector<std::string>& outExtensions);
 
-	void AddUniqueExtensionNames(std::vector<std::string>& outExtensions)
-	{
-		for (int32 i = 0; i < extensionProps.size(); ++i)
-		{
-			outExtensions.push_back(extensionProps[i].extensionName);
-		}
-	}
+	void AddAnsiExtensionNames(std::vector<const char*>& outExtensions);
 
 	VkLayerProperties layerProps;
 	std::vector<VkExtensionProperties> extensionProps;
