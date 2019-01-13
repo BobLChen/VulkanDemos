@@ -6,6 +6,13 @@ static const char* G_ValidationLayersInstance[] =
 {
 #if PLATFORM_WINDOWS
 	"VK_LAYER_LUNARG_standard_validation",
+#elif PLATFORM_MAC
+    // "VK_LAYER_GOOGLE_unique_objects",
+    "VK_LAYER_GOOGLE_threading",
+    "VK_LAYER_LUNARG_standard_validation",
+    "VK_LAYER_LUNARG_core_validation",
+    "VK_LAYER_LUNARG_parameter_validation",
+    "VK_LAYER_LUNARG_object_tracker",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -26,6 +33,13 @@ static const char* G_ValidationLayersDevice[] =
 {
 #if PLATFORM_WINDOWS
 	"VK_LAYER_LUNARG_standard_validation",
+#elif PLATFORM_MAC
+    "VK_LAYER_LUNARG_standard_validation",
+    "VK_LAYER_GOOGLE_unique_objects",
+    "VK_LAYER_GOOGLE_threading",
+    "VK_LAYER_LUNARG_core_validation",
+    "VK_LAYER_LUNARG_parameter_validation",
+    "VK_LAYER_LUNARG_object_tracker",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -47,6 +61,13 @@ static const char* G_ValidationLayersDevice[] =
 
 static const char* G_InstanceExtensions[] =
 {
+#ifdef PLATFORM_WINDOWS
+    "VK_KHR_get_physical_device_properties2",
+#elif PLATFORM_MAC
+    
+#else
+    
+#endif
 	nullptr
 };
 

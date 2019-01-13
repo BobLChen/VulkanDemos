@@ -2,7 +2,6 @@
 #include "Common/Log.h"
 #include "Configuration/PerPlatformCppDefines.h"
 
-#include "Vulkan/Windows/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 
 #include <stdio.h>
@@ -16,9 +15,6 @@ int main(int argc, const char * argv[])
     for (int i = 0; i < argc; ++i) {
         cmdline += std::string(argv[i]) + " ";
     }
-    MLOG("%s\n", cmdline.c_str());
-
-	VulkanPlatform::LoadVulkanLibrary();
-    
+    MLOG("CMDLine:%s", cmdline.c_str());
     return GuardedMain(cmdline.c_str(), argc);
 }

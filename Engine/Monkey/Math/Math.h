@@ -316,9 +316,9 @@ struct MMath : public PlatformMath
 	}
 
 	template< class T >
-	static FORCEINLINE T LerpStable(const T& a, const T& b, double Alpha)
+	static FORCEINLINE T LerpStable(const T& a, const T& b, double alpha)
 	{
-		return (T)((a * (1.0 - Alpha)) + (b * Alpha));
+		return (T)((a * (1.0 - alpha)) + (b * alpha));
 	}
 
 	template< class T >
@@ -503,7 +503,7 @@ struct MMath : public PlatformMath
 		}
 
 		float invT1MinusT0 = 1.0f / t1MinusT0;
-		U l01 = (P0 * ((t1 - t) * invT1MinusT0)) + (p1 * ((t - t0) * invT1MinusT0));
+		U l01 = (p0 * ((t1 - t) * invT1MinusT0)) + (p1 * ((t - t0) * invT1MinusT0));
 		float invT2MinusT1 = 1.0f / t2MinusT1;
 		U l12 = (p1 * ((t2 - t) * invT2MinusT1)) + (p2 * ((t - t1) * invT2MinusT1));
 		float invT3MinusT2 = 1.0f / t3MinusT2;
