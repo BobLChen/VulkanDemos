@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Application/SlateApplication.h"
+#include "VulkanCommon.h"
 
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
@@ -39,6 +40,7 @@ void VulkanRHI::Shutdown()
 void VulkanRHI::InitInstance()
 {
 	CreateInstance();
+    SelectAndInitDevice();
 }
 
 void VulkanRHI::RecreateSwapChain(void* newNativeWindow)
@@ -123,11 +125,34 @@ void VulkanRHI::CreateInstance()
 	{
 		MLOG("Vulkan successed to create instance.");
 	}
+    
+    if (result != VK_SUCCESS)
+    {
+        SlateApplication::Get().OnRequestingExit();
+    }
 }
 
 void VulkanRHI::SelectAndInitDevice()
 {
-
+    uint32 gpuCount = 0;
+    VkResult result = vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
+    if (result == VK_ERROR_INITIALIZATION_FAILED)
+    {
+        MLOG("%s\n", "Cannot find a compatible Vulkan device or driver. Try updating your video driver to a more recent version and make sure your video card supports Vulkan.");
+        SlateApplication::Get().OnRequestingExit();
+        return;
+    }
+    
+    if (gpuCount == 0)
+    {
+        MLOG("%s\n", "Couldn't enumerate physical devices! Make sure your drivers are up to date and that you are not pending a reboot.");
+        SlateApplication::Get().OnRequestingExit();
+        return;
+    }
+    
+    std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
+    vkEnumeratePhysicalDevices(m_Instance, &gpuCount, physicalDevices.data());
+    
 }
 
 void VulkanRHI::InitGPU(VkDevice device)
