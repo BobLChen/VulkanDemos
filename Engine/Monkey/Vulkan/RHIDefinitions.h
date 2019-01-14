@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/PixelFormat.h"
+#include "Common/Log.h"
 
 enum ShaderFrequency
 {

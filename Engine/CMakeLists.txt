@@ -98,6 +98,7 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanPlatform.h
 	Monkey/Vulkan/VulkanLayers.h
 	Monkey/Vulkan/RHIDefinitions.h
+	Monkey/Vulkan/VulkanCommon.h
 )
 
 if (WIN32)
