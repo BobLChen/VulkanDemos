@@ -90,6 +90,8 @@ set(Monkey_Application_Desktop_SRCS
 set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanRHI.cpp
 	Monkey/Vulkan/VulkanLayers.cpp
+	Monkey/Vulkan/VulkanQueue.cpp
+	Monkey/Vulkan/VulkanDevice.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -99,6 +101,8 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanLayers.h
 	Monkey/Vulkan/RHIDefinitions.h
 	Monkey/Vulkan/VulkanCommon.h
+	Monkey/Vulkan/VulkanQueue.h
+	Monkey/Vulkan/VulkanDevice.h
 )
 
 if (WIN32)
