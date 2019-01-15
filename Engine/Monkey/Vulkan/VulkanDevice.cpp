@@ -1,5 +1,7 @@
 #include "VulkanDevice.h"
 #include "VulkanPlatform.h"
+#include "VulkanGlobals.h"
+#include "Application/SlateApplication.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     : m_Device(VK_NULL_HANDLE)
@@ -24,57 +26,531 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::CreateDevice()
 {
-    
+	VkDeviceCreateInfo deviceInfo;
+	ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+
+	bool debugMarkersFound = false;
+	std::vector<const char*> deviceExtensions;
+	std::vector<const char*> validationLayers;
+	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
+
+	ParseOptionalDeviceExtensions(deviceExtensions);
+
+	deviceInfo.enabledExtensionCount = deviceExtensions.size();
+	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
+	deviceInfo.enabledLayerCount = validationLayers.size();
+	deviceInfo.ppEnabledLayerNames = validationLayers.data();
+
+	MLOG("Found %d Queue Families", m_QueueFamilyProps.size());
+
+	std::vector<VkDeviceQueueCreateInfo> queueFamilyInfos;
+	uint32 numPriorities = 0;
+	int32 gfxQueueFamilyIndex = -1;
+	int32 computeQueueFamilyIndex = -1;
+	int32 transferQueueFamilyIndex = -1;
+	
+	for (int32 familyIndex = 0; familyIndex < m_QueueFamilyProps.size(); ++familyIndex)
+	{
+		const VkQueueFamilyProperties& currProps = m_QueueFamilyProps[familyIndex];
+		bool isValidQueue = false;
+
+		if ((currProps.queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT)
+		{
+			if (gfxQueueFamilyIndex == -1) {
+				gfxQueueFamilyIndex = familyIndex;
+				isValidQueue = true;
+			}
+		}
+
+		if ((currProps.queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT)
+		{
+			if (computeQueueFamilyIndex == -1)
+			{
+				computeQueueFamilyIndex = familyIndex;
+				isValidQueue = true;
+			}
+		}
+
+		if ((currProps.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT)
+		{
+			if (transferQueueFamilyIndex == -1)
+			{
+				transferQueueFamilyIndex = familyIndex;
+				isValidQueue = true;
+			}
+		}
+
+		auto GetQueueInfoString = [](const VkQueueFamilyProperties& Props) -> std::string
+		{
+			std::string info;
+			if ((Props.queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT)
+			{
+				info += " Gfx";
+			}
+			if ((Props.queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT)
+			{
+				info += " Compute";
+			}
+			if ((Props.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT)
+			{
+				info += " Xfer";
+			}
+			if ((Props.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) == VK_QUEUE_SPARSE_BINDING_BIT)
+			{
+				info += " Sparse";
+			}
+			return info;
+		};
+		
+		if (!isValidQueue)
+		{
+			MLOG("Skipping unnecessary Queue Family %d: %d queues%s", familyIndex, currProps.queueCount, GetQueueInfoString(currProps).c_str());
+			continue;
+		}
+
+		VkDeviceQueueCreateInfo currQueue;
+		currQueue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		currQueue.queueFamilyIndex = familyIndex;
+		currQueue.queueCount = currProps.queueCount;
+		numPriorities += currProps.queueCount;
+		queueFamilyInfos.push_back(currQueue);
+
+		MLOG("Initializing Queue Family %d: %d queues%s", familyIndex,  currProps.queueCount, GetQueueInfoString(currProps).c_str());
+	}
+
+	std::vector<float> queuePriorities(numPriorities);
+	float* CurrentPriority = queuePriorities.data();
+	for (int32 index = 0; index < queuePriorities.size(); ++index)
+	{
+		VkDeviceQueueCreateInfo& currQueue = queueFamilyInfos[index];
+		currQueue.pQueuePriorities = CurrentPriority;
+		const VkQueueFamilyProperties& currProps = m_QueueFamilyProps[currQueue.queueFamilyIndex];
+		for (int32 queueIndex = 0; queueIndex < (int32)currProps.queueCount; ++queueIndex)
+		{
+			*CurrentPriority++ = 1.0f;
+		}
+	}
+
+	deviceInfo.queueCreateInfoCount = queueFamilyInfos.size();
+	deviceInfo.pQueueCreateInfos = queueFamilyInfos.data();
+
+	m_PhysicalDeviceFeatures.robustBufferAccess = VK_TRUE;
+	VulkanPlatform::RestrictEnabledPhysicalDeviceFeatures(m_PhysicalDeviceFeatures);
+	deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
+
+	VulkanPlatform::EnablePhysicalDeviceFeatureExtensions(deviceInfo);
+
+	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
+	if (result == VK_ERROR_INITIALIZATION_FAILED)
+	{
+		MLOG("%s", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
+		SlateApplication::Get().OnRequestingExit();
+		return;
+	}
+
+	m_GfxQueue = std::make_shared<VulkanQueue>(this, gfxQueueFamilyIndex);
+
+	if (computeQueueFamilyIndex == -1)
+	{
+		computeQueueFamilyIndex = gfxQueueFamilyIndex;
+	}
+	else
+	{
+		m_AsyncComputeQueue = true;
+	}
+
+	m_ComputeQueue = std::make_shared<VulkanQueue>(this, computeQueueFamilyIndex);
+
+	if (transferQueueFamilyIndex == -1)
+	{
+		transferQueueFamilyIndex = computeQueueFamilyIndex;
+	}
+
+	m_TransferQueue = std::make_shared<VulkanQueue>(this, transferQueueFamilyIndex);
+
+	uint64 numBits = m_QueueFamilyProps[gfxQueueFamilyIndex].timestampValidBits;
+	if (numBits > 0)
+	{
+		if (numBits == 64)
+		{
+			m_TimestampValidBitsMask = UINT64_MAX;
+		}
+		else
+		{
+			m_TimestampValidBitsMask = ((uint64)1 << (uint64)numBits) - (uint64)1;
+		}
+	}
 }
 
 void VulkanDevice::SetupFormats()
 {
-    
+	for (uint32 index = 0; index < VK_FORMAT_RANGE_SIZE; ++index)
+	{
+		const VkFormat format = (VkFormat)index;
+		memset(&m_FormatProperties[index], 0, sizeof(VkFormat));
+		vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &m_FormatProperties[index]);
+	}
+
+	for (int32 index = 0; index < PF_MAX; ++index)
+	{
+		G_PixelFormats[index].platformFormat = VK_FORMAT_UNDEFINED;
+		G_PixelFormats[index].supported = false;
+
+		VkComponentMapping& componentMapping = m_PixelFormatComponentMapping[index];
+		componentMapping.r = VK_COMPONENT_SWIZZLE_R;
+		componentMapping.g = VK_COMPONENT_SWIZZLE_G;
+		componentMapping.b = VK_COMPONENT_SWIZZLE_B;
+		componentMapping.a = VK_COMPONENT_SWIZZLE_A;
+	}
+
+	MapFormatSupport(PF_B8G8R8A8, VK_FORMAT_B8G8R8A8_UNORM);
+	SetComponentMapping(PF_B8G8R8A8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_G8, VK_FORMAT_R8_UNORM);
+	SetComponentMapping(PF_G8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_G16, VK_FORMAT_R16_UNORM);
+	SetComponentMapping(PF_G16, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_FloatRGB, VK_FORMAT_B10G11R11_UFLOAT_PACK32);
+	SetComponentMapping(PF_FloatRGB, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_FloatRGBA, VK_FORMAT_R16G16B16A16_SFLOAT, 8);
+	SetComponentMapping(PF_FloatRGBA, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_DepthStencil, VK_FORMAT_D32_SFLOAT_S8_UINT);
+	if (!G_PixelFormats[PF_DepthStencil].supported)
+	{
+		MapFormatSupport(PF_DepthStencil, VK_FORMAT_D24_UNORM_S8_UINT);
+		if (!G_PixelFormats[PF_DepthStencil].supported)
+		{
+			MapFormatSupport(PF_DepthStencil, VK_FORMAT_D16_UNORM_S8_UINT);
+			if (!G_PixelFormats[PF_DepthStencil].supported)
+			{
+				MLOG("%s", "No stencil texture format supported!");
+			}
+		}
+	}
+	SetComponentMapping(PF_DepthStencil, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY);
+
+	MapFormatSupport(PF_ShadowDepth, VK_FORMAT_D16_UNORM);
+	SetComponentMapping(PF_ShadowDepth, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY);
+
+	MapFormatSupport(PF_G32R32F, VK_FORMAT_R32G32_SFLOAT, 8);
+	SetComponentMapping(PF_G32R32F, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_A32B32G32R32F, VK_FORMAT_R32G32B32A32_SFLOAT, 16);
+	SetComponentMapping(PF_A32B32G32R32F, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_G16R16, VK_FORMAT_R16G16_UNORM);
+	SetComponentMapping(PF_G16R16, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_G16R16F, VK_FORMAT_R16G16_SFLOAT);
+	SetComponentMapping(PF_G16R16F, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_G16R16F_FILTER, VK_FORMAT_R16G16_SFLOAT);
+	SetComponentMapping(PF_G16R16F_FILTER, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R16_UINT, VK_FORMAT_R16_UINT);
+	SetComponentMapping(PF_R16_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R16_SINT, VK_FORMAT_R16_SINT);
+	SetComponentMapping(PF_R16_SINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R32_UINT, VK_FORMAT_R32_UINT);
+	SetComponentMapping(PF_R32_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R32_SINT, VK_FORMAT_R32_SINT);
+	SetComponentMapping(PF_R32_SINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R8_UINT, VK_FORMAT_R8_UINT);
+	SetComponentMapping(PF_R8_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_D24, VK_FORMAT_X8_D24_UNORM_PACK32);
+	if (!G_PixelFormats[PF_D24].supported)
+	{
+		MapFormatSupport(PF_D24, VK_FORMAT_D24_UNORM_S8_UINT);
+		if (!G_PixelFormats[PF_D24].supported)
+		{
+			MapFormatSupport(PF_D24, VK_FORMAT_D16_UNORM_S8_UINT);
+			if (!G_PixelFormats[PF_D24].supported)
+			{
+				MapFormatSupport(PF_D24, VK_FORMAT_D32_SFLOAT);
+				if (!G_PixelFormats[PF_D24].supported)
+				{
+					MapFormatSupport(PF_D24, VK_FORMAT_D32_SFLOAT_S8_UINT);
+					if (!G_PixelFormats[PF_D24].supported)
+					{
+						MapFormatSupport(PF_D24, VK_FORMAT_D16_UNORM);
+					}
+				}
+			}
+		}
+	}
+
+	SetComponentMapping(PF_D24, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R16F, VK_FORMAT_R16_SFLOAT);
+	SetComponentMapping(PF_R16F, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R16F_FILTER, VK_FORMAT_R16_SFLOAT);
+	SetComponentMapping(PF_R16F_FILTER, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_FloatR11G11B10, VK_FORMAT_B10G11R11_UFLOAT_PACK32, 4);
+	SetComponentMapping(PF_FloatR11G11B10, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_A2B10G10R10, VK_FORMAT_A2B10G10R10_UNORM_PACK32, 4);
+	SetComponentMapping(PF_A2B10G10R10, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_A16B16G16R16, VK_FORMAT_R16G16B16A16_UNORM, 8);
+	SetComponentMapping(PF_A16B16G16R16, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_A8, VK_FORMAT_R8_UNORM);
+	SetComponentMapping(PF_A8, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_R);
+
+	MapFormatSupport(PF_R5G6B5_UNORM, VK_FORMAT_R5G6B5_UNORM_PACK16);
+	SetComponentMapping(PF_R5G6B5_UNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R8G8B8A8, VK_FORMAT_R8G8B8A8_UNORM);
+	SetComponentMapping(PF_R8G8B8A8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R8G8B8A8_UINT, VK_FORMAT_R8G8B8A8_UINT);
+	SetComponentMapping(PF_R8G8B8A8_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R8G8B8A8_SNORM, VK_FORMAT_R8G8B8A8_SNORM);
+	SetComponentMapping(PF_R8G8B8A8_SNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R16G16_UINT, VK_FORMAT_R16G16_UINT);
+	SetComponentMapping(PF_R16G16_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R16G16B16A16_UINT, VK_FORMAT_R16G16B16A16_UINT);
+	SetComponentMapping(PF_R16G16B16A16_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R16G16B16A16_SINT, VK_FORMAT_R16G16B16A16_SINT);
+	SetComponentMapping(PF_R16G16B16A16_SINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R32G32B32A32_UINT, VK_FORMAT_R32G32B32A32_UINT);
+	SetComponentMapping(PF_R32G32B32A32_UINT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R16G16B16A16_SNORM, VK_FORMAT_R16G16B16A16_SNORM);
+	SetComponentMapping(PF_R16G16B16A16_SNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R16G16B16A16_UNORM, VK_FORMAT_R16G16B16A16_UNORM);
+	SetComponentMapping(PF_R16G16B16A16_UNORM, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+	MapFormatSupport(PF_R8G8, VK_FORMAT_R8G8_UNORM);
+	SetComponentMapping(PF_R8G8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_V8U8, VK_FORMAT_R8G8_UNORM);
+	SetComponentMapping(PF_V8U8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	MapFormatSupport(PF_R32_FLOAT, VK_FORMAT_R32_SFLOAT);
+	SetComponentMapping(PF_R32_FLOAT, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO, VK_COMPONENT_SWIZZLE_ZERO);
+
+	if (VulkanPlatform::SupportsBCTextureFormats())
+	{
+		MapFormatSupport(PF_DXT1, VK_FORMAT_BC1_RGB_UNORM_BLOCK);	// Also what OpenGL expects (RGBA instead RGB, but not SRGB)
+		SetComponentMapping(PF_DXT1, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ONE);
+
+		MapFormatSupport(PF_DXT3, VK_FORMAT_BC2_UNORM_BLOCK);
+		SetComponentMapping(PF_DXT3, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+		MapFormatSupport(PF_DXT5, VK_FORMAT_BC3_UNORM_BLOCK);
+		SetComponentMapping(PF_DXT5, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+		MapFormatSupport(PF_BC4, VK_FORMAT_BC4_UNORM_BLOCK);
+		SetComponentMapping(PF_BC4, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+		MapFormatSupport(PF_BC5, VK_FORMAT_BC5_UNORM_BLOCK);
+		SetComponentMapping(PF_BC5, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+		MapFormatSupport(PF_BC6H, VK_FORMAT_BC6H_UFLOAT_BLOCK);
+		SetComponentMapping(PF_BC6H, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+
+		MapFormatSupport(PF_BC7, VK_FORMAT_BC7_UNORM_BLOCK);
+		SetComponentMapping(PF_BC7, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+	}
+
+	if (VulkanPlatform::SupportsASTCTextureFormats())
+	{
+		MapFormatSupport(PF_ASTC_4x4, VK_FORMAT_ASTC_4x4_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ASTC_4x4].supported)
+		{
+			SetComponentMapping(PF_ASTC_4x4, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+
+		MapFormatSupport(PF_ASTC_6x6, VK_FORMAT_ASTC_6x6_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ASTC_6x6].supported)
+		{
+			SetComponentMapping(PF_ASTC_6x6, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+
+		MapFormatSupport(PF_ASTC_8x8, VK_FORMAT_ASTC_8x8_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ASTC_8x8].supported)
+		{
+			SetComponentMapping(PF_ASTC_8x8, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+
+		MapFormatSupport(PF_ASTC_10x10, VK_FORMAT_ASTC_10x10_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ASTC_10x10].supported)
+		{
+			SetComponentMapping(PF_ASTC_10x10, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+
+		MapFormatSupport(PF_ASTC_12x12, VK_FORMAT_ASTC_12x12_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ASTC_12x12].supported)
+		{
+			SetComponentMapping(PF_ASTC_12x12, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+
+		// ETC1 is a subset of ETC2 R8G8B8.
+		MapFormatSupport(PF_ETC1, VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ETC1].supported)
+		{
+			SetComponentMapping(PF_ETC1, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ONE);
+		}
+
+		MapFormatSupport(PF_ETC2_RGB, VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ETC2_RGB].supported)
+		{
+			SetComponentMapping(PF_ETC2_RGB, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_ONE);
+		}
+
+		MapFormatSupport(PF_ETC2_RGBA, VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK);
+		if (G_PixelFormats[PF_ETC2_RGB].supported)
+		{
+			SetComponentMapping(PF_ETC2_RGBA, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
+		}
+	}
 }
 
 void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat)
 {
-    
+	PixelFormatInfo& formatInfo = G_PixelFormats[format];
+	formatInfo.platformFormat = vkFormat;
+	formatInfo.supported = IsFormatSupported(vkFormat);
+
+	if (!formatInfo.supported)
+	{
+		MLOG("EPixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
+	}
 }
 
 void VulkanDevice::SetComponentMapping(PixelFormat format, VkComponentSwizzle r, VkComponentSwizzle g, VkComponentSwizzle b, VkComponentSwizzle a)
 {
-    
+	VkComponentMapping& componentMapping = m_PixelFormatComponentMapping[format];
+	componentMapping.r = r;
+	componentMapping.g = g;
+	componentMapping.b = b;
+	componentMapping.a = a;
 }
 
 void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat, int32 blockBytes)
 {
-    
+	MapFormatSupport(format, vkFormat);
+	PixelFormatInfo& formatInfo = G_PixelFormats[format];
+	formatInfo.blockBytes = blockBytes;
 }
 
 bool VulkanDevice::QueryGPU(int32 deviceIndex)
 {
-    return true;
+	bool discrete = false;
+	vkGetPhysicalDeviceProperties(m_PhysicalDevice, &m_PhysicalDeviceProperties);
+
+	auto GetDeviceTypeString = [&]() -> std::string
+	{
+		std::string info;
+		switch (m_PhysicalDeviceProperties.deviceType)
+		{
+		case  VK_PHYSICAL_DEVICE_TYPE_OTHER:
+			info = ("Other");
+			break;
+		case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+			info = ("Integrated GPU");
+			break;
+		case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+			info = ("Discrete GPU");
+			discrete = true;
+			break;
+		case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+			info = ("Virtual GPU");
+			break;
+		case VK_PHYSICAL_DEVICE_TYPE_CPU:
+			info = ("CPU");
+			break;
+		default:
+			info = ("Unknown");
+			break;
+		}
+		return info;
+	};
+
+	MLOG("Device %d: %s", deviceIndex, m_PhysicalDeviceProperties.deviceName);
+	MLOG("- API %d.%d.%d(0x%x) Driver 0x%x VendorId 0x%x", VK_VERSION_MAJOR(m_PhysicalDeviceProperties.apiVersion), VK_VERSION_MINOR(m_PhysicalDeviceProperties.apiVersion), VK_VERSION_PATCH(m_PhysicalDeviceProperties.apiVersion), m_PhysicalDeviceProperties.apiVersion, m_PhysicalDeviceProperties.driverVersion, m_PhysicalDeviceProperties.vendorID);
+	MLOG("- DeviceID 0x%x Type %s", m_PhysicalDeviceProperties.deviceID, GetDeviceTypeString().c_str());
+	MLOG("- Max Descriptor Sets Bound %d Timestamps %d", m_PhysicalDeviceProperties.limits.maxBoundDescriptorSets, m_PhysicalDeviceProperties.limits.timestampComputeAndGraphics);
+
+	uint32 queueCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueCount, nullptr);
+	m_QueueFamilyProps.resize(queueCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueCount, m_QueueFamilyProps.data());
+
+    return discrete;
 }
 
 void VulkanDevice::InitGPU(int32 deviceIndex)
 {
-    
+	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
+	MLOG("Using Device %d: Geometry %d Tessellation %d", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
+	CreateDevice();
+	SetupFormats();
 }
 
 void VulkanDevice::PrepareForDestroy()
 {
-    
+	WaitUntilIdle();
 }
 
 void VulkanDevice::Destroy()
 {
+	vkDestroyImageView(GetInstanceHandle(), m_DefaultImageView, VULKAN_CPU_ALLOCATOR);
+	m_DefaultImageView = VK_NULL_HANDLE;
 
+	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
+	m_Device = VK_NULL_HANDLE;
 }
 
 void VulkanDevice::WaitUntilIdle()
 {
-    
+	vkDeviceWaitIdle(m_Device);
 }
 
 bool VulkanDevice::IsFormatSupported(VkFormat format) const
 {
-    return true;
+	auto ArePropertiesSupported = [](const VkFormatProperties& prop) -> bool
+	{
+		return (prop.bufferFeatures != 0) || (prop.linearTilingFeatures != 0) || (prop.optimalTilingFeatures != 0);
+	};
+
+	if (format >= 0 && format < VK_FORMAT_RANGE_SIZE)
+	{
+		const VkFormatProperties& Prop = m_FormatProperties[format];
+		return ArePropertiesSupported(Prop);
+	}
+
+	auto it = m_ExtensionFormatProperties.find(format);
+	if (it != m_ExtensionFormatProperties.end())
+	{
+		const VkFormatProperties& foundProperties = it->second;
+		return ArePropertiesSupported(foundProperties);
+	}
+
+	VkFormatProperties newProperties;
+	memset(&newProperties, 0, sizeof(VkFormatProperties));
+	vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &newProperties);
+	m_ExtensionFormatProperties[format] = newProperties;
+
+	return ArePropertiesSupported(newProperties);
 }
 
 const VkComponentMapping& VulkanDevice::GetFormatComponentMapping(PixelFormat format) const

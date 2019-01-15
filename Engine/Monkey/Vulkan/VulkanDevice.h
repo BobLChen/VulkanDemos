@@ -152,18 +152,20 @@ private:
     VkImageView m_DefaultImageView;
     VkPhysicalDevice m_PhysicalDevice;
     VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
-    VkPhysicalDeviceFeatures m_PhysicalFeatures;
+    VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
     std::vector<VkQueueFamilyProperties> m_QueueFamilyProps;
     
     VkFormatProperties m_FormatProperties[VK_FORMAT_RANGE_SIZE];
     std::map<VkFormat, VkFormatProperties> m_ExtensionFormatProperties;
     
-    uint64 m_TimestampValidBitsMask = 0;
-    
     std::shared_ptr<VulkanQueue> m_GfxQueue;
     std::shared_ptr<VulkanQueue> m_ComputeQueue;
     std::shared_ptr<VulkanQueue> m_TransferQueue;
     std::shared_ptr<VulkanQueue> m_PresentQueue;
+
+	bool m_AsyncComputeQueue = false;
+	bool m_PresentOnComputeQueue = false;
+	uint64 m_TimestampValidBitsMask = 0;
     
     VkComponentMapping m_PixelFormatComponentMapping[PF_MAX];
     OptionalVulkanDeviceExtensions m_OptionalDeviceExtensions;

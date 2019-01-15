@@ -1,7 +1,7 @@
 #include "VulkanQueue.h"
 #include "VulkanDevice.h"
 
-VulkanQueue::VulkanQueue(std::shared_ptr<VulkanDevice> device, uint32 familyIndex)
+VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 familyIndex)
     : m_Queue(VK_NULL_HANDLE)
     , m_FamilyIndex(familyIndex)
     , m_QueueIndex(0)

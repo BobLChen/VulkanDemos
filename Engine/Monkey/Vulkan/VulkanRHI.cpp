@@ -4,10 +4,12 @@
 #include "Common/Log.h"
 #include "Application/SlateApplication.h"
 #include "VulkanCommon.h"
+#include "VulkanDevice.h"
+#include "VulkanQueue.h"
 
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
-	, m_Device(VK_NULL_HANDLE)
+	, m_Device(nullptr)
 {
 
 }
@@ -136,6 +138,7 @@ void VulkanRHI::SelectAndInitDevice()
 {
     uint32 gpuCount = 0;
     VkResult result = vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
+
     if (result == VK_ERROR_INITIALIZATION_FAILED)
     {
         MLOG("%s\n", "Cannot find a compatible Vulkan device or driver. Try updating your video driver to a more recent version and make sure your video card supports Vulkan.");
@@ -149,10 +152,31 @@ void VulkanRHI::SelectAndInitDevice()
         SlateApplication::Get().OnRequestingExit();
         return;
     }
-    
+
+	MLOG("Found %d device(s)", gpuCount);
+
     std::vector<VkPhysicalDevice> physicalDevices(gpuCount);
     vkEnumeratePhysicalDevices(m_Instance, &gpuCount, physicalDevices.data());
-    
+	
+	struct DeviceInfo
+	{
+		std::shared_ptr<VulkanDevice> device;
+		uint32 deviceIndex;
+	};
+
+	std::vector<DeviceInfo> discreteDevices;
+	std::vector<DeviceInfo> integratedDevices;
+
+	for (uint32 index = 0; index < gpuCount; ++index)
+	{
+		std::shared_ptr<VulkanDevice> newDevice = std::make_shared<VulkanDevice>(physicalDevices[index]);
+		m_Devices.push_back(newDevice);
+
+		bool isDiscrete = newDevice->QueryGPU(index);
+	}
+
+	
+
 }
 
 void VulkanRHI::InitGPU(VkDevice device)

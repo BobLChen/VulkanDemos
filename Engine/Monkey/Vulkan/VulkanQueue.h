@@ -9,7 +9,7 @@ class VulkanQueue
 {
 public:
     
-    VulkanQueue(std::shared_ptr<VulkanDevice> device, uint32 familyIndex);
+    VulkanQueue(VulkanDevice* device, uint32 familyIndex);
     
     virtual ~VulkanQueue();
     
@@ -27,6 +27,6 @@ private:
     VkQueue m_Queue;
     uint32 m_FamilyIndex;
     uint32 m_QueueIndex;
-    std::shared_ptr<VulkanDevice> m_Device;
+	VulkanDevice* m_Device;
 };
 

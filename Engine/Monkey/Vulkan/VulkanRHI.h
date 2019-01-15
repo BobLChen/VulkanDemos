@@ -5,6 +5,9 @@
 #include "VulkanGlobals.h"
 #include <string>
 
+class VulkanDevice;
+class VulkanQueue;
+
 class VulkanRHI
 {
 public:
@@ -71,11 +74,10 @@ protected:
 
 protected:
 	VkInstance m_Instance;
-	VkDevice m_Device;
-
+	std::shared_ptr<VulkanDevice> m_Device;
 	std::vector<const char*> m_InstanceLayers;
 	std::vector<const char*> m_InstanceExtensions;
-	std::vector<VkDevice> m_Devices;
+	std::vector<std::shared_ptr<VulkanDevice>> m_Devices;
 	
 	bool m_SupportsDebugUtilsExt;
 };

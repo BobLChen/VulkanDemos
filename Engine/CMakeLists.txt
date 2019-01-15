@@ -74,7 +74,7 @@ set(Monkey_Core_HDRS
 	Monkey/Core/PixelFormat.h
 )
 set(Monkey_Core_SRCS
-	
+	Monkey/Core/PixelFormat.cpp
 )
 
 set(Monkey_Application_Desktop_HDRS

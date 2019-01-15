@@ -141,3 +141,19 @@ enum PixelFormat
 	op(PF_PLATFORM_HDR_0) \
 	op(PF_PLATFORM_HDR_1) \
 	op(PF_PLATFORM_HDR_2)
+
+
+struct PixelFormatInfo
+{
+	const char*	name;
+	int32		blockSizeX;
+	int32		blockSizeY;
+	int32		blockSizeZ;
+	int32		blockBytes;
+	int32		numComponents;
+	uint32		platformFormat;
+	bool		supported;
+	PixelFormat	pixelFormat;
+};
+
+extern PixelFormatInfo G_PixelFormats[PF_MAX];
