@@ -190,7 +190,7 @@ void VulkanDevice::SetupFormats()
 		memset(&m_FormatProperties[index], 0, sizeof(VkFormat));
 		vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &m_FormatProperties[index]);
 	}
-
+    
 	for (int32 index = 0; index < PF_MAX; ++index)
 	{
 		G_PixelFormats[index].platformFormat = VK_FORMAT_UNDEFINED;
@@ -494,7 +494,7 @@ bool VulkanDevice::QueryGPU(int32 deviceIndex)
 	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueCount, nullptr);
 	m_QueueFamilyProps.resize(queueCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(m_PhysicalDevice, &queueCount, m_QueueFamilyProps.data());
-
+    
     return discrete;
 }
 
@@ -525,7 +525,7 @@ void VulkanDevice::WaitUntilIdle()
 	vkDeviceWaitIdle(m_Device);
 }
 
-bool VulkanDevice::IsFormatSupported(VkFormat format) const
+bool VulkanDevice::IsFormatSupported(VkFormat format)
 {
 	auto ArePropertiesSupported = [](const VkFormatProperties& prop) -> bool
 	{
@@ -534,29 +534,32 @@ bool VulkanDevice::IsFormatSupported(VkFormat format) const
 
 	if (format >= 0 && format < VK_FORMAT_RANGE_SIZE)
 	{
-		const VkFormatProperties& Prop = m_FormatProperties[format];
-		return ArePropertiesSupported(Prop);
+		const VkFormatProperties& prop = m_FormatProperties[format];
+		return ArePropertiesSupported(prop);
 	}
-
+    
 	auto it = m_ExtensionFormatProperties.find(format);
 	if (it != m_ExtensionFormatProperties.end())
 	{
 		const VkFormatProperties& foundProperties = it->second;
 		return ArePropertiesSupported(foundProperties);
 	}
-
+    
 	VkFormatProperties newProperties;
 	memset(&newProperties, 0, sizeof(VkFormatProperties));
 	vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &newProperties);
-	m_ExtensionFormatProperties[format] = newProperties;
-
+    m_ExtensionFormatProperties.insert(std::pair<VkFormat, VkFormatProperties>(format, newProperties));
+    
 	return ArePropertiesSupported(newProperties);
 }
 
 const VkComponentMapping& VulkanDevice::GetFormatComponentMapping(PixelFormat format) const
 {
-    VkComponentMapping mapping;
-    return mapping;
+    if (format == PF_X24_G8)
+    {
+        return GetFormatComponentMapping(PF_DepthStencil);
+    }
+    return m_PixelFormatComponentMapping[format];
 }
 
 void VulkanDevice::NotifyDeletedRenderTarget(VkImage image)
@@ -570,6 +573,16 @@ void VulkanDevice::NotifyDeletedImage(VkImage image)
 }
 
 void VulkanDevice::PrepareForCPURead()
+{
+    
+}
+
+void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDeviceExtensions, std::vector<const char*>& outDeviceLayers, bool& bOutDebugMarkers)
+{
+    
+}
+
+void VulkanDevice::ParseOptionalDeviceExtensions(const std::vector<const char*>& deviceExtensions)
 {
     
 }

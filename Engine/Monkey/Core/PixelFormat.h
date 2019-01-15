@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Common/Common.h"
+
 #if defined(PF_MAX)
 #undef PF_MAX
 #endif

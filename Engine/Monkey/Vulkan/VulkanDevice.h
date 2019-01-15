@@ -48,7 +48,7 @@ public:
     
     void WaitUntilIdle();
     
-    bool IsFormatSupported(VkFormat format) const;
+    bool IsFormatSupported(VkFormat format);
     
     const VkComponentMapping& GetFormatComponentMapping(PixelFormat format) const;
     
@@ -99,7 +99,7 @@ public:
     
     inline const VkPhysicalDeviceFeatures& GetPhysicalFeatures() const
     {
-        return m_PhysicalFeatures;
+        return m_PhysicalDeviceFeatures;
     }
     
     inline bool HasUnifiedMemory() const

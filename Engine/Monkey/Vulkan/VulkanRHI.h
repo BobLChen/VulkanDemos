@@ -40,11 +40,11 @@ public:
 		return m_Instance;
 	}
 
-	inline VkDevice GetDevice()
+	inline std::shared_ptr<VulkanDevice> GetDevice()
 	{
 		return m_Device;
 	}
-
+    
 	inline bool SupportsDebugUtilsExt() const
 	{
 		return m_SupportsDebugUtilsExt;
@@ -73,6 +73,7 @@ protected:
 	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers, bool& outDebugUtils);
 
 protected:
+    
 	VkInstance m_Instance;
 	std::shared_ptr<VulkanDevice> m_Device;
 	std::vector<const char*> m_InstanceLayers;
