@@ -7,6 +7,11 @@
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
 
+static inline int32 PreferAdapterVendor()
+{
+    return -1;
+}
+
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
 	, m_Device(nullptr)
@@ -163,7 +168,6 @@ void VulkanRHI::SelectAndInitDevice()
 		std::shared_ptr<VulkanDevice> device;
 		uint32 deviceIndex;
 	};
-
 	std::vector<DeviceInfo> discreteDevices;
 	std::vector<DeviceInfo> integratedDevices;
 
@@ -173,10 +177,51 @@ void VulkanRHI::SelectAndInitDevice()
 		m_Devices.push_back(newDevice);
 
 		bool isDiscrete = newDevice->QueryGPU(index);
+        if (isDiscrete) {
+            discreteDevices.push_back({newDevice, index});
+        }
+        else {
+            integratedDevices.push_back({newDevice, index});
+        }
 	}
-
+    
+    for (int32 index = 0; index < integratedDevices.size(); ++index)
+    {
+        discreteDevices.push_back(integratedDevices[index]);
+    }
+    
+    int32 deviceIndex = -1;
+    if (discreteDevices.size() > 0)
+    {
+        int32 preferredVendor = PreferAdapterVendor();
+        if (discreteDevices.size() > 1 && preferredVendor != -1)
+        {
+            for (int32 index = 0; index < discreteDevices.size(); ++index)
+            {
+                if (discreteDevices[index].device->GetDeviceProperties().vendorID == preferredVendor)
+                {
+                    m_Device = discreteDevices[index].device;
+                    deviceIndex = discreteDevices[index].deviceIndex;
+                    break;
+                }
+            }
+        }
+        
+        if (deviceIndex == -1)
+        {
+            m_Device = discreteDevices[0].device;
+            deviceIndex = discreteDevices[0].deviceIndex;
+        }
+    }
+    else
+    {
+        MLOG("%s", "No devices found!");
+        deviceIndex = -1;
+        SlateApplication::Get().OnRequestingExit();
+        return;
+    }
 	
-
+    m_Device->InitGPU(deviceIndex);
 }
 
 void VulkanRHI::InitGPU(VkDevice device)

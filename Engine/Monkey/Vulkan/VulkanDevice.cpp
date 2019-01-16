@@ -35,14 +35,14 @@ void VulkanDevice::CreateDevice()
 	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
 
 	ParseOptionalDeviceExtensions(deviceExtensions);
-
+    
 	deviceInfo.enabledExtensionCount = deviceExtensions.size();
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount = validationLayers.size();
 	deviceInfo.ppEnabledLayerNames = validationLayers.data();
 
-	MLOG("Found %d Queue Families", m_QueueFamilyProps.size());
-
+    MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
+    
 	std::vector<VkDeviceQueueCreateInfo> queueFamilyInfos;
 	uint32 numPriorities = 0;
 	int32 gfxQueueFamilyIndex = -1;
@@ -109,18 +109,18 @@ void VulkanDevice::CreateDevice()
 		}
 
 		VkDeviceQueueCreateInfo currQueue;
-		currQueue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        ZeroVulkanStruct(currQueue, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
 		currQueue.queueFamilyIndex = familyIndex;
 		currQueue.queueCount = currProps.queueCount;
 		numPriorities += currProps.queueCount;
 		queueFamilyInfos.push_back(currQueue);
-
+        
 		MLOG("Initializing Queue Family %d: %d queues%s", familyIndex,  currProps.queueCount, GetQueueInfoString(currProps).c_str());
 	}
-
+    
 	std::vector<float> queuePriorities(numPriorities);
 	float* CurrentPriority = queuePriorities.data();
-	for (int32 index = 0; index < queuePriorities.size(); ++index)
+	for (int32 index = 0; index < queueFamilyInfos.size(); ++index)
 	{
 		VkDeviceQueueCreateInfo& currQueue = queueFamilyInfos[index];
 		currQueue.pQueuePriorities = CurrentPriority;
@@ -432,7 +432,7 @@ void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat)
 
 	if (!formatInfo.supported)
 	{
-		MLOG("EPixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
+		MLOG("PixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
 	}
 }
 
@@ -513,8 +513,8 @@ void VulkanDevice::PrepareForDestroy()
 
 void VulkanDevice::Destroy()
 {
-	vkDestroyImageView(GetInstanceHandle(), m_DefaultImageView, VULKAN_CPU_ALLOCATOR);
-	m_DefaultImageView = VK_NULL_HANDLE;
+	//vkDestroyImageView(GetInstanceHandle(), m_DefaultImageView, VULKAN_CPU_ALLOCATOR);
+	//m_DefaultImageView = VK_NULL_HANDLE;
 
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
@@ -573,16 +573,6 @@ void VulkanDevice::NotifyDeletedImage(VkImage image)
 }
 
 void VulkanDevice::PrepareForCPURead()
-{
-    
-}
-
-void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDeviceExtensions, std::vector<const char*>& outDeviceLayers, bool& bOutDebugMarkers)
-{
-    
-}
-
-void VulkanDevice::ParseOptionalDeviceExtensions(const std::vector<const char*>& deviceExtensions)
 {
     
 }
