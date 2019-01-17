@@ -61,14 +61,14 @@ static const char* G_ValidationLayersDevice[] =
 
 static const char* G_InstanceExtensions[] =
 {
-#ifdef PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
     "VK_KHR_get_physical_device_properties2",
 #elif PLATFORM_MAC
     "VK_KHR_get_physical_device_properties2",
     "VK_KHR_surface",
     "VK_MVK_macos_surface",
     "VK_EXT_debug_report",
-    "VK_EXT_debug_utils"
+    "VK_EXT_debug_utils",
 #else
     
 #endif
@@ -252,12 +252,22 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 		}
 	}
 
-	const char* foundDebugUtilsLayer = nullptr;
-	outDebugUtils = FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, foundDebugUtilsLayer);
-	if (outDebugUtils && *foundDebugUtilsLayer) 
-	{
-		outInstanceLayers.push_back(foundDebugUtilsLayer);
-	}
+    const char* foundDebugUtilsLayer = nullptr;
+    outDebugUtils = FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, foundDebugUtilsLayer);
+    if (outDebugUtils && *foundDebugUtilsLayer)
+    {
+        outInstanceLayers.push_back(foundDebugUtilsLayer);
+    }
+
+    if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+    {
+        outInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+    {
+        outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    }
 #endif // MONKEY_DEBUG
 	
 	std::vector<const char*> platformExtensions;
@@ -278,18 +288,7 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 			outInstanceExtensions.push_back(G_InstanceExtensions[i]);
 		}
 	}
-
-#if MONKEY_DEBUG
-	if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
-	{
-		outInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-	}
-#endif
-    if (!outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
-    {
-        outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-    }
-
+    
 	TrimDuplicates(outInstanceLayers);
 	if (outInstanceLayers.size() > 0)
 	{

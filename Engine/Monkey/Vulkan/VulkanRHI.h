@@ -74,6 +74,14 @@ protected:
 
 protected:
     
+#if MONKEY_DEBUG
+    VkDebugReportCallbackEXT m_MsgCallback = VK_NULL_HANDLE;
+    void SetupDebugLayerCallback();
+    void RemoveDebugLayerCallback();
+#endif
+    
+protected:
+    
 	VkInstance m_Instance;
 	std::shared_ptr<VulkanDevice> m_Device;
 	std::vector<const char*> m_InstanceLayers;

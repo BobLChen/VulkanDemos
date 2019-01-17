@@ -92,6 +92,7 @@ set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanLayers.cpp
 	Monkey/Vulkan/VulkanQueue.cpp
 	Monkey/Vulkan/VulkanDevice.cpp
+	Monkey/Vulkan/VulkanDebug.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h

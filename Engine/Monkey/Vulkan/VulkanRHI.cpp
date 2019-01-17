@@ -41,12 +41,22 @@ void VulkanRHI::PostInit()
 
 void VulkanRHI::Shutdown()
 {
-
+#if MONKEY_DEBUG
+    RemoveDebugLayerCallback();
+#endif
+    
+    m_Device->Destroy();
+    m_Device = nullptr;
+    
+    vkDestroyInstance(m_Instance, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::InitInstance()
 {
 	CreateInstance();
+#if MONKEY_DEBUG
+    SetupDebugLayerCallback();
+#endif
     SelectAndInitDevice();
 }
 
@@ -91,7 +101,7 @@ void VulkanRHI::CreateInstance()
 	instanceCreateInfo.ppEnabledLayerNames = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
 
 	VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);
-
+    
 	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
 	{
 		MLOG("%s", "Cannot find a compatible Vulkan driver (ICD).");
