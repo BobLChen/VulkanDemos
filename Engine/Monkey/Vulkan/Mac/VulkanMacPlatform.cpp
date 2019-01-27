@@ -33,8 +33,8 @@ void VulkanMacPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensi
     outExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
     outExtensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
 #endif
-    //outExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
-    //outExtensions.push_back("VK_MVK_moltenvk");
+    outExtensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
+    outExtensions.push_back("VK_MVK_moltenvk");
 }
 
 void VulkanMacPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)

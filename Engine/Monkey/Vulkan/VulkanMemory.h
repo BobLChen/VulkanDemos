@@ -1,0 +1,83 @@
+#include "Common/Common.h"
+#include "VulkanPlatform.h"
+
+#include <memory>
+#include <vector>
+
+class VulkanDevice;
+class VulkanFenceManager;
+
+class VulkanFence
+{
+public:
+	enum class State
+	{
+		NotReady,
+		Signaled,
+	};
+
+	VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool createSignaled);
+
+	inline VkFence GetHandle() const
+	{
+		return m_VkFence;
+	}
+
+	inline bool IsSignaled() const
+	{
+		return m_State == State::Signaled;
+	}
+
+	VulkanFenceManager* GetOwner()
+	{
+		return m_Owner;
+	}
+
+protected:
+	virtual ~VulkanFence();
+	friend class VulkanFenceManager;
+
+	VkFence m_VkFence;
+	State m_State;
+	VulkanFenceManager* m_Owner;
+};
+
+class VulkanFenceManager
+{
+public:
+	VulkanFenceManager();
+	
+	virtual ~VulkanFenceManager();
+
+	void Init(VulkanDevice* device);
+
+	void DeInit();
+
+	VulkanFence* CreateFence(bool createSignaled = false);
+
+	bool WaitForFence(VulkanFence* fence, uint64 timeInNanoseconds);
+
+	void ResetFence(VulkanFence* fence);
+
+	void ReleaseFence(VulkanFence*& fence);
+
+	void WaitAndReleaseFence(VulkanFence*& fence, uint64 timeInNanoseconds);
+
+	inline bool IsFenceSignaled(VulkanFence* fence)
+	{
+		if (fence->IsSignaled())
+		{
+			return true;
+		}
+		return CheckFenceState(fence);
+	}
+
+protected:
+	bool CheckFenceState(VulkanFence* fence);
+
+	void DestoryFence(VulkanFence* fence);
+
+	VulkanDevice* m_Device;
+	std::vector<VulkanFence*> m_FreeFences;
+	std::vector<VulkanFence*> m_UsedFences;
+};

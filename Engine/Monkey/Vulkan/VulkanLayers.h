@@ -10,7 +10,7 @@ struct VulkanLayerExtension
 
 	void AddUniqueExtensionNames(std::vector<std::string>& outExtensions);
 
-	void AddAnsiExtensionNames(std::vector<const char*>& outExtensions);
+	void AddUniqueExtensionNames(std::vector<const char*>& outExtensions);
 
 	VkLayerProperties layerProps;
 	std::vector<VkExtensionProperties> extensionProps;

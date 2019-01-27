@@ -8,12 +8,7 @@ static const char* G_ValidationLayersInstance[] =
 #if PLATFORM_WINDOWS
 	"VK_LAYER_LUNARG_standard_validation",
 #elif PLATFORM_MAC
-    // "VK_LAYER_GOOGLE_unique_objects",
-    "VK_LAYER_GOOGLE_threading",
-    "VK_LAYER_LUNARG_standard_validation",
-    "VK_LAYER_LUNARG_core_validation",
-    "VK_LAYER_LUNARG_parameter_validation",
-    "VK_LAYER_LUNARG_object_tracker",
+	"VK_LAYER_LUNARG_standard_validation",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -36,11 +31,6 @@ static const char* G_ValidationLayersDevice[] =
 	"VK_LAYER_LUNARG_standard_validation",
 #elif PLATFORM_MAC
     "VK_LAYER_LUNARG_standard_validation",
-    //"VK_LAYER_GOOGLE_unique_objects",
-    "VK_LAYER_GOOGLE_threading",
-    "VK_LAYER_LUNARG_core_validation",
-    "VK_LAYER_LUNARG_parameter_validation",
-    "VK_LAYER_LUNARG_object_tracker",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -55,6 +45,7 @@ static const char* G_ValidationLayersDevice[] =
 	"VK_LAYER_LUNARG_core_validation",
 	"VK_LAYER_LUNARG_swapchain",
 	"VK_LAYER_GOOGLE_unique_objects",
+	"VK_LAYER_LUNARG_core_validation",
 #endif
 	nullptr
 };
@@ -62,13 +53,9 @@ static const char* G_ValidationLayersDevice[] =
 static const char* G_InstanceExtensions[] =
 {
 #if PLATFORM_WINDOWS
-    "VK_KHR_get_physical_device_properties2",
+	
 #elif PLATFORM_MAC
-    "VK_KHR_get_physical_device_properties2",
-    "VK_KHR_surface",
-    "VK_MVK_macos_surface",
-    "VK_EXT_debug_report",
-    "VK_EXT_debug_utils",
+
 #else
     
 #endif
@@ -77,28 +64,17 @@ static const char* G_InstanceExtensions[] =
 
 static const char* G_DeviceExtensions[] =
 {
-#ifdef PLATFORM_WINDOWS
-    "VK_KHR_sampler_mirror_clamp_to_edge",
-    "VK_KHR_swapchain",
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+	VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+
+#if PLATFORM_WINDOWS
+
 #elif PLATFORM_MAC
-    "VK_KHR_sampler_mirror_clamp_to_edge",
-    "VK_KHR_swapchain",
-    //"VK_KHR_dedicated_allocation",
-    //"VK_KHR_descriptor_update_template",
-    //"VK_KHR_get_memory_requirements2",
-    //"VK_KHR_image_format_list",
-    //"VK_KHR_maintenance1",
-    //"VK_KHR_maintenance2",
-    //"VK_KHR_push_descriptor",
-    //"VK_KHR_shader_draw_parameters",
-    //"VK_KHR_surface",
-    //"VK_EXT_shader_viewport_index_layer",
-    //"VK_EXT_vertex_attribute_divisor",
-    //"VK_EXT_debug_marker",
-    //"VK_EXT_validation_cache",
+
 #else
     
 #endif
+
 	nullptr
 };
 
@@ -188,7 +164,7 @@ void VulkanLayerExtension::AddUniqueExtensionNames(std::vector<std::string>& out
 	}
 }
 
-void VulkanLayerExtension::AddAnsiExtensionNames(std::vector<const char*>& outExtensions)
+void VulkanLayerExtension::AddUniqueExtensionNames(std::vector<const char*>& outExtensions)
 {
 	for (int32 i = 0; i < extensionProps.size(); ++i) 
 	{
@@ -200,11 +176,10 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 {
 	outDebugUtils = false;
 
-	std::vector<std::string> foundUniqueExtensions;
-	std::vector<std::string> foundUniqueLayers;
-
 	std::vector<VulkanLayerExtension> globalLayerExtensions(1);
 	EnumerateInstanceExtensionProperties(nullptr, globalLayerExtensions[0]);
+
+	std::vector<std::string> foundUniqueExtensions;
 	for (int32 i = 0; i < globalLayerExtensions[0].extensionProps.size(); ++i) 
 	{
 		StringUtils::AddUnique(foundUniqueExtensions, globalLayerExtensions[0].extensionProps[i].extensionName);
@@ -215,6 +190,7 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 	std::vector<VkLayerProperties> globalLayerProperties(instanceLayerCount);
 	vkEnumerateInstanceLayerProperties(&instanceLayerCount, globalLayerProperties.data());
 
+	std::vector<std::string> foundUniqueLayers;
 	for (int32 i = 0; i < globalLayerProperties.size(); ++i) 
 	{
 		VulkanLayerExtension layer;
@@ -402,7 +378,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
         
         if (findLayerIndex < deviceLayerExtensions.size())
         {
-            deviceLayerExtensions[findLayerIndex].AddAnsiExtensionNames(availableExtensions);
+            deviceLayerExtensions[findLayerIndex].AddUniqueExtensionNames(availableExtensions);
         }
     }
     
