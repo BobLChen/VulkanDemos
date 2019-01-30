@@ -156,6 +156,10 @@ elseif (APPLE)
 		Monkey/Vulkan/Mac/VulkanMacPlatform.cpp
 	)
 
+	set(Monkey_HAL_HDRS
+		${Monkey_HAL_HDRS}
+		Monkey/HAL/ClangPlatformAtomics.h
+	)
 	set(Monkey_HAL_Mac_HDRS
 		Monkey/HAL/Mac/MacPlatformAtomics.h
 	)
