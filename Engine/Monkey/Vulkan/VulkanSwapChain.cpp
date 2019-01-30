@@ -6,8 +6,8 @@
 VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void* windowHandle, PixelFormat& outPixelFormat, uint32 width, uint32 height,
 	uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync)
 	: m_SwapChain(VK_NULL_HANDLE)
+    , m_Surface(VK_NULL_HANDLE)
 	, m_Device(device)
-	, m_Surface(VK_NULL_HANDLE)
 	, m_CurrentImageIndex(-1)
 	, m_SemaphoreIndex(0)
 	, m_NumPresentCalls(0)
@@ -15,7 +15,6 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void
 	, m_Instance(instance)
 	, m_LockToVsync(lockToVsync)
 {
-
 	VulkanPlatform::CreateSurface(windowHandle, instance, &m_Surface);
 	
 	VkSurfaceFormatKHR currFormat;
@@ -92,7 +91,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void
 		}
 	}
 	
-	VkFormat PlatformFormat = PixelFormatToVkFormat(outPixelFormat, false);
+	// VkFormat platformFormat = PixelFormatToVkFormat(outPixelFormat, false);
 	m_Device->SetupPresentQueue(m_Surface);
 
 	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -314,7 +313,7 @@ VulkanSwapChain::Status VulkanSwapChain::Present(VulkanQueue* gfxQueue, VulkanQu
 	createInfo.pSwapchains = &m_SwapChain;
 	createInfo.pImageIndices = (uint32*)&m_CurrentImageIndex;
 
-	const int32 syncInterval = m_LockToVsync ? 1 : 0;
+	// const int32 syncInterval = m_LockToVsync ? 1 : 0;
 	VulkanPlatform::EnablePresentInfoExtensions(createInfo);
 
 	m_PresentID++;
@@ -358,14 +357,14 @@ void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)
 			return (supportsPresent == VK_TRUE);
 		};
 
-		bool bGfx = SupportsPresent(m_PhysicalDevice, m_GfxQueue);
-		bool bCompute = SupportsPresent(m_PhysicalDevice, m_ComputeQueue);
+		// bool gfx = SupportsPresent(m_PhysicalDevice, m_GfxQueue);
+		bool compute = SupportsPresent(m_PhysicalDevice, m_ComputeQueue);
 		if (m_TransferQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && m_TransferQueue->GetFamilyIndex() != m_ComputeQueue->GetFamilyIndex())
 		{
 			SupportsPresent(m_PhysicalDevice, m_TransferQueue);
 		}
 
-		if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && bCompute)
+		if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && compute)
 		{
 			m_PresentQueue = m_ComputeQueue;
 		}

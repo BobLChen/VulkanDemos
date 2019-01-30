@@ -9,6 +9,7 @@
 
 class VulkanDevice;
 class VulkanFenceManager;
+class VulkanDeviceMemoryManager;
 
 class RefCount
 {
@@ -142,6 +143,116 @@ protected:
 	bool m_IsCoherent;
 	bool m_IsCached;
 	bool m_FreedBySystem;
+};
+
+class VulkanDeviceMemoryManager
+{
+public:
+    VulkanDeviceMemoryManager();
+    
+    virtual ~VulkanDeviceMemoryManager();
+    
+    void Init(VulkanDevice* device);
+    
+    void Destory();
+    
+    bool SupportsMemoryType(VkMemoryPropertyFlags properties) const;
+    
+    VulkanDeviceMemoryAllocation* Alloc(bool canFail, VkDeviceSize allocationSize, uint32 memoryTypeIndex, void* dedicatedAllocateInfo, const char* file, uint32 line);
+    
+    void Free(VulkanDeviceMemoryAllocation*& allocation);
+    
+#if MONKEY_DEBUG
+    void DumpMemory();
+#endif
+    
+    uint64 GetTotalMemory(bool gpu) const;
+    
+    inline bool HasUnifiedMemory() const
+    {
+        return m_HasUnifiedMemory;
+    }
+    
+    inline uint32 GetNumMemoryTypes() const
+    {
+        return m_MemoryProperties.memoryTypeCount;
+    }
+    
+    inline VkResult GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties, uint32* outTypeIndex)
+    {
+        for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; ++i)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((m_MemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                {
+                    *outTypeIndex = i;
+                    return VK_SUCCESS;
+                }
+            }
+            typeBits >>= 1;
+        }
+        
+        return VK_ERROR_FEATURE_NOT_PRESENT;
+    }
+    
+    inline VkResult GetMemoryTypeFromPropertiesExcluding(uint32 typeBits, VkMemoryPropertyFlags properties, uint32 excludeTypeIndex, uint32* outTypeIndex)
+    {
+        for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; i++)
+        {
+            if ((typeBits & 1) == 1)
+            {
+                if ((m_MemoryProperties.memoryTypes[i].propertyFlags & properties) == properties && excludeTypeIndex != i)
+                {
+                    *outTypeIndex = i;
+                    return VK_SUCCESS;
+                }
+            }
+            typeBits >>= 1;
+        }
+        
+        return VK_ERROR_FEATURE_NOT_PRESENT;
+    }
+    
+    inline const VkPhysicalDeviceMemoryProperties& GetMemoryProperties() const
+    {
+        return m_MemoryProperties;
+    }
+    
+    inline VulkanDeviceMemoryAllocation* Alloc(bool canFail, VkDeviceSize allocationSize, uint32 memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, void* dedicatedAllocateInfo, const char* file, uint32 line)
+    {
+        uint32 memoryTypeIndex = ~0;
+        VERIFYVULKANRESULT(this->GetMemoryTypeFromProperties(memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex));
+        return Alloc(canFail, allocationSize, memoryTypeIndex, dedicatedAllocateInfo, file, line);
+    }
+    
+protected:
+    struct HeapInfo
+    {
+        HeapInfo()
+            : totalSize(0)
+            , usedSize(0)
+            , peakSize(0)
+        {
+            
+        }
+        
+        VkDeviceSize totalSize;
+        VkDeviceSize usedSize;
+        VkDeviceSize peakSize;
+        std::vector<VulkanDeviceMemoryAllocation*> allocations;
+    };
+    
+    void SetupAndPrintMemInfo();
+    
+protected:
+    VkPhysicalDeviceMemoryProperties m_MemoryProperties;
+    VulkanDevice* m_Device;
+    VkDevice m_DeviceHandle;
+    bool m_HasUnifiedMemory;
+    uint32 m_NumAllocations;
+    uint32 m_PeakNumAllocations;
+    std::vector<HeapInfo> m_HeapInfos;
 };
 
 class VulkanFence
