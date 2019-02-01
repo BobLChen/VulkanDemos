@@ -1,0 +1,15 @@
+{
+    "file_format_version" : "1.0.0",
+    "layer" : {
+        "name": "VK_LAYER_LUNARG_vktrace",
+        "type": "GLOBAL",
+        "library_path": "libVkLayer_vktrace_layer.so",
+        "api_version": "1.1.97",
+        "implementation_version": "1",
+        "description": "Vktrace tracing library",
+        "functions" : {
+          "vkGetInstanceProcAddr" : "VK_LAYER_LUNARG_vktraceGetInstanceProcAddr",
+          "vkGetDeviceProcAddr" : "VK_LAYER_LUNARG_vktraceGetDeviceProcAddr"
+        }
+    }
+}
