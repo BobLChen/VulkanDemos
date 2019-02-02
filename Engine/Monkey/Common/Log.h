@@ -3,7 +3,7 @@
 #include "Configuration/Platform.h"
 #include <stdio.h>
 
-#if PLATFORM_WINDOWS || PLATFORM_MAC
+#if PLATFORM_WINDOWS || PLATFORM_MAC || PLATFORM_UNIX
 	#define MLOG(...) { fprintf(stdout, "%-40s:%-5d", __func__, __LINE__); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
 #elif PLATFORM_ANDROID
 	#include <android/log.h>

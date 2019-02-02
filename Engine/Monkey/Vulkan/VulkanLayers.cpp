@@ -32,7 +32,7 @@ static const char* G_ValidationLayersInstance[] =
 	"VK_LAYER_LUNARG_object_tracker",
 	"VK_LAYER_LUNARG_core_validation",
 	"VK_LAYER_GOOGLE_unique_objects",
-#else
+#elif PLATFORM_UNIX
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
 	"VK_LAYER_LUNARG_object_tracker",
@@ -54,7 +54,7 @@ static const char* G_ValidationLayersDevice[] =
 	"VK_LAYER_LUNARG_object_tracker",
 	"VK_LAYER_LUNARG_core_validation",
 	"VK_LAYER_GOOGLE_unique_objects",
-#else
+#elif PLATFORM_UNIX
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
 	"VK_LAYER_LUNARG_object_tracker",

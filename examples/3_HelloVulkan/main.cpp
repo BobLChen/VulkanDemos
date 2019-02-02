@@ -43,7 +43,7 @@ public:
 	virtual void OnRender()
 	{
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(m_Application->m_VKDevice, m_Application->m_VKSwapChain, std::numeric_limits<uint64_t>::max(), m_VKImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		vkAcquireNextImageKHR(m_Application->m_VKDevice, m_Application->m_VKSwapChain, UINT64_MAX, m_VKImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 	
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

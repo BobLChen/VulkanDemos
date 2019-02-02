@@ -4,6 +4,7 @@
 #include "Math/Math.h"
 
 #include <string>
+#include <cstring>
 #include <vector>
 #include <stdarg.h>
 #include <memory>

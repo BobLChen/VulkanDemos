@@ -371,7 +371,7 @@ void VulkanDeviceMemoryManager::DumpMemory()
         for (int32 subIndex = 0; subIndex < heapInfo.allocations.size(); ++subIndex)
         {
             VulkanDeviceMemoryAllocation* allocation = heapInfo.allocations[subIndex];
-            MLOG("\t\t%d Size %llu Handle %p", subIndex, allocation->m_Size, (void*)allocation->m_Handle);
+            MLOG("\t\t%d Size %lu Handle %p", subIndex, allocation->m_Size, (void*)allocation->m_Handle);
             totalSize += allocation->m_Size;
         }
         MLOG("\t\tTotal Allocated %.2f MB, Peak %.2f MB", totalSize / 1024.0f / 1024.0f, heapInfo.peakSize / 1024.0f / 1024.0f);
@@ -400,7 +400,7 @@ void VulkanDeviceMemoryManager::SetupAndPrintMemInfo()
     for (uint32 index = 0; index < m_MemoryProperties.memoryHeapCount; ++index)
     {
         bool isGPUHeap = ((m_MemoryProperties.memoryHeaps[index].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
-        MLOG("%d: Flags 0x%x Size %llu (%.2f MB) %s",
+        MLOG("%d: Flags 0x%x Size %lu (%.2f MB) %s",
                index,
                m_MemoryProperties.memoryHeaps[index].flags,
                m_MemoryProperties.memoryHeaps[index].size,

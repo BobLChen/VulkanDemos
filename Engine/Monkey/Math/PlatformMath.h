@@ -4,7 +4,9 @@
 #include "GenericPlatformMath.h"
 
 #if PLATFORM_WINDOWS
-#include "Math/Windows/WindowsPlatformMath.h"
+    #include "Math/Windows/WindowsPlatformMath.h"
 #elif PLATFORM_MAC
-#include "Math/Mac/MacPlatformMath.h"
+    #include "Math/Mac/MacPlatformMath.h"
+#elif PLATFORM_UNIX
+    #include "Math/Unix/UnixPlatformMath.h"
 #endif
