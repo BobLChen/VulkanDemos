@@ -23,8 +23,11 @@ elseif (APPLE)
 	include_directories(
 		external/vulkan/macos/include/
 	)
-elseif (LINUX)
-
+elseif (UNIX AND NOT APPLE)
+	find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${CMAKE_SOURCE_DIR}/external/vulkan/linux/lib" REQUIRED)
+	include_directories(
+		external/vulkan/unix/include/
+	)
 endif ()
 
 set(ALL_LIBS
@@ -38,7 +41,7 @@ include_directories(
 	Engine/Monkey/
 	external/glfw/include/
 	external/glm/include/
-	external/imgui/	
+	external/imgui/
 )
 
 add_subdirectory(Engine)
