@@ -132,6 +132,12 @@ void* GenericWindow::GetOSWindowHandle() const
 	return nullptr;
 }
 
+const char** GenericWindow::GetRequiredInstanceExtensions(uint32_t* count)
+{
+    count = 0;
+    return nullptr;
+}
+
 void GenericWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
 

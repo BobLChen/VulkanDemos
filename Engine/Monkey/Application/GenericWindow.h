@@ -102,6 +102,8 @@ public:
 
 	virtual void CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface);
 
+    virtual const char** GetRequiredInstanceExtensions(uint32_t* count);
+    
 	virtual bool IsForegroundWindow() const;
 
 	virtual void SetText(const char* const text);

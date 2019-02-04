@@ -82,6 +82,8 @@ public:
 
 	virtual void CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface) override;
     
+    virtual const char** GetRequiredInstanceExtensions(uint32_t* count) override;
+    
     virtual WindowMode::Type GetWindowMode() const override
     {
         return m_WindowMode;

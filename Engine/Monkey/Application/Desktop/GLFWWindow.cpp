@@ -23,7 +23,7 @@ GLFWWindow::GLFWWindow(int32 width, int32 height, const char* title)
 
 GLFWWindow::~GLFWWindow()
 {
-
+    
 }
 
 void GLFWWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
@@ -33,6 +33,11 @@ void GLFWWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 	{
 		MLOG("Failed to create vksurface. %ud", result);
 	}
+}
+
+const char** GLFWWindow::GetRequiredInstanceExtensions(uint32_t* count)
+{
+    return glfwGetRequiredInstanceExtensions(count);
 }
 
 void* GLFWWindow::GetOSWindowHandle() const
