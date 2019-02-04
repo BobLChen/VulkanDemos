@@ -10,6 +10,10 @@
 class VulkanDevice;
 class VulkanFenceManager;
 class VulkanDeviceMemoryManager;
+class VulkanResourceHeap;
+class VulkanResourceHeapPage;
+class VulkanResourceHeapManager;
+class VulkanBufferAllocation;
 
 class RefCount
 {
@@ -51,6 +55,19 @@ public:
 
 private:
 	ThreadSafeCounter m_Counter;
+};
+
+struct VulkanRange
+{
+    uint32 offset;
+    uint32 size;
+    
+    static void JoinConsecutiveRanges(std::vector<VulkanRange>& ranges);
+    
+    inline bool operator<(const VulkanRange& vulkanRange) const
+    {
+        return offset < vulkanRange.offset;
+    }
 };
 
 class VulkanDeviceChild
@@ -101,7 +118,7 @@ public:
 
 	inline bool IsMapped() const
 	{
-		return !!m_MappedPointer;
+		return m_MappedPointer != nullptr;
 	}
 	
 	inline void* GetMappedPointer()
@@ -198,7 +215,7 @@ public:
     
     inline VkResult GetMemoryTypeFromPropertiesExcluding(uint32 typeBits, VkMemoryPropertyFlags properties, uint32 excludeTypeIndex, uint32* outTypeIndex)
     {
-        for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; i++)
+        for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; ++i)
         {
             if ((typeBits & 1) == 1)
             {
@@ -345,4 +362,235 @@ public:
 protected:
 	VkSemaphore m_VkSemaphore;
 	VulkanDevice* m_Device;
+};
+
+class VulkanResourceAllocation : public RefCount
+{
+public:
+    VulkanResourceAllocation(VulkanResourceHeapPage* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset, const char* file, uint32 line);
+    
+    virtual ~VulkanResourceAllocation();
+    
+    void BindBuffer(VulkanDevice* device, VkBuffer buffer);
+    
+    void BindImage(VulkanDevice* device, VkImage image);
+    
+    inline uint32 GetSize() const
+    {
+        return m_RequestedSize;
+    }
+    
+    inline uint32 GetAllocationSize()
+    {
+        return m_AllocationSize;
+    }
+    
+    inline uint32 GetOffset() const
+    {
+        return m_AlignedOffset;
+    }
+    
+    inline VkDeviceMemory GetHandle() const
+    {
+        return m_DeviceMemoryAllocation->GetHandle();
+    }
+    
+    inline void* GetMappedPointer()
+    {
+        return (uint8*)m_DeviceMemoryAllocation->GetMappedPointer() + m_AlignedOffset;
+    }
+    
+    inline uint32 GetMemoryTypeIndex() const
+    {
+        return m_DeviceMemoryAllocation->GetMemoryTypeIndex();
+    }
+    
+    inline void FlushMappedMemory()
+    {
+        m_DeviceMemoryAllocation->FlushMappedMemory(m_AllocationOffset, m_AllocationSize);
+    }
+    
+    inline void InvalidateMappedMemory()
+    {
+        m_DeviceMemoryAllocation->InvalidateMappedMemory(m_AllocationOffset, m_AllocationSize);
+    }
+    
+private:
+    VulkanResourceHeapPage* m_Owner;
+    uint32 m_AllocationSize;
+    uint32 m_AllocationOffset;
+    uint32 m_RequestedSize;
+    uint32 m_AlignedOffset;
+    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
+    
+    friend class VulkanResourceHeapPage;
+};
+
+class VulkanResourceHeapPage
+{
+public:
+    VulkanResourceHeapPage(VulkanResourceHeap* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 id);
+    
+    ~VulkanResourceHeapPage();
+    
+    void ReleaseAllocation(VulkanResourceAllocation* allocation);
+    
+    VulkanResourceAllocation* TryAllocate(uint32 size, uint32 alignment, const char* file, uint32 line);
+    
+    VulkanResourceAllocation* Allocate(uint32 size, uint32 alignment, const char* file, uint32 line)
+    {
+        VulkanResourceAllocation* resourceAllocation = TryAllocate(size, alignment, file, line);
+        return resourceAllocation;
+    }
+    
+    inline VulkanResourceHeap* GetOwner()
+    {
+        return m_Owner;
+    }
+    
+    inline uint32 GetID() const
+    {
+        return m_ID;
+    }
+    
+protected:
+    bool JoinFreeBlocks();
+    
+protected:
+    VulkanResourceHeap* m_Owner;
+    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
+    std::vector<VulkanResourceAllocation*> m_ResourceAllocations;
+    std::vector<VulkanRange> m_FreeList;
+    
+    uint32 m_MaxSize;
+    uint32 m_UsedSize;
+    int32 m_PeakNumAllocations;
+    uint32 m_FrameFreed;
+    uint32 m_ID;
+    
+    friend class VulkanResourceHeap;
+};
+
+class VulkanResourceSubAllocation : public RefCount
+{
+public:
+    VulkanResourceSubAllocation(uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset)
+    : m_RequestedSize(requestedSize)
+    , m_AlignedOffset(alignedOffset)
+    , m_AllocationSize(allocationSize)
+    , m_AllocationOffset(allocationOffset)
+    {
+        
+    }
+    
+    inline uint32 GetOffset() const
+    {
+        return m_AlignedOffset;
+    }
+    
+    inline uint32 GetSize() const
+    {
+        return m_RequestedSize;
+    }
+    
+protected:
+    uint32 m_RequestedSize;
+    uint32 m_AlignedOffset;
+    uint32 m_AllocationSize;
+    uint32 m_AllocationOffset;
+};
+
+class VulkanBufferSubAllocation : public VulkanResourceSubAllocation
+{
+public:
+    VulkanBufferSubAllocation(VulkanBufferAllocation* owner, VkBuffer handle,
+                         uint32 requestedSize, uint32 alignedOffset,
+                         uint32 allocationSize, uint32 allocationOffset)
+    : VulkanResourceSubAllocation(requestedSize, alignedOffset, allocationSize, allocationOffset)
+    , m_Owner(owner)
+    , m_Handle(handle)
+    {
+        
+    }
+    
+    virtual ~VulkanBufferSubAllocation();
+    
+    void* GetMappedPointer();
+    
+    inline VkBuffer GetHandle() const
+    {
+        return m_Handle;
+    }
+    
+    inline VulkanBufferAllocation* GetBufferAllocation()
+    {
+        return m_Owner;
+    }
+    
+protected:
+    friend class VulkanBufferAllocation;
+    
+    VulkanBufferAllocation* m_Owner;
+    VkBuffer m_Handle;
+};
+
+class VulkanSubResourceAllocator
+{
+public:
+    VulkanSubResourceAllocator(VulkanResourceHeapManager* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 memoryTypeIndex, VkMemoryPropertyFlags memoryPropertyFlags, uint32 alignment)
+    : m_Owner(owner)
+    , m_MemoryTypeIndex(memoryTypeIndex)
+    , m_MemoryPropertyFlags(memoryPropertyFlags)
+    , m_DeviceMemoryAllocation(deviceMemoryAllocation)
+    , m_Alignment(alignment)
+    , m_FrameFreed(0)
+    , m_UsedSize(0)
+    {
+        maxSize = deviceMemoryAllocation->GetSize();
+        VulkanRange fullRange;
+        fullRange.offset = 0;
+        fullRange.size   = maxSize;
+        m_FreeList.Add(fullRange);
+    }
+    
+    virtual ~VulkanSubResourceAllocator()
+    {
+        
+    }
+    
+    virtual VulkanResourceSubAllocation* CreateSubAllocation(uint32 size, uint32 alignedOffset, uint32 allocatedSize, uint32 allocatedOffset) = 0;
+    
+    virtual void Destroy(VulkanDevice* Device) = 0;
+    
+    VulkanResourceSubAllocation* TryAllocateNoLocking(uint32 size, uint32 alignment, const char* file, uint32 line);
+    
+    inline VulkanResourceSubAllocation* TryAllocateLocking(uint32 size, uint32 alignment, const char* file, uint32 line)
+    {
+        return TryAllocateNoLocking(size, alignment, file, line);
+    }
+    
+    inline uint32 GetAlignment() const
+    {
+        return m_Alignment;
+    }
+    
+    inline void* GetMappedPointer()
+    {
+        return m_DeviceMemoryAllocation->GetMappedPointer();
+    }
+    
+protected:
+    bool JoinFreeBlocks();
+    
+protected:
+    VulkanResourceHeapManager* m_Owner;
+    uint32 m_MemoryTypeIndex;
+    VkMemoryPropertyFlags m_MemoryPropertyFlags;
+    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
+    uint32 m_MaxSize;
+    uint32 m_Alignment;
+    uint32 m_FrameFreed;
+    int64 m_UsedSize;
+    std::vector<VulkanRange> m_FreeList;
+    std::vector<VulkanResourceSubAllocation*> m_SubAllocations;
 };

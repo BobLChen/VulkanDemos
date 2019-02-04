@@ -4,6 +4,41 @@
 #include "VulkanMemory.h"
 #include <algorithm>
 
+// VulkanRange
+void VulkanRange::JoinConsecutiveRanges(std::vector<VulkanRange>& ranges)
+{
+    if (ranges.size() == 0)
+    {
+        return;
+    }
+    
+    std::sort(ranges.begin(), ranges.end(), [](const VulkanRange& a, const VulkanRange& b) {
+        if (a.offset > b.offset)
+        {
+            return 1;
+        }
+        else if (a.offset == b.offset)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
+    });
+    
+    for (int32 index = ranges.size() - 1; index > 0; --index)
+    {
+        VulkanRange& current = ranges[index + 0];
+        VulkanRange& prev    = ranges[index - 1];
+        if (prev.offset + prev.size == current.offset)
+        {
+            prev.size += current.size;
+            ranges.erase(ranges.begin() + index);
+        }
+    }
+}
+
 // VulkanFence
 
 VulkanFence::VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool createSignaled)
@@ -51,7 +86,6 @@ void VulkanFenceManager::Destory()
 	{
 		MLOG("No all fences are done!");
 	}
-	// VkDevice deviceHandle = m_Device->GetInstanceHandle();
 	for (int i = 0; i < m_FreeFences.size(); ++i)
 	{
 		DestoryFence(m_FreeFences[i]);
@@ -342,11 +376,10 @@ VulkanDeviceMemoryAllocation* VulkanDeviceMemoryManager::Alloc(bool canFail, VkD
 
 void VulkanDeviceMemoryManager::Free(VulkanDeviceMemoryAllocation*& allocation)
 {
+    --m_NumAllocations;
     
     vkFreeMemory(m_DeviceHandle, allocation->m_Handle, VULKAN_CPU_ALLOCATOR);
-    --m_NumAllocations;
     uint32 heapIndex = m_MemoryProperties.memoryTypes[allocation->m_MemoryTypeIndex].heapIndex;
-    
     m_HeapInfos[heapIndex].usedSize -= allocation->m_Size;
     auto it = std::find(m_HeapInfos[heapIndex].allocations.begin(), m_HeapInfos[heapIndex].allocations.end(), allocation);
     if (it != m_HeapInfos[heapIndex].allocations.end())
@@ -371,7 +404,7 @@ void VulkanDeviceMemoryManager::DumpMemory()
         for (int32 subIndex = 0; subIndex < heapInfo.allocations.size(); ++subIndex)
         {
             VulkanDeviceMemoryAllocation* allocation = heapInfo.allocations[subIndex];
-            MLOG("\t\t%d Size %lu Handle %p", subIndex, allocation->m_Size, (void*)allocation->m_Handle);
+            MLOG("\t\t%d Size %llu Handle %p", subIndex, (uint64)allocation->m_Size, (void*)allocation->m_Handle);
             totalSize += allocation->m_Size;
         }
         MLOG("\t\tTotal Allocated %.2f MB, Peak %.2f MB", totalSize / 1024.0f / 1024.0f, heapInfo.peakSize / 1024.0f / 1024.0f);
@@ -400,10 +433,10 @@ void VulkanDeviceMemoryManager::SetupAndPrintMemInfo()
     for (uint32 index = 0; index < m_MemoryProperties.memoryHeapCount; ++index)
     {
         bool isGPUHeap = ((m_MemoryProperties.memoryHeaps[index].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) == VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
-        MLOG("%d: Flags 0x%x Size %lu (%.2f MB) %s",
+        MLOG("%d: Flags 0x%x Size %llu (%.2f MB) %s",
                index,
                m_MemoryProperties.memoryHeaps[index].flags,
-               m_MemoryProperties.memoryHeaps[index].size,
+               (uint64)(m_MemoryProperties.memoryHeaps[index].size),
                (float)((double)m_MemoryProperties.memoryHeaps[index].size / 1024.0 / 1024.0),
                isGPUHeap ? "GPU" : "");
         m_HeapInfos[index].totalSize = m_MemoryProperties.memoryHeaps[index].size;
