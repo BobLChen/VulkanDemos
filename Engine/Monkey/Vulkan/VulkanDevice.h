@@ -138,6 +138,16 @@ public:
 		return m_FenceManager;
 	}
     
+    inline VulkanDeviceMemoryManager& GetMemoryManager()
+    {
+        return m_MemoryManager;
+    }
+    
+    inline VulkanResourceHeapManager& GetResourceHeapManager()
+    {
+        return m_ResourceHeapManager;
+    }
+    
 private:
     
     void MapFormatSupport(PixelFormat format, VkFormat vkFormat);
@@ -177,6 +187,9 @@ private:
     
     VkComponentMapping m_PixelFormatComponentMapping[PF_MAX];
     OptionalVulkanDeviceExtensions m_OptionalDeviceExtensions;
+    
+    VulkanDeviceMemoryManager m_MemoryManager;
+    VulkanResourceHeapManager m_ResourceHeapManager;
     
     friend class VulkanRHI;
 };

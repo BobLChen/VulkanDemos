@@ -65,6 +65,7 @@ set(Monkey_Math_SRCS
 
 set(Monkey_Utils_SRCS
 	Monkey/Utils/StringUtils.h
+	Monkey/Utils/Alignment.h
 )
 set(Monkey_Utils_HDRS
 	

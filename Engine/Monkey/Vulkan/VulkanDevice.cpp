@@ -11,6 +11,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_ComputeQueue(nullptr)
     , m_TransferQueue(nullptr)
     , m_PresentQueue(nullptr)
+    , m_ResourceHeapManager(this)
 {
     
 }
@@ -504,6 +505,8 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
 	MLOG("Using Device %d: Geometry %d Tessellation %d", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
 	CreateDevice();
 	SetupFormats();
+    m_MemoryManager.Init(this);
+    m_ResourceHeapManager.Init();
 	m_FenceManager.Init(this);
 }
 
@@ -516,9 +519,11 @@ void VulkanDevice::Destroy()
 {
 	//vkDestroyImageView(GetInstanceHandle(), m_DefaultImageView, VULKAN_CPU_ALLOCATOR);
 	//m_DefaultImageView = VK_NULL_HANDLE;
-
+    
+    m_ResourceHeapManager.Destory();
 	m_FenceManager.Destory();
-
+    m_MemoryManager.Destory();
+    
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
 }

@@ -13,7 +13,9 @@ class VulkanDeviceMemoryManager;
 class VulkanResourceHeap;
 class VulkanResourceHeapPage;
 class VulkanResourceHeapManager;
-class VulkanBufferAllocation;
+class VulkanBufferSubAllocation;
+class VulkanSubBufferAllocator;
+class VulkanSubResourceAllocator;
 
 class RefCount
 {
@@ -431,7 +433,7 @@ class VulkanResourceHeapPage
 public:
     VulkanResourceHeapPage(VulkanResourceHeap* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 id);
     
-    ~VulkanResourceHeapPage();
+    virtual ~VulkanResourceHeapPage();
     
     void ReleaseAllocation(VulkanResourceAllocation* allocation);
     
@@ -474,14 +476,9 @@ protected:
 class VulkanResourceSubAllocation : public RefCount
 {
 public:
-    VulkanResourceSubAllocation(uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset)
-    : m_RequestedSize(requestedSize)
-    , m_AlignedOffset(alignedOffset)
-    , m_AllocationSize(allocationSize)
-    , m_AllocationOffset(allocationOffset)
-    {
-        
-    }
+    VulkanResourceSubAllocation(uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset);
+    
+    virtual ~VulkanResourceSubAllocation();
     
     inline uint32 GetOffset() const
     {
@@ -503,15 +500,7 @@ protected:
 class VulkanBufferSubAllocation : public VulkanResourceSubAllocation
 {
 public:
-    VulkanBufferSubAllocation(VulkanBufferAllocation* owner, VkBuffer handle,
-                         uint32 requestedSize, uint32 alignedOffset,
-                         uint32 allocationSize, uint32 allocationOffset)
-    : VulkanResourceSubAllocation(requestedSize, alignedOffset, allocationSize, allocationOffset)
-    , m_Owner(owner)
-    , m_Handle(handle)
-    {
-        
-    }
+    VulkanBufferSubAllocation(VulkanSubBufferAllocator* owner, VkBuffer handle, uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset);
     
     virtual ~VulkanBufferSubAllocation();
     
@@ -522,45 +511,28 @@ public:
         return m_Handle;
     }
     
-    inline VulkanBufferAllocation* GetBufferAllocation()
+    inline VulkanSubBufferAllocator* GetBufferAllocator()
     {
         return m_Owner;
     }
     
 protected:
-    friend class VulkanBufferAllocation;
+    friend class VulkanSubBufferAllocator;
     
-    VulkanBufferAllocation* m_Owner;
+    VulkanSubBufferAllocator* m_Owner;
     VkBuffer m_Handle;
 };
 
 class VulkanSubResourceAllocator
 {
 public:
-    VulkanSubResourceAllocator(VulkanResourceHeapManager* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 memoryTypeIndex, VkMemoryPropertyFlags memoryPropertyFlags, uint32 alignment)
-    : m_Owner(owner)
-    , m_MemoryTypeIndex(memoryTypeIndex)
-    , m_MemoryPropertyFlags(memoryPropertyFlags)
-    , m_DeviceMemoryAllocation(deviceMemoryAllocation)
-    , m_Alignment(alignment)
-    , m_FrameFreed(0)
-    , m_UsedSize(0)
-    {
-        maxSize = deviceMemoryAllocation->GetSize();
-        VulkanRange fullRange;
-        fullRange.offset = 0;
-        fullRange.size   = maxSize;
-        m_FreeList.Add(fullRange);
-    }
+    VulkanSubResourceAllocator(VulkanResourceHeapManager* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 memoryTypeIndex, VkMemoryPropertyFlags memoryPropertyFlags, uint32 alignment);
     
-    virtual ~VulkanSubResourceAllocator()
-    {
-        
-    }
+    virtual ~VulkanSubResourceAllocator();
     
-    virtual VulkanResourceSubAllocation* CreateSubAllocation(uint32 size, uint32 alignedOffset, uint32 allocatedSize, uint32 allocatedOffset) = 0;
+    virtual VulkanResourceSubAllocation* CreateSubAllocation(uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset) = 0;
     
-    virtual void Destroy(VulkanDevice* Device) = 0;
+    virtual void Destroy(VulkanDevice* device) = 0;
     
     VulkanResourceSubAllocation* TryAllocateNoLocking(uint32 size, uint32 alignment, const char* file, uint32 line);
     
@@ -593,4 +565,258 @@ protected:
     int64 m_UsedSize;
     std::vector<VulkanRange> m_FreeList;
     std::vector<VulkanResourceSubAllocation*> m_SubAllocations;
+};
+
+class VulkanSubBufferAllocator : public VulkanSubResourceAllocator
+{
+public:
+    VulkanSubBufferAllocator(VulkanResourceHeapManager* owner, VulkanDeviceMemoryAllocation* deviceMemoryAllocation, uint32 memoryTypeIndex, VkMemoryPropertyFlags memoryPropertyFlags, uint32 alignment, VkBuffer buffer, VkBufferUsageFlags bufferUsageFlags, int32 poolSizeIndex);
+    
+    virtual ~VulkanSubBufferAllocator();
+    
+    virtual void Destroy(VulkanDevice* device) override;
+    
+    virtual VulkanResourceSubAllocation* CreateSubAllocation(uint32 requestedSize, uint32 alignedOffset, uint32 allocationSize, uint32 allocationOffset) override;
+    
+    void Release(VulkanBufferSubAllocation* subAllocation);
+    
+    inline VkBuffer GetHandle() const
+    {
+        return m_Buffer;
+    }
+    
+protected:
+    friend class VulkanResourceHeapManager;
+    
+    VkBufferUsageFlags m_BufferUsageFlags;
+    VkBuffer m_Buffer;
+    int32 m_PoolSizeIndex;
+};
+
+class VulkanResourceHeap
+{
+public:
+    enum class Type
+    {
+        Image,
+        Buffer,
+    };
+    
+    VulkanResourceHeap(VulkanResourceHeapManager* owner, uint32 memoryTypeIndex, uint32 pageSize);
+    
+    virtual ~VulkanResourceHeap();
+    
+    void FreePage(VulkanResourceHeapPage* page);
+    
+    void ReleaseFreedPages(bool immediately);
+    
+    inline VulkanResourceHeapManager* GetOwner()
+    {
+        return m_Owner;
+    }
+    
+    inline bool IsHostCachedSupported() const
+    {
+        return m_IsHostCachedSupported;
+    }
+    
+    inline bool IsLazilyAllocatedSupported() const
+    {
+        return m_IsLazilyAllocatedSupported;
+    }
+    
+    inline uint32 GetMemoryTypeIndex() const
+    {
+        return m_MemoryTypeIndex;
+    }
+    
+#if MONKEY_DEBUG
+    void DumpMemory();
+#endif
+    
+protected:
+    VulkanResourceAllocation* AllocateResource(Type type, uint32 size, uint32 alignment, bool mapAllocation, const char* file, uint32 line);
+    
+    friend class VulkanResourceHeapManager;
+    
+protected:
+    VulkanResourceHeapManager* m_Owner;
+    uint32 m_MemoryTypeIndex;
+    bool m_IsHostCachedSupported;
+    bool m_IsLazilyAllocatedSupported;
+    uint32 m_DefaultPageSize;
+    uint32 m_PeakPageSize;
+    uint64 m_UsedMemory;
+    uint32 m_PageIDCounter;
+    std::vector<VulkanResourceHeapPage*> m_UsedBufferPages;
+    std::vector<VulkanResourceHeapPage*> m_UsedImagePages;
+    std::vector<VulkanResourceHeapPage*> m_FreePages;
+};
+
+class VulkanResourceHeapManager : public VulkanDeviceChild
+{
+public:
+    VulkanResourceHeapManager(VulkanDevice* device);
+    
+    virtual ~VulkanResourceHeapManager();
+    
+    void Init();
+    
+    void Destory();
+    
+    VulkanBufferSubAllocation* AllocateBuffer(uint32 size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line);
+    
+    void ReleaseBuffer(VulkanSubBufferAllocator* bufferAllocator);
+    
+    void ReleaseFreedPages();
+    
+#if MONKEY_DEBUG
+    void DumpMemory();
+#endif
+    
+    inline VulkanResourceAllocation* AllocateImageMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
+    {
+        uint32 typeIndex = 0;
+        VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromProperties(memoryReqs.memoryTypeBits, memoryPropertyFlags, &typeIndex));
+        
+        bool canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        
+        if (!m_ResourceTypeHeaps[typeIndex])
+        {
+            MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+        }
+        
+        VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        
+        if (!allocation)
+        {
+            VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex));
+            canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        }
+        
+        return allocation;
+    }
+    
+    inline VulkanResourceAllocation* AllocateBufferMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
+    {
+        uint32 typeIndex = 0;
+        VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromProperties(memoryReqs.memoryTypeBits, memoryPropertyFlags, &typeIndex));
+        
+        bool canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        
+        if (!m_ResourceTypeHeaps[typeIndex])
+        {
+            if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) == VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+            {
+                memoryPropertyFlags = memoryPropertyFlags & ~VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+            }
+            
+            if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) == VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+            {
+                memoryPropertyFlags = memoryPropertyFlags & ~VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+            }
+            
+            uint32 originalTypeIndex = typeIndex;
+            if (m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex) != VK_SUCCESS)
+            {
+                MLOG("Unable to find alternate type for index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", originalTypeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+            }
+            
+            if (!m_ResourceTypeHeaps[typeIndex])
+            {
+#if MONKEY_DEBUG
+                DumpMemory();
+#endif
+                MLOG("Missing memory type index %d (originally requested %d), MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, originalTypeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+            }
+        }
+        
+        VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        
+        if (!allocation)
+        {
+            VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex));
+            canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+            if (!m_ResourceTypeHeaps[typeIndex])
+            {
+                MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+            }
+            allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        }
+        return allocation;
+    }
+    
+protected:
+    void ReleaseFreedResources(bool immediately);
+    
+    void DestroyResourceAllocations();
+    
+protected:
+    
+    enum
+    {
+        BufferAllocationSize = 1 * 1024 * 1024,
+        UniformBufferAllocationSize = 2 * 1024 * 1024,
+    };
+    
+    enum class PoolSizes : uint8
+    {
+        E32,
+        E64,
+        E128,
+        E256,
+        E512,
+        E1k,
+        E2k,
+        E8k,
+        E16k,
+        SizesCount,
+    };
+    
+    constexpr static uint32 m_PoolSizes[(int32)PoolSizes::SizesCount] =
+    {
+        32,
+        64,
+        128,
+        256,
+        512,
+        1024,
+        2048,
+        8192,
+        16 * 1024,
+    };
+    
+    constexpr static uint32 m_BufferSizes[(int32)PoolSizes::SizesCount + 1] =
+    {
+        64 * 1024,
+        64 * 1024,
+        128 * 1024,
+        128 * 1024,
+        256 * 1024,
+        256 * 1024,
+        512 * 1024,
+        512 * 1024,
+        1024 * 1024,
+        2 * 1024 * 1024,
+    };
+    
+    PoolSizes GetPoolTypeForAlloc(uint32 size, uint32 alignment)
+    {
+        PoolSizes poolSize = PoolSizes::SizesCount;
+        for (int32 i = 0; i < (int32)PoolSizes::SizesCount; ++i)
+        {
+            if (m_PoolSizes[i] >= size)
+            {
+                poolSize = (PoolSizes)i;
+                break;
+            }
+        }
+        return poolSize;
+    }
+    
+    VulkanDeviceMemoryManager* m_DeviceMemoryManager;
+    std::vector<VulkanResourceHeap*> m_ResourceTypeHeaps;
+    std::vector<VulkanSubBufferAllocator*> m_UsedBufferAllocations[(int32)PoolSizes::SizesCount + 1];
+    std::vector<VulkanSubBufferAllocator*> m_FreeBufferAllocations[(int32)PoolSizes::SizesCount + 1];
 };
