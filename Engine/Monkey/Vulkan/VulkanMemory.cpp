@@ -326,7 +326,7 @@ VulkanDeviceMemoryAllocation* VulkanDeviceMemoryManager::Alloc(bool canFail, VkD
 {
     VkMemoryAllocateInfo info;
     ZeroVulkanStruct(info, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    info.allocationSize = allocationSize;
+    info.allocationSize  = allocationSize;
     info.memoryTypeIndex = memoryTypeIndex;
     info.pNext = dedicatedAllocateInfo;
     
@@ -374,7 +374,7 @@ VulkanDeviceMemoryAllocation* VulkanDeviceMemoryManager::Alloc(bool canFail, VkD
     
     if (m_NumAllocations == m_Device->GetLimits().maxMemoryAllocationCount)
     {
-        MLOG("Hit Maximum # of allocations (%d) reported by device!", m_NumAllocations);
+        MLOGE("Hit Maximum # of allocations (%d) reported by device!", m_NumAllocations);
     }
     
     uint32 heapIndex = m_MemoryProperties.memoryTypes[memoryTypeIndex].heapIndex;
@@ -685,6 +685,7 @@ VulkanResourceHeap::~VulkanResourceHeap()
     bool dump = false;
     dump = dump || DeletePages(m_UsedBufferPages, "Buffer");
     dump = dump || DeletePages(m_UsedImagePages, "Image");
+    dump = dump || DeletePages(m_FreePages, "Free");
     
     if (dump)
     {
@@ -692,13 +693,6 @@ VulkanResourceHeap::~VulkanResourceHeap()
         m_Owner->GetParent()->GetMemoryManager().DumpMemory();
         m_Owner->GetParent()->GetResourceHeapManager().DumpMemory();
 #endif
-    }
-    
-    for (int32 index = 0; index < m_FreePages.size(); ++index)
-    {
-        VulkanResourceHeapPage* page = m_FreePages[index];
-        m_Owner->GetParent()->GetMemoryManager().Free(page->m_DeviceMemoryAllocation);
-        delete page;
     }
 }
 
@@ -1093,6 +1087,76 @@ void VulkanResourceHeapManager::Destory()
         m_ResourceTypeHeaps[index] = nullptr;
     }
     m_ResourceTypeHeaps.clear();
+}
+
+VulkanResourceAllocation* VulkanResourceHeapManager::AllocateBufferMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
+{
+    uint32 typeIndex = 0;
+    VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromProperties(memoryReqs.memoryTypeBits, memoryPropertyFlags, &typeIndex));
+    
+    bool canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    
+    if (!m_ResourceTypeHeaps[typeIndex])
+    {
+        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) == VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+        {
+            memoryPropertyFlags = memoryPropertyFlags & ~VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        }
+        
+        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) == VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+        {
+            memoryPropertyFlags = memoryPropertyFlags & ~VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+        }
+        
+        uint32 originalTypeIndex = typeIndex;
+        if (m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex) != VK_SUCCESS)
+        {
+            MLOG("Unable to find alternate type for index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", originalTypeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+        }
+        
+#if MONKEY_DEBUG
+        DumpMemory();
+#endif
+        MLOG("Missing memory type index %d (originally requested %d), MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, originalTypeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+    }
+    
+    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    
+    if (!allocation)
+    {
+        VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex));
+        canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        if (!m_ResourceTypeHeaps[typeIndex])
+        {
+            MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+        }
+        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    }
+    return allocation;
+}
+
+VulkanResourceAllocation* VulkanResourceHeapManager::AllocateImageMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
+{
+    uint32 typeIndex = 0;
+    VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromProperties(memoryReqs.memoryTypeBits, memoryPropertyFlags, &typeIndex));
+    
+    bool canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+    
+    if (!m_ResourceTypeHeaps[typeIndex])
+    {
+        MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
+    }
+    
+    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    
+    if (!allocation)
+    {
+        VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex));
+        canMapped = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    }
+    
+    return allocation;
 }
 
 VulkanBufferSubAllocation* VulkanResourceHeapManager::AllocateBuffer(uint32 size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
