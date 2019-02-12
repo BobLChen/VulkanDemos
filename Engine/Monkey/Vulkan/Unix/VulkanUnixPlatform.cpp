@@ -24,7 +24,12 @@ void VulkanUnixPlatform::FreeVulkanLibrary()
 
 void VulkanUnixPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
-
+    uint32_t count;
+    const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    for (int i = 0; i < count; ++i)
+    {
+        outExtensions.push_back(extensions[i]);
+    }
 }
 
 void VulkanUnixPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensions)

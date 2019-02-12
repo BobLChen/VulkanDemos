@@ -25,16 +25,17 @@ void VulkanWindowsPlatform::FreeVulkanLibrary()
 
 void VulkanWindowsPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
-	outExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-	outExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+	uint32_t count;
+    const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    for (int i = 0; i < count; ++i)
+    {
+        outExtensions.push_back(extensions[i]);
+    }
 }
 
 void VulkanWindowsPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensions)
 {
-#if VULKAN_SUPPORTS_DEDICATED_ALLOCATION
-	outExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
-	outExtensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
-#endif
+	
 }
 
 void VulkanWindowsPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
