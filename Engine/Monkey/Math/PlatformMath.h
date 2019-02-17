@@ -8,5 +8,5 @@
 #elif PLATFORM_MAC
     #include "Math/Mac/MacPlatformMath.h"
 #elif PLATFORM_UNIX
-    #include "Math/Unix/UnixPlatformMath.h"
+    #include "Math/Linux/LinuxPlatformMath.h"
 #endif

@@ -11,7 +11,7 @@
 #include "Common/Common.h"
 #include "Vulkan/VulkanGenericPlatform.h"
 
-class VulkanUnixPlatform : public VulkanGenericPlatform
+class VulkanLinuxPlatform : public VulkanGenericPlatform
 {
 public:
     static bool LoadVulkanLibrary();
@@ -36,4 +36,4 @@ public:
     }
 };
 
-typedef VulkanUnixPlatform VulkanPlatform;
+typedef VulkanLinuxPlatform VulkanPlatform;

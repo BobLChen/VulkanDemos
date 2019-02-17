@@ -11,7 +11,7 @@
 #endif
 
 #if PLATFORM_UNIX
-	#include "Vulkan/Unix/VulkanPlatformDefines.h"
+	#include "Vulkan/Linux/VulkanPlatformDefines.h"
 #endif
 
 #include "Vulkan/VulkanGlobals.h"

@@ -168,29 +168,29 @@ elseif (APPLE)
 
 	)
 elseif (UNIX AND NOT APPLE)
-	set(Monkey_Math_Unix_HDRS
-		Monkey/Math/Unix/UnixPlatformMath.h
+	set(Monkey_Math_Linux_HDRS
+		Monkey/Math/Linux/LinuxPlatformMath.h
 	)
-	set(Monkey_Math_Unix_SRCS
+	set(Monkey_Math_Linux_SRCS
 
 	)
 
-	set(Monkey_Vulkan_Unix_HDRS
-		Monkey/Vulkan/Unix/VulkanPlatformDefines.h
-		Monkey/Vulkan/Unix/VulkanUnixPlatform.h
+	set(Monkey_Vulkan_Linux_HDRS
+		Monkey/Vulkan/Linux/VulkanPlatformDefines.h
+		Monkey/Vulkan/Linux/VulkanLinuxPlatform.h
 	)
-	set(Monkey_Vulkan_Unix_SRCS
-		Monkey/Vulkan/Unix/VulkanUnixPlatform.cpp
+	set(Monkey_Vulkan_Linux_SRCS
+		Monkey/Vulkan/Linux/VulkanLinuxPlatform.cpp
 	)
 
 	set(Monkey_HAL_HDRS
 		${Monkey_HAL_HDRS}
 		Monkey/HAL/ClangPlatformAtomics.h
 	)
-	set(Monkey_HAL_Unix_HDRS
-		Monkey/HAL/Unix/UnixPlatformAtomics.h
+	set(Monkey_HAL_Linux_HDRS
+		Monkey/HAL/Linux/LinuxPlatformAtomics.h
 	)
-	set(Monkey_HAL_Unix_SRCS
+	set(Monkey_HAL_Linux_SRCS
 
 	)
 endif ()
@@ -223,8 +223,8 @@ add_library(Monkey STATIC
 	${Monkey_Math_Windows_SRCS}
 	${Monkey_Math_Mac_HDRS}
 	${Monkey_Math_Mac_SRCS}
-	${Monkey_Math_Unix_HDRS}
-	${Monkey_Math_Unix_SRCS}
+	${Monkey_Math_Linux_HDRS}
+	${Monkey_Math_Linux_SRCS}
 
 	${Monkey_Utils_HDRS}
 	${Monkey_Utils_SRCS}
@@ -238,8 +238,8 @@ add_library(Monkey STATIC
 	${Monkey_Vulkan_Windows_HDRS}
 	${Monkey_Vulkan_Mac_SRCS}
 	${Monkey_Vulkan_Mac_HDRS}
-	${Monkey_Vulkan_Unix_HDRS}
-	${Monkey_Vulkan_Unix_SRCS}
+	${Monkey_Vulkan_Linux_HDRS}
+	${Monkey_Vulkan_Linux_SRCS}
 
 	${Monkey_HAL_HDRS}
 	${Monkey_HAL_SRCS}
@@ -247,8 +247,8 @@ add_library(Monkey STATIC
 	${Monkey_HAL_Windows_SRCS}
 	${Monkey_HAL_Mac_HDRS}
 	${Monkey_HAL_Mac_SRCS}
-	${Monkey_HAL_Unix_HDRS}
-	${Monkey_HAL_Unix_SRCS}
+	${Monkey_HAL_Linux_HDRS}
+	${Monkey_HAL_Linux_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -257,14 +257,14 @@ source_group(Monkey\\Core FILES ${Monkey_Core_HDRS} ${Monkey_Core_SRCS})
 source_group(Monkey\\Vulkan FILES ${Monkey_Vulkan_HDRS} ${Monkey_Vulkan_SRCS})
 source_group(Monkey\\Vulkan\\Windows FILES ${Monkey_Vulkan_Windows_SRCS} ${Monkey_Vulkan_Windows_HDRS})
 source_group(Monkey\\Vulkan\\Mac FILES ${Monkey_Vulkan_Mac_SRCS} ${Monkey_Vulkan_Mac_HDRS})
-source_group(Monkey\\Vulkan\\Unix FILES ${Monkey_Vulkan_Unix_SRCS} ${Monkey_Vulkan_Unix_HDRS})
+source_group(Monkey\\Vulkan\\Linux FILES ${Monkey_Vulkan_Linux_SRCS} ${Monkey_Vulkan_Linux_HDRS})
 
 source_group(Monkey\\Utils FILES ${Monkey_Utils_HDRS} ${Monkey_Utils_SRCS})
 
 source_group(Monkey\\Math FILES ${Monkey_Math_HDRS} ${Monkey_Math_SRCS})
 source_group(Monkey\\Math\\Windows FILES ${Monkey_Math_Windows_HDRS} ${Monkey_Math_Windows_SRCS})
 source_group(Monkey\\Math\\Mac FILES ${Monkey_Math_Mac_HDRS} ${Monkey_Math_Mac_SRCS})
-source_group(Monkey\\Math\\Unix FILES ${Monkey_Math_Unix_HDRS} ${Monkey_Math_Unix_SRCS})
+source_group(Monkey\\Math\\Linux FILES ${Monkey_Math_Linux_HDRS} ${Monkey_Math_Linux_SRCS})
 
 source_group(Monkey\\Common FILES ${Monkey_Common_HDRS} ${Monkey_Common_SRCS})
 source_group(Monkey\\Platform\\glfw FILES ${Monkey_Platform_GLFW_HDRS} ${Monkey_Platform_GLFW_SRCS})
@@ -277,4 +277,4 @@ source_group(Monkey\\Application\\Desktop FILES ${Monkey_Application_Desktop_HDR
 source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
 source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})
 source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS})
-source_group(Monkey\\HAL\\Unix FILES ${Monkey_HAL_Unix_SRCS} ${Monkey_HAL_Unix_HDRS})
+source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linux_HDRS})

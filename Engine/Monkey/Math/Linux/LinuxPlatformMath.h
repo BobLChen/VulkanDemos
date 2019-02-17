@@ -4,7 +4,7 @@
 #include "Configuration/Platform.h"
 #include <xmmintrin.h>
 
-struct UnixPlatformMath : public GenericPlatformMath
+struct LinuxPlatformMath : public GenericPlatformMath
 {
     static FORCEINLINE uint32 CountLeadingZeros(uint32 value)
     {
@@ -98,4 +98,4 @@ struct UnixPlatformMath : public GenericPlatformMath
     }
 };
 
-typedef UnixPlatformMath PlatformMath;
+typedef LinuxPlatformMath PlatformMath;

@@ -8,6 +8,6 @@
 #elif PLATFORM_MAC
 	#include "HAL/Mac/MacPlatformAtomics.h"
 #elif PLATFORM_UNIX
-	#include "HAL/Unix/UnixPlatformAtomics.h"
+	#include "HAL/Linux/LinuxPlatformAtomics.h"
 #endif
 
