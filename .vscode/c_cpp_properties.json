@@ -3,7 +3,12 @@
         {
             "name": "Linux-VulkanTutorials",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Engine/Monkey/**",
+                "${workspaceFolder}/external/glfw/include/**",
+                "${workspaceFolder}/external/glm/include/**",
+                "${workspaceFolder}/external/imgui/**",
+                "${workspaceFolder}/external/vulkan/linux/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

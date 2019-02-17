@@ -27,9 +27,9 @@ elseif (APPLE)
 	)
 elseif (UNIX AND NOT APPLE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPLATFORM_UNIX=1")
-	find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${CMAKE_SOURCE_DIR}/external/vulkan/unix/lib" REQUIRED)
+	find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${CMAKE_SOURCE_DIR}/external/vulkan/linux/lib" REQUIRED)
 	include_directories(
-		external/vulkan/unix/include/
+		external/vulkan/linux/include/
 	)
 endif ()
 

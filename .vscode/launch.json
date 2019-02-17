@@ -32,6 +32,35 @@
                 }
             ],
             "preLaunchTask": "BuildAll"
+        },
+        {
+            "name": "Debug NativeWindow",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/NativeWindow",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/bin"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "BuildAll"
         }
     ]
 }
