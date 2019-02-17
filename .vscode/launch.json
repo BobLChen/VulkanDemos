@@ -15,11 +15,11 @@
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/unix/bin"
+                    "value": "${workspaceFolder}/external/vulkan/linux/bin"
                 },
                 {
                     "name": "VK_LAYER_PATH",
-                    "value": "external/vulkan/unix/etc/explicit_layer.d"
+                    "value": "external/vulkan/linux/etc/explicit_layer.d"
                 }
             ],
             "externalConsole": true,
