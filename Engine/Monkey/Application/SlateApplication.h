@@ -2,7 +2,7 @@
 
 #include "Configuration/Platform.h"
 #include "Common/Common.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "Application/GenericApplication.h"
 #include "Application/GenericWindow.h"
 #include "Application/GenericApplicationMessageHandler.h"
@@ -23,7 +23,7 @@ public:
 
 	static void InitHighDPI(const bool force);
 	
-	void SetCursorPos(const Vector2D& mouseCoordinate);
+	void SetCursorPos(const Vector2& mouseCoordinate);
 
 	void Tick(float detalTime);
 
@@ -65,19 +65,19 @@ public:
 
 	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button) override;
 
-	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2D cursorPos) override;
+	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos) override;
 
 	virtual bool OnMouseUp(const MouseButtons::Type button) override;
 
-	virtual bool OnMouseUp(const MouseButtons::Type button, const Vector2D cursorPos) override;
+	virtual bool OnMouseUp(const MouseButtons::Type button, const Vector2 cursorPos) override;
 
 	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button) override;
 
-	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2D cursorPos) override;
+	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos) override;
 
 	virtual bool OnMouseWheel(const float delta) override;
 
-	virtual bool OnMouseWheel(const float delta, const Vector2D cursorPos) override;
+	virtual bool OnMouseWheel(const float delta, const Vector2 cursorPos) override;
 
 	virtual bool OnMouseMove() override;
 
@@ -85,15 +85,15 @@ public:
 
 	virtual bool OnCursorSet() override;
 
-	virtual bool OnTouchStarted(const std::shared_ptr<GenericWindow>& platformWindow, const Vector2D& location, float force, int32 touchIndex, int32 controllerId) override;
+	virtual bool OnTouchStarted(const std::shared_ptr<GenericWindow>& platformWindow, const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
 
-	virtual bool OnTouchMoved(const Vector2D& location, float force, int32 touchIndex, int32 controllerId) override;
+	virtual bool OnTouchMoved(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
 
-	virtual bool OnTouchEnded(const Vector2D& location, int32 touchIndex, int32 controllerId) override;
+	virtual bool OnTouchEnded(const Vector2& location, int32 touchIndex, int32 controllerId) override;
 
-	virtual bool OnTouchForceChanged(const Vector2D& location, float force, int32 touchIndex, int32 controllerId) override;
+	virtual bool OnTouchForceChanged(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
 
-	virtual bool OnTouchFirstMove(const Vector2D& location, float force, int32 touchIndex, int32 controllerId) override;
+	virtual bool OnTouchFirstMove(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
 
 	virtual bool OnSizeChanged(const std::shared_ptr<GenericWindow>& platformWindow, const int32 width, const int32 height, bool wasMinimized = false) override;
 

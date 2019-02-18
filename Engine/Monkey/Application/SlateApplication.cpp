@@ -61,7 +61,7 @@ void SlateApplication::InitHighDPI(const bool force)
 
 }
 
-void SlateApplication::SetCursorPos(const Vector2D& mouseCoordinate)
+void SlateApplication::SetCursorPos(const Vector2& mouseCoordinate)
 {
 	
 }
@@ -130,7 +130,7 @@ bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow>& platfor
 	return true;
 }
 
-bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2D cursorPos)
+bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -140,7 +140,7 @@ bool SlateApplication::OnMouseUp(const MouseButtons::Type button)
 	return true;
 }
 
-bool SlateApplication::OnMouseUp(const MouseButtons::Type button, const Vector2D cursorPos)
+bool SlateApplication::OnMouseUp(const MouseButtons::Type button, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -150,7 +150,7 @@ bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& 
 	return true;
 }
 
-bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2D cursorPos)
+bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -160,7 +160,7 @@ bool SlateApplication::OnMouseWheel(const float delta)
 	return true;
 }
 
-bool SlateApplication::OnMouseWheel(const float delta, const Vector2D cursorPos)
+bool SlateApplication::OnMouseWheel(const float delta, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -180,27 +180,27 @@ bool SlateApplication::OnCursorSet()
 	return true;
 }
 
-bool SlateApplication::OnTouchStarted(const std::shared_ptr<GenericWindow>& platformWindow, const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchStarted(const std::shared_ptr<GenericWindow>& platformWindow, const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }
 
-bool SlateApplication::OnTouchMoved(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchMoved(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }
 
-bool SlateApplication::OnTouchEnded(const Vector2D& location, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchEnded(const Vector2& location, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }
 
-bool SlateApplication::OnTouchForceChanged(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchForceChanged(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }
 
-bool SlateApplication::OnTouchFirstMove(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchFirstMove(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }

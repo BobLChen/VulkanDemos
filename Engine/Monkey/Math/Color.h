@@ -37,11 +37,6 @@ public:
 
 public:
 
-	FORCEINLINE LinearColor()
-	{
-
-	}
-
 	FORCEINLINE explicit LinearColor()
 		: r(0), g(0), b(0), a(0)
 	{
@@ -260,17 +255,11 @@ public:
 
 	explicit LinearColor(const Color& Color);
 
-	explicit LinearColor(const Vector& Vector);
-
-	explicit LinearColor(const Vector4& Vector);
-
 	Color ToRGBE() const;
 
 	static LinearColor FromSRGBColor(const Color& Color);
 
 	static LinearColor FromPow22Color(const Color& Color);
-
-	static float EvaluateBezier(const LinearColor* controlPoints, int32 numPoints, std::vector<LinearColor>& outPoints);
 
 	LinearColor LinearRGBToHSV() const;
 
@@ -407,8 +396,6 @@ public:
 	}
 
 	LinearColor FromRGBE() const;
-
-	static Color FromHex(const std::string& hexString);
 
 	static Color MakeRandomColor();
 

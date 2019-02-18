@@ -1,4 +1,5 @@
 #include "Color.h"
+#include "Vector4.h"
 
 const LinearColor LinearColor::White(1.f, 1.f, 1.f);
 const LinearColor LinearColor::Gray(0.5f, 0.5f, 0.5f);
@@ -8,6 +9,21 @@ const LinearColor LinearColor::Red(1.f, 0, 0);
 const LinearColor LinearColor::Green(0, 1.f, 0);
 const LinearColor LinearColor::Blue(0, 0, 1.f);
 const LinearColor LinearColor::Yellow(1.f, 1.f, 0);
+
+const Color Color::White(255, 255, 255);
+const Color Color::Black(0, 0, 0);
+const Color Color::Transparent(0, 0, 0, 0);
+const Color Color::Red(255, 0, 0);
+const Color Color::Green(0, 255, 0);
+const Color Color::Blue(0, 0, 255);
+const Color Color::Yellow(255, 255, 0);
+const Color Color::Cyan(0, 255, 255);
+const Color Color::Magenta(255, 0, 255);
+const Color Color::Orange(243, 156, 18);
+const Color Color::Purple(169, 7, 228);
+const Color Color::Turquoise(26, 188, 156);
+const Color Color::Silver(189, 195, 199);
+const Color Color::Emerald(46, 204, 113);
 
 float LinearColor::pow22OneOver255Table[256] =
 {
@@ -97,3 +113,268 @@ float LinearColor::sRGBToLinearTable[256] =
 	0.921581853023715, 0.930110855104312, 0.938685725169219, 0.947306533426946, 0.955973349925421,
 	0.964686244552961, 0.973445287039244, 0.982250546956257, 0.991102093719252, 1.0,
 };
+
+static const float OneOver255 = 1.0f / 255.0f;
+
+LinearColor::LinearColor(const Color& Color)
+{
+	r = sRGBToLinearTable[Color.r];
+	g = sRGBToLinearTable[Color.g];
+	b = sRGBToLinearTable[Color.b];
+	a = float(Color.a) * OneOver255;
+}
+
+LinearColor LinearColor::FromSRGBColor(const Color& color)
+{
+	LinearColor result;
+	result.r = sRGBToLinearTable[color.r];
+	result.g = sRGBToLinearTable[color.g];
+	result.b = sRGBToLinearTable[color.b];
+	result.a = float(color.a) * OneOver255;
+	return result;
+}
+
+LinearColor LinearColor::FromPow22Color(const Color& color)
+{
+	LinearColor result;
+	result.r = pow22OneOver255Table[color.r];
+	result.g = pow22OneOver255Table[color.g];
+	result.b = pow22OneOver255Table[color.b];
+	result.a = float(color.a) * OneOver255;
+	return result;
+}
+
+Color LinearColor::ToRGBE() const
+{
+	const float	Primary = MMath::Max3(r, g, b);
+	Color result;
+
+	if (Primary < 1E-32)
+	{
+		result = Color(0, 0, 0, 0);
+	}
+	else
+	{
+		int32 exponent;
+		const float scale = frexp(Primary, &exponent) / Primary * 255.f;
+		result.r = MMath::Clamp(MMath::TruncToInt(r * scale), 0, 255);
+		result.g = MMath::Clamp(MMath::TruncToInt(g * scale), 0, 255);
+		result.b = MMath::Clamp(MMath::TruncToInt(b * scale), 0, 255);
+		result.a = MMath::Clamp(MMath::TruncToInt(exponent), -128, 127) + 128;
+	}
+
+	return result;
+}
+
+Color LinearColor::ToFColor(const bool bSRGB) const
+{
+	float floatR = MMath::Clamp(r, 0.0f, 1.0f);
+	float floatG = MMath::Clamp(g, 0.0f, 1.0f);
+	float floatB = MMath::Clamp(b, 0.0f, 1.0f);
+	float floatA = MMath::Clamp(a, 0.0f, 1.0f);
+
+	if (bSRGB)
+	{
+		floatR = floatR <= 0.0031308f ? floatR * 12.92f : MMath::Pow(floatR, 1.0f / 2.4f) * 1.055f - 0.055f;
+		floatG = floatG <= 0.0031308f ? floatG * 12.92f : MMath::Pow(floatG, 1.0f / 2.4f) * 1.055f - 0.055f;
+		floatB = floatB <= 0.0031308f ? floatB * 12.92f : MMath::Pow(floatB, 1.0f / 2.4f) * 1.055f - 0.055f;
+	}
+
+	Color ret;
+
+	ret.a = MMath::FloorToInt(floatA * 255.999f);
+	ret.r = MMath::FloorToInt(floatR * 255.999f);
+	ret.g = MMath::FloorToInt(floatG * 255.999f);
+	ret.b = MMath::FloorToInt(floatB * 255.999f);
+
+	return ret;
+}
+
+Color LinearColor::Quantize() const
+{
+	return Color(
+		(uint8)MMath::Clamp<int32>(MMath::TruncToInt(r*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::TruncToInt(g*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::TruncToInt(b*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::TruncToInt(a*255.f), 0, 255)
+	);
+}
+
+Color LinearColor::QuantizeRound() const
+{
+	return Color(
+		(uint8)MMath::Clamp<int32>(MMath::RoundToInt(r*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::RoundToInt(g*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::RoundToInt(b*255.f), 0, 255),
+		(uint8)MMath::Clamp<int32>(MMath::RoundToInt(a*255.f), 0, 255)
+	);
+}
+
+LinearColor LinearColor::Desaturate(float desaturation) const
+{
+	float lum = ComputeLuminance();
+	return MMath::Lerp(*this, LinearColor(lum, lum, lum, 0), desaturation);
+}
+
+LinearColor Color::FromRGBE() const
+{
+	if (a == 0)
+		return LinearColor::Black;
+	else
+	{
+		const float scale = ldexp(1 / 255.0, a - 128);
+		return LinearColor(r * scale, g * scale, b * scale, 1.0f);
+	}
+}
+
+LinearColor LinearColor::GetHSV(uint8 h, uint8 s, uint8 v)
+{
+	float brightness = v * 1.4f / 255.f;
+	brightness *= 0.7f / (0.01f + MMath::Sqrt(brightness));
+	brightness = MMath::Clamp(brightness, 0.f, 1.f);
+	const Vector hue = (h < 86) ? Vector((85 - h) / 85.f, (h - 0) / 85.f, 0) : (h < 171) ? Vector(0, (170 - h) / 85.f, (h - 85) / 85.f) : Vector((h - 170) / 85.f, 0, (255 - h) / 84.f);
+	const Vector colorVector = (hue + s / 255.f * (Vector(1, 1, 1) - hue)) * brightness;
+	return LinearColor(colorVector.x, colorVector.y, colorVector.z, 1);
+}
+
+LinearColor LinearColor::LinearRGBToHSV() const
+{
+	const float rgbMin = MMath::Min3(r, g, b);
+	const float rgbMax = MMath::Max3(r, g, b);
+	const float rgbRange = rgbMax - rgbMin;
+
+	const float hue = (rgbMax == rgbMin ? 0.0f :
+		rgbMax == r ? MMath::Fmod((((g - b) / rgbRange) * 60.0f) + 360.0f, 360.0f) :
+		rgbMax == g ? (((b - r) / rgbRange) * 60.0f) + 120.0f :
+		rgbMax == b ? (((r - g) / rgbRange) * 60.0f) + 240.0f :
+		0.0f);
+
+	const float saturation = (rgbMax == 0.0f ? 0.0f : rgbRange / rgbMax);
+	return LinearColor(hue, saturation, rgbMax, a);
+}
+
+LinearColor LinearColor::HSVToLinearRGB() const
+{
+	const float hue = r;
+	const float saturation = g;
+	const float value = b;
+	const float hDiv60 = hue / 60.0f;
+	const float hDiv60Floor = floorf(hDiv60);
+	const float hDiv60Fraction = hDiv60 - hDiv60Floor;
+
+	const float rgbValues[4] = {
+		value,
+		value * (1.0f - saturation),
+		value * (1.0f - (hDiv60Fraction * saturation)),
+		value * (1.0f - ((1.0f - hDiv60Fraction) * saturation)),
+	};
+	const uint32 rgbSwizzle[6][3] = {
+		{0, 3, 1},
+		{2, 0, 1},
+		{1, 0, 3},
+		{1, 2, 0},
+		{3, 1, 0},
+		{0, 1, 2},
+	};
+	const uint32 swizzleIndex = ((uint32)hDiv60Floor) % 6;
+
+	return LinearColor(
+		rgbValues[rgbSwizzle[swizzleIndex][0]],
+		rgbValues[rgbSwizzle[swizzleIndex][1]],
+		rgbValues[rgbSwizzle[swizzleIndex][2]],
+		a
+	);
+}
+
+LinearColor LinearColor::LerpUsingHSV(const LinearColor& from, const LinearColor& to, const float progress)
+{
+	const LinearColor fromHSV = from.LinearRGBToHSV();
+	const LinearColor toHSV = to.LinearRGBToHSV();
+
+	float fromHue = fromHSV.r;
+	float toHue = toHSV.r;
+
+	if (MMath::Abs(fromHue - toHue) > 180.0f)
+	{
+		if (toHue > fromHue)
+		{
+			fromHue += 360.0f;
+		}
+		else
+		{
+			toHue += 360.0f;
+		}
+	}
+
+	float newHue = MMath::Lerp(fromHue, toHue, progress);
+
+	newHue = MMath::Fmod(newHue, 360.0f);
+	if (newHue < 0.0f)
+	{
+		newHue += 360.0f;
+	}
+
+	const float newSaturation = MMath::Lerp(fromHSV.g, toHSV.g, progress);
+	const float newValue = MMath::Lerp(fromHSV.b, toHSV.b, progress);
+	LinearColor interpolated = LinearColor(newHue, newSaturation, newValue).HSVToLinearRGB();
+
+	const float newAlpha = MMath::Lerp(from.a, to.a, progress);
+	interpolated.a = newAlpha;
+
+	return interpolated;
+}
+
+LinearColor LinearColor::MakeRandomColor()
+{
+	const uint8 hue = (uint8)(MMath::FRand()*255.f);
+	return LinearColor::GetHSV(hue, 0, 255);
+}
+
+Color Color::MakeRandomColor()
+{
+	return LinearColor::MakeRandomColor().ToFColor(true);
+}
+
+LinearColor LinearColor::MakeFromColorTemperature(float Temp)
+{
+	Temp = MMath::Clamp(Temp, 1000.0f, 15000.0f);
+
+	float u = (0.860117757f + 1.54118254e-4f * Temp + 1.28641212e-7f * Temp*Temp) / (1.0f + 8.42420235e-4f * Temp + 7.08145163e-7f * Temp*Temp);
+	float v = (0.317398726f + 4.22806245e-5f * Temp + 4.20481691e-8f * Temp*Temp) / (1.0f - 2.89741816e-5f * Temp + 1.61456053e-7f * Temp*Temp);
+
+	float x = 3.0f * u / (2.0f * u - 8.0f * v + 4.0f);
+	float y = 2.0f * v / (2.0f * u - 8.0f * v + 4.0f);
+	float z = 1.0f - x - y;
+
+	float Y = 1.0f;
+	float X = Y / y * x;
+	float Z = Y / y * z;
+
+	float R = 3.2404542f * X + -1.5371385f * Y + -0.4985314f * Z;
+	float G = -0.9692660f * X + 1.8760108f * Y + 0.0415560f * Z;
+	float B = 0.0556434f * X + -0.2040259f * Y + 1.0572252f * Z;
+
+	return LinearColor(R, G, B);
+}
+
+Color Color::MakeFromColorTemperature(float temp)
+{
+	return LinearColor::MakeFromColorTemperature(temp).ToFColor(true);
+}
+
+Color Color::MakeRedToGreenColorFromScalar(float Scalar)
+{
+	float redSclr = MMath::Clamp<float>((1.0f - Scalar) / 0.5f, 0.f, 1.f);
+	float greenSclr = MMath::Clamp<float>((Scalar / 0.5f), 0.f, 1.f);
+	int32 r = MMath::TruncToInt(255 * redSclr);
+	int32 g = MMath::TruncToInt(255 * greenSclr);
+	int32 b = 0;
+	return Color(r, g, b);
+}
+
+void ComputeAndFixedColorAndIntensity(const LinearColor& InLinearColor, Color& outColor, float& outIntensity)
+{
+	float maxComponent = MMath::Max(DELTA, MMath::Max(InLinearColor.r, MMath::Max(InLinearColor.g, InLinearColor.b)));
+	outColor = (InLinearColor / maxComponent).ToFColor(true);
+	outIntensity = maxComponent;
+}

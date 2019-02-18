@@ -8,7 +8,7 @@
 #include "Utils/StringUtils.h"
 #include "Utils/SecureHash.h"
 #include "Utils/Alignment.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 #include "Math/Color.h"
 #include <vector>
 #include <string>
@@ -45,6 +45,21 @@ enum class ClearBinding
 
 struct ClearValueBinding
 {
+public:
+	static const ClearValueBinding None;
+	static const ClearValueBinding Black;
+	static const ClearValueBinding White;
+	static const ClearValueBinding Transparent;
+	static const ClearValueBinding DepthOne;
+	static const ClearValueBinding DepthZero;
+	static const ClearValueBinding DepthNear;
+	static const ClearValueBinding DepthFar;
+	static const ClearValueBinding Green;
+	static const ClearValueBinding DefaultNormal8Bit;
+
+	ClearBinding colorBinding;
+
+public:
 	struct DSVAlue
 	{
 		float depth;
@@ -75,10 +90,10 @@ struct ClearValueBinding
 	explicit ClearValueBinding(const LinearColor& inClearColor)
 		: colorBinding(ClearBinding::EColorBound)
 	{
-		value.color[0] = inClearColor.R;
-		value.color[1] = inClearColor.G;
-		value.color[2] = inClearColor.B;
-		value.color[3] = inClearColor.A;
+		value.color[0] = inClearColor.r;
+		value.color[1] = inClearColor.g;
+		value.color[2] = inClearColor.b;
+		value.color[3] = inClearColor.a;
 	}
 
 	explicit ClearValueBinding(float depthClearValue, uint32 stencilClearValue = 0)
@@ -95,47 +110,34 @@ struct ClearValueBinding
 
 	void GetDepthStencil(float& OutDepth, uint32& OutStencil) const
 	{
-		ensure(ColorBinding == EClearBinding::EDepthStencilBound);
-		OutDepth = Value.DSValue.Depth;
-		OutStencil = Value.DSValue.Stencil;
+		OutDepth = value.dsValue.depth;
+		OutStencil = value.dsValue.stencil;
 	}
 
-	bool operator==(const FClearValueBinding& Other) const
+	bool operator==(const ClearValueBinding& other) const
 	{
-		if (ColorBinding == Other.ColorBinding)
+		if (colorBinding == other.colorBinding)
 		{
-			if (ColorBinding == EClearBinding::EColorBound)
+			if (colorBinding == ClearBinding::EColorBound)
 			{
 				return
-					Value.Color[0] == Other.Value.Color[0] &&
-					Value.Color[1] == Other.Value.Color[1] &&
-					Value.Color[2] == Other.Value.Color[2] &&
-					Value.Color[3] == Other.Value.Color[3];
+					value.color[0] == other.value.color[0] &&
+					value.color[1] == other.value.color[1] &&
+					value.color[2] == other.value.color[2] &&
+					value.color[3] == other.value.color[3];
 
 			}
-			if (ColorBinding == EClearBinding::EDepthStencilBound)
+			if (colorBinding == ClearBinding::EDepthStencilBound)
 			{
 				return
-					Value.DSValue.Depth == Other.Value.DSValue.Depth &&
-					Value.DSValue.Stencil == Other.Value.DSValue.Stencil;
+					value.dsValue.depth == other.value.dsValue.depth &&
+					value.dsValue.stencil == other.value.dsValue.stencil;
 			}
 			return true;
 		}
 		return false;
 	}
 
-	ClearBinding colorBinding;
-
-	static const ClearValueBinding None;
-	static const ClearValueBinding Black;
-	static const ClearValueBinding White;
-	static const ClearValueBinding Transparent;
-	static const ClearValueBinding DepthOne;
-	static const ClearValueBinding DepthZero;
-	static const ClearValueBinding DepthNear;
-	static const ClearValueBinding DepthFar;
-	static const ClearValueBinding Green;
-	static const ClearValueBinding DefaultNormal8Bit;
 };
 
 class RHIResource
@@ -860,7 +862,7 @@ public:
 
 	bool HasClearValue() const
 	{
-		return m_ClearValue.ColorBinding != ClearBinding::ENoneBound;
+		return m_ClearValue.colorBinding != ClearBinding::ENoneBound;
 	}
 
 	LinearColor GetClearColor() const
@@ -908,3 +910,5 @@ private:
 	LastRenderTimeContainer m_DefaultLastRenderTime;
 	std::string m_TextureName;
 };
+
+

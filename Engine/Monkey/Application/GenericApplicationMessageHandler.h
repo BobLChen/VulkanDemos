@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/Common.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
 
 #include <memory>
 
@@ -95,7 +95,7 @@ public:
 		return false;
 	}
 
-	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow>& window, const MouseButtons::Type button, const Vector2D cursorPos)
+	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow>& window, const MouseButtons::Type button, const Vector2 cursorPos)
 	{
 		return false;
 	}
@@ -105,7 +105,7 @@ public:
 		return false;
 	}
 
-	virtual bool OnMouseUp(const MouseButtons::Type button, const Vector2D cursorPos)
+	virtual bool OnMouseUp(const MouseButtons::Type button, const Vector2 cursorPos)
 	{
 		return false;
 	}
@@ -115,7 +115,7 @@ public:
 		return false;
 	}
 
-	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& window, const MouseButtons::Type button, const Vector2D cursorPos)
+	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& window, const MouseButtons::Type button, const Vector2 cursorPos)
 	{
 		return false;
 	}
@@ -125,7 +125,7 @@ public:
 		return false;
 	}
 
-	virtual bool OnMouseWheel(const float delta, const Vector2D cursorPos)
+	virtual bool OnMouseWheel(const float delta, const Vector2 cursorPos)
 	{
 		return false;
 	}
@@ -145,27 +145,27 @@ public:
 		return false;
 	}
 	
-	virtual bool OnTouchStarted(const std::shared_ptr<GenericWindow>& window, const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+	virtual bool OnTouchStarted(const std::shared_ptr<GenericWindow>& window, const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 	{
 		return false;
 	}
 
-	virtual bool OnTouchMoved(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+	virtual bool OnTouchMoved(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 	{
 		return false;
 	}
 
-	virtual bool OnTouchEnded(const Vector2D& location, int32 touchIndex, int32 controllerId)
+	virtual bool OnTouchEnded(const Vector2& location, int32 touchIndex, int32 controllerId)
 	{
 		return false;
 	}
 
-	virtual bool OnTouchForceChanged(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+	virtual bool OnTouchForceChanged(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 	{
 		return false;
 	}
 
-	virtual bool OnTouchFirstMove(const Vector2D& location, float force, int32 touchIndex, int32 controllerId)
+	virtual bool OnTouchFirstMove(const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 	{
 		return false;
 	}

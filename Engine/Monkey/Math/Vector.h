@@ -26,8 +26,6 @@ public:
 
 public:
 	
-	FORCEINLINE Vector();
-
 	explicit FORCEINLINE Vector(float inF);
 
 	FORCEINLINE Vector(float inX, float inY, float inZ);
@@ -35,8 +33,6 @@ public:
 	explicit FORCEINLINE Vector(const Vector2 v, float inZ);
 
 	FORCEINLINE Vector(const Vector4& v);
-
-	explicit Vector(const LinearColor& inColor);
 
 	explicit Vector(IntVector inVector);
 
@@ -491,14 +487,6 @@ FORCEINLINE Vector::Vector(float inF)
 
 FORCEINLINE Vector::Vector(float inX, float inY, float inZ)
 	: x(inX), y(inY), z(inZ)
-{
-	DiagnosticCheckNaN();
-}
-
-FORCEINLINE Vector::Vector(const LinearColor& inColor)
-	: x(inColor.r)
-	, y(inColor.g)
-	, z(inColor.b)
 {
 	DiagnosticCheckNaN();
 }
