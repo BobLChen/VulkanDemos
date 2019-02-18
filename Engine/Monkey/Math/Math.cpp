@@ -3,13 +3,23 @@
 #include "Utils/StringUtils.h"
 
 #include "Math/IntPoint.h"
-#include "Math/Vector2D.h"
+#include "Math/Vector2.h"
+#include "Math/Vector.h"
+#include "Math/IntVector.h"
 
 const IntPoint IntPoint::ZeroValue(0,  0);
 const IntPoint IntPoint::NoneValue(-1, -1);
+const IntVector IntVector::ZeroValue(0, 0, 0);
+const IntVector IntVector::NoneValue(-1, -1, -1);
 
-const Vector2D Vector2D::ZeroVector(0.0f, 0.0f);
-const Vector2D Vector2D::UnitVector(1.0f, 1.0f);
+const Vector2 Vector2::ZeroVector(0.0f, 0.0f);
+const Vector2 Vector2::UnitVector(1.0f, 1.0f);
+
+const Vector Vector::ZeroVector(0.0f, 0.0f, 0.0f);
+const Vector Vector::OneVector(1.0f, 1.0f, 1.0f);
+const Vector Vector::UpVector(0.0f, 1.0f, 0.0f);
+const Vector Vector::ForwardVector(0.0f, 0.0f, 1.0f);
+const Vector Vector::RightVector(1.0f, 0.0f, 0.0f);
 
 const uint32 MMath::BitFlag[32] =
 {

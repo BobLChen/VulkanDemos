@@ -136,3 +136,6 @@ inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 	}
 	return result;
 }
+
+
+

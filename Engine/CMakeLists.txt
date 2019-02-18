@@ -53,22 +53,29 @@ set(Monkey_Application_SRCS
 
 set(Monkey_Math_HDRS
 	Monkey/Math/Math.h
-	Monkey/Math/Vector2D.h
+	Monkey/Math/Vector2.h
 	Monkey/Math/IntPoint.h
 	Monkey/Math/GenericPlatformMath.h
 	Monkey/Math/PlatformMath.h
+	Monkey/Math/Color.h
+	Monkey/Math/Vector.h
+	Monkey/Math/IntVector.h
+	Monkey/Math/Vector4.h
+	Monkey/Math/Axis.h
 )
 set(Monkey_Math_SRCS
 	Monkey/Math/Math.cpp
 	Monkey/Math/GenericPlatformMath.cpp
+	Monkey/Math/Color.cpp
 )
 
 set(Monkey_Utils_SRCS
 	Monkey/Utils/StringUtils.h
 	Monkey/Utils/Alignment.h
+	Monkey/Utils/SecureHash.h
 )
 set(Monkey_Utils_HDRS
-	
+	Monkey/Utils/SecureHash.cpp
 )
 
 set(Monkey_Core_HDRS
@@ -90,12 +97,14 @@ set(Monkey_Application_Desktop_SRCS
 
 set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanRHI.cpp
+	Monkey/Vulkan/RHIResource.cpp
 	Monkey/Vulkan/VulkanLayers.cpp
 	Monkey/Vulkan/VulkanQueue.cpp
 	Monkey/Vulkan/VulkanDevice.cpp
 	Monkey/Vulkan/VulkanDebug.cpp
 	Monkey/Vulkan/VulkanSwapChain.cpp
 	Monkey/Vulkan/VulkanMemory.cpp
+	Monkey/Vulkan/PipelineFileCache.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -103,11 +112,13 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanRHI.h
 	Monkey/Vulkan/VulkanPlatform.h
 	Monkey/Vulkan/RHIDefinitions.h
+	Monkey/Vulkan/RHIResource.h
 	Monkey/Vulkan/VulkanCommon.h
 	Monkey/Vulkan/VulkanQueue.h
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
+	Monkey/Vulkan/PipelineFileCache.h
 )
 
 set(Monkey_HAL_HDRS

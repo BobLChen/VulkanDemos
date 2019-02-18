@@ -128,6 +128,65 @@ struct StringUtils
 		}
 	}
 
+	static char NibbleToTChar(uint8 num)
+	{
+		if (num > 9)
+		{
+			return 'A' + char(num - 10);
+		}
+		return '0' + char(num);
+	}
+
+	static void ByteToHex(uint8 In, std::string& result)
+	{
+		result += NibbleToTChar(In >> 4);
+		result += NibbleToTChar(In & 15);
+	}
+
+	static std::string BytesToHex(const uint8* bytes, int32 count)
+	{
+		std::string result;
+		result.resize(count * 2);
+
+		while (count)
+		{
+			ByteToHex(*bytes++, result);
+			count--;
+		}
+		return result;
+	}
+
+	static const uint8 CharToNibble(const char c)
+	{
+		if (c >= '0' && c <= '9')
+		{
+			return c - '0';
+		}
+		else if (c >= 'A' && c <= 'F')
+		{
+			return (c - 'A') + 10;
+		}
+		return (c - 'a') + 10;
+	}
+
+	static int32 HexToBytes(const std::string& hexString, uint8* outBytes)
+	{
+		int32 numBytes = 0;
+		const bool padNibble = (hexString.size() % 2) == 1;
+		const char* charPos = hexString.c_str();
+		if (padNibble)
+		{
+			outBytes[numBytes++] = CharToNibble(*charPos++);
+		}
+		while (*charPos)
+		{
+			outBytes[numBytes] = CharToNibble(*charPos++) << 4;
+			outBytes[numBytes] += CharToNibble(*charPos++);
+			++numBytes;
+		}
+		return numBytes;
+	}
+
 };
 
 

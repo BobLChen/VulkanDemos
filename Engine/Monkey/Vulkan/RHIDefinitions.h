@@ -234,7 +234,7 @@ enum BlendOperation
 
 static_assert(BlendOperation_Num <= (1 << BlendOperation_NumBits), "BlendOperation_Num will not fit on BlendOperation_NumBits");
 
-enum EBlendFactor
+enum BlendFactor
 {
     BF_Zero,
     BF_One,
