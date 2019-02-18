@@ -12,6 +12,7 @@
 #include "Math/Color.h"
 #include <vector>
 #include <string>
+#include <memory>
 
 struct RamAllocation
 {
@@ -409,7 +410,7 @@ public:
 };
 
 
-class FRHIBoundShaderState : public RHIResource 
+class RHIBoundShaderState : public RHIResource 
 {
 
 };
@@ -442,22 +443,22 @@ class RHIVertexShader : public RHIShader
 
 };
 
-class FRHIHullShader : public RHIShader 
+class RHIHullShader : public RHIShader 
 {
 
 };
 
-class FRHIDomainShader : public RHIShader 
+class RHIDomainShader : public RHIShader 
 {
 
 };
 
-class FRHIPixelShader : public RHIShader 
+class RHIPixelShader : public RHIShader 
 {
 
 };
 
-class FRHIGeometryShader : public RHIShader 
+class RHIGeometryShader : public RHIShader 
 {
 
 };
@@ -911,4 +912,432 @@ private:
 	std::string m_TextureName;
 };
 
+class RHITexture2D : public RHITexture
+{
+public:
 
+	RHITexture2D(uint32 inSizeX, uint32 inSizeY, uint32 inNumMips, uint32 inNumSamples, PixelFormat inFormat, uint32 inFlags, const ClearValueBinding& inClearValue)
+		: RHITexture(inNumMips, inNumSamples, inFormat, inFlags, nullptr, inClearValue)
+		, m_SizeX(inSizeX)
+		, m_SizeY(inSizeY)
+	{
+
+	}
+
+	virtual RHITexture2D* GetTexture2D() 
+	{ 
+		return this;
+	}
+
+	uint32 GetSizeX() const 
+	{ 
+		return m_SizeX;
+	}
+
+	uint32 GetSizeY() const 
+	{ 
+		return m_SizeY;
+	}
+
+	inline IntPoint GetSizeXY() const
+	{
+		return IntPoint(m_SizeX, m_SizeY);
+	}
+
+	virtual IntVector GetSizeXYZ() const final override
+	{
+		return IntVector(m_SizeX, m_SizeY, 1);
+	}
+
+private:
+	uint32 m_SizeX;
+	uint32 m_SizeY;
+};
+
+class RHITexture2DArray : public RHITexture
+{
+public:
+
+	RHITexture2DArray(uint32 inSizeX, uint32 inSizeY, uint32 inSizeZ, uint32 inNumMips, PixelFormat inFormat, uint32 inFlags, const ClearValueBinding& inClearValue)
+		: RHITexture(inNumMips, 1, inFormat, inFlags, nullptr, inClearValue)
+		, m_SizeX(inSizeX)
+		, m_SizeY(inSizeY)
+		, m_SizeZ(inSizeZ)
+	{
+
+	}
+
+	virtual RHITexture2DArray* GetTexture2DArray() 
+	{ 
+		return this;
+	}
+
+	uint32 GetSizeX() const 
+	{ 
+		return m_SizeX;
+	}
+
+	uint32 GetSizeY() const 
+	{ 
+		return m_SizeY;
+	}
+
+	uint32 GetSizeZ() const 
+	{ 
+		return m_SizeZ;
+	}
+
+	virtual IntVector GetSizeXYZ() const final override
+	{
+		return IntVector(m_SizeX, m_SizeY, m_SizeZ);
+	}
+
+private:
+	uint32 m_SizeX;
+	uint32 m_SizeY;
+	uint32 m_SizeZ;
+};
+
+class RHITexture3D : public RHITexture
+{
+public:
+
+	/** Initialization constructor. */
+	RHITexture3D(uint32 inSizeX, uint32 inSizeY, uint32 inSizeZ, uint32 inNumMips, PixelFormat inFormat, uint32 inFlags, const ClearValueBinding& inClearValue)
+		: RHITexture(inNumMips, 1, inFormat, inFlags, NULL, inClearValue)
+		, m_SizeX(inSizeX)
+		, m_SizeY(inSizeY)
+		, m_SizeZ(inSizeZ)
+	{
+
+	}
+
+	virtual RHITexture3D* GetTexture3D() 
+	{ 
+		return this;
+	}
+
+	uint32 GetSizeX() const 
+	{ 
+		return m_SizeX;
+	}
+
+	uint32 GetSizeY() const 
+	{ 
+		return m_SizeY;
+	}
+
+	uint32 GetSizeZ() const 
+	{ 
+		return m_SizeZ;
+	}
+
+	virtual IntVector GetSizeXYZ() const final override
+	{
+		return IntVector(m_SizeX, m_SizeY, m_SizeZ);
+	}
+
+private:
+	uint32 m_SizeX;
+	uint32 m_SizeY;
+	uint32 m_SizeZ;
+};
+
+class RHITextureCube : public RHITexture
+{
+public:
+	RHITextureCube(uint32 inSize, uint32 inNumMips, PixelFormat inFormat, uint32 inFlags, const ClearValueBinding& inClearValue)
+		: RHITexture(inNumMips, 1, inFormat, inFlags, nullptr, inClearValue)
+		, m_Size(inSize)
+	{
+
+	}
+
+	virtual RHITextureCube* GetTextureCube() 
+	{ 
+		return this;
+	}
+
+	uint32 GetSize() const 
+	{ 
+		return m_Size;
+	}
+
+	virtual IntVector GetSizeXYZ() const final override
+	{
+		return IntVector(m_Size, m_Size, 1);
+	}
+
+private:
+	uint32 m_Size;
+};
+
+class RHITextureReference : public RHITexture
+{
+public:
+	explicit RHITextureReference(LastRenderTimeContainer* inLastRenderTime)
+		: RHITexture(0, 0, PF_Unknown, 0, inLastRenderTime, ClearValueBinding())
+	{
+
+	}
+
+	virtual RHITextureReference* GetTextureReference() override 
+	{ 
+		return this;
+	}
+
+	inline RHITexture* GetReferencedTexture() const 
+	{ 
+		return m_ReferencedTexture;
+	}
+
+	void SetReferencedTexture(RHITexture* InTexture)
+	{
+		m_ReferencedTexture = InTexture;
+	}
+
+	virtual IntVector GetSizeXYZ() const final override
+	{
+		if (m_ReferencedTexture)
+		{
+			return m_ReferencedTexture->GetSizeXYZ();
+		}
+		return IntVector(0, 0, 0);
+	}
+
+private:
+	RHITexture* m_ReferencedTexture;
+};
+
+class RHITextureReferenceNullImpl : public RHITextureReference
+{
+public:
+	RHITextureReferenceNullImpl()
+		: RHITextureReference(nullptr)
+	{
+
+	}
+
+	void SetReferencedTexture(RHITexture* InTexture)
+	{
+		RHITextureReference::SetReferencedTexture(InTexture);
+	}
+};
+
+//
+// Misc
+//
+
+class RHIGPUFence : public RHIResource
+{
+public:
+	RHIGPUFence(std::string name) 
+		: m_FenceName(name)
+	{
+
+	}
+
+	virtual ~RHIGPUFence() 
+	{
+
+	}
+
+	virtual void Write();
+
+	virtual bool Poll() const = 0;
+
+private:
+	std::string m_FenceName;
+};
+
+class GenericRHIGPUFence : public RHIGPUFence
+{
+public:
+	GenericRHIGPUFence(std::string name);
+
+	virtual void Write() final override;
+
+	virtual bool Poll() const final override;
+
+private:
+	uint32 m_InsertedFrameNumber;
+};
+
+class RHIRenderQuery : public RHIResource 
+{
+
+};
+
+class RHIComputeFence : public RHIResource
+{
+public:
+
+	RHIComputeFence(std::string name)
+		: m_Name(name)
+		, m_WriteEnqueued(false)
+	{
+
+	}
+
+	FORCEINLINE std::string GetName() const
+	{
+		return m_Name;
+	}
+
+	FORCEINLINE bool GetWriteEnqueued() const
+	{
+		return m_WriteEnqueued;
+	}
+
+	virtual void Reset()
+	{
+		m_WriteEnqueued = false;
+	}
+
+	virtual void WriteFence()
+	{
+		m_WriteEnqueued = true;
+	}
+
+private:
+	std::string m_Name;
+	bool m_WriteEnqueued;
+};
+
+class RHIViewport : public RHIResource
+{
+public:
+
+	virtual void* GetNativeSwapChain() const 
+	{ 
+		return nullptr;
+	}
+
+	virtual void* GetNativeBackBufferTexture() const
+	{ 
+		return nullptr;
+	}
+	
+	virtual void* GetNativeBackBufferRT() const 
+	{ 
+		return nullptr;
+	}
+
+	virtual void* GetNativeWindow(void** AddParam = nullptr) const 
+	{ 
+		return nullptr;
+	}
+
+	virtual void SetCustomPresent(class FRHICustomPresent*) 
+	{
+
+	}
+
+	virtual class FRHICustomPresent* GetCustomPresent() const 
+	{ 
+		return nullptr;
+	}
+
+	virtual void Tick(float DeltaTime) 
+	{
+
+	}
+};
+
+
+class RHIUnorderedAccessView : public RHIResource 
+{
+
+};
+
+class RHIShaderResourceView : public RHIResource 
+{
+
+};
+
+typedef RHISamplerState*							SamplerStateRHIParamRef;
+typedef std::shared_ptr<RHISamplerState>			SamplerStateRHIRef;
+
+typedef RHIRasterizerState*							RasterizerStateRHIParamRef;
+typedef std::shared_ptr<RHIRasterizerState>			RasterizerStateRHIRef;
+
+typedef RHIDepthStencilState*						DepthStencilStateRHIParamRef;
+typedef std::shared_ptr<RHIDepthStencilState>		DepthStencilStateRHIRef;
+
+typedef RHIBlendState*								BlendStateRHIParamRef;
+typedef std::shared_ptr<RHIBlendState>				BlendStateRHIRef;
+
+typedef RHIVertexDeclaration*						VertexDeclarationRHIParamRef;
+typedef std::shared_ptr<RHIVertexDeclaration>		VertexDeclarationRHIRef;
+
+typedef RHIVertexShader*							VertexShaderRHIParamRef;
+typedef std::shared_ptr<RHIVertexShader>			VertexShaderRHIRef;
+
+typedef RHIHullShader*								HullShaderRHIParamRef;
+typedef std::shared_ptr<RHIHullShader>				HullShaderRHIRef;
+
+typedef RHIDomainShader*							DomainShaderRHIParamRef;
+typedef std::shared_ptr<RHIDomainShader>			DomainShaderRHIRef;
+
+typedef RHIPixelShader*								PixelShaderRHIParamRef;
+typedef std::shared_ptr<RHIPixelShader>				PixelShaderRHIRef;
+
+typedef RHIGeometryShader*							GeometryShaderRHIParamRef;
+typedef std::shared_ptr<RHIGeometryShader>			GeometryShaderRHIRef;
+
+typedef RHIComputeShader*							ComputeShaderRHIParamRef;
+typedef std::shared_ptr<RHIComputeShader>			ComputeShaderRHIRef;
+
+typedef RHIComputeFence*							ComputeFenceRHIParamRef;
+typedef std::shared_ptr<RHIComputeFence>			ComputeFenceRHIRef;
+
+typedef RHIBoundShaderState*						BoundShaderStateRHIParamRef;
+typedef std::shared_ptr<RHIBoundShaderState>		BoundShaderStateRHIRef;
+
+typedef RHIUniformBuffer*							UniformBufferRHIParamRef;
+typedef std::shared_ptr<RHIUniformBuffer>			UniformBufferRHIRef;
+
+typedef RHIIndexBuffer*								IndexBufferRHIParamRef;
+typedef std::shared_ptr<RHIIndexBuffer>				IndexBufferRHIRef;
+
+typedef RHIVertexBuffer*							VertexBufferRHIParamRef;
+typedef std::shared_ptr<RHIVertexBuffer>			VertexBufferRHIRef;
+
+typedef RHIStructuredBuffer*						StructuredBufferRHIParamRef;
+typedef std::shared_ptr<RHIStructuredBuffer>		StructuredBufferRHIRef;
+
+typedef RHITexture*									TextureRHIParamRef;
+typedef std::shared_ptr<RHITexture>					TextureRHIRef;
+
+typedef RHITexture2D*								Texture2DRHIParamRef;
+typedef std::shared_ptr<RHITexture2D>				Texture2DRHIRef;
+
+typedef RHITexture2DArray*							Texture2DArrayRHIParamRef;
+typedef std::shared_ptr<RHITexture2DArray>			Texture2DArrayRHIRef;
+
+typedef RHITexture3D*								Texture3DRHIParamRef;
+typedef std::shared_ptr<RHITexture3D>				Texture3DRHIRef;
+
+typedef RHITextureCube*								TextureCubeRHIParamRef;
+typedef std::shared_ptr<RHITextureCube>				TextureCubeRHIRef;
+
+typedef RHITextureReference*						TextureReferenceRHIParamRef;
+typedef std::shared_ptr<RHITextureReference>		TextureReferenceRHIRef;
+
+typedef RHIRenderQuery*								RenderQueryRHIParamRef;
+typedef std::shared_ptr<RHIRenderQuery>				RenderQueryRHIRef;
+
+typedef RHIGPUFence*								GPUFenceRHIParamRef;
+typedef std::shared_ptr<RHIGPUFence>				GPUFenceRHIRef;
+
+typedef RHIViewport*								ViewportRHIParamRef;
+typedef std::shared_ptr<RHIViewport>				ViewportRHIRef;
+
+typedef RHIUnorderedAccessView*						UnorderedAccessViewRHIParamRef;
+typedef std::shared_ptr<RHIUnorderedAccessView>		UnorderedAccessViewRHIRef;
+
+typedef RHIShaderResourceView*						ShaderResourceViewRHIParamRef;
+typedef std::shared_ptr<RHIShaderResourceView>		ShaderResourceViewRHIRef;
+
+typedef RHIGraphicsPipelineState*					GraphicsPipelineStateRHIParamRef;
+typedef std::shared_ptr<RHIGraphicsPipelineState>	GraphicsPipelineStateRHIRef;
