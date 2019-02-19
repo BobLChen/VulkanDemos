@@ -16,6 +16,10 @@ static inline int32 PreferAdapterVendor()
 
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
+	, m_PresentComplete(VK_NULL_HANDLE)
+	, m_RenderComplete(VK_NULL_HANDLE)
+	, m_CommandPool(VK_NULL_HANDLE)
+	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
 	, m_Device(nullptr)
 {
 
@@ -46,7 +50,10 @@ void VulkanRHI::Shutdown()
 #if MONKEY_DEBUG
     RemoveDebugLayerCallback();
 #endif
-    
+	DestoryEvent();
+
+	DestorySwapChain();
+
     m_Device->Destroy();
     m_Device = nullptr;
     
@@ -61,13 +68,43 @@ void VulkanRHI::InitInstance()
 #endif
     SelectAndInitDevice();
 
+	InitEvent();
+
+	RecreateSwapChain();
+
 	uint32 DesiredNumBackBuffers = 3;
 	std::vector<VkImage> images;
 	PixelFormat pixelFormat = PF_R8G8B8A8;
 	VulkanSwapChain* swapChain = new VulkanSwapChain(m_Instance, m_Device, pixelFormat, 800, 600, &DesiredNumBackBuffers, images, 1);
 }
 
-void VulkanRHI::RecreateSwapChain(void* newNativeWindow)
+void VulkanRHI::InitEvent()
+{
+	VkSemaphoreCreateInfo createInfo;
+	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+	vkCreateSemaphore(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_PresentComplete);
+	vkCreateSemaphore(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
+
+	ZeroVulkanStruct(m_SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+	m_SubmitInfo.pWaitDstStageMask = &m_SubmitPipelineStages;
+	m_SubmitInfo.waitSemaphoreCount = 1;
+	m_SubmitInfo.pWaitSemaphores = &m_PresentComplete;
+	m_SubmitInfo.signalSemaphoreCount = 1;
+	m_SubmitInfo.pSignalSemaphores = &m_RenderComplete;
+}
+
+void VulkanRHI::DestoryEvent()
+{
+	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_PresentComplete, VULKAN_CPU_ALLOCATOR);
+	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
+}
+
+void VulkanRHI::RecreateSwapChain()
+{
+
+}
+
+void VulkanRHI::DestorySwapChain()
 {
 
 }
@@ -154,6 +191,7 @@ void VulkanRHI::CreateInstance()
     {
         SlateApplication::Get().OnRequestingExit();
     }
+
 }
 
 void VulkanRHI::SelectAndInitDevice()

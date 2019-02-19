@@ -23,6 +23,14 @@ public:
 
 	virtual void InitInstance();
 
+	virtual void InitEvent();
+
+	virtual void DestoryEvent();
+
+	virtual void RecreateSwapChain();
+
+	virtual void DestorySwapChain();
+
 	static void SavePipelineCache();
 
 	inline const std::vector<const char*>& GetInstanceExtensions() const
@@ -55,8 +63,6 @@ public:
 		return "Vulkan";
 	}
 
-	static void RecreateSwapChain(void* newNativeWindow);
-
 protected:
 	void PooledUniformBuffersBeginFrame();
 
@@ -68,17 +74,23 @@ protected:
 
 	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers, bool& outDebugUtils);
 
-protected:
-    
 #if MONKEY_DEBUG
     VkDebugReportCallbackEXT m_MsgCallback = VK_NULL_HANDLE;
+
     void SetupDebugLayerCallback();
+
     void RemoveDebugLayerCallback();
 #endif
-    
+
 protected:
     
 	VkInstance m_Instance;
+	VkSemaphore m_PresentComplete;
+	VkSemaphore m_RenderComplete;
+	VkSubmitInfo m_SubmitInfo;
+	VkCommandPool m_CommandPool;
+	VkPipelineStageFlags m_SubmitPipelineStages;
+
 	std::shared_ptr<VulkanDevice> m_Device;
 	std::vector<const char*> m_InstanceLayers;
 	std::vector<const char*> m_InstanceExtensions;

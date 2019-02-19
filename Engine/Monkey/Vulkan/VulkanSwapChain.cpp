@@ -172,38 +172,38 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	uint32 sizeX = VulkanPlatform::SupportsQuerySurfaceProperties() ? (surfProperties.currentExtent.width  == 0xFFFFFFFF ? width  : surfProperties.currentExtent.width)  : width;
 	uint32 sizeY = VulkanPlatform::SupportsQuerySurfaceProperties() ? (surfProperties.currentExtent.height == 0xFFFFFFFF ? height : surfProperties.currentExtent.height) : height;
 	
-	VkSwapchainCreateInfoKHR SwapChainInfo;
-	ZeroVulkanStruct(SwapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-	SwapChainInfo.surface = m_Surface;
-	SwapChainInfo.minImageCount = desiredNumBuffers;
-	SwapChainInfo.imageFormat = currFormat.format;
-	SwapChainInfo.imageColorSpace = currFormat.colorSpace;
-	SwapChainInfo.imageExtent.width = sizeX;
-	SwapChainInfo.imageExtent.height = sizeY;
-	SwapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	SwapChainInfo.preTransform = preTransform;
-	SwapChainInfo.imageArrayLayers = 1;
-	SwapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	SwapChainInfo.presentMode = presentMode;
-	SwapChainInfo.oldSwapchain = VK_NULL_HANDLE;
-	SwapChainInfo.clipped = VK_TRUE;
-	SwapChainInfo.compositeAlpha = compositeAlpha;
+	VkSwapchainCreateInfoKHR swapChainInfo;
+	ZeroVulkanStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
+	swapChainInfo.surface = m_Surface;
+	swapChainInfo.minImageCount = desiredNumBuffers;
+	swapChainInfo.imageFormat = currFormat.format;
+	swapChainInfo.imageColorSpace = currFormat.colorSpace;
+	swapChainInfo.imageExtent.width = sizeX;
+	swapChainInfo.imageExtent.height = sizeY;
+	swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	swapChainInfo.preTransform = preTransform;
+	swapChainInfo.imageArrayLayers = 1;
+	swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	swapChainInfo.presentMode = presentMode;
+	swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapChainInfo.clipped = VK_TRUE;
+	swapChainInfo.compositeAlpha = compositeAlpha;
 	
 	*outDesiredNumBackBuffers = desiredNumBuffers;
 
-	if (SwapChainInfo.imageExtent.width == 0)
+	if (swapChainInfo.imageExtent.width == 0)
 	{
-		SwapChainInfo.imageExtent.width = width;
+		swapChainInfo.imageExtent.width = width;
 	}
-	if (SwapChainInfo.imageExtent.height == 0)
+	if (swapChainInfo.imageExtent.height == 0)
 	{
-		SwapChainInfo.imageExtent.height = height;
+		swapChainInfo.imageExtent.height = height;
 	}
 
 	VkBool32 supportsPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
 
-	VERIFYVULKANRESULT_EXPANDED(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &SwapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
+	VERIFYVULKANRESULT_EXPANDED(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &swapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
 
 	uint32 numSwapChainImages;
 	VERIFYVULKANRESULT_EXPANDED(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
