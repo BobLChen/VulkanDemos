@@ -1091,9 +1091,9 @@ public:
 		return m_ReferencedTexture;
 	}
 
-	void SetReferencedTexture(RHITexture* InTexture)
+	void SetReferencedTexture(RHITexture* inTexture)
 	{
-		m_ReferencedTexture = InTexture;
+		m_ReferencedTexture = inTexture;
 	}
 
 	virtual IntVector GetSizeXYZ() const final override
@@ -1118,9 +1118,9 @@ public:
 
 	}
 
-	void SetReferencedTexture(RHITexture* InTexture)
+	void SetReferencedTexture(RHITexture* inTexture)
 	{
-		RHITextureReference::SetReferencedTexture(InTexture);
+		RHITextureReference::SetReferencedTexture(inTexture);
 	}
 };
 
@@ -1341,3 +1341,1128 @@ typedef std::shared_ptr<RHIShaderResourceView>		ShaderResourceViewRHIRef;
 
 typedef RHIGraphicsPipelineState*					GraphicsPipelineStateRHIParamRef;
 typedef std::shared_ptr<RHIGraphicsPipelineState>	GraphicsPipelineStateRHIRef;
+
+class RHIStagingBuffer : public RHIResource
+{
+public:
+	RHIStagingBuffer(VertexBufferRHIParamRef InBuffer)
+		: m_BackingBuffer(InBuffer)
+	{
+
+	}
+	
+	VertexBufferRHIParamRef GetBackingBuffer() const 
+	{ 
+		return m_BackingBuffer.get();
+	}
+protected:
+
+	VertexBufferRHIRef m_BackingBuffer;
+};
+
+typedef RHIStagingBuffer*					StagingBufferRHIParamRef;
+typedef std::shared_ptr<RHIStagingBuffer>	StagingBufferRHIRef;
+
+class RHIRenderTargetView
+{
+public:
+	TextureRHIParamRef texture;
+	uint32 mipIndex;
+	uint32 arraySliceIndex;
+	RenderTargetLoadAction loadAction;
+	RenderTargetStoreAction storeAction;
+
+public:
+	RHIRenderTargetView() 
+		:texture(NULL)
+		, mipIndex(0)
+		, arraySliceIndex(-1)
+		, loadAction(RenderTargetLoadAction::RTLA_NoAction)
+		, storeAction(RenderTargetStoreAction::RTSA_NoAction)
+	{
+		
+	}
+
+	RHIRenderTargetView(const RHIRenderTargetView& other) 
+		: texture(other.texture)
+		, mipIndex(other.mipIndex)
+		, arraySliceIndex(other.arraySliceIndex)
+		, loadAction(other.loadAction)
+		, storeAction(other.storeAction)
+	{
+
+	}
+
+	explicit RHIRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inLoadAction) 
+		: texture(inTexture)
+		, mipIndex(0)
+		, arraySliceIndex(-1)
+		, loadAction(inLoadAction)
+		, storeAction(RenderTargetStoreAction::RTSA_Store)
+	{
+
+	}
+
+	explicit RHIRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inLoadAction, uint32 inMipIndex, uint32 inArraySliceIndex) 
+		: texture(inTexture)
+		, mipIndex(inMipIndex)
+		, arraySliceIndex(inArraySliceIndex)
+		, loadAction(inLoadAction)
+		, storeAction(RenderTargetStoreAction::RTSA_Store)
+	{
+
+	}
+
+	explicit RHIRenderTargetView(TextureRHIParamRef inTexture, uint32 inMipIndex, uint32 inArraySliceIndex, RenderTargetLoadAction inLoadAction, RenderTargetStoreAction inStoreAction) 
+		: texture(inTexture)
+		, mipIndex(inMipIndex)
+		, arraySliceIndex(inArraySliceIndex)
+		, loadAction(inLoadAction)
+		, storeAction(inStoreAction)
+	{
+
+	}
+
+	bool operator==(const RHIRenderTargetView& other) const
+	{
+		return
+			texture == other.texture &&
+			mipIndex == other.mipIndex &&
+			arraySliceIndex == other.arraySliceIndex &&
+			loadAction == other.loadAction &&
+			storeAction == other.storeAction;
+	}
+};
+
+class ExclusiveDepthStencil
+{
+public:
+	enum Type
+	{
+		DepthNop		= 0x00,
+		DepthRead		= 0x01,
+		DepthWrite		= 0x02,
+		DepthMask		= 0x0f,
+		StencilNop		= 0x00,
+		StencilRead		= 0x10,
+		StencilWrite	= 0x20,
+		StencilMask		= 0xf0,
+
+		DepthNop_StencilNop		= DepthNop + StencilNop,
+		DepthRead_StencilNop	= DepthRead + StencilNop,
+		DepthWrite_StencilNop	= DepthWrite + StencilNop,
+		DepthNop_StencilRead	= DepthNop + StencilRead,
+		DepthRead_StencilRead	= DepthRead + StencilRead,
+		DepthWrite_StencilRead	= DepthWrite + StencilRead,
+		DepthNop_StencilWrite	= DepthNop + StencilWrite,
+		DepthRead_StencilWrite	= DepthRead + StencilWrite,
+		DepthWrite_StencilWrite = DepthWrite + StencilWrite,
+	};
+
+public:
+
+	static const uint32 maxIndex = 4;
+
+	ExclusiveDepthStencil(Type inValue = DepthNop_StencilNop)
+		: m_Value(inValue)
+	{
+
+	}
+
+	inline bool IsUsingDepthStencil() const
+	{
+		return m_Value != DepthNop_StencilNop;
+	}
+
+	inline bool IsUsingDepth() const
+	{
+		return (ExtractDepth() != DepthNop);
+	}
+
+	inline bool IsUsingStencil() const
+	{
+		return (ExtractStencil() != StencilNop);
+	}
+
+	inline bool IsDepthWrite() const
+	{
+		return ExtractDepth() == DepthWrite;
+	}
+
+	inline bool IsStencilWrite() const
+	{
+		return ExtractStencil() == StencilWrite;
+	}
+
+	inline bool IsAnyWrite() const
+	{
+		return IsDepthWrite() || IsStencilWrite();
+	}
+
+	inline void SetDepthWrite()
+	{
+		m_Value = (Type)(ExtractStencil() | DepthWrite);
+	}
+
+	inline void SetStencilWrite()
+	{
+		m_Value = (Type)(ExtractDepth() | StencilWrite);
+	}
+
+	inline void SetDepthStencilWrite(bool depth, bool stencil)
+	{
+		m_Value = DepthNop_StencilNop;
+
+		if (depth)
+		{
+			SetDepthWrite();
+		}
+		if (stencil)
+		{
+			SetStencilWrite();
+		}
+	}
+
+	bool operator==(const ExclusiveDepthStencil& rhs) const
+	{
+		return m_Value == rhs.m_Value;
+	}
+
+	bool operator != (const ExclusiveDepthStencil& rhs) const
+	{
+		return m_Value != rhs.m_Value;
+	}
+
+	inline bool IsValid(ExclusiveDepthStencil& current) const
+	{
+		Type depth = ExtractDepth();
+
+		if (depth != DepthNop && depth != current.ExtractDepth())
+		{
+			return false;
+		}
+
+		Type stencil = ExtractStencil();
+
+		if (stencil != StencilNop && stencil != current.ExtractStencil())
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	uint32 GetIndex() const
+	{
+		switch (m_Value)
+		{
+		case DepthWrite_StencilNop:
+		case DepthNop_StencilWrite:
+		case DepthWrite_StencilWrite:
+		case DepthNop_StencilNop:
+			return 0;
+
+		case DepthRead_StencilNop:
+		case DepthRead_StencilWrite:
+			return 1;
+
+		case DepthNop_StencilRead:
+		case DepthWrite_StencilRead:
+			return 2;
+
+		case DepthRead_StencilRead:
+			return 3;
+		}
+		return -1;
+	}
+
+private:
+
+	inline Type ExtractDepth() const
+	{
+		return (Type)(m_Value & DepthMask);
+	}
+
+	inline Type ExtractStencil() const
+	{
+		return (Type)(m_Value & StencilMask);
+	}
+
+	Type m_Value;
+};
+
+class RHIDepthRenderTargetView
+{
+
+public:
+	TextureRHIParamRef			texture;
+	RenderTargetLoadAction		depthLoadAction;
+	RenderTargetStoreAction		depthStoreAction;
+	RenderTargetLoadAction		stencilLoadAction;
+
+private:
+	RenderTargetStoreAction		m_StencilStoreAction;
+	ExclusiveDepthStencil		m_DepthStencilAccess;
+
+public:
+
+	explicit RHIDepthRenderTargetView() 
+		: texture(nullptr)
+		, depthLoadAction(RenderTargetLoadAction::RTLA_NoAction)
+		, depthStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, stencilLoadAction(RenderTargetLoadAction::RTLA_NoAction)
+		, m_StencilStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, m_DepthStencilAccess(ExclusiveDepthStencil::DepthNop_StencilNop)
+	{
+
+	}
+
+	explicit RHIDepthRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inLoadAction, RenderTargetStoreAction inStoreAction) 
+		: texture(inTexture)
+		, depthLoadAction(inLoadAction)
+		, depthStoreAction(inStoreAction)
+		, stencilLoadAction(inLoadAction)
+		, m_StencilStoreAction(inStoreAction)
+		, m_DepthStencilAccess(ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+
+	}
+
+	explicit RHIDepthRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inLoadAction, RenderTargetStoreAction inStoreAction, ExclusiveDepthStencil InDepthStencilAccess) :
+		texture(inTexture),
+		depthLoadAction(inLoadAction),
+		depthStoreAction(inStoreAction),
+		stencilLoadAction(inLoadAction),
+		m_StencilStoreAction(inStoreAction),
+		m_DepthStencilAccess(InDepthStencilAccess)
+	{
+
+	}
+
+	explicit RHIDepthRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inDepthLoadAction, RenderTargetStoreAction inDepthStoreAction, RenderTargetLoadAction inStencilLoadAction, RenderTargetStoreAction inStencilStoreAction) :
+		texture(inTexture),
+		depthLoadAction(inDepthLoadAction),
+		depthStoreAction(inDepthStoreAction),
+		stencilLoadAction(inStencilLoadAction),
+		m_StencilStoreAction(inStencilStoreAction),
+		m_DepthStencilAccess(ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+
+	}
+
+	explicit RHIDepthRenderTargetView(TextureRHIParamRef inTexture, RenderTargetLoadAction inDepthLoadAction, RenderTargetStoreAction inDepthStoreAction, RenderTargetLoadAction inStencilLoadAction, RenderTargetStoreAction inStencilStoreAction, ExclusiveDepthStencil inDepthStencilAccess) :
+		texture(inTexture),
+		depthLoadAction(inDepthLoadAction),
+		depthStoreAction(inDepthStoreAction),
+		stencilLoadAction(inStencilLoadAction),
+		m_StencilStoreAction(inStencilStoreAction),
+		m_DepthStencilAccess(inDepthStencilAccess)
+	{
+
+	}
+
+	RenderTargetStoreAction GetStencilStoreAction() const
+	{
+		return m_StencilStoreAction;
+	}
+
+	ExclusiveDepthStencil GetDepthStencilAccess() const
+	{
+		return m_DepthStencilAccess;
+	}
+
+	bool operator==(const RHIDepthRenderTargetView& other) const
+	{
+		return
+			texture == other.texture &&
+			depthLoadAction == other.depthLoadAction &&
+			depthStoreAction == other.depthStoreAction &&
+			stencilLoadAction == other.stencilLoadAction &&
+			m_StencilStoreAction == other.m_StencilStoreAction &&
+			m_DepthStencilAccess == other.m_DepthStencilAccess;
+	}
+};
+
+class RHISetRenderTargetsInfo
+{
+public:
+	RHIRenderTargetView colorRenderTarget[MaxSimultaneousRenderTargets];
+	int32 numColorRenderTargets;
+	bool clearColor;
+
+	RHIDepthRenderTargetView depthStencilRenderTarget;
+	bool clearDepth;
+	bool clearStencil;
+
+	UnorderedAccessViewRHIRef unorderedAccessView[MaxSimultaneousUAVs];
+	int32 numUAVs;
+
+	RHISetRenderTargetsInfo() 
+		: numColorRenderTargets(0)
+		, clearColor(false)
+		, clearDepth(false)
+		, clearStencil(false)
+		, numUAVs(0)
+	{
+
+	}
+
+	RHISetRenderTargetsInfo(int32 inNumColorRenderTargets, const RHIRenderTargetView* inColorRenderTargets, const RHIDepthRenderTargetView& inDepthStencilRenderTarget) 
+		: numColorRenderTargets(inNumColorRenderTargets)
+		, clearColor(inNumColorRenderTargets > 0 && inColorRenderTargets[0].loadAction == RenderTargetLoadAction::RTLA_Clear)
+		, depthStencilRenderTarget(inDepthStencilRenderTarget)
+		, clearDepth(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.depthLoadAction == RenderTargetLoadAction::RTLA_Clear)
+		, clearStencil(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.stencilLoadAction == RenderTargetLoadAction::RTLA_Clear)
+		, numUAVs(0)
+	{
+		for (int32 index = 0; index < inNumColorRenderTargets; ++index)
+		{
+			colorRenderTarget[index] = inColorRenderTargets[index];
+		}
+	}
+
+	void SetClearDepthStencil(bool inClearDepth, bool inClearStencil = false)
+	{
+		if (inClearDepth)
+		{
+			depthStencilRenderTarget.depthLoadAction = RenderTargetLoadAction::RTLA_Clear;
+		}
+		if (inClearStencil)
+		{
+			depthStencilRenderTarget.stencilLoadAction = RenderTargetLoadAction::RTLA_Clear;
+		}
+		clearDepth = inClearDepth;
+		clearStencil = inClearStencil;
+	}
+};
+
+struct BoundShaderStateInput
+{
+	VertexDeclarationRHIParamRef	vertexDeclarationRHI;
+	VertexShaderRHIParamRef			vertexShaderRHI;
+	HullShaderRHIParamRef			hullShaderRHI;
+	DomainShaderRHIParamRef			domainShaderRHI;
+	PixelShaderRHIParamRef			pixelShaderRHI;
+	GeometryShaderRHIParamRef		geometryShaderRHI;
+
+	FORCEINLINE BoundShaderStateInput()
+		: vertexDeclarationRHI(nullptr)
+		, vertexShaderRHI(nullptr)
+		, hullShaderRHI(nullptr)
+		, domainShaderRHI(nullptr)
+		, pixelShaderRHI(nullptr)
+		, geometryShaderRHI(nullptr)
+	{
+
+	}
+
+	FORCEINLINE BoundShaderStateInput(
+		VertexDeclarationRHIParamRef inVertexDeclarationRHI,
+		VertexShaderRHIParamRef inVertexShaderRHI,
+		HullShaderRHIParamRef inHullShaderRHI,
+		DomainShaderRHIParamRef inDomainShaderRHI,
+		PixelShaderRHIParamRef inPixelShaderRHI,
+		GeometryShaderRHIParamRef inGeometryShaderRHI
+	)
+		: vertexDeclarationRHI(inVertexDeclarationRHI)
+		, vertexShaderRHI(inVertexShaderRHI)
+		, hullShaderRHI(inHullShaderRHI)
+		, domainShaderRHI(inDomainShaderRHI)
+		, pixelShaderRHI(inPixelShaderRHI)
+		, geometryShaderRHI(inGeometryShaderRHI)
+	{
+
+	}
+};
+
+struct ImmutableSamplerState
+{
+	ImmutableSamplerState()
+		: m_ImmutableSamplers(MaxImmutableSamplers)
+	{
+
+	}
+
+	void Reset()
+	{
+		for (uint32 i = 0; i < MaxImmutableSamplers; ++i)
+		{
+			m_ImmutableSamplers[i] = nullptr;
+		}
+	}
+
+	bool operator==(const std::vector<SamplerStateRHIParamRef>& rhs) const
+	{
+		if (m_ImmutableSamplers.size() != rhs.size()) {
+			return false;
+		}
+		for (int i = 0; i < rhs.size(); ++i) {
+			if (m_ImmutableSamplers[i] != rhs[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool operator!=(const ImmutableSamplerState& rhs) const
+	{
+		if (m_ImmutableSamplers.size() != rhs.m_ImmutableSamplers.size()) {
+			return true;
+		}
+		for (int i = 0; i < m_ImmutableSamplers.size(); ++i) {
+			if (m_ImmutableSamplers[i] != rhs.m_ImmutableSamplers[i]) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	std::vector<SamplerStateRHIParamRef> m_ImmutableSamplers;
+};
+
+class GraphicsPipelineStateInitializer final
+{
+public:
+	using RenderTargetFormats = std::vector<PixelFormat>;
+	using RenderTargetFlags   = std::vector<uint32>;
+
+	GraphicsPipelineStateInitializer()
+		: blendState(nullptr)
+		, rasterizerState(nullptr)
+		, depthStencilState(nullptr)
+		, primitiveType(PT_Num)
+		, renderTargetsEnabled(0)
+		, renderTargetFormats(PF_Unknown)
+		, renderTargetFlags(0)
+		, depthStencilTargetFormat(PF_Unknown)
+		, depthStencilTargetFlag(0)
+		, depthTargetLoadAction(RenderTargetLoadAction::RTLA_NoAction)
+		, depthTargetStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, stencilTargetLoadAction(RenderTargetLoadAction::RTLA_NoAction)
+		, stencilTargetStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, numSamples(0)
+		, flags(0)
+	{
+		std::memset(this, 0, sizeof(GraphicsPipelineStateInitializer));
+	}
+
+	GraphicsPipelineStateInitializer(
+		BoundShaderStateInput				inBoundShaderState,
+		BlendStateRHIParamRef				inBlendState,
+		RasterizerStateRHIParamRef			inRasterizerState,
+		DepthStencilStateRHIParamRef		inDepthStencilState,
+		ImmutableSamplerState				inImmutableSamplerState,
+		PrimitiveType						inPrimitiveType,
+		uint32								inRenderTargetsEnabled,
+		const RenderTargetFormats&			inRenderTargetFormats,
+		const RenderTargetFlags&			inRenderTargetFlags,
+		PixelFormat							inDepthStencilTargetFormat,
+		uint32								inDepthStencilTargetFlag,
+		RenderTargetLoadAction				inDepthTargetLoadAction,
+		RenderTargetStoreAction				inDepthTargetStoreAction,
+		RenderTargetLoadAction				inStencilTargetLoadAction,
+		RenderTargetStoreAction				inStencilTargetStoreAction,
+		ExclusiveDepthStencil				inDepthStencilAccess,
+		uint32								inNumSamples,
+		uint16								inFlags
+	)
+		: boundShaderState(inBoundShaderState)
+		, blendState(inBlendState)
+		, rasterizerState(inRasterizerState)
+		, depthStencilState(inDepthStencilState)
+		, immutableSamplerState(inImmutableSamplerState)
+		, primitiveType(inPrimitiveType)
+		, renderTargetsEnabled(inRenderTargetsEnabled)
+		, renderTargetFormats(inRenderTargetFormats)
+		, renderTargetFlags(inRenderTargetFlags)
+		, depthStencilTargetFormat(inDepthStencilTargetFormat)
+		, depthStencilTargetFlag(inDepthStencilTargetFlag)
+		, depthTargetLoadAction(inDepthTargetLoadAction)
+		, depthTargetStoreAction(inDepthTargetStoreAction)
+		, stencilTargetLoadAction(inStencilTargetLoadAction)
+		, stencilTargetStoreAction(inStencilTargetStoreAction)
+		, depthStencilAccess(inDepthStencilAccess)
+		, numSamples(inNumSamples)
+		, flags(inFlags)
+	{
+		std::memset(this, 0, sizeof(GraphicsPipelineStateInitializer));
+		boundShaderState = inBoundShaderState;
+		blendState = inBlendState;
+		rasterizerState = inRasterizerState;
+		depthStencilState = inDepthStencilState;
+		primitiveType = inPrimitiveType;
+		immutableSamplerState = inImmutableSamplerState;
+		renderTargetsEnabled = inRenderTargetsEnabled;
+		renderTargetFormats = inRenderTargetFormats;
+		renderTargetFlags = inRenderTargetFlags;
+		depthStencilTargetFormat = inDepthStencilTargetFormat;
+		depthStencilTargetFlag = inDepthStencilTargetFlag;
+		depthTargetLoadAction = inDepthTargetLoadAction;
+		depthTargetStoreAction = inDepthTargetStoreAction;
+		stencilTargetLoadAction = inStencilTargetLoadAction;
+		stencilTargetStoreAction = inStencilTargetStoreAction;
+		depthStencilAccess = inDepthStencilAccess;
+		numSamples = inNumSamples;
+		flags = inFlags;
+	}
+
+	bool operator==(const GraphicsPipelineStateInitializer& rhs) const
+	{
+		if (boundShaderState.vertexDeclarationRHI != rhs.boundShaderState.vertexDeclarationRHI ||
+			boundShaderState.vertexShaderRHI != rhs.boundShaderState.vertexShaderRHI ||
+			boundShaderState.pixelShaderRHI != rhs.boundShaderState.pixelShaderRHI ||
+			boundShaderState.geometryShaderRHI != rhs.boundShaderState.geometryShaderRHI ||
+			boundShaderState.domainShaderRHI != rhs.boundShaderState.domainShaderRHI ||
+			boundShaderState.hullShaderRHI != rhs.boundShaderState.hullShaderRHI ||
+			blendState != rhs.blendState ||
+			rasterizerState != rhs.rasterizerState ||
+			depthStencilState != rhs.depthStencilState ||
+			immutableSamplerState != rhs.immutableSamplerState ||
+			depthBounds != rhs.depthBounds ||
+			primitiveType != rhs.primitiveType ||
+			renderTargetsEnabled != rhs.renderTargetsEnabled ||
+			renderTargetFormats != rhs.renderTargetFormats ||
+			renderTargetFlags != rhs.renderTargetFlags ||
+			depthStencilTargetFormat != rhs.depthStencilTargetFormat ||
+			depthStencilTargetFlag != rhs.depthStencilTargetFlag ||
+			depthTargetLoadAction != rhs.depthTargetLoadAction ||
+			depthTargetStoreAction != rhs.depthTargetStoreAction ||
+			stencilTargetLoadAction != rhs.stencilTargetLoadAction ||
+			stencilTargetStoreAction != rhs.stencilTargetStoreAction ||
+			depthStencilAccess != rhs.depthStencilAccess ||
+			numSamples != rhs.numSamples)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+#define COMPARE_FIELD_BEGIN(Field) \
+		if (Field != rhs.Field) \
+		{ return Field COMPARE_OP rhs.Field; }
+
+#define COMPARE_FIELD(Field) \
+		else if (Field != rhs.Field) \
+		{ return Field COMPARE_OP rhs.Field; }
+
+#define COMPARE_FIELD_END \
+		else { return false; }
+
+	bool operator<(GraphicsPipelineStateInitializer& rhs) const
+	{
+#define COMPARE_OP <
+
+		COMPARE_FIELD_BEGIN(boundShaderState.vertexDeclarationRHI)
+		COMPARE_FIELD(boundShaderState.vertexShaderRHI)
+		COMPARE_FIELD(boundShaderState.pixelShaderRHI)
+		COMPARE_FIELD(boundShaderState.geometryShaderRHI)
+		COMPARE_FIELD(boundShaderState.domainShaderRHI)
+		COMPARE_FIELD(boundShaderState.hullShaderRHI)
+		COMPARE_FIELD(blendState)
+		COMPARE_FIELD(rasterizerState)
+		COMPARE_FIELD(depthStencilState)
+		COMPARE_FIELD(depthBounds)
+		COMPARE_FIELD(primitiveType)
+		COMPARE_FIELD_END;
+
+#undef COMPARE_OP
+	}
+
+	bool operator>(GraphicsPipelineStateInitializer& rhs) const
+	{
+#define COMPARE_OP >
+
+		COMPARE_FIELD_BEGIN(boundShaderState.vertexDeclarationRHI)
+		COMPARE_FIELD(boundShaderState.vertexShaderRHI)
+		COMPARE_FIELD(boundShaderState.pixelShaderRHI)
+		COMPARE_FIELD(boundShaderState.geometryShaderRHI)
+		COMPARE_FIELD(boundShaderState.domainShaderRHI)
+		COMPARE_FIELD(boundShaderState.hullShaderRHI)
+		COMPARE_FIELD(blendState)
+		COMPARE_FIELD(rasterizerState)
+		COMPARE_FIELD(depthStencilState)
+		COMPARE_FIELD(depthBounds)
+		COMPARE_FIELD(primitiveType)
+		COMPARE_FIELD_END;
+
+#undef COMPARE_OP
+	}
+
+#undef COMPARE_FIELD_BEGIN
+#undef COMPARE_FIELD
+#undef COMPARE_FIELD_END
+
+	uint32 ComputeNumValidRenderTargets() const
+	{
+		if (renderTargetsEnabled > 0)
+		{
+			int32 lastValidTarget = -1;
+			for (int32 i = (int32)renderTargetsEnabled - 1; i >= 0; i--)
+			{
+				if (renderTargetFormats[i] != PF_Unknown)
+				{
+					lastValidTarget = i;
+					break;
+				}
+			}
+			return uint32(lastValidTarget + 1);
+		}
+		return renderTargetsEnabled;
+	}
+
+	uint16							flags;
+	BoundShaderStateInput			boundShaderState;
+	BlendStateRHIParamRef			blendState;
+	RasterizerStateRHIParamRef		rasterizerState;
+	DepthStencilStateRHIParamRef	depthStencilState;
+	ImmutableSamplerState			immutableSamplerState;
+	bool							depthBounds = false;
+	PrimitiveType					primitiveType;
+	uint32							renderTargetsEnabled;
+	RenderTargetFormats				renderTargetFormats;
+	RenderTargetFlags				renderTargetFlags;
+	PixelFormat						depthStencilTargetFormat;
+	uint32							depthStencilTargetFlag;
+	RenderTargetLoadAction			depthTargetLoadAction;
+	RenderTargetStoreAction			depthTargetStoreAction;
+	RenderTargetLoadAction			stencilTargetLoadAction;
+	RenderTargetStoreAction			stencilTargetStoreAction;
+	ExclusiveDepthStencil			depthStencilAccess;
+	uint16							numSamples;
+};
+
+class RHIGraphicsPipelineStateFallBack : public RHIGraphicsPipelineState
+{
+public:
+	RHIGraphicsPipelineStateFallBack() {}
+
+	RHIGraphicsPipelineStateFallBack(const GraphicsPipelineStateInitializer& Init)
+		: initializer(Init)
+	{
+
+	}
+
+	GraphicsPipelineStateInitializer initializer;
+};
+
+class RHIComputePipelineStateFallback : public RHIComputePipelineState
+{
+public:
+	RHIComputePipelineStateFallback(RHIComputeShader* InComputeShader)
+		: m_ComputeShader(InComputeShader)
+	{
+
+	}
+
+	RHIComputeShader* GetComputeShader()
+	{
+		return m_ComputeShader;
+	}
+
+protected:
+	RHIComputeShader* m_ComputeShader;
+};
+
+class RHIShaderLibrary : public RHIResource
+{
+public:
+	struct ShaderLibraryEntry
+	{
+		ShaderLibraryEntry() 
+			: m_Frequency(SF_NumFrequencies)
+			, m_Platform(SP_NumPlatforms)
+		{
+
+		}
+
+		bool IsValid() const 
+		{ 
+			return (m_Frequency < SF_NumFrequencies) && (m_Frequency < SP_NumPlatforms);
+		}
+
+		SHAHash Hash;
+		ShaderFrequency m_Frequency;
+		ShaderPlatform m_Platform;
+	};
+
+	class ShaderLibraryIterator : public RHIResource
+	{
+	public:
+		ShaderLibraryIterator(RHIShaderLibrary* shaderLibrary) 
+			: m_ShaderLibrarySource(shaderLibrary)
+		{
+
+		}
+
+		virtual ~ShaderLibraryIterator() 
+		{
+
+		}
+
+		virtual bool IsValid() const = 0;
+
+		virtual ShaderLibraryEntry operator*()	const = 0;
+
+		virtual ShaderLibraryIterator& operator++() = 0;
+
+		RHIShaderLibrary* GetLibrary() const 
+		{ 
+			return m_ShaderLibrarySource;
+		};
+
+	protected:
+		RHIShaderLibrary* m_ShaderLibrarySource;
+	};
+
+	RHIShaderLibrary(ShaderPlatform inPlatform, std::string const& inName) 
+		: m_Platform(inPlatform)
+		, m_LibraryName(inName)
+	{
+
+	}
+
+	virtual ~RHIShaderLibrary()
+	{
+
+	}
+
+	FORCEINLINE ShaderPlatform GetPlatform(void) const 
+	{ 
+		return m_Platform;
+	}
+
+	FORCEINLINE std::string GetName(void) const 
+	{ 
+		return m_LibraryName;
+	}
+
+	virtual bool IsNativeLibrary() const = 0;
+
+	virtual ShaderLibraryIterator* CreateIterator(void) = 0;
+
+	virtual bool RequestEntry(const SHAHash& hash, std::vector<uint8>& outRaw)
+	{
+		return false;
+	}
+
+	virtual bool ContainsEntry(const SHAHash& Hash) = 0;
+
+	virtual uint32 GetShaderCount(void) const = 0;
+
+protected:
+	ShaderPlatform m_Platform;
+	std::string m_LibraryName;
+};
+
+typedef RHIShaderLibrary*					RHIShaderLibraryParamRef;
+typedef std::shared_ptr<RHIShaderLibrary>	RHIShaderLibraryRef;
+
+class RHIPipelineBinaryLibrary : public RHIResource
+{
+public:
+	RHIPipelineBinaryLibrary(ShaderPlatform inPlatform, std::string const& filePath) 
+		: m_Platform(inPlatform)
+	{
+
+	}
+
+	virtual ~RHIPipelineBinaryLibrary() 
+	{
+
+	}
+
+	FORCEINLINE ShaderPlatform GetPlatform(void) const 
+	{ 
+		return m_Platform;
+	}
+
+protected:
+	ShaderPlatform m_Platform;
+};
+
+typedef RHIPipelineBinaryLibrary*					RHIPipelineBinaryLibraryParamRef;
+typedef std::shared_ptr<RHIPipelineBinaryLibrary>	RHIPipelineBinaryLibraryRef;
+
+enum class RenderTargetActions : uint8
+{
+	LoadOpMask = 2,
+#define RTACTION_MAKE_MASK(Load, Store) (((uint8)RenderTargetLoadAction::RTLA_Load << (uint8)LoadOpMask) | (uint8)RenderTargetStoreAction::RTSA_Store)
+	DontLoad_DontStore = RTACTION_MAKE_MASK(ENoAction, ENoAction),
+	DontLoad_Store = RTACTION_MAKE_MASK(ENoAction, EStore),
+	Clear_Store = RTACTION_MAKE_MASK(EClear, EStore),
+	Load_Store = RTACTION_MAKE_MASK(ELoad, EStore),
+	Clear_DontStore = RTACTION_MAKE_MASK(EClear, ENoAction),
+	Load_DontStore = RTACTION_MAKE_MASK(ELoad, ENoAction),
+	Clear_Resolve = RTACTION_MAKE_MASK(EClear, EMultisampleResolve),
+	Load_Resolve = RTACTION_MAKE_MASK(ELoad, EMultisampleResolve),
+#undef RTACTION_MAKE_MASK
+};
+
+inline RenderTargetActions MakeRenderTargetActions(RenderTargetLoadAction Load, RenderTargetStoreAction Store)
+{
+	return (RenderTargetActions)(((uint8)Load << (uint8)RenderTargetActions::LoadOpMask) | (uint8)Store);
+}
+
+inline RenderTargetLoadAction GetLoadAction(RenderTargetActions Action)
+{
+	return (RenderTargetLoadAction)((uint8)Action >> (uint8)RenderTargetActions::LoadOpMask);
+}
+
+inline RenderTargetStoreAction GetStoreAction(RenderTargetActions Action)
+{
+	return (RenderTargetStoreAction)((uint8)Action & ((1 << (uint8)RenderTargetActions::LoadOpMask) - 1));
+}
+
+enum class DepthStencilTargetActions : uint8
+{
+	DepthMask = 4,
+
+#define RTACTION_MAKE_MASK(Depth, Stencil) (((uint8)RenderTargetActions::Depth << (uint8)DepthMask) | (uint8)RenderTargetActions::Stencil)
+
+	DontLoad_DontStore = RTACTION_MAKE_MASK(DontLoad_DontStore, DontLoad_DontStore),
+	DontLoad_StoreDepthStencil = RTACTION_MAKE_MASK(DontLoad_Store, DontLoad_Store),
+	DontLoad_StoreStencilNotDepth = RTACTION_MAKE_MASK(DontLoad_DontStore, DontLoad_Store),
+	ClearDepthStencil_StoreDepthStencil = RTACTION_MAKE_MASK(Clear_Store, Clear_Store),
+	LoadDepthStencil_StoreDepthStencil = RTACTION_MAKE_MASK(Load_Store, Load_Store),
+	LoadDepthNotStencil_DontStore = RTACTION_MAKE_MASK(Load_DontStore, DontLoad_DontStore),
+	LoadDepthStencil_StoreStencilNotDepth = RTACTION_MAKE_MASK(Load_DontStore, Load_Store),
+
+	ClearDepthStencil_DontStoreDepthStencil = RTACTION_MAKE_MASK(Clear_DontStore, Clear_DontStore),
+	LoadDepthStencil_DontStoreDepthStencil = RTACTION_MAKE_MASK(Load_DontStore, Load_DontStore),
+	ClearDepthStencil_StoreDepthNotStencil = RTACTION_MAKE_MASK(Clear_Store, Clear_DontStore),
+	ClearDepthStencil_StoreStencilNotDepth = RTACTION_MAKE_MASK(Clear_DontStore, Clear_Store),
+	ClearDepthStencil_ResolveDepthNotStencil = RTACTION_MAKE_MASK(Clear_Resolve, Clear_DontStore),
+	ClearDepthStencil_ResolveStencilNotDepth = RTACTION_MAKE_MASK(Clear_DontStore, Clear_Resolve),
+
+	ClearStencilDontLoadDepth_StoreStencilNotDepth = RTACTION_MAKE_MASK(DontLoad_DontStore, Clear_Store),
+
+#undef RTACTION_MAKE_MASK
+};
+
+inline constexpr DepthStencilTargetActions MakeDepthStencilTargetActions(const RenderTargetActions Depth, const RenderTargetActions Stencil)
+{
+	return (DepthStencilTargetActions)(((uint8)Depth << (uint8)DepthStencilTargetActions::DepthMask) | (uint8)Stencil);
+}
+
+inline RenderTargetActions GetDepthActions(DepthStencilTargetActions Action)
+{
+	return (RenderTargetActions)((uint8)Action >> (uint8)DepthStencilTargetActions::DepthMask);
+}
+
+inline RenderTargetActions GetStencilActions(DepthStencilTargetActions Action)
+{
+	return (RenderTargetActions)((uint8)Action & ((1 << (uint8)DepthStencilTargetActions::DepthMask) - 1));
+}
+
+struct RHIRenderPassInfo
+{
+	struct ColorEntry
+	{
+		RHITexture* renderTarget;
+		RHITexture* resolveTarget;
+		int32 arraySlice;
+		uint8 mipIndex;
+		RenderTargetActions action;
+	};
+	ColorEntry colorRenderTargets[MaxSimultaneousRenderTargets];
+
+	struct DepthStencilEntry
+	{
+		RHITexture* depthStencilTarget;
+		RHITexture* resolveTarget;
+		DepthStencilTargetActions action;
+		ExclusiveDepthStencil exclusiveDepthStencil;
+	};
+	DepthStencilEntry depthStencilRenderTarget;
+
+	uint32 numOcclusionQueries = 0;
+	bool occlusionQueries = false;bool generatingMips = false;
+
+	explicit RHIRenderPassInfo(RHITexture* colorRT, RenderTargetActions colorAction, RHITexture* resolveRT = nullptr, uint32 inMipIndex = 0, int32 inArraySlice = -1)
+	{
+		colorRenderTargets[0].renderTarget = colorRT;
+		colorRenderTargets[0].resolveTarget = resolveRT;
+		colorRenderTargets[0].arraySlice = inArraySlice;
+		colorRenderTargets[0].mipIndex = inMipIndex;
+		colorRenderTargets[0].action = colorAction;
+		depthStencilRenderTarget.depthStencilTarget = nullptr;
+		depthStencilRenderTarget.action = DepthStencilTargetActions::DontLoad_DontStore;
+		depthStencilRenderTarget.exclusiveDepthStencil = ExclusiveDepthStencil::DepthNop_StencilNop;
+		m_IsMSAA = colorRT->GetNumSamples() > 1;
+		std::memset(&colorRenderTargets[1], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - 1));
+	}
+
+	explicit RHIRenderPassInfo(int32 numColorRTs, RHITexture* colorRTs[], RenderTargetActions colorAction)
+	{
+		for (int32 index = 0; index < numColorRTs; ++index)
+		{
+			colorRenderTargets[index].renderTarget = colorRTs[index];
+			colorRenderTargets[index].resolveTarget = nullptr;
+			colorRenderTargets[index].arraySlice = -1;
+			colorRenderTargets[index].mipIndex = 0;
+			colorRenderTargets[index].action = colorAction;
+		}
+
+		depthStencilRenderTarget.depthStencilTarget = nullptr;
+		depthStencilRenderTarget.action = DepthStencilTargetActions::DontLoad_DontStore;
+		depthStencilRenderTarget.exclusiveDepthStencil = ExclusiveDepthStencil::DepthNop_StencilNop;
+		
+		if (numColorRTs < MaxSimultaneousRenderTargets)
+		{
+			std::memset(&colorRenderTargets[numColorRTs], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRTs));
+		}
+	}
+
+	explicit RHIRenderPassInfo(int32 numColorRTs, RHITexture* colorRTs[], RenderTargetActions colorAction, RHITexture* resolveTargets[])
+	{
+		for (int32 index = 0; index < numColorRTs; ++index)
+		{
+			colorRenderTargets[index].renderTarget = colorRTs[index];
+			colorRenderTargets[index].resolveTarget = resolveTargets[index];
+			colorRenderTargets[index].arraySlice = -1;
+			colorRenderTargets[index].mipIndex = 0;
+			colorRenderTargets[index].action = colorAction;
+		}
+
+		depthStencilRenderTarget.depthStencilTarget = nullptr;
+		depthStencilRenderTarget.action = DepthStencilTargetActions::DontLoad_DontStore;
+		depthStencilRenderTarget.exclusiveDepthStencil = ExclusiveDepthStencil::DepthNop_StencilNop;
+		
+		if (numColorRTs < MaxSimultaneousRenderTargets)
+		{
+			std::memset(&colorRenderTargets[numColorRTs], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRTs));
+		}
+	}
+
+	explicit RHIRenderPassInfo(int32 numColorRTs, RHITexture* colorRTs[], RenderTargetActions colorAction, RHITexture* depthRT, DepthStencilTargetActions depthActions, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+		for (int32 index = 0; index < numColorRTs; ++index)
+		{
+			colorRenderTargets[index].renderTarget = colorRTs[index];
+			colorRenderTargets[index].resolveTarget = nullptr;
+			colorRenderTargets[index].arraySlice = -1;
+			colorRenderTargets[index].mipIndex = 0;
+			colorRenderTargets[index].action = colorAction;
+		}
+
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = nullptr;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		m_IsMSAA = depthRT->GetNumSamples() > 1;
+
+		if (numColorRTs < MaxSimultaneousRenderTargets)
+		{
+			std::memset(&colorRenderTargets[numColorRTs], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRTs));
+		}
+	}
+
+	explicit RHIRenderPassInfo(int32 numColorRTs, RHITexture* colorRTs[], RenderTargetActions colorAction, RHITexture* ResolveRTs[], RHITexture* depthRT, DepthStencilTargetActions depthActions, RHITexture* ResolveDepthRT, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+		for (int32 index = 0; index < numColorRTs; ++index)
+		{
+			colorRenderTargets[index].renderTarget = colorRTs[index];
+			colorRenderTargets[index].resolveTarget = ResolveRTs[index];
+			colorRenderTargets[index].arraySlice = -1;
+			colorRenderTargets[index].mipIndex = 0;
+			colorRenderTargets[index].action = colorAction;
+		}
+
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = ResolveDepthRT;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		m_IsMSAA = depthRT->GetNumSamples() > 1;
+
+		if (numColorRTs < MaxSimultaneousRenderTargets)
+		{
+			std::memset(&colorRenderTargets[numColorRTs], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRTs));
+		}
+	}
+
+	explicit RHIRenderPassInfo(RHITexture* depthRT, DepthStencilTargetActions depthActions, RHITexture* ResolveDepthRT = nullptr, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = ResolveDepthRT;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		m_IsMSAA = depthRT->GetNumSamples() > 1;
+		std::memset(colorRenderTargets, 0, sizeof(ColorEntry) * MaxSimultaneousRenderTargets);
+	}
+
+	explicit RHIRenderPassInfo(RHITexture* depthRT, uint32 InNumOcclusionQueries, DepthStencilTargetActions depthActions, RHITexture* resolveDepthRT = nullptr, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+		: numOcclusionQueries(InNumOcclusionQueries)
+		, occlusionQueries(true)
+	{
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = resolveDepthRT;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		m_IsMSAA = depthRT->GetNumSamples() > 1;
+		std::memset(colorRenderTargets, 0, sizeof(ColorEntry) * MaxSimultaneousRenderTargets);
+	}
+
+	explicit RHIRenderPassInfo(RHITexture* colorRT, RenderTargetActions colorAction, RHITexture* depthRT, DepthStencilTargetActions depthActions, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+		colorRenderTargets[0].renderTarget = colorRT;
+		colorRenderTargets[0].resolveTarget = nullptr;
+		colorRenderTargets[0].arraySlice = -1;
+		colorRenderTargets[0].mipIndex = 0;
+		colorRenderTargets[0].action = colorAction;
+		m_IsMSAA = colorRT->GetNumSamples() > 1;
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = nullptr;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		std::memset(&colorRenderTargets[1], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - 1));
+	}
+
+	explicit RHIRenderPassInfo(RHITexture* colorRT, RenderTargetActions colorAction, RHITexture* resolveColorRT,
+		RHITexture* depthRT, DepthStencilTargetActions depthActions, RHITexture* ResolveDepthRT, ExclusiveDepthStencil inEDS = ExclusiveDepthStencil::DepthWrite_StencilWrite)
+	{
+		colorRenderTargets[0].renderTarget = colorRT;
+		colorRenderTargets[0].resolveTarget = resolveColorRT;
+		colorRenderTargets[0].arraySlice = -1;
+		colorRenderTargets[0].mipIndex = 0;
+		colorRenderTargets[0].action = colorAction;
+		m_IsMSAA = colorRT->GetNumSamples() > 1;
+		depthStencilRenderTarget.depthStencilTarget = depthRT;
+		depthStencilRenderTarget.resolveTarget = ResolveDepthRT;
+		depthStencilRenderTarget.action = depthActions;
+		depthStencilRenderTarget.exclusiveDepthStencil = inEDS;
+		std::memset(&colorRenderTargets[1], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - 1));
+	}
+
+	inline int32 GetNumColorRenderTargets() const
+	{
+		int32 colorIndex = 0;
+		for (; colorIndex < MaxSimultaneousRenderTargets; ++colorIndex)
+		{
+			const ColorEntry& Entry = colorRenderTargets[colorIndex];
+			if (!Entry.renderTarget)
+			{
+				break;
+			}
+		}
+
+		return colorIndex;
+	}
+
+	inline bool IsMSAA() const
+	{
+		return m_IsMSAA;
+	}
+
+	void Validate() const;
+
+	void ConvertToRenderTargetsInfo(RHISetRenderTargetsInfo& OutRTInfo) const;
+
+public:
+	int32 uavIndex = -1;
+	int32 numUAVs = 0;
+	UnorderedAccessViewRHIRef uAVs[MaxSimultaneousUAVs];
+
+private:
+	bool m_IsMSAA = false;
+};
