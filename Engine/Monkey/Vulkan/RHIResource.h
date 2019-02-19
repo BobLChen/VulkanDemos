@@ -1377,8 +1377,8 @@ public:
 		:texture(NULL)
 		, mipIndex(0)
 		, arraySliceIndex(-1)
-		, loadAction(RenderTargetLoadAction::RTLA_NoAction)
-		, storeAction(RenderTargetStoreAction::RTSA_NoAction)
+		, loadAction(RenderTargetLoadAction::ENoAction)
+		, storeAction(RenderTargetStoreAction::ENoAction)
 	{
 		
 	}
@@ -1398,7 +1398,7 @@ public:
 		, mipIndex(0)
 		, arraySliceIndex(-1)
 		, loadAction(inLoadAction)
-		, storeAction(RenderTargetStoreAction::RTSA_Store)
+		, storeAction(RenderTargetStoreAction::EStore)
 	{
 
 	}
@@ -1408,7 +1408,7 @@ public:
 		, mipIndex(inMipIndex)
 		, arraySliceIndex(inArraySliceIndex)
 		, loadAction(inLoadAction)
-		, storeAction(RenderTargetStoreAction::RTSA_Store)
+		, storeAction(RenderTargetStoreAction::EStore)
 	{
 
 	}
@@ -1608,10 +1608,10 @@ public:
 
 	explicit RHIDepthRenderTargetView() 
 		: texture(nullptr)
-		, depthLoadAction(RenderTargetLoadAction::RTLA_NoAction)
-		, depthStoreAction(RenderTargetStoreAction::RTSA_NoAction)
-		, stencilLoadAction(RenderTargetLoadAction::RTLA_NoAction)
-		, m_StencilStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, depthLoadAction(RenderTargetLoadAction::ENoAction)
+		, depthStoreAction(RenderTargetStoreAction::ENoAction)
+		, stencilLoadAction(RenderTargetLoadAction::ENoAction)
+		, m_StencilStoreAction(RenderTargetStoreAction::ENoAction)
 		, m_DepthStencilAccess(ExclusiveDepthStencil::DepthNop_StencilNop)
 	{
 
@@ -1709,10 +1709,10 @@ public:
 
 	RHISetRenderTargetsInfo(int32 inNumColorRenderTargets, const RHIRenderTargetView* inColorRenderTargets, const RHIDepthRenderTargetView& inDepthStencilRenderTarget) 
 		: numColorRenderTargets(inNumColorRenderTargets)
-		, clearColor(inNumColorRenderTargets > 0 && inColorRenderTargets[0].loadAction == RenderTargetLoadAction::RTLA_Clear)
+		, clearColor(inNumColorRenderTargets > 0 && inColorRenderTargets[0].loadAction == RenderTargetLoadAction::EClear)
 		, depthStencilRenderTarget(inDepthStencilRenderTarget)
-		, clearDepth(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.depthLoadAction == RenderTargetLoadAction::RTLA_Clear)
-		, clearStencil(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.stencilLoadAction == RenderTargetLoadAction::RTLA_Clear)
+		, clearDepth(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.depthLoadAction == RenderTargetLoadAction::EClear)
+		, clearStencil(inDepthStencilRenderTarget.texture && inDepthStencilRenderTarget.stencilLoadAction == RenderTargetLoadAction::EClear)
 		, numUAVs(0)
 	{
 		for (int32 index = 0; index < inNumColorRenderTargets; ++index)
@@ -1725,11 +1725,11 @@ public:
 	{
 		if (inClearDepth)
 		{
-			depthStencilRenderTarget.depthLoadAction = RenderTargetLoadAction::RTLA_Clear;
+			depthStencilRenderTarget.depthLoadAction = RenderTargetLoadAction::EClear;
 		}
 		if (inClearStencil)
 		{
-			depthStencilRenderTarget.stencilLoadAction = RenderTargetLoadAction::RTLA_Clear;
+			depthStencilRenderTarget.stencilLoadAction = RenderTargetLoadAction::EClear;
 		}
 		clearDepth = inClearDepth;
 		clearStencil = inClearStencil;
@@ -1836,10 +1836,10 @@ public:
 		, renderTargetFlags(0)
 		, depthStencilTargetFormat(PF_Unknown)
 		, depthStencilTargetFlag(0)
-		, depthTargetLoadAction(RenderTargetLoadAction::RTLA_NoAction)
-		, depthTargetStoreAction(RenderTargetStoreAction::RTSA_NoAction)
-		, stencilTargetLoadAction(RenderTargetLoadAction::RTLA_NoAction)
-		, stencilTargetStoreAction(RenderTargetStoreAction::RTSA_NoAction)
+		, depthTargetLoadAction(RenderTargetLoadAction::ENoAction)
+		, depthTargetStoreAction(RenderTargetStoreAction::ENoAction)
+		, stencilTargetLoadAction(RenderTargetLoadAction::ENoAction)
+		, stencilTargetStoreAction(RenderTargetStoreAction::ENoAction)
 		, numSamples(0)
 		, flags(0)
 	{
@@ -2187,7 +2187,7 @@ typedef std::shared_ptr<RHIPipelineBinaryLibrary>	RHIPipelineBinaryLibraryRef;
 enum class RenderTargetActions : uint8
 {
 	LoadOpMask = 2,
-#define RTACTION_MAKE_MASK(Load, Store) (((uint8)RenderTargetLoadAction::RTLA_Load << (uint8)LoadOpMask) | (uint8)RenderTargetStoreAction::RTSA_Store)
+#define RTACTION_MAKE_MASK(Load, Store) (((uint8)RenderTargetLoadAction::ELoad << (uint8)LoadOpMask) | (uint8)RenderTargetStoreAction::EStore)
 	DontLoad_DontStore = RTACTION_MAKE_MASK(ENoAction, ENoAction),
 	DontLoad_Store = RTACTION_MAKE_MASK(ENoAction, EStore),
 	Clear_Store = RTACTION_MAKE_MASK(EClear, EStore),

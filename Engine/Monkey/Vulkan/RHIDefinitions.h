@@ -27,9 +27,9 @@ static_assert(SP_NumPlatforms <= (1 << SP_NumBits), "SP_NumPlatforms will not fi
 
 enum RenderQueryType
 {
-    RQT_Undefined,
-    RQT_Occlusion,
-    RQT_AbsoluteTime,
+    RQ_Undefined,
+    RQ_Occlusion,
+    RQ_AbsoluteTime,
 };
 
 enum
@@ -110,10 +110,10 @@ static_assert(SamplerFilter_Num <= (1 << SamplerFilter_NumBits), "SamplerFilter_
 
 enum SamplerAddressMode
 {
-    SAM_Wrap,
-    SAM_Clamp,
-    SAM_Mirror,
-    SAM_Border,
+    SA_Wrap,
+    SA_Clamp,
+    SA_Mirror,
+    SA_Border,
     
     SamplerAddressMode_Num,
     SamplerAddressMode_NumBits = 2,
@@ -128,9 +128,9 @@ enum SamplerCompareFunction
 
 enum RasterizerFillMode
 {
-    RFM_Point,
-    RFM_Wireframe,
-    RFM_Solid,
+    FM_Point,
+    FM_Wireframe,
+    FM_Solid,
     
     RasterizerFillMode_Num,
     RasterizerFillMode_NumBits = 2,
@@ -140,9 +140,9 @@ static_assert(RasterizerFillMode_Num <= (1 << RasterizerFillMode_NumBits), "Rast
 
 enum RasterizerCullMode
 {
-    RCM_None,
-    RCM_CW,
-    RCM_CCW,
+    CM_None,
+    CM_CW,
+    CM_CCW,
 
     RasterizerCullMode_Num,
     RasterizerCullMode_NumBits = 2,
@@ -550,38 +550,38 @@ enum TextureReallocationStatus
 
 enum class RenderTargetLoadAction : uint8
 {
-    RTLA_NoAction,
-    RTLA_Load,
-    RTLA_Clear,
+    ENoAction,
+    ELoad,
+    EClear,
 
-    RTLA_Num,
-    RTLA_NumBits = 2,
+    Num,
+    NumBits = 2,
 };
 
-static_assert((uint32)RenderTargetLoadAction::RTLA_Num <= (1 << (uint32)RenderTargetLoadAction::RTLA_NumBits), "RenderTargetLoadAction::RTLA_Num will not fit on RenderTargetLoadAction::RTLA_NumBits");
+static_assert((uint32)RenderTargetLoadAction::Num <= (1 << (uint32)RenderTargetLoadAction::NumBits), "RenderTargetLoadAction::Num will not fit on RenderTargetLoadAction::NumBits");
 
 enum class RenderTargetStoreAction : uint8
 {
-    RTSA_NoAction,
-    RTSA_Store,
-    RTSA_MultisampleResolve,
-    RTSA_Num,
-    RTSA_NumBits = 2,
+    ENoAction,
+    EStore,
+    EMultisampleResolve,
+    Num,
+    NumBits = 2,
 };
 
-static_assert((uint32)RenderTargetStoreAction::RTSA_Num <= (1 << (uint32)RenderTargetStoreAction::RTSA_NumBits), "RenderTargetStoreAction::RTSA_Num will not fit on RenderTargetStoreAction::RTSA_NumBits");
+static_assert((uint32)RenderTargetStoreAction::Num <= (1 << (uint32)RenderTargetStoreAction::NumBits), "RenderTargetStoreAction::Num will not fit on RenderTargetStoreAction::NumBits");
 
 enum class SimpleRenderTargetMode
 {
-    SRTM_ExistingColorAndDepth,
-    SRTM_UninitializedColorAndDepth,
-    SRTM_UninitializedColorExistingDepth,
-    SRTM_UninitializedColorClearDepth,
-    SRTM_ClearColorExistingDepth,
-    SRTM_ClearColorAndDepth,
-    SRTM_ExistingContents_NoDepthStore,
-    SRTM_ExistingColorAndClearDepth,
-    SRTM_ExistingColorAndDepthAndClearStencil,
+    EExistingColorAndDepth,
+    EUninitializedColorAndDepth,
+    EUninitializedColorExistingDepth,
+    EUninitializedColorClearDepth,
+    EClearColorExistingDepth,
+    EClearColorAndDepth,
+    EExistingContents_NoDepthStore,
+    EExistingColorAndClearDepth,
+    EExistingColorAndDepthAndClearStencil,
 };
 
 enum class ClearDepthStencil
