@@ -1,7 +1,19 @@
-#include "VulkanLayers.h"
+#include "VulkanPlatform.h"
 #include "VulkanRHI.h"
 #include "VulkanDevice.h"
 #include "Utils/StringUtils.h"
+
+#include <vector>
+
+struct VulkanLayerExtension
+{
+	VulkanLayerExtension();
+	void AddUniqueExtensionNames(std::vector<std::string>& outExtensions);
+	void AddUniqueExtensionNames(std::vector<const char*>& outExtensions);
+
+	VkLayerProperties layerProps;
+	std::vector<VkExtensionProperties> extensionProps;
+};
 
 static const char* G_ValidationLayersInstance[] =
 {
@@ -9,6 +21,11 @@ static const char* G_ValidationLayersInstance[] =
 	"VK_LAYER_LUNARG_standard_validation",
 #elif PLATFORM_MAC
 	"VK_LAYER_LUNARG_standard_validation",
+    "VK_LAYER_GOOGLE_unique_objects",
+    "VK_LAYER_GOOGLE_threading",
+    "VK_LAYER_LUNARG_core_validation",
+    "VK_LAYER_LUNARG_parameter_validation",
+    "VK_LAYER_LUNARG_object_tracker",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -239,12 +256,12 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
     {
         outInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
-
-    if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
-    {
-        outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-    }
 #endif // MONKEY_DEBUG
+
+	if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
+	{
+		outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+	}
 	
 	std::vector<const char*> platformExtensions;
 	VulkanPlatform::GetInstanceExtensions(platformExtensions);

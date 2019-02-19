@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "VulkanPlatform.h"
 #include "VulkanQueue.h"
+#include "VulkanMemory.h"
 #include "VulkanRHI.h"
 
 #include <vector>
@@ -131,6 +132,11 @@ public:
     {
         return m_OptionalDeviceExtensions;
     }
+
+	inline VulkanFenceManager& GetFenceManager()
+	{
+		return m_FenceManager;
+	}
     
 private:
     
@@ -148,6 +154,8 @@ private:
     
 private:
     
+	VulkanFenceManager m_FenceManager;
+
     VkDevice m_Device;
     VkImageView m_DefaultImageView;
     VkPhysicalDevice m_PhysicalDevice;

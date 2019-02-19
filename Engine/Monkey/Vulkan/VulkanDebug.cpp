@@ -13,43 +13,33 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallBack(
                                                           const char* msg,
                                                           void* userData)
 {
-    printf("ERROR -> LayerPrefix:%s Msg:%s\n", layerPrefix, msg);
-//    // Select prefix depending on flags passed to the callback
-//    // Note that multiple flags may be set for a single validation message
-//    std::string prefix("");
-//
-//    // Error that may result in undefined behaviour
-//    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-//    {
-//        prefix += "ERROR:";
-//    }
-//
-//    // Warnings may hint at unexpected / non-spec API usage
-//    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-//    {
-//        prefix += "WARNING:";
-//    }
-//
-//    // May indicate sub-optimal usage of the API
-//    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-//    {
-//        prefix += "PERFORMANCE:";
-//    }
-//
-//    // Informal messages that may become handy during debugging
-//    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-//    {
-//        prefix += "INFO:";
-//    }
-//
-//    // Diagnostic info from the Vulkan loader and layers
-//    // Usually not helpful in terms of API usage, but may help to debug layer and loader problems
-//    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-//    {
-//        prefix += "DEBUG:";
-//    }
-//
-//    MLOG("%s [%s] Code %d : %s", prefix.c_str(), pLayerPrefix, msgCode, pMsg);
+    std::string prefix("");
+    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    {
+        prefix += "ERROR:";
+    }
+
+    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    {
+        prefix += "WARNING:";
+    }
+
+    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+    {
+        prefix += "PERFORMANCE:";
+    }
+
+    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+    {
+        prefix += "INFO:";
+    }
+    
+    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+    {
+        prefix += "DEBUG:";
+    }
+
+    MLOG("%s [%s] Code %d : %s", prefix.c_str(), layerPrefix, code, msg);
     return VK_FALSE;
 }
 

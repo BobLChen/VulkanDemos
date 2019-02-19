@@ -101,13 +101,21 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGlobals.h
 	Monkey/Vulkan/VulkanRHI.h
 	Monkey/Vulkan/VulkanPlatform.h
-	Monkey/Vulkan/VulkanLayers.h
 	Monkey/Vulkan/RHIDefinitions.h
 	Monkey/Vulkan/VulkanCommon.h
 	Monkey/Vulkan/VulkanQueue.h
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
+)
+
+set(Monkey_HAL_HDRS
+	Monkey/HAL/PlatformAtomics.h
+	Monkey/HAL/GenericPlatformAtomics.h
+	Monkey/HAL/ThreadSafeCounter.h
+)
+set(Monkey_HAL_SRCS
+	
 )
 
 if (WIN32)
@@ -117,12 +125,20 @@ if (WIN32)
 	set(Monkey_Math_Windows_SRCS
 		
 	)
+
 	set(Monkey_Vulkan_Windows_HDRS
 		Monkey/Vulkan/Windows/VulkanWindowsPlatform.h
 		Monkey/Vulkan/Windows/VulkanPlatformDefines.h
 	)
 	set(Monkey_Vulkan_Windows_SRCS
 		Monkey/Vulkan/Windows/VulkanWindowsPlatform.cpp
+	)
+
+	set(Monkey_HAL_Windows_HDRS
+		Monkey/HAL/Windows/WindowsPlatformAtomics.h
+	)
+	set(Monkey_HAL_Windows_SRCS
+
 	)
 elseif (APPLE)
 	set(Monkey_Math_Mac_HDRS
@@ -131,12 +147,20 @@ elseif (APPLE)
 	set(Monkey_Math_Mac_SRCS
 
 	)
+
 	set(Monkey_Vulkan_Mac_HDRS
 		Monkey/Vulkan/Mac/VulkanPlatformDefines.h
 		Monkey/Vulkan/Mac/VulkanMacPlatform.h
 	)
 	set(Monkey_Vulkan_Mac_SRCS
 		Monkey/Vulkan/Mac/VulkanMacPlatform.cpp
+	)
+
+	set(Monkey_HAL_Mac_HDRS
+		Monkey/HAL/Mac/MacPlatformAtomics.h
+	)
+	set(Monkey_HAL_Mac_SRCS
+
 	)
 endif ()
 
@@ -182,6 +206,13 @@ add_library(Monkey STATIC
 	${Monkey_Vulkan_Windows_HDRS}
 	${Monkey_Vulkan_Mac_SRCS}
 	${Monkey_Vulkan_Mac_HDRS}
+
+	${Monkey_HAL_HDRS}
+	${Monkey_HAL_SRCS}
+	${Monkey_HAL_Windows_HDRS}
+	${Monkey_HAL_Windows_SRCS}
+	${Monkey_HAL_Mac_HDRS}
+	${Monkey_HAL_Mac_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -199,3 +230,6 @@ source_group(Monkey\\Configuration\\ FILES ${Monkey_Configuration_HDRS} ${Monkey
 source_group(Monkey\\Launch\\ FILES ${Monkey_Launch_HDRS} ${Monkey_Launch_SRCS})
 source_group(Monkey\\Application\\ FILES ${Monkey_Application_HDRS} ${Monkey_Application_SRCS})
 source_group(Monkey\\Application\\Desktop FILES ${Monkey_Application_Desktop_HDRS} ${Monkey_Application_Desktop_SRCS})
+source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
+source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})
+source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS})

@@ -1,6 +1,6 @@
 #include "Common/Log.h"
-#include "VulkanMemory.h"
 #include "VulkanDevice.h"
+#include "VulkanMemory.h"
 
 // VulkanFence
 
@@ -43,7 +43,7 @@ void VulkanFenceManager::Init(VulkanDevice* device)
 	m_Device = device;
 }
 
-void VulkanFenceManager::DeInit()
+void VulkanFenceManager::Destory()
 {
 	if (m_UsedFences.size() > 0)
 	{
@@ -144,4 +144,80 @@ void VulkanFenceManager::DestoryFence(VulkanFence* fence)
 	vkDestroyFence(m_Device->GetInstanceHandle(), fence->m_VkFence, VULKAN_CPU_ALLOCATOR);
 	fence->m_VkFence = VK_NULL_HANDLE;
 	delete fence;
+}
+
+// VulkanSemaphore
+VulkanSemaphore::VulkanSemaphore(VulkanDevice* device)
+	: m_Device(device)
+	, m_VkSemaphore(VK_NULL_HANDLE)
+{
+	VkSemaphoreCreateInfo info;
+	ZeroVulkanStruct(info, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+	vkCreateSemaphore(device->GetInstanceHandle(), &info, VULKAN_CPU_ALLOCATOR, &m_VkSemaphore);
+}
+
+VulkanSemaphore::~VulkanSemaphore()
+{
+	if (m_VkSemaphore == VK_NULL_HANDLE)
+	{
+		MLOG("Failed destory VkSemaphore.");
+	}
+	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_VkSemaphore, VULKAN_CPU_ALLOCATOR);
+}
+
+// VulkanDeviceMemoryAllocation
+VulkanDeviceMemoryAllocation::VulkanDeviceMemoryAllocation()
+	: m_Size(0)
+	, m_Device(VK_NULL_HANDLE)
+	, m_Handle(VK_NULL_HANDLE)
+	, m_MappedPointer(nullptr)
+	, m_MemoryTypeIndex(0)
+	, m_CanBeMapped(false)
+	, m_IsCoherent(false)
+	, m_IsCached(false)
+	, m_FreedBySystem(false)
+{
+
+}
+
+VulkanDeviceMemoryAllocation::~VulkanDeviceMemoryAllocation()
+{
+
+}
+
+void* VulkanDeviceMemoryAllocation::Map(VkDeviceSize size, VkDeviceSize offset)
+{
+	vkMapMemory(m_Device, m_Handle, offset, size, 0, &m_MappedPointer);
+	return m_MappedPointer;
+}
+
+void VulkanDeviceMemoryAllocation::Unmap()
+{
+	vkUnmapMemory(m_Device, m_Handle);
+}
+
+void VulkanDeviceMemoryAllocation::FlushMappedMemory(VkDeviceSize offset, VkDeviceSize size)
+{
+	if (!IsCoherent())
+	{
+		VkMappedMemoryRange range;
+		ZeroVulkanStruct(range, VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE);
+		range.memory = m_Handle;
+		range.offset = offset;
+		range.size   = size;
+		vkFlushMappedMemoryRanges(m_Device, 1, &range);
+	}
+}
+
+void VulkanDeviceMemoryAllocation::InvalidateMappedMemory(VkDeviceSize offset, VkDeviceSize size)
+{
+	if (!IsCoherent())
+	{
+		VkMappedMemoryRange range;
+		ZeroVulkanStruct(range, VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE);
+		range.memory = m_Handle;
+		range.offset = offset;
+		range.size   = size;
+		vkInvalidateMappedMemoryRanges(m_Device, 1, &range);
+	}
 }

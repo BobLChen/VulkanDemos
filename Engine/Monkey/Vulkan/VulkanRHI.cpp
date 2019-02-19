@@ -6,6 +6,8 @@
 #include "VulkanCommon.h"
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
+#include "VulkanMemory.h"
+#include "VulkanSwapChain.h"
 
 static inline int32 PreferAdapterVendor()
 {
@@ -58,6 +60,11 @@ void VulkanRHI::InitInstance()
     SetupDebugLayerCallback();
 #endif
     SelectAndInitDevice();
+
+	uint32 DesiredNumBackBuffers = 3;
+	std::vector<VkImage> images;
+	PixelFormat pixelFormat = PF_R8G8B8A8;
+	VulkanSwapChain* swapChain = new VulkanSwapChain(m_Instance, m_Device.get(), nullptr, pixelFormat, 800, 600, &DesiredNumBackBuffers, images, 0);
 }
 
 void VulkanRHI::RecreateSwapChain(void* newNativeWindow)

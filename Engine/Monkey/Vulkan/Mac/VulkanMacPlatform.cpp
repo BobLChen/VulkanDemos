@@ -2,6 +2,7 @@
 #include "Vulkan/Mac/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
+#include "Application/SlateApplication.h"
 
 static PFN_vkGetInstanceProcAddr G_GetInstanceProcAddr = nullptr;
 
@@ -39,9 +40,7 @@ void VulkanMacPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensi
 
 void VulkanMacPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
 {
-    VkMacOSSurfaceCreateInfoMVK surfaceCreateInfo;
-    ZeroVulkanStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK);
-    VERIFYVULKANRESULT(vkCreateMacOSSurfaceMVK(instance, &surfaceCreateInfo, nullptr, outSurface));
+    SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
 
 bool VulkanMacPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()

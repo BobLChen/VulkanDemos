@@ -78,10 +78,9 @@ public:
 
 	virtual void SetText(const char* const text) override;
     
-    virtual void* GetOSWindowHandle() const  override
-    {
-        return m_Window;
-    }
+	virtual void* GetOSWindowHandle() const override;
+
+	virtual void CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface) override;
     
     virtual WindowMode::Type GetWindowMode() const override
     {

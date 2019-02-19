@@ -26,6 +26,20 @@ GLFWWindow::~GLFWWindow()
 
 }
 
+void GLFWWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
+{
+	VkResult result = glfwCreateWindowSurface(instance, m_Window, VULKAN_CPU_ALLOCATOR, outSurface);
+	if (result != VK_SUCCESS)
+	{
+		MLOG("Failed to create vksurface. %ud", result);
+	}
+}
+
+void* GLFWWindow::GetOSWindowHandle() const
+{
+	return m_Window;
+}
+
 float GLFWWindow::GetAspectRatio() const
 {
 	return m_AspectRatio;

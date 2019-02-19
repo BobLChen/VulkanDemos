@@ -1,8 +1,9 @@
-#include "VulkanSwapChain.h"
 #include "VulkanDevice.h"
+#include "VulkanMemory.h"
+#include "VulkanSwapChain.h"
 #include "Math/Math.h"
 
-VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevice> device, void* windowHandle, PixelFormat& outPixelFormat, uint32 width, uint32 height,
+VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void* windowHandle, PixelFormat& outPixelFormat, uint32 width, uint32 height,
 	uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync)
 	: m_SwapChain(VK_NULL_HANDLE)
 	, m_Device(device)
@@ -106,6 +107,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 		bool foundPresentModeImmediate = false;
 		bool foundPresentModeFIFO = false;
 
+		MLOG("Found %d present mode.", numFoundPresentModes);
 		for (int32 index = 0; index < numFoundPresentModes; ++index)
 		{
 			switch (foundPresentModes[index])
@@ -123,7 +125,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 				MLOG("- VK_PRESENT_MODE_FIFO_KHR (%d)", (int32)VK_PRESENT_MODE_FIFO_KHR);
 				break;
 			default:
-				MLOG("- VkPresentModeKHR %d", (int32)foundPresentModes[index]);
+				MLOG("- VkPresentModeKHR (%d)", (int32)foundPresentModes[index]);
 				break;
 			}
 		}
@@ -210,12 +212,11 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	VERIFYVULKANRESULT_EXPANDED(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
 
 	m_ImageAcquiredFences.resize(numSwapChainImages);
+	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
+	
 	for (int32 index = 0; index < numSwapChainImages; ++index)
 	{
-		VkFenceCreateInfo createInfo;
-		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-		createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-		VERIFYVULKANRESULT(vkCreateFence(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_ImageAcquiredFences[index]));
+		m_ImageAcquiredFences[index] = fenceMgr.CreateFence(true);
 	}
 
 	m_ImageAcquiredSemaphore.resize(numSwapChainImages);
@@ -236,10 +237,10 @@ void VulkanSwapChain::Destroy()
 	vkDestroySwapchainKHR(m_Device->GetInstanceHandle(), m_SwapChain, VULKAN_CPU_ALLOCATOR);
 	m_SwapChain = VK_NULL_HANDLE;
 
+	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
 	for (int32 index = 0; index < m_ImageAcquiredFences.size(); ++index)
 	{
-		vkDestroyFence(m_Device->GetInstanceHandle(), m_ImageAcquiredFences[index], VULKAN_CPU_ALLOCATOR);
-		m_ImageAcquiredFences[index] = VK_NULL_HANDLE;
+		fenceMgr.ReleaseFence(m_ImageAcquiredFences[index]);
 	}
 
 	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index)
@@ -258,12 +259,16 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	const int32 prevSemaphoreIndex = m_SemaphoreIndex;
 	m_SemaphoreIndex = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
 	
+	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
+	fenceMgr.ResetFence(m_ImageAcquiredFences[m_SemaphoreIndex]);
+	const VkFence acquiredFence = m_ImageAcquiredFences[m_SemaphoreIndex]->GetHandle();
+
 	VkResult result = vkAcquireNextImageKHR(
 		m_Device->GetInstanceHandle(),
 		m_SwapChain, 
 		UINT64_MAX, 
 		m_ImageAcquiredSemaphore[m_SemaphoreIndex], 
-		m_ImageAcquiredFences[m_SemaphoreIndex],
+		acquiredFence,
 		&imageIndex
 	);
 
@@ -283,7 +288,7 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	*outSemaphore = m_ImageAcquiredSemaphore[m_SemaphoreIndex];
 	m_CurrentImageIndex = (int32)imageIndex;
 
-	vkWaitForFences(m_Device->GetInstanceHandle(), 1, &m_ImageAcquiredFences[m_SemaphoreIndex], true, UINT64_MAX);
+	fenceMgr.WaitForFence(m_ImageAcquiredFences[m_SemaphoreIndex], UINT64_MAX);
 	
 	return m_CurrentImageIndex;
 }

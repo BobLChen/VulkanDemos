@@ -132,6 +132,11 @@ void* GenericWindow::GetOSWindowHandle() const
 	return nullptr;
 }
 
+void GenericWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
+{
+
+}
+
 bool GenericWindow::IsForegroundWindow() const
 {
 

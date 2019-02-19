@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common/Common.h"
+#include "Vulkan/VulkanPlatform.h"
 #include <string>
 
 namespace WindowMode
@@ -98,6 +99,8 @@ public:
 	virtual int32 GetWindowTitleBarSize() const;
 
 	virtual void* GetOSWindowHandle() const;
+
+	virtual void CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface);
 
 	virtual bool IsForegroundWindow() const;
 

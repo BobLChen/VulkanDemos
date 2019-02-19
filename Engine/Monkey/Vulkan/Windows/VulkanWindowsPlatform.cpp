@@ -1,4 +1,6 @@
 #include "Configuration/Platform.h"
+#include "Application/SlateApplication.h"
+
 #include "Vulkan/Windows/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
@@ -37,11 +39,7 @@ void VulkanWindowsPlatform::GetDeviceExtensions(std::vector<const char*>& outExt
 
 void VulkanWindowsPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
 {
-	VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;
-	ZeroVulkanStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR);
-	surfaceCreateInfo.hinstance = GetModuleHandle(nullptr);
-	surfaceCreateInfo.hwnd = (HWND)windowHandle;
-	VERIFYVULKANRESULT(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, outSurface));
+	SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
 
 bool VulkanWindowsPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()
