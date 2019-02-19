@@ -15,8 +15,6 @@ public:
     
     static void GetDeviceExtensions(std::vector<const char*>& outExtensions);
     
-    static void CreateSurface(VkSurfaceKHR* outSurface);
-    
     static bool IsSupported()
     {
         return true;

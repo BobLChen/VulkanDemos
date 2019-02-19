@@ -24,7 +24,7 @@ int32 Engine::PreInit(const char* cmdLine, int32 width, int32 height, const char
 	SlateApplication::Create(this);
 	SlateApplication::Get().MakeWindow(width, height, title);
 
-	m_VulkanRHI = std::make_shared< VulkanRHI>();
+	m_VulkanRHI = std::make_shared<VulkanRHI>();
 	m_VulkanRHI->Init();
 	return 0;
 }

@@ -18,7 +18,7 @@ public:
 		SurfaceLost = -2,
 	};
 
-	VulkanSwapChain(VkInstance instance, VulkanDevice* device, void* windowHandle, PixelFormat& outPixelFormat, uint32 width, uint32 height,
+	VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevice> device, PixelFormat& outPixelFormat, uint32 width, uint32 height,
 		uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync);
 
 	void Destroy();
@@ -36,7 +36,7 @@ protected:
 protected:
 	VkSwapchainKHR m_SwapChain;
 	VkSurfaceKHR m_Surface;
-	VulkanDevice* m_Device;
+	std::shared_ptr<VulkanDevice> m_Device;
 
 	int32 m_CurrentImageIndex;
 	int32 m_SemaphoreIndex;

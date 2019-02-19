@@ -3,7 +3,7 @@
 #include "VulkanSwapChain.h"
 #include "Math/Math.h"
 
-VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void* windowHandle, PixelFormat& outPixelFormat, uint32 width, uint32 height,
+VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevice> device, PixelFormat& outPixelFormat, uint32 width, uint32 height,
 	uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync)
 	: m_SwapChain(VK_NULL_HANDLE)
     , m_Surface(VK_NULL_HANDLE)
@@ -15,7 +15,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, VulkanDevice* device, void
 	, m_Instance(instance)
 	, m_LockToVsync(lockToVsync)
 {
-	VulkanPlatform::CreateSurface(windowHandle, instance, &m_Surface);
+	VulkanPlatform::CreateSurface(instance, &m_Surface);
 	
 	VkSurfaceFormatKHR currFormat;
 	memset(&currFormat, 0, sizeof(VkSurfaceFormatKHR));

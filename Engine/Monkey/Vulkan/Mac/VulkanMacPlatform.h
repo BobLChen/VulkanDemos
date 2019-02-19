@@ -25,7 +25,7 @@ public:
     
     static void GetDeviceExtensions(std::vector<const char*>& outExtensions);
     
-    static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface);
+    static void CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface);
     
     static bool SupportsDeviceLocalHostVisibleWithNoPenalty();
     

@@ -64,7 +64,7 @@ void VulkanRHI::InitInstance()
 	uint32 DesiredNumBackBuffers = 3;
 	std::vector<VkImage> images;
 	PixelFormat pixelFormat = PF_R8G8B8A8;
-	VulkanSwapChain* swapChain = new VulkanSwapChain(m_Instance, m_Device.get(), nullptr, pixelFormat, 800, 600, &DesiredNumBackBuffers, images, 1);
+	VulkanSwapChain* swapChain = new VulkanSwapChain(m_Instance, m_Device, pixelFormat, 800, 600, &DesiredNumBackBuffers, images, 1);
 }
 
 void VulkanRHI::RecreateSwapChain(void* newNativeWindow)
@@ -239,14 +239,4 @@ void VulkanRHI::SelectAndInitDevice()
     }
 	
     m_Device->InitGPU(deviceIndex);
-}
-
-void VulkanRHI::InitGPU(VkDevice device)
-{
-
-}
-
-void VulkanRHI::InitDevice(VkDevice device)
-{
-
 }

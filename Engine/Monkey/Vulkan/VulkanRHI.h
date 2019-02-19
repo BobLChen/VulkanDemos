@@ -66,10 +66,6 @@ protected:
 
 	void SelectAndInitDevice();
 
-	void InitGPU(VkDevice device);
-
-	void InitDevice(VkDevice device);
-
 	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers, bool& outDebugUtils);
 
 protected:

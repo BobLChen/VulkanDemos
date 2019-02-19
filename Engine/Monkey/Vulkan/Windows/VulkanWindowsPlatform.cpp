@@ -38,7 +38,7 @@ void VulkanWindowsPlatform::GetDeviceExtensions(std::vector<const char*>& outExt
 	
 }
 
-void VulkanWindowsPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
+void VulkanWindowsPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
 	SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }

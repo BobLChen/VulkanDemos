@@ -37,7 +37,7 @@ void VulkanMacPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensi
     
 }
 
-void VulkanMacPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface)
+void VulkanMacPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
     SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
