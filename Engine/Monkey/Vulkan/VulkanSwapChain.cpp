@@ -91,64 +91,60 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 		}
 	}
 	
-	// VkFormat platformFormat = PixelFormatToVkFormat(outPixelFormat, false);
 	m_Device->SetupPresentQueue(m_Surface);
-
-	VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-	if (VulkanPlatform::SupportsQuerySurfaceProperties())
-	{
-		uint32 numFoundPresentModes = 0;
-		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, nullptr));
-		std::vector< VkPresentModeKHR> foundPresentModes(numFoundPresentModes);
-		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, foundPresentModes.data()));
-
-		bool foundPresentModeMailbox = false;
-		bool foundPresentModeImmediate = false;
-		bool foundPresentModeFIFO = false;
-
-		MLOG("Found %d present mode.", numFoundPresentModes);
-		for (int32 index = 0; index < numFoundPresentModes; ++index)
-		{
-			switch (foundPresentModes[index])
-			{
-			case VK_PRESENT_MODE_MAILBOX_KHR:
-				foundPresentModeMailbox = true;
-				MLOG("- VK_PRESENT_MODE_MAILBOX_KHR (%d)", (int32)VK_PRESENT_MODE_MAILBOX_KHR);
-				break;
-			case VK_PRESENT_MODE_IMMEDIATE_KHR:
-				foundPresentModeImmediate = true;
-				MLOG("- VK_PRESENT_MODE_IMMEDIATE_KHR (%d)", (int32)VK_PRESENT_MODE_IMMEDIATE_KHR);
-				break;
-			case VK_PRESENT_MODE_FIFO_KHR:
-				foundPresentModeFIFO = true;
-				MLOG("- VK_PRESENT_MODE_FIFO_KHR (%d)", (int32)VK_PRESENT_MODE_FIFO_KHR);
-				break;
-			default:
-				MLOG("- VkPresentModeKHR (%d)", (int32)foundPresentModes[index]);
-				break;
-			}
-		}
-		
-		if (foundPresentModeImmediate && !m_LockToVsync)
-		{
-			presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-		}
-		else if (foundPresentModeMailbox)
-		{
-			presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-		}
-		else if (foundPresentModeFIFO)
-		{
-			presentMode = VK_PRESENT_MODE_FIFO_KHR;
-		}
-		else
-		{
-			MLOG("Couldn't find desired PresentMode! Using %d", (int32)foundPresentModes[0]);
-			presentMode = foundPresentModes[0];
-		}
-		
-		MLOG("Selected VkPresentModeKHR mode %d", presentMode);
-	}
+    
+    uint32 numFoundPresentModes = 0;
+    VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, nullptr));
+    std::vector< VkPresentModeKHR> foundPresentModes(numFoundPresentModes);
+    VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, foundPresentModes.data()));
+    
+    bool foundPresentModeMailbox = false;
+    bool foundPresentModeImmediate = false;
+    bool foundPresentModeFIFO = false;
+    
+    MLOG("Found %d present mode.", numFoundPresentModes);
+    for (int32 index = 0; index < numFoundPresentModes; ++index)
+    {
+        switch (foundPresentModes[index])
+        {
+            case VK_PRESENT_MODE_MAILBOX_KHR:
+                foundPresentModeMailbox = true;
+                MLOG("- VK_PRESENT_MODE_MAILBOX_KHR (%d)", (int32)VK_PRESENT_MODE_MAILBOX_KHR);
+                break;
+            case VK_PRESENT_MODE_IMMEDIATE_KHR:
+                foundPresentModeImmediate = true;
+                MLOG("- VK_PRESENT_MODE_IMMEDIATE_KHR (%d)", (int32)VK_PRESENT_MODE_IMMEDIATE_KHR);
+                break;
+            case VK_PRESENT_MODE_FIFO_KHR:
+                foundPresentModeFIFO = true;
+                MLOG("- VK_PRESENT_MODE_FIFO_KHR (%d)", (int32)VK_PRESENT_MODE_FIFO_KHR);
+                break;
+            default:
+                MLOG("- VkPresentModeKHR (%d)", (int32)foundPresentModes[index]);
+                break;
+        }
+    }
+    
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    if (foundPresentModeImmediate && !m_LockToVsync)
+    {
+        presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    }
+    else if (foundPresentModeMailbox)
+    {
+        presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+    }
+    else if (foundPresentModeFIFO)
+    {
+        presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    }
+    else
+    {
+        MLOG("Couldn't find desired PresentMode! Using %d", (int32)foundPresentModes[0]);
+        presentMode = foundPresentModes[0];
+    }
+    
+    MLOG("Selected VkPresentModeKHR mode %d", presentMode);
 
 	VkSurfaceCapabilitiesKHR surfProperties;
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device->GetPhysicalHandle(), m_Surface, &surfProperties));
@@ -169,8 +165,8 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	}
 	
 	uint32 desiredNumBuffers = surfProperties.maxImageCount > 0 ? MMath::Clamp(*outDesiredNumBackBuffers, surfProperties.minImageCount, surfProperties.maxImageCount) : *outDesiredNumBackBuffers;
-	uint32 sizeX = VulkanPlatform::SupportsQuerySurfaceProperties() ? (surfProperties.currentExtent.width  == 0xFFFFFFFF ? width  : surfProperties.currentExtent.width)  : width;
-	uint32 sizeY = VulkanPlatform::SupportsQuerySurfaceProperties() ? (surfProperties.currentExtent.height == 0xFFFFFFFF ? height : surfProperties.currentExtent.height) : height;
+    uint32 sizeX = surfProperties.currentExtent.width  == 0xFFFFFFFF ? width : surfProperties.currentExtent.width;
+	uint32 sizeY = surfProperties.currentExtent.height == 0xFFFFFFFF ? height : surfProperties.currentExtent.height;
 	
 	VkSwapchainCreateInfoKHR swapChainInfo;
 	ZeroVulkanStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
@@ -212,7 +208,6 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 
 	m_ImageAcquiredFences.resize(numSwapChainImages);
 	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
-	
 	for (int32 index = 0; index < numSwapChainImages; ++index)
 	{
 		m_ImageAcquiredFences[index] = fenceMgr.CreateFence(true);
@@ -312,10 +307,7 @@ VulkanSwapChain::Status VulkanSwapChain::Present(VulkanQueue* gfxQueue, VulkanQu
 	createInfo.swapchainCount = 1;
 	createInfo.pSwapchains = &m_SwapChain;
 	createInfo.pImageIndices = (uint32*)&m_CurrentImageIndex;
-
-	// const int32 syncInterval = m_LockToVsync ? 1 : 0;
-	VulkanPlatform::EnablePresentInfoExtensions(createInfo);
-
+    
 	m_PresentID++;
 
 	VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &createInfo);

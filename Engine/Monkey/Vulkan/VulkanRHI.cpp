@@ -8,6 +8,7 @@
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
 #include "VulkanSwapChain.h"
+#include "VulkanMemory.h"
 
 static inline int32 PreferAdapterVendor()
 {
@@ -20,8 +21,14 @@ VulkanRHI::VulkanRHI()
 	, m_RenderComplete(VK_NULL_HANDLE)
 	, m_CommandPool(VK_NULL_HANDLE)
 	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+    , m_Device(nullptr)
     , m_SwapChain(nullptr)
-	, m_Device(nullptr)
+    , m_DepthStencilImage(VK_NULL_HANDLE)
+    , m_DepthStencilView(VK_NULL_HANDLE)
+    , m_DepthStencilMemory(VK_NULL_HANDLE)
+    , m_PixelFormat(PF_B8G8R8A8)
+    , m_DepthFormat(VK_FORMAT_D24_UNORM_S8_UINT)
+    , m_RenderPass(VK_NULL_HANDLE)
 {
     
 }
@@ -48,18 +55,19 @@ void VulkanRHI::PostInit()
 
 void VulkanRHI::Shutdown()
 {
-#if MONKEY_DEBUG
-    RemoveDebugLayerCallback();
-#endif
+    DestoryRenderPass();
     DestoryDepthStencil();
     DestoryCommandBuffers();
     DestoryCommandPool();
     DestorySwapChain();
-	DestoryEvent();
+	DestorySemaphore();
     
     m_Device->Destroy();
     m_Device = nullptr;
     
+#if MONKEY_DEBUG
+    RemoveDebugLayerCallback();
+#endif
     vkDestroyInstance(m_Instance, VULKAN_CPU_ALLOCATOR);
 }
 
@@ -70,14 +78,90 @@ void VulkanRHI::InitInstance()
     SetupDebugLayerCallback();
 #endif
     SelectAndInitDevice();
-	CreateEvent();
+	CreateSemaphores();
     RecreateSwapChain();
     CreateCommandPool();
     CreateCommandBuffers();
     CreateDepthStencil();
+    CreateRenderPass();
 }
 
-void VulkanRHI::CreateEvent()
+void VulkanRHI::CreateRenderPass()
+{
+    std::vector<VkAttachmentDescription> attachments(2);
+    // color attachment
+    attachments[0].format = PixelFormatToVkFormat(m_PixelFormat, false);
+    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // depth stencil attachment
+    attachments[1].format = m_DepthFormat;
+    attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    
+    VkAttachmentReference colorReference = { };
+    colorReference.attachment = 0;
+    colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    
+    VkAttachmentReference depthReference = { };
+    depthReference.attachment = 1;
+    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    
+    VkSubpassDescription subpassDescription = { };
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = 1;
+    subpassDescription.pColorAttachments = &colorReference;
+    subpassDescription.pDepthStencilAttachment = &depthReference;
+    subpassDescription.pResolveAttachments = nullptr;
+    subpassDescription.inputAttachmentCount = 0;
+    subpassDescription.pInputAttachments = nullptr;
+    subpassDescription.preserveAttachmentCount = 0;
+    subpassDescription.pPreserveAttachments = nullptr;
+    
+    std::vector<VkSubpassDependency> dependencies(2);
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    
+    dependencies[1].srcSubpass = 0;
+    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    
+    VkRenderPassCreateInfo renderPassInfo;
+    ZeroVulkanStruct(renderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpassDescription;
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies = dependencies.data();
+    
+    VERIFYVULKANRESULT(vkCreateRenderPass(m_Device->GetInstanceHandle(), &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
+}
+
+void VulkanRHI::DestoryRenderPass()
+{
+    vkDestroyRenderPass(m_Device->GetInstanceHandle(), m_RenderPass, VULKAN_CPU_ALLOCATOR);
+}
+
+void VulkanRHI::CreateSemaphores()
 {
 	VkSemaphoreCreateInfo createInfo;
 	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
@@ -92,7 +176,7 @@ void VulkanRHI::CreateEvent()
 	m_SubmitInfo.pSignalSemaphores = &m_RenderComplete;
 }
 
-void VulkanRHI::DestoryEvent()
+void VulkanRHI::DestorySemaphore()
 {
 	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_PresentComplete, VULKAN_CPU_ALLOCATOR);
 	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
@@ -115,20 +199,18 @@ void VulkanRHI::DestoryCommandPool()
 void VulkanRHI::RecreateSwapChain()
 {
     uint32 desiredNumBackBuffers = 3;
-    PixelFormat pixelFormat = PF_R8G8B8A8;
     int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
     int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
     
-    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, pixelFormat, width, height, &desiredNumBackBuffers, m_Images, 1));
+    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_Images, 1));
     
     m_ImageViews.resize(m_Images.size());
     for (int i = 0; i < m_Images.size(); ++i)
     {
         VkImageViewCreateInfo createInfo;
         ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        createInfo.pNext = nullptr;
-        createInfo.format = PixelFormatToVkFormat(pixelFormat, false);
-        createInfo.components = m_Device->GetFormatComponentMapping(pixelFormat);
+        createInfo.format = PixelFormatToVkFormat(m_PixelFormat, false);
+        createInfo.components = m_Device->GetFormatComponentMapping(m_PixelFormat);
         createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         createInfo.subresourceRange.baseMipLevel = 0;
         createInfo.subresourceRange.levelCount = 1;
@@ -175,9 +257,8 @@ void VulkanRHI::CreateDepthStencil()
     
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-    imageCreateInfo.pNext = nullptr;
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    imageCreateInfo.format = m_DepthFormat;
     imageCreateInfo.extent = { (uint32)width, (uint32)height, 1 };
     imageCreateInfo.mipLevels = 1;
     imageCreateInfo.arrayLayers = 1;
@@ -185,31 +266,41 @@ void VulkanRHI::CreateDepthStencil()
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     imageCreateInfo.flags = 0;
-    
-    VkMemoryAllocateInfo memAllocateInfo = {};
-    ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    memAllocateInfo.pNext = nullptr;
-    memAllocateInfo.allocationSize = 0;
-    memAllocateInfo.memoryTypeIndex = 0;
+    VERIFYVULKANRESULT(vkCreateImage(m_Device->GetInstanceHandle(), &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilImage));
     
     VkImageViewCreateInfo imageViewCreateInfo;
     ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-    imageViewCreateInfo.pNext = nullptr;
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
     imageViewCreateInfo.flags = 0;
-    imageViewCreateInfo.subresourceRange = {};
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
     imageViewCreateInfo.subresourceRange.levelCount = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     imageViewCreateInfo.subresourceRange.layerCount = 1;
+    imageViewCreateInfo.image = m_DepthStencilImage;
     
+    VkMemoryRequirements memRequire;
+    vkGetImageMemoryRequirements(m_Device->GetInstanceHandle(), imageViewCreateInfo.image, &memRequire);
+    
+    uint32 memoryTypeIndex = 0;
+    VERIFYVULKANRESULT(m_Device->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex));
+    
+    VkMemoryAllocateInfo memAllocateInfo;
+    ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+    memAllocateInfo.allocationSize = memRequire.size;
+    memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+    
+    vkAllocateMemory(m_Device->GetInstanceHandle(), &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);
+    vkBindImageMemory(m_Device->GetInstanceHandle(), m_DepthStencilImage, m_DepthStencilMemory, 0);
+    VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
 }
 
 void VulkanRHI::DestoryDepthStencil()
 {
-    
+    vkFreeMemory(m_Device->GetInstanceHandle(), m_DepthStencilMemory, VULKAN_CPU_ALLOCATOR);
+    vkDestroyImageView(m_Device->GetInstanceHandle(), m_DepthStencilView, VULKAN_CPU_ALLOCATOR);
+    vkDestroyImage(m_Device->GetInstanceHandle(), m_DepthStencilImage, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::CreateInstance()

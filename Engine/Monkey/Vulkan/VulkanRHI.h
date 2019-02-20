@@ -24,9 +24,9 @@ public:
 
 	virtual void InitInstance();
 
-	virtual void CreateEvent();
+	virtual void CreateSemaphores();
 
-	virtual void DestoryEvent();
+	virtual void DestorySemaphore();
 
 	virtual void RecreateSwapChain();
 
@@ -43,6 +43,10 @@ public:
     virtual void CreateDepthStencil();
     
     virtual void DestoryDepthStencil();
+    
+    virtual void CreateRenderPass();
+    
+    virtual void DestoryRenderPass();
     
 	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
@@ -113,8 +117,11 @@ protected:
     std::vector<VkImageView> m_ImageViews;
     
     VkImage m_DepthStencilImage;
-    VkImageView m_DepthStencilImageView;
-    VkDeviceMemory m_DepthStencilImageMemory;
+    VkImageView m_DepthStencilView;
+    VkDeviceMemory m_DepthStencilMemory;
+    PixelFormat m_PixelFormat;
+    VkFormat m_DepthFormat;
+    VkRenderPass m_RenderPass;
 	
 	bool m_SupportsDebugUtilsExt;
 };

@@ -452,7 +452,7 @@ void VulkanDeviceMemoryManager::SetupAndPrintMemInfo()
         m_HeapInfos[index].totalSize = m_MemoryProperties.memoryHeaps[index].size;
     }
     
-    m_HasUnifiedMemory = VulkanPlatform::HasUnifiedMemory();
+    m_HasUnifiedMemory = false;
     MLOG("%d Device Memory Types (%sunified)", m_MemoryProperties.memoryTypeCount, m_HasUnifiedMemory ? "" : "Not");
     for (uint32 index = 0; index < m_MemoryProperties.memoryTypeCount; ++index)
     {
