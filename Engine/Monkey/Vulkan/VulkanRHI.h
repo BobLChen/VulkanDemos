@@ -48,6 +48,10 @@ public:
     
     virtual void DestoryRenderPass();
     
+    virtual void CreatePipelineCache();
+    
+    virtual void DestoryPipelineCache();
+    
 	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
@@ -122,6 +126,7 @@ protected:
     PixelFormat m_PixelFormat;
     VkFormat m_DepthFormat;
     VkRenderPass m_RenderPass;
+    VkPipelineCache m_PipelineCache;
 	
 	bool m_SupportsDebugUtilsExt;
 };

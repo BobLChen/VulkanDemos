@@ -55,6 +55,7 @@ void VulkanRHI::PostInit()
 
 void VulkanRHI::Shutdown()
 {
+    DestoryPipelineCache();
     DestoryRenderPass();
     DestoryDepthStencil();
     DestoryCommandBuffers();
@@ -84,6 +85,19 @@ void VulkanRHI::InitInstance()
     CreateCommandBuffers();
     CreateDepthStencil();
     CreateRenderPass();
+    CreatePipelineCache();
+}
+
+void VulkanRHI::CreatePipelineCache()
+{
+    VkPipelineCacheCreateInfo createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
+    VERIFYVULKANRESULT(vkCreatePipelineCache(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineCache));
+}
+
+void VulkanRHI::DestoryPipelineCache()
+{
+    vkDestroyPipelineCache(m_Device->GetInstanceHandle(), m_PipelineCache, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::CreateRenderPass()
