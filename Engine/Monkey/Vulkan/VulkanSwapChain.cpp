@@ -203,12 +203,12 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	VkBool32 supportsPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
 
-	VERIFYVULKANRESULT_EXPANDED(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &swapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
+	VERIFYVULKANRESULT(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &swapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
 
 	uint32 numSwapChainImages;
-	VERIFYVULKANRESULT_EXPANDED(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
+	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
 	outImages.resize(numSwapChainImages);
-	VERIFYVULKANRESULT_EXPANDED(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
+	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
 
 	m_ImageAcquiredFences.resize(numSwapChainImages);
 	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();

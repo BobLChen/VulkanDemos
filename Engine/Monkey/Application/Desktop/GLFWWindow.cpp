@@ -7,12 +7,10 @@
 #include <algorithm>
 
 GLFWWindow::GLFWWindow(int32 width, int32 height, const char* title)
-	: GenericWindow()
+	: GenericWindow(width, height)
     , m_Window(nullptr)
     , m_WindowMode(WindowMode::Windowed)
 	, m_MasterApplication(nullptr)
-	, m_Width(width)
-	, m_Height(height)
 	, m_Title(title)
     , m_Visible(false)
 	, m_AspectRatio(1.0f)

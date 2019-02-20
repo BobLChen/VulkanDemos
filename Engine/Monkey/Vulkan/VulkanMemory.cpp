@@ -64,7 +64,7 @@ VulkanFence::VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool c
 
 VulkanFence::~VulkanFence()
 {
-	if (m_VkFence == VK_NULL_HANDLE)
+	if (m_VkFence != VK_NULL_HANDLE)
 	{
 		MLOG("Didn't get properly destroyed by FFenceManager!");
 	}

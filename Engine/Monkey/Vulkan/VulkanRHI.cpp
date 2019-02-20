@@ -20,9 +20,10 @@ VulkanRHI::VulkanRHI()
 	, m_RenderComplete(VK_NULL_HANDLE)
 	, m_CommandPool(VK_NULL_HANDLE)
 	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+    , m_SwapChain(nullptr)
 	, m_Device(nullptr)
 {
-
+    
 }
 
 VulkanRHI::~VulkanRHI()
@@ -50,10 +51,12 @@ void VulkanRHI::Shutdown()
 #if MONKEY_DEBUG
     RemoveDebugLayerCallback();
 #endif
+    DestoryDepthStencil();
+    DestoryCommandBuffers();
+    DestoryCommandPool();
+    DestorySwapChain();
 	DestoryEvent();
-
-	DestorySwapChain();
-
+    
     m_Device->Destroy();
     m_Device = nullptr;
     
@@ -67,18 +70,14 @@ void VulkanRHI::InitInstance()
     SetupDebugLayerCallback();
 #endif
     SelectAndInitDevice();
-
-	InitEvent();
-
-	RecreateSwapChain();
-
-	uint32 DesiredNumBackBuffers = 3;
-	std::vector<VkImage> images;
-	PixelFormat pixelFormat = PF_R8G8B8A8;
-	VulkanSwapChain* swapChain = new VulkanSwapChain(m_Instance, m_Device, pixelFormat, 800, 600, &DesiredNumBackBuffers, images, 1);
+	CreateEvent();
+    RecreateSwapChain();
+    CreateCommandPool();
+    CreateCommandBuffers();
+    CreateDepthStencil();
 }
 
-void VulkanRHI::InitEvent()
+void VulkanRHI::CreateEvent()
 {
 	VkSemaphoreCreateInfo createInfo;
 	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
@@ -99,29 +98,118 @@ void VulkanRHI::DestoryEvent()
 	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 }
 
+void VulkanRHI::CreateCommandPool()
+{
+    VkCommandPoolCreateInfo createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+    createInfo.queueFamilyIndex = m_Device->GetPresentQueue()->GetFamilyIndex();
+    createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    VERIFYVULKANRESULT(vkCreateCommandPool(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_CommandPool));
+}
+
+void VulkanRHI::DestoryCommandPool()
+{
+    vkDestroyCommandPool(m_Device->GetInstanceHandle(), m_CommandPool, VULKAN_CPU_ALLOCATOR);
+}
+
 void VulkanRHI::RecreateSwapChain()
 {
-
+    uint32 desiredNumBackBuffers = 3;
+    PixelFormat pixelFormat = PF_R8G8B8A8;
+    int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
+    int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+    
+    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, pixelFormat, width, height, &desiredNumBackBuffers, m_Images, 1));
+    
+    m_ImageViews.resize(m_Images.size());
+    for (int i = 0; i < m_Images.size(); ++i)
+    {
+        VkImageViewCreateInfo createInfo;
+        ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+        createInfo.pNext = nullptr;
+        createInfo.format = PixelFormatToVkFormat(pixelFormat, false);
+        createInfo.components = m_Device->GetFormatComponentMapping(pixelFormat);
+        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel = 0;
+        createInfo.subresourceRange.levelCount = 1;
+        createInfo.subresourceRange.baseArrayLayer = 0;
+        createInfo.subresourceRange.layerCount = 1;
+        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.flags = 0;
+        createInfo.image = m_Images[i];
+        VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &(m_ImageViews[i])));
+    }
 }
 
 void VulkanRHI::DestorySwapChain()
 {
-
+    for (int i = 0; i < m_ImageViews.size(); ++i)
+    {
+        vkDestroyImageView(m_Device->GetInstanceHandle(), m_ImageViews[i], VULKAN_CPU_ALLOCATOR);
+    }
+    m_SwapChain->Destroy();
+    m_SwapChain = nullptr;
 }
 
-void VulkanRHI::SavePipelineCache()
+void VulkanRHI::CreateCommandBuffers()
 {
-
+    m_CommandBuffers.resize(m_ImageViews.size());
+    VkCommandBufferAllocateInfo allocateInfo;
+    ZeroVulkanStruct(allocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+    allocateInfo.commandPool = m_CommandPool;
+    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandBufferCount = m_ImageViews.size();
+    
+    VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device->GetInstanceHandle(), &allocateInfo, m_CommandBuffers.data()));
 }
 
-void VulkanRHI::PooledUniformBuffersBeginFrame()
+void VulkanRHI::DestoryCommandBuffers()
 {
-
+    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, m_ImageViews.size(), m_CommandBuffers.data());
 }
 
-void VulkanRHI::ReleasePooledUniformBuffers()
+void VulkanRHI::CreateDepthStencil()
 {
+    int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
+    int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+    
+    VkImageCreateInfo imageCreateInfo;
+    ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
+    imageCreateInfo.pNext = nullptr;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    imageCreateInfo.extent = { (uint32)width, (uint32)height, 1 };
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.arrayLayers = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imageCreateInfo.flags = 0;
+    
+    VkMemoryAllocateInfo memAllocateInfo = {};
+    ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+    memAllocateInfo.pNext = nullptr;
+    memAllocateInfo.allocationSize = 0;
+    memAllocateInfo.memoryTypeIndex = 0;
+    
+    VkImageViewCreateInfo imageViewCreateInfo;
+    ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+    imageViewCreateInfo.pNext = nullptr;
+    imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    imageViewCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    imageViewCreateInfo.flags = 0;
+    imageViewCreateInfo.subresourceRange = {};
+    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    imageViewCreateInfo.subresourceRange.layerCount = 1;
+    
+}
 
+void VulkanRHI::DestoryDepthStencil()
+{
+    
 }
 
 void VulkanRHI::CreateInstance()

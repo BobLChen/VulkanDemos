@@ -517,9 +517,6 @@ void VulkanDevice::PrepareForDestroy()
 
 void VulkanDevice::Destroy()
 {
-	//vkDestroyImageView(GetInstanceHandle(), m_DefaultImageView, VULKAN_CPU_ALLOCATOR);
-	//m_DefaultImageView = VK_NULL_HANDLE;
-    
     m_ResourceHeapManager.Destory();
 	m_FenceManager.Destory();
     m_MemoryManager.Destory();

@@ -7,6 +7,7 @@
 
 class VulkanDevice;
 class VulkanQueue;
+class VulkanSwapChain;
 
 class VulkanRHI
 {
@@ -23,16 +24,26 @@ public:
 
 	virtual void InitInstance();
 
-	virtual void InitEvent();
+	virtual void CreateEvent();
 
 	virtual void DestoryEvent();
 
 	virtual void RecreateSwapChain();
 
 	virtual void DestorySwapChain();
-
-	static void SavePipelineCache();
-
+    
+    virtual void CreateCommandPool();
+    
+    virtual void DestoryCommandPool();
+    
+    virtual void CreateCommandBuffers();
+    
+    virtual void DestoryCommandBuffers();
+    
+    virtual void CreateDepthStencil();
+    
+    virtual void DestoryDepthStencil();
+    
 	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
@@ -64,10 +75,6 @@ public:
 	}
 
 protected:
-	void PooledUniformBuffersBeginFrame();
-
-	void ReleasePooledUniformBuffers();
-
 	void CreateInstance();
 
 	void SelectAndInitDevice();
@@ -85,16 +92,29 @@ protected:
 protected:
     
 	VkInstance m_Instance;
-	VkSemaphore m_PresentComplete;
+    std::vector<const char*> m_InstanceLayers;
+    std::vector<const char*> m_InstanceExtensions;
+    
+    VkSemaphore m_PresentComplete;
 	VkSemaphore m_RenderComplete;
-	VkSubmitInfo m_SubmitInfo;
-	VkCommandPool m_CommandPool;
+	
+    VkSubmitInfo m_SubmitInfo;
+	
+    VkCommandPool m_CommandPool;
+    std::vector<VkCommandBuffer> m_CommandBuffers;
+    
 	VkPipelineStageFlags m_SubmitPipelineStages;
-
-	std::shared_ptr<VulkanDevice> m_Device;
-	std::vector<const char*> m_InstanceLayers;
-	std::vector<const char*> m_InstanceExtensions;
-	std::vector<std::shared_ptr<VulkanDevice>> m_Devices;
+    
+    std::shared_ptr<VulkanDevice> m_Device;
+    std::vector<std::shared_ptr<VulkanDevice>> m_Devices;
+    
+    std::shared_ptr<VulkanSwapChain> m_SwapChain;
+    std::vector<VkImage> m_Images;
+    std::vector<VkImageView> m_ImageViews;
+    
+    VkImage m_DepthStencilImage;
+    VkImageView m_DepthStencilImageView;
+    VkDeviceMemory m_DepthStencilImageMemory;
 	
 	bool m_SupportsDebugUtilsExt;
 };

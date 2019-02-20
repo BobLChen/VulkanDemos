@@ -10,6 +10,7 @@
 #include "Utils/Alignment.h"
 #include "Math/Vector2.h"
 #include "Math/Color.h"
+#include "Math/Math.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -735,7 +736,7 @@ class LastRenderTimeContainer
 {
 public:
 	LastRenderTimeContainer() 
-		: m_LastRenderTime(-FLT_MAX) 
+		: m_LastRenderTime(-MAX_FLT) 
 	{
 
 	}

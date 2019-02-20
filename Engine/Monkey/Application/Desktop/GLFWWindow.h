@@ -100,9 +100,6 @@ private:
 	WindowMode::Type m_WindowMode;
 	GLFWApplication* m_MasterApplication;
     
-	int32 m_Width;
-	int32 m_Height;
-
 	std::string m_Title;
 
 	bool m_Visible;

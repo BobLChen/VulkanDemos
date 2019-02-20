@@ -1,7 +1,9 @@
 #include "Application/GenericWindow.h"
 #include "Common/Log.h"
 
-GenericWindow::GenericWindow()
+GenericWindow::GenericWindow(int width, int height)
+    : m_Width(width)
+    , m_Height(height)
 {
 
 }
