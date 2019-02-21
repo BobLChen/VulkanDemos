@@ -5,7 +5,6 @@
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     : m_Device(VK_NULL_HANDLE)
-    , m_DefaultImageView(VK_NULL_HANDLE)
     , m_PhysicalDevice(physicalDevice)
     , m_GfxQueue(nullptr)
     , m_ComputeQueue(nullptr)
@@ -35,8 +34,6 @@ void VulkanDevice::CreateDevice()
 	std::vector<const char*> validationLayers;
 	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
 
-	ParseOptionalDeviceExtensions(deviceExtensions);
-    
 	deviceInfo.enabledExtensionCount = deviceExtensions.size();
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount = validationLayers.size();
@@ -150,32 +147,13 @@ void VulkanDevice::CreateDevice()
 	{
 		computeQueueFamilyIndex = gfxQueueFamilyIndex;
 	}
-	else
-	{
-		m_AsyncComputeQueue = true;
-	}
-
 	m_ComputeQueue = std::make_shared<VulkanQueue>(this, computeQueueFamilyIndex);
 
 	if (transferQueueFamilyIndex == -1)
 	{
 		transferQueueFamilyIndex = computeQueueFamilyIndex;
 	}
-
 	m_TransferQueue = std::make_shared<VulkanQueue>(this, transferQueueFamilyIndex);
-
-	uint64 numBits = m_QueueFamilyProps[gfxQueueFamilyIndex].timestampValidBits;
-	if (numBits > 0)
-	{
-		if (numBits == 64)
-		{
-			m_TimestampValidBitsMask = UINT64_MAX;
-		}
-		else
-		{
-			m_TimestampValidBitsMask = ((uint64)1 << (uint64)numBits) - (uint64)1;
-		}
-	}
 }
 
 void VulkanDevice::SetupFormats()
@@ -396,11 +374,6 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
 	m_FenceManager.Init(this);
 }
 
-void VulkanDevice::PrepareForDestroy()
-{
-	WaitUntilIdle();
-}
-
 void VulkanDevice::Destroy()
 {
     m_ResourceHeapManager.Destory();
@@ -409,11 +382,6 @@ void VulkanDevice::Destroy()
     
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
-}
-
-void VulkanDevice::WaitUntilIdle()
-{
-	vkDeviceWaitIdle(m_Device);
 }
 
 bool VulkanDevice::IsFormatSupported(VkFormat format)
@@ -446,24 +414,5 @@ bool VulkanDevice::IsFormatSupported(VkFormat format)
 
 const VkComponentMapping& VulkanDevice::GetFormatComponentMapping(PixelFormat format) const
 {
-    if (format == PF_X24_G8)
-    {
-        return GetFormatComponentMapping(PF_DepthStencil);
-    }
     return m_PixelFormatComponentMapping[format];
-}
-
-void VulkanDevice::NotifyDeletedRenderTarget(VkImage image)
-{
-    
-}
-
-void VulkanDevice::NotifyDeletedImage(VkImage image)
-{
-    
-}
-
-void VulkanDevice::PrepareForCPURead()
-{
-    
 }

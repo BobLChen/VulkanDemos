@@ -14,21 +14,10 @@ set(Monkey_Common_SRCS
 	
 )
 
-set(Monkey_Platform_GLFW_HDRS
-	Monkey/Platform/glfw/GLFWApplicationExample.h
-)
-set(Monkey_Platform_GLFW_SRCS
-	Monkey/Platform/glfw/GLFWApplicationExample.cpp
-)
-
 set(Monkey_App_HDRS
-	Monkey/Sample.h
-	Monkey/Application.h
 	Monkey/Engine.h
 )
 set(Monkey_App_SRCS
-	Monkey/Sample.cpp
-	Monkey/Application.cpp
 	Monkey/Engine.cpp
 )
 
@@ -98,14 +87,12 @@ set(Monkey_Application_Desktop_SRCS
 
 set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanRHI.cpp
-	Monkey/Vulkan/RHIResource.cpp
 	Monkey/Vulkan/VulkanLayers.cpp
 	Monkey/Vulkan/VulkanQueue.cpp
 	Monkey/Vulkan/VulkanDevice.cpp
 	Monkey/Vulkan/VulkanDebug.cpp
 	Monkey/Vulkan/VulkanSwapChain.cpp
 	Monkey/Vulkan/VulkanMemory.cpp
-	Monkey/Vulkan/PipelineFileCache.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -113,13 +100,11 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanRHI.h
 	Monkey/Vulkan/VulkanPlatform.h
 	Monkey/Vulkan/RHIDefinitions.h
-	Monkey/Vulkan/RHIResource.h
 	Monkey/Vulkan/VulkanCommon.h
 	Monkey/Vulkan/VulkanQueue.h
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
-	Monkey/Vulkan/PipelineFileCache.h
 )
 
 set(Monkey_HAL_HDRS

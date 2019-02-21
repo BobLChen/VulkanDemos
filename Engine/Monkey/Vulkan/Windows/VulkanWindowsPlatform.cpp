@@ -42,13 +42,3 @@ void VulkanWindowsPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* out
 {
 	SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
-
-bool VulkanWindowsPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()
-{
-	return false;
-}
-
-void VulkanWindowsPlatform::WriteCrashMarker(const OptionalVulkanDeviceExtensions& optionalExtensions, VkCommandBuffer cmdBuffer, VkBuffer destBuffer, const std::vector<uint32>& entries, bool adding)
-{
-	
-}

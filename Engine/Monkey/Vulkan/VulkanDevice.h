@@ -10,26 +10,6 @@
 #include <memory>
 #include <map>
 
-struct OptionalVulkanDeviceExtensions
-{
-    uint32 HasKHRMaintenance1 : 1;
-    uint32 HasKHRMaintenance2 : 1;
-    uint32 HasMirrorClampToEdge : 1;
-    uint32 HasKHRExternalMemoryCapabilities : 1;
-    uint32 HasKHRGetPhysicalDeviceProperties2 : 1;
-    uint32 HasKHRDedicatedAllocation : 1;
-    uint32 HasEXTValidationCache : 1;
-    uint32 HasAMDBufferMarker : 1;
-    uint32 HasNVDiagnosticCheckpoints : 1;
-    uint32 HasGoogleDisplayTiming : 1;
-    uint32 HasYcbcrSampler : 1;
-    
-    inline bool HasGPUCrashDumpExtensions() const
-    {
-        return HasAMDBufferMarker || HasNVDiagnosticCheckpoints;
-    }
-};
-
 class VulkanDevice
 {
 public:
@@ -43,23 +23,11 @@ public:
     
     void CreateDevice();
     
-    void PrepareForDestroy();
-    
     void Destroy();
-    
-    void WaitUntilIdle();
     
     bool IsFormatSupported(VkFormat format);
     
     const VkComponentMapping& GetFormatComponentMapping(PixelFormat format) const;
-    
-    void NotifyDeletedRenderTarget(VkImage image);
-    
-    void NotifyDeletedImage(VkImage image);
-    
-    void PrepareForCPURead();
-    
-    void SubmitCommandsAndFlushGPU();
     
     void SetupPresentQueue(VkSurfaceKHR surface);
     
@@ -103,24 +71,9 @@ public:
         return m_PhysicalDeviceFeatures;
     }
     
-    inline bool HasUnifiedMemory() const
-    {
-        return true;
-    }
-    
-    inline uint64 GetTimestampValidBitsMask() const
-    {
-        return m_TimestampValidBitsMask;
-    }
-    
     inline VkDevice GetInstanceHandle() const
     {
         return m_Device;
-    }
-    
-    inline VkImageView GetDefaultImageView() const
-    {
-        return m_DefaultImageView;
     }
     
     inline const VkFormatProperties* GetFormatProperties() const
@@ -128,11 +81,6 @@ public:
         return m_FormatProperties;
     }
     
-    inline const OptionalVulkanDeviceExtensions& GetOptionalExtensions() const
-    {
-        return m_OptionalDeviceExtensions;
-    }
-
 	inline VulkanFenceManager& GetFenceManager()
 	{
 		return m_FenceManager;
@@ -158,8 +106,6 @@ private:
     
     void GetDeviceExtensionsAndLayers(std::vector<const char*>& outDeviceExtensions, std::vector<const char*>& outDeviceLayers, bool& bOutDebugMarkers);
     
-    void ParseOptionalDeviceExtensions(const std::vector<const char*>& deviceExtensions);
-    
     void SetupFormats();
     
 private:
@@ -167,7 +113,6 @@ private:
 	VulkanFenceManager m_FenceManager;
 
     VkDevice m_Device;
-    VkImageView m_DefaultImageView;
     VkPhysicalDevice m_PhysicalDevice;
     VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
     VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
@@ -175,19 +120,13 @@ private:
     
     VkFormatProperties m_FormatProperties[VK_FORMAT_RANGE_SIZE];
     std::map<VkFormat, VkFormatProperties> m_ExtensionFormatProperties;
-    
+	VkComponentMapping m_PixelFormatComponentMapping[PF_MAX];
+
     std::shared_ptr<VulkanQueue> m_GfxQueue;
     std::shared_ptr<VulkanQueue> m_ComputeQueue;
     std::shared_ptr<VulkanQueue> m_TransferQueue;
     std::shared_ptr<VulkanQueue> m_PresentQueue;
 
-	bool m_AsyncComputeQueue = false;
-	bool m_PresentOnComputeQueue = false;
-	uint64 m_TimestampValidBitsMask = 0;
-    
-    VkComponentMapping m_PixelFormatComponentMapping[PF_MAX];
-    OptionalVulkanDeviceExtensions m_OptionalDeviceExtensions;
-    
     VulkanDeviceMemoryManager m_MemoryManager;
     VulkanResourceHeapManager m_ResourceHeapManager;
     

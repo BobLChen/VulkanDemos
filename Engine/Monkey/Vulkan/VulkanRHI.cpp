@@ -10,11 +10,6 @@
 #include "VulkanSwapChain.h"
 #include "VulkanMemory.h"
 
-static inline int32 PreferAdapterVendor()
-{
-    return -1;
-}
-
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
 	, m_PresentComplete(VK_NULL_HANDLE)
@@ -475,7 +470,7 @@ void VulkanRHI::SelectAndInitDevice()
     int32 deviceIndex = -1;
     if (discreteDevices.size() > 0)
     {
-        int32 preferredVendor = PreferAdapterVendor();
+		int32 preferredVendor = -1;
         if (discreteDevices.size() > 1 && preferredVendor != -1)
         {
             for (int32 index = 0; index < discreteDevices.size(); ++index)

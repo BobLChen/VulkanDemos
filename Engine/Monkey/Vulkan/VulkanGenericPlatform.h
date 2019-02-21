@@ -25,15 +25,5 @@ public:
         
     }
     
-    static void NotifyFoundInstanceLayersAndExtensions(const std::vector<std::string>& layers, const std::vector<std::string>& extensions)
-    {
-        
-    }
-    
-    static void NotifyFoundDeviceLayersAndExtensions(VkPhysicalDevice physicalDevice, const std::vector<std::string>& layers, const std::vector<std::string>& extensions)
-    {
-        
-    }
-    
 };
 

@@ -167,16 +167,6 @@ bool GLFWWindow::GetRestoredDimensions(int32& x, int32& y, int32& width, int32& 
 	return true;
 }
 
-bool GLFWWindow::IsManualManageDPIChanges() const
-{
-	return true;
-}
-
-void GLFWWindow::SetManualManageDPIChanges(const bool manualDPIChanges)
-{
-	
-}
-
 void GLFWWindow::SetWindowFocus()
 {
     

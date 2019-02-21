@@ -231,8 +231,6 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 		MLOG("- Found instance extension %s", name.c_str());
 	}
 	
-	VulkanPlatform::NotifyFoundInstanceLayersAndExtensions(foundUniqueLayers, foundUniqueExtensions);
-
 #if MONKEY_DEBUG
 	for (int32 i = 0; G_ValidationLayersInstance[i] != nullptr; ++i) 
 	{
@@ -354,9 +352,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     {
         MLOG("- Found device extension %s", name.c_str());
     }
-    
-    VulkanPlatform::NotifyFoundDeviceLayersAndExtensions(m_PhysicalDevice, foundUniqueLayers, foundUniqueExtensions);
-    
+
 #if MONKEY_DEBUG
     for (uint32 layerIndex = 0; G_ValidationLayersDevice[layerIndex] != nullptr; ++layerIndex)
     {
@@ -452,9 +448,4 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
             MLOG("* %s", layer);
         }
     }
-}
-
-void VulkanDevice::ParseOptionalDeviceExtensions(const std::vector<const char*>& deviceExtensions)
-{
-    
 }

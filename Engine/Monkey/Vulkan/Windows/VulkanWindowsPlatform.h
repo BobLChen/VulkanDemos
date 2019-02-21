@@ -25,10 +25,6 @@ public:
 	static void GetDeviceExtensions(std::vector<const char*>& outExtensions);
 
 	static void CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface);
-
-	static bool SupportsDeviceLocalHostVisibleWithNoPenalty();
-
-	static void WriteCrashMarker(const OptionalVulkanDeviceExtensions& optionalExtensions, VkCommandBuffer cmdBuffer, VkBuffer destBuffer, const std::vector<uint32>& entries, bool adding);
 };
 
 typedef VulkanWindowsPlatform VulkanPlatform;

@@ -4,14 +4,14 @@
 #define VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME  "vkCreateDebugReportCallbackEXT"
 
 VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallBack(
-                                                          VkDebugReportFlagsEXT flags,
-                                                          VkDebugReportObjectTypeEXT objType,
-                                                          uint64_t obj,
-                                                          size_t location,
-                                                          int32_t code,
-                                                          const char* layerPrefix,
-                                                          const char* msg,
-                                                          void* userData)
+    VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT objType,
+    uint64_t obj,
+    size_t location,
+    int32_t code,
+    const char* layerPrefix,
+    const char* msg,
+    void* userData)
 {
     std::string prefix("");
     if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)

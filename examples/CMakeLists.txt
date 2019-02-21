@@ -31,38 +31,32 @@ endif()
 	TARGET_LINK_LIBRARIES(${EXE_NAME} ${EXTRA_LINKED_LIBRARIES})
 ENDMACRO(SETUP_SAMPLE_END)
 
-SETUP_SAMPLE_START(HelloWindow)
-	SET(SOURCE_FILES
-		1_HelloWindow/main.cpp
-	)
-SETUP_SAMPLE_END(HelloWindow)
-
 SETUP_SAMPLE_START(HelloIMGUI)
 	SET(SOURCE_FILES
-		2_HelloIMGUI/main.cpp
+		1_HelloIMGUI/main.cpp
 	)
 SETUP_SAMPLE_END(HelloIMGUI)
 
-SETUP_SAMPLE_START(HelloVulkan)
-	SET(SOURCE_FILES
-		3_HelloVulkan/main.cpp
-	)
-	SET(RESOURCE_FILES
-		shader.vert
-		shader.frag
-		vert.spv
-		frag.spv
-	)
+# SETUP_SAMPLE_START(HelloVulkan)
+# 	SET(SOURCE_FILES
+# 		3_HelloVulkan/main.cpp
+# 	)
+# 	SET(RESOURCE_FILES
+# 		shader.vert
+# 		shader.frag
+# 		vert.spv
+# 		frag.spv
+# 	)
 
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.vert DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.frag DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/vert.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/frag.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-SETUP_SAMPLE_END(HelloVulkan)
+# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.vert DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.frag DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/vert.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/frag.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# SETUP_SAMPLE_END(HelloVulkan)
 
 SETUP_SAMPLE_START(Triangle)
 	SET(SOURCE_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/4_Triangle/Triangle.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/2_Triangle/Triangle.cpp
 	)
 SETUP_SAMPLE_END(Triangle)

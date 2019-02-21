@@ -28,10 +28,6 @@ public:
 
 	virtual void SetDPIScaleFactor(float value) override;
 
-	virtual bool IsManualManageDPIChanges() const override;
-
-	virtual void SetManualManageDPIChanges(const bool manualDPIChanges) override;
-
 	virtual void ReshapeWindow(int32 x, int32 y, int32 width, int32 height) override;
 
 	virtual bool GetFullScreenInfo(int32& x, int32& y, int32& width, int32& height) const override;
