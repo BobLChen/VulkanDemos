@@ -38,8 +38,8 @@ void EngineLoop()
 
 void EngineExit()
 {
-	GameEngine.Exist();
 	AppMode->Exist();
+	GameEngine.Exist();
 }
 
 int32 GuardedMain(const char* cmdLine, int32 cmdShow)
