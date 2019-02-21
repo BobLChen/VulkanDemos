@@ -1,6 +1,8 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Application/AppModeBase.h"
+#include "Vulkan/VulkanPlatform.h"
+#include <vector>
 
 class TriangleMode : public AppModeBase
 {
@@ -23,6 +25,7 @@ public:
 
 	virtual void Init() override
 	{
+		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
 
 	}
 
@@ -35,9 +38,12 @@ public:
 	{
 
 	}
+
+public:
+	std::vector<VkFence> m_Fences;
 };
 
 AppModeBase* CreateAppMode(const char* cmdLine, int32 cmdShow)
 {
-	return new TriangleMode(1600, 900, "Triangle");
+	return new TriangleMode(800, 600, "Triangle");
 }

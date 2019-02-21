@@ -27,7 +27,7 @@ VulkanRHI::VulkanRHI()
     , m_DepthStencilView(VK_NULL_HANDLE)
     , m_DepthStencilMemory(VK_NULL_HANDLE)
     , m_PixelFormat(PF_B8G8R8A8)
-    , m_DepthFormat(VK_FORMAT_D24_UNORM_S8_UINT)
+    , m_DepthFormat(PF_D24)
     , m_RenderPass(VK_NULL_HANDLE)
 {
     
@@ -147,7 +147,7 @@ void VulkanRHI::CreateRenderPass()
     attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     // depth stencil attachment
-    attachments[1].format = m_DepthFormat;
+    attachments[1].format = PixelFormatToVkFormat(m_DepthFormat, false);
     attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -306,7 +306,7 @@ void VulkanRHI::CreateDepthStencil()
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format = m_DepthFormat;
+    imageCreateInfo.format = PixelFormatToVkFormat(m_DepthFormat, false);
     imageCreateInfo.extent = { (uint32)width, (uint32)height, 1 };
     imageCreateInfo.mipLevels = 1;
     imageCreateInfo.arrayLayers = 1;

@@ -16,46 +16,12 @@ public:
 
 	virtual ~VulkanRHI();
 
-	virtual void Init();
+	void Init();
 
-	virtual void PostInit();
+	void PostInit();
 
-	virtual void Shutdown();;
+	void Shutdown();;
 
-	virtual void InitInstance();
-
-	virtual void CreateSemaphores();
-
-	virtual void DestorySemaphore();
-
-	virtual void RecreateSwapChain();
-
-	virtual void DestorySwapChain();
-    
-    virtual void CreateCommandPool();
-    
-    virtual void DestoryCommandPool();
-    
-    virtual void CreateCommandBuffers();
-    
-    virtual void DestoryCommandBuffers();
-    
-    virtual void CreateDepthStencil();
-    
-    virtual void DestoryDepthStencil();
-    
-    virtual void CreateRenderPass();
-    
-    virtual void DestoryRenderPass();
-    
-    virtual void CreatePipelineCache();
-    
-    virtual void DestoryPipelineCache();
-
-	virtual void CreateFrameBuffer();
-
-	virtual void DestroyFrameBuffer();
-    
 	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
@@ -76,6 +42,86 @@ public:
 		return m_Device;
 	}
     
+	inline VkSemaphore GetPresentCompleteSemaphore()
+	{
+		return m_PresentComplete;
+	}
+
+	inline VkSemaphore GetRenderCompleteSemaphore()
+	{
+		return m_RenderComplete;
+	}
+
+	inline VkSubmitInfo GetSumbitInfo()
+	{
+		return m_SubmitInfo;
+	}
+
+	inline VkCommandPool GetCommandPool()
+	{
+		return m_CommandPool;
+	}
+
+	inline std::vector<VkCommandBuffer>& GetCommandBuffers()
+	{
+		return m_CommandBuffers;
+	}
+
+	inline std::shared_ptr<VulkanSwapChain> GetSwapChain()
+	{
+		return m_SwapChain;
+	}
+
+	inline std::vector<VkImage>& GetFrameImages()
+	{
+		return m_FrameImages;
+	}
+
+	inline std::vector<VkImageView>& GetFrameImageViews()
+	{
+		return m_FrameImageViews;
+	}
+
+	inline std::vector<VkFramebuffer>& GetFrameBuffers()
+	{
+		return m_FrameBuffers;
+	}
+
+	inline VkImage GetDepthStencilImage()
+	{
+		return m_DepthStencilImage;
+	}
+
+	inline VkImageView GetDepthStencilView()
+	{
+		return m_DepthStencilView;
+	}
+
+	inline VkDeviceMemory GetDepthStencilMemory()
+	{
+		return m_DepthStencilMemory;
+	}
+
+	inline PixelFormat GetPixelFormat()
+	{
+		return m_PixelFormat;
+	}
+
+	inline PixelFormat GetDepthFormat()
+	{
+		return m_DepthFormat;
+	}
+
+	inline VkRenderPass GetRenderPass()
+	{
+		return m_RenderPass;
+	}
+
+	inline VkPipelineCache GetPipelineCache()
+	{
+		return m_PipelineCache;
+	}
+
 	inline bool SupportsDebugUtilsExt() const
 	{
 		return m_SupportsDebugUtilsExt;
@@ -100,6 +146,40 @@ protected:
 
     void RemoveDebugLayerCallback();
 #endif
+
+	void InitInstance();
+
+	void CreateSemaphores();
+
+	void DestorySemaphore();
+
+	void RecreateSwapChain();
+
+	void DestorySwapChain();
+
+	void CreateCommandPool();
+
+	void DestoryCommandPool();
+
+	void CreateCommandBuffers();
+
+	void DestoryCommandBuffers();
+
+	void CreateDepthStencil();
+
+	void DestoryDepthStencil();
+
+	void CreateRenderPass();
+
+	void DestoryRenderPass();
+
+	void CreatePipelineCache();
+
+	void DestoryPipelineCache();
+
+	void CreateFrameBuffer();
+
+	void DestroyFrameBuffer();
 
 protected:
     
@@ -129,7 +209,7 @@ protected:
     VkImageView m_DepthStencilView;
     VkDeviceMemory m_DepthStencilMemory;
     PixelFormat m_PixelFormat;
-    VkFormat m_DepthFormat;
+    PixelFormat m_DepthFormat;
     VkRenderPass m_RenderPass;
     VkPipelineCache m_PipelineCache;
 	
