@@ -226,8 +226,6 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 
 void VulkanSwapChain::Destroy()
 {
-	m_Device->WaitUntilIdle();
-
 	vkDestroySwapchainKHR(m_Device->GetInstanceHandle(), m_SwapChain, VULKAN_CPU_ALLOCATOR);
 	m_SwapChain = VK_NULL_HANDLE;
 
