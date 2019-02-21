@@ -55,6 +55,7 @@ void VulkanRHI::PostInit()
 
 void VulkanRHI::Shutdown()
 {
+	DestroyFrameBuffer();
     DestoryPipelineCache();
     DestoryRenderPass();
     DestoryDepthStencil();
@@ -86,6 +87,39 @@ void VulkanRHI::InitInstance()
     CreateDepthStencil();
     CreateRenderPass();
     CreatePipelineCache();
+	CreateFrameBuffer();
+}
+
+void VulkanRHI::CreateFrameBuffer()
+{
+	int width = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
+	int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+
+	VkImageView attachments[2];
+	attachments[1] = m_DepthStencilView;
+
+	VkFramebufferCreateInfo frameBufferCreateInfo;
+	ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
+	frameBufferCreateInfo.renderPass = m_RenderPass;
+	frameBufferCreateInfo.attachmentCount = 2;
+	frameBufferCreateInfo.pAttachments = attachments;
+	frameBufferCreateInfo.width  = width;
+	frameBufferCreateInfo.height = height;
+	frameBufferCreateInfo.layers = 1;
+
+	m_FrameBuffers.resize(m_FrameImageViews.size());
+	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i)
+	{
+		attachments[0] = m_FrameImageViews[i];
+		VERIFYVULKANRESULT(vkCreateFramebuffer(m_Device->GetInstanceHandle(), &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
+	}
+}
+
+void VulkanRHI::DestroyFrameBuffer()
+{
+	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) {
+		vkDestroyFramebuffer(m_Device->GetInstanceHandle(), m_FrameBuffers[i], VULKAN_CPU_ALLOCATOR);
+	}
 }
 
 void VulkanRHI::CreatePipelineCache()
@@ -216,10 +250,10 @@ void VulkanRHI::RecreateSwapChain()
     int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
     int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
     
-    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_Images, 1));
+    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
     
-    m_ImageViews.resize(m_Images.size());
-    for (int i = 0; i < m_Images.size(); ++i)
+    m_FrameImageViews.resize(m_FrameImages.size());
+    for (int i = 0; i < m_FrameImages.size(); ++i)
     {
         VkImageViewCreateInfo createInfo;
         ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
@@ -232,16 +266,16 @@ void VulkanRHI::RecreateSwapChain()
         createInfo.subresourceRange.layerCount = 1;
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         createInfo.flags = 0;
-        createInfo.image = m_Images[i];
-        VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &(m_ImageViews[i])));
+        createInfo.image = m_FrameImages[i];
+        VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &(m_FrameImageViews[i])));
     }
 }
 
 void VulkanRHI::DestorySwapChain()
 {
-    for (int i = 0; i < m_ImageViews.size(); ++i)
+    for (int i = 0; i < m_FrameImageViews.size(); ++i)
     {
-        vkDestroyImageView(m_Device->GetInstanceHandle(), m_ImageViews[i], VULKAN_CPU_ALLOCATOR);
+        vkDestroyImageView(m_Device->GetInstanceHandle(), m_FrameImageViews[i], VULKAN_CPU_ALLOCATOR);
     }
     m_SwapChain->Destroy();
     m_SwapChain = nullptr;
@@ -249,19 +283,19 @@ void VulkanRHI::DestorySwapChain()
 
 void VulkanRHI::CreateCommandBuffers()
 {
-    m_CommandBuffers.resize(m_ImageViews.size());
+    m_CommandBuffers.resize(m_FrameImageViews.size());
     VkCommandBufferAllocateInfo allocateInfo;
     ZeroVulkanStruct(allocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     allocateInfo.commandPool = m_CommandPool;
     allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocateInfo.commandBufferCount = m_ImageViews.size();
+    allocateInfo.commandBufferCount = m_FrameImageViews.size();
     
     VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device->GetInstanceHandle(), &allocateInfo, m_CommandBuffers.data()));
 }
 
 void VulkanRHI::DestoryCommandBuffers()
 {
-    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, m_ImageViews.size(), m_CommandBuffers.data());
+    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, m_FrameImageViews.size(), m_CommandBuffers.data());
 }
 
 void VulkanRHI::CreateDepthStencil()

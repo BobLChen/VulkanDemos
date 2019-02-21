@@ -51,6 +51,10 @@ public:
     virtual void CreatePipelineCache();
     
     virtual void DestoryPipelineCache();
+
+	virtual void CreateFrameBuffer();
+
+	virtual void DestroyFrameBuffer();
     
 	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
@@ -117,8 +121,9 @@ protected:
     std::vector<std::shared_ptr<VulkanDevice>> m_Devices;
     
     std::shared_ptr<VulkanSwapChain> m_SwapChain;
-    std::vector<VkImage> m_Images;
-    std::vector<VkImageView> m_ImageViews;
+    std::vector<VkImage> m_FrameImages;
+    std::vector<VkImageView> m_FrameImageViews;
+	std::vector<VkFramebuffer> m_FrameBuffers;
     
     VkImage m_DepthStencilImage;
     VkImageView m_DepthStencilView;

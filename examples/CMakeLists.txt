@@ -60,8 +60,9 @@ SETUP_SAMPLE_START(HelloVulkan)
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/frag.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 SETUP_SAMPLE_END(HelloVulkan)
 
-SETUP_SAMPLE_START(NativeWindow)
+SETUP_SAMPLE_START(Triangle)
 	SET(SOURCE_FILES
-		4_NativeWindow/main.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/4_Triangle/Triangle.cpp
 	)
-SETUP_SAMPLE_END(NativeWindow)
+SETUP_SAMPLE_END(Triangle)
