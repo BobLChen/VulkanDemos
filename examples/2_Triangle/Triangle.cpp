@@ -4,6 +4,7 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
+#include "Math/Vector4.h"
 #include <vector>
 
 class TriangleMode : public AppModeBase
@@ -33,6 +34,8 @@ public:
 		CreateFences();
 		CreateMeshBuffers();
 		CreateUniformBuffers();
+		CreateDescriptorSetLayout();
+		CreatePipelines();
 	}
 
 	virtual void Loop() override
@@ -42,6 +45,8 @@ public:
 
 	virtual void Exist() override
 	{
+		DestroyPipelines();
+		DestroyDescriptorSetLayout();
 		DestroyUniformBuffers();
 		DestroyMeshBuffers();
 		DestroyFences();
@@ -49,13 +54,15 @@ public:
 
 private:
 
-	struct VertexBuffer
+	struct GPUBuffer
 	{
 		VkDeviceMemory memory;
 		VkBuffer buffer;
 	};
 
-	typedef VertexBuffer IndexBuffer;
+	typedef GPUBuffer IndexBuffer;
+	typedef GPUBuffer VertexBuffer;
+	typedef GPUBuffer UBOBuffer;
 
 	struct Vertex
 	{
@@ -63,23 +70,92 @@ private:
 		float color[3];
 	};
 
-	struct UboVS
+	struct UBOData
 	{
-		
+		float datas[48];
 	};
 
-	void CreateUniformBuffers()
+	void CreatePipelines()
 	{
-		VkMemoryRequirements memReqInfo;
-
-		VkBufferCreateInfo bufferInfo;
-		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
 
 	}
 
-	void DestroyUniformBuffers()
+	void DestroyPipelines()
 	{
 
+	}
+
+	void CreateDescriptorSetLayout()
+	{
+		VkDescriptorSetLayoutBinding layoutBinding;
+		layoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBinding.descriptorCount = 1;
+		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBinding.pImmutableSamplers = nullptr;
+
+		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
+		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+		descSetLayoutInfo.bindingCount = 1;
+		descSetLayoutInfo.pBindings = &layoutBinding;
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
+
+		VkPipelineLayoutCreateInfo pipeLayoutInfo;
+		ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+		pipeLayoutInfo.setLayoutCount = 1;
+		pipeLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
+	}
+
+	void DestroyDescriptorSetLayout()
+	{
+		vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
+		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
+	}
+	
+	void UpdateUniformBuffers()
+	{
+		for (int i = 0; i < 48; ++i)
+		{
+			m_MVPData.datas[i] = 0;
+		}
+		
+		uint8_t *pData = nullptr;
+		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, 48 * sizeof(float), 0, (void**)&pData));
+		std::memcpy(pData, m_MVPData.datas, 48 * sizeof(float));
+		vkUnmapMemory(m_Device, m_MVPBuffer.memory);
+	}
+
+	void CreateUniformBuffers()
+	{
+		VkBufferCreateInfo bufferInfo;
+		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+		bufferInfo.size = 48 * sizeof(float);
+		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		VERIFYVULKANRESULT(vkCreateBuffer(m_Device, &bufferInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.buffer));
+
+		VkMemoryRequirements memReqInfo;
+		vkGetBufferMemoryRequirements(m_Device, m_MVPBuffer.buffer, &memReqInfo);
+		uint32 memoryTypeIndex = 0;
+		GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
+
+		VkMemoryAllocateInfo allocInfo;
+		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+		allocInfo.allocationSize  = memReqInfo.size;
+		allocInfo.memoryTypeIndex = memoryTypeIndex;
+		VERIFYVULKANRESULT(vkAllocateMemory(m_Device, &allocInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.memory));
+
+		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_MVPBuffer.buffer, m_MVPBuffer.memory, 0));
+		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
+		m_MVPDescriptor.offset = 0;
+		m_MVPDescriptor.range  = 48 * sizeof(float);
+
+		UpdateUniformBuffers();
+	}
+	
+	void DestroyUniformBuffers()
+	{
+		vkDestroyBuffer(m_Device, m_MVPBuffer.buffer, VULKAN_CPU_ALLOCATOR);
+		vkFreeMemory(m_Device, m_MVPBuffer.memory, VULKAN_CPU_ALLOCATOR);
 	}
 
 	void CreateMeshBuffers()
@@ -253,6 +329,12 @@ private:
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;
 	VertexBuffer m_VertexBuffer;
 	IndexBuffer m_IndicesBuffer;
+	UBOBuffer m_MVPBuffer;
+	UBOData m_MVPData;
+	VkDescriptorBufferInfo m_MVPDescriptor;
+	VkDescriptorSetLayout m_DescriptorSetLayout;
+	VkPipelineLayout m_PipelineLayout;
+	VkPipeline m_Pipeline;
 	uint32 m_IndicesCount;
 };
 
