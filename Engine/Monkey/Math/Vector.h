@@ -10,6 +10,7 @@
 #include "Axis.h"
 
 class Vector4;
+class Plane;
 
 struct Vector
 {
@@ -231,6 +232,12 @@ public:
 	static Vector RadiansToDegrees(const Vector& radVector);
 
 	static Vector DegreesToRadians(const Vector& degVector);
+
+	Vector MirrorByPlane(const Plane& plane) const;
+
+	static Vector PointPlaneProject(const Vector& point, const Plane& plane);
+
+	static Vector PointPlaneProject(const Vector& point, const Vector& a, const Vector& b, const Vector& c);
 
 	FORCEINLINE void DiagnosticCheckNaN() const
 	{

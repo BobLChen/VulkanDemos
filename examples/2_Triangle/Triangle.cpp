@@ -32,6 +32,7 @@ public:
 
 		CreateFences();
 		CreateMeshBuffers();
+		CreateUniformBuffers();
 	}
 
 	virtual void Loop() override
@@ -41,6 +42,7 @@ public:
 
 	virtual void Exist() override
 	{
+		DestroyUniformBuffers();
 		DestroyMeshBuffers();
 		DestroyFences();
 	}
@@ -60,6 +62,25 @@ private:
 		float position[3];
 		float color[3];
 	};
+
+	struct UboVS
+	{
+		
+	};
+
+	void CreateUniformBuffers()
+	{
+		VkMemoryRequirements memReqInfo;
+
+		VkBufferCreateInfo bufferInfo;
+		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+
+	}
+
+	void DestroyUniformBuffers()
+	{
+
+	}
 
 	void CreateMeshBuffers()
 	{

@@ -1,11 +1,12 @@
-#include "Math.h"
 #include "Common/Common.h"
 #include "Utils/StringUtils.h"
 
-#include "Math/IntPoint.h"
-#include "Math/Vector2.h"
-#include "Math/Vector.h"
-#include "Math/IntVector.h"
+#include "Math.h"
+#include "IntPoint.h"
+#include "Vector2.h"
+#include "Vector.h"
+#include "IntVector.h"
+#include "Plane.h"
 
 const IntPoint IntPoint::ZeroValue(0,  0);
 const IntPoint IntPoint::NoneValue(-1, -1);
@@ -33,7 +34,131 @@ const uint32 MMath::BitFlag[32] =
 	(1U << 28),	(1U << 29),	(1U << 30),	(1U << 31),
 };
 
-float MMath::FInterpConstantTo(float current, float target, float deltaTime, float interpSpeed)
+inline Vector MMath::LinePlaneIntersection(const Vector &point1, const Vector &point2, const Vector &planeOrigin, const Vector &planeNormal)
+{
+	return point1 + (point2 - point1) * (((planeOrigin - point1) | planeNormal) / ((point2 - point1) | planeNormal));
+}
+
+inline Vector MMath::GetReflectionVector(const Vector& direction, const Vector& surfaceNormal)
+{
+	return direction - 2 * (direction | surfaceNormal.GetSafeNormal()) * surfaceNormal.GetSafeNormal();
+}
+
+Vector2 MMath::RandPointInCircle(float circleRadius)
+{
+	Vector2 point;
+	float l;
+	do
+	{
+		point.x = FRand() * 2.f - 1.f;
+		point.x = FRand() * 2.f - 1.f;
+		l = point.SizeSquared();
+	} while (l > 1.0f);
+
+	return point * circleRadius;
+}
+
+bool MMath::GetDotDistance(Vector2 &outDotDist, const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ)
+{
+	const Vector normalDir = direction.GetSafeNormal();
+	const Vector noZProjDir = (normalDir - (normalDir | axisZ) * axisZ).GetSafeNormal();
+
+	const float azimuthSign = ((noZProjDir | axisY) < 0.f) ? -1.f : 1.f;
+	outDotDist.y = normalDir | axisZ;
+	const float dirDotX = noZProjDir | axisX;
+	outDotDist.x = azimuthSign * MMath::Abs(dirDotX);
+
+	return (dirDotX >= 0.f);
+}
+
+Vector2 MMath::GetAzimuthAndElevation(const Vector &Direction, const Vector &AxisX, const Vector &AxisY, const Vector &AxisZ)
+{
+	const Vector normalDir = Direction.GetSafeNormal();
+	const Vector noZProjDir = (normalDir - (normalDir | AxisZ) * AxisZ).GetSafeNormal();
+
+	const float azimuthSign = ((noZProjDir | AxisY) < 0.f) ? -1.f : 1.f;
+	const float elevationSin = normalDir | AxisZ;
+	const float azimuthCos = noZProjDir | AxisX;
+
+	return Vector2(MMath::Acos(azimuthCos) * azimuthSign, MMath::Asin(elevationSin));
+}
+
+FORCEINLINE float MMath::GetRangePct(Vector2 const& range, float value)
+{
+	return GetRangePct(range.x, range.y, value);
+}
+
+FORCEINLINE float MMath::GetRangeValue(Vector2 const& range, float pct)
+{
+	return Lerp<float>(range.x, range.y, pct);
+}
+
+void MMath::CartesianToPolar(const Vector2 inCart, Vector2& outPolar)
+{
+	outPolar.x = Sqrt(Square(inCart.x) + Square(inCart.y));
+	outPolar.y = Atan2(inCart.y, inCart.x);
+}
+
+void MMath::PolarToCartesian(const Vector2 inPolar, Vector2& outCart)
+{
+	outCart.x = inPolar.x * Cos(inPolar.y);
+	outCart.y = inPolar.x * Sin(inPolar.y);
+}
+
+inline Vector MMath::RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane)
+{
+	const Vector planeNormal = Vector(plane.x, plane.y, plane.z);
+	const Vector planeOrigin = planeNormal * plane.w;
+
+	const float distance = Vector::DotProduct((planeOrigin - rayOrigin), planeNormal) / Vector::DotProduct(rayDirection, planeNormal);
+	return rayOrigin + rayDirection * distance;
+}
+
+inline Vector MMath::LinePlaneIntersection(const Vector& point1, const Vector& point2, const Plane& plane)
+{
+	return point1 + (point2 - point1) *	((plane.w - (point1 | plane)) / ((point2 - point1) | plane));
+}
+
+inline Vector MMath::VRand()
+{
+	Vector result;
+	float l;
+	do
+	{
+		result.x = FRand() * 2.f - 1.f;
+		result.y = FRand() * 2.f - 1.f;
+		result.z = FRand() * 2.f - 1.f;
+		l = result.SizeSquared();
+	} while (l > 1.0f || l < KINDA_SMALL_NUMBER);
+	return result * (1.0f / Sqrt(l));
+}
+
+inline bool MMath::LineSphereIntersection(const Vector& start, const Vector& dir, float length, const Vector& origin, float radius)
+{
+	const Vector eo = start - origin;
+	const float	 v = (dir | (origin - start));
+	const float	 disc = radius * radius - ((eo | eo) - v * v);
+
+	if (disc >= 0.0f)
+	{
+		const float	time = (v - Sqrt(disc)) / length;
+
+		if (time >= 0.0f && time <= 1.0f)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+float MMath::InterpConstantTo(float current, float target, float deltaTime, float interpSpeed)
 {
 	const float dist = target - current;
 	if (MMath::Square(dist) < SMALL_NUMBER)
@@ -44,7 +169,7 @@ float MMath::FInterpConstantTo(float current, float target, float deltaTime, flo
 	return current + MMath::Clamp<float>(dist, -step, step);
 }
 
-float MMath::FInterpTo(float current, float target, float deltaTime, float interpSpeed)
+float MMath::InterpTo(float current, float target, float deltaTime, float interpSpeed)
 {
 	if (interpSpeed <= 0.f)
 	{

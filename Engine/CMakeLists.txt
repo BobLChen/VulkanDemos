@@ -52,6 +52,10 @@ set(Monkey_Math_HDRS
 	Monkey/Math/IntVector.h
 	Monkey/Math/Vector4.h
 	Monkey/Math/Axis.h
+	Monkey/Math/Plane.h
+	Monkey/Math/Quat.h
+	Monkey/Math/Rotator.h
+	Monkey/Math/Matrix.h
 )
 set(Monkey_Math_SRCS
 	Monkey/Math/Math.cpp

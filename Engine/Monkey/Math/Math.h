@@ -5,6 +5,12 @@
 
 #include <string>
 
+class Rotator;
+class Plane;
+class Vector;
+class Vector2;
+class Quat;
+
 #undef  PI
 #define PI 					(3.1415926535897932f)
 #define SMALL_NUMBER		(1.e-8f)
@@ -83,6 +89,35 @@ struct MMath : public PlatformMath
 	static FORCEINLINE bool RandBool()
 	{
 		return (RandRange(0, 1) == 1) ? true : false;
+	}
+
+	static Vector VRand();
+
+	static Vector VRandCone(Vector const& dir, float coneHalfAngleRad);
+
+	static Vector VRandCone(Vector const& dir, float horizontalConeHalfAngleRad, float verticalConeHalfAngleRad);
+
+	static Vector2 RandPointInCircle(float circleRadius);
+
+	static Vector GetReflectionVector(const Vector& direction, const Vector& surfaceNormal);
+	
+	static bool GetDotDistance(Vector2 &outDotDist, const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+
+	static Vector2 GetAzimuthAndElevation(const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+
+	static float GetRangePct(Vector2 const& range, float value);
+
+	static float GetRangeValue(Vector2 const& range, float pct);
+
+	static FORCEINLINE float GetMappedRangeValueClamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
+	{
+		const float clampedPct = Clamp<float>(GetRangePct(inputRange, value), 0.f, 1.f);
+		return GetRangeValue(outputRange, clampedPct);
+	}
+
+	static FORCEINLINE float GetMappedRangeValueUnclamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
+	{
+		return GetRangeValue(outputRange, GetRangePct(inputRange, value));
 	}
 
 	template< class U >
@@ -264,6 +299,30 @@ struct MMath : public PlatformMath
 		return degVal * (PI / 180.f);
 	}
 
+	FORCEINLINE static void VectorQuaternionMultiply(void *result, const void* quat1, const void* quat2)
+	{
+		typedef float Float4[4];
+		const Float4& a = *((const Float4*)quat1);
+		const Float4& b = *((const Float4*)quat2);
+		Float4 & r = *((Float4*)result);
+
+		const float t0 = (a[2] - a[1]) * (b[1] - b[2]);
+		const float t1 = (a[3] + a[0]) * (b[3] + b[0]);
+		const float t2 = (a[3] - a[0]) * (b[1] + b[2]);
+		const float t3 = (a[1] + a[2]) * (b[3] - b[0]);
+		const float t4 = (a[2] - a[0]) * (b[0] - b[1]);
+		const float t5 = (a[2] + a[0]) * (b[0] + b[1]);
+		const float t6 = (a[3] + a[1]) * (b[3] - b[2]);
+		const float t7 = (a[3] - a[1]) * (b[3] + b[2]);
+		const float t8 = t5 + t6 + t7;
+		const float t9 = 0.5f * (t4 + t8);
+
+		r[0] = t1 + t9 - t8;
+		r[1] = t2 + t9 - t7;
+		r[2] = t3 + t9 - t6;
+		r[3] = t0 + t9 - t5;
+	}
+
 	static float FindDeltaAngleDegrees(float a1, float a2)
 	{
 		float delta = a2 - a1;
@@ -326,6 +385,8 @@ struct MMath : public PlatformMath
 		return value;
 	}
 
+	static FORCEINLINE void CartesianToPolar(const Vector2 inCart, Vector2& outPolar);
+
 	static FORCEINLINE void CartesianToPolar(const float x, const float y, float& outRad, float& outAng)
 	{
 		outRad = Sqrt(Square(x) + Square(y));
@@ -337,6 +398,8 @@ struct MMath : public PlatformMath
 		outX = rad * Cos(ang);
 		outY = rad * Sin(ang);
 	}
+
+	static FORCEINLINE void PolarToCartesian(const Vector2 inPolar, Vector2& outCart);
 
 	static FORCEINLINE float GetRangePct(float minValue, float maxValue, float value)
 	{
@@ -511,6 +574,16 @@ struct MMath : public PlatformMath
 			InterpCircularOut(0.f, 1.f, alpha * 2.f - 1.f) * 0.5f + 0.5f);
 	}
 
+	template< class U > static Rotator Lerp(const Rotator& a, const Rotator& b, const U& alpha);
+
+	template< class U > static Rotator LerpRange(const Rotator& a, const Rotator& b, const U& alpha);
+
+	template< class U > static Quat Lerp(const Quat& a, const Quat& b, const U& alpha);
+	
+	template< class U > static Quat BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY);
+	
+	template< class U > static Quat CubicInterp(const Quat& p0, const Quat& t0, const Quat& p1, const Quat& t1, const U& a);
+
 	template< class U >
 	static FORCEINLINE U CubicCRSplineInterp(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
 	{
@@ -668,9 +741,17 @@ struct MMath : public PlatformMath
 		return currentGcd == 0 ? 0 : (a / currentGcd) * b;
 	}
 
-	static float FInterpConstantTo(float current, float target, float deltaTime, float interpSpeed);
+	static Vector RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane);
 
-	static float FInterpTo(float current, float target, float deltaTime, float interpSpeed);
+	static Vector LinePlaneIntersection(const Vector &point1, const Vector &point2, const Vector &planeOrigin, const Vector &planeNormal);
+	
+	static Vector LinePlaneIntersection(const Vector &point1, const Vector &point2, const Plane &plane);
+
+	static bool LineSphereIntersection(const Vector& start, const Vector& dir, float length, const Vector& origin, float radius);
+
+	static float InterpConstantTo(float current, float target, float deltaTime, float interpSpeed);
+
+	static float InterpTo(float current, float target, float deltaTime, float interpSpeed);
 
 	static float TruncateToHalfIfClose(float f);
 
