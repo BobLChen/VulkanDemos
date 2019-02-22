@@ -585,8 +585,8 @@ FORCEINLINE Quat MMath::BiLerp(const Quat& p00, const Quat& p10, const Quat& p01
 {
 	Quat result;
 	result = Lerp(
-		Quat::Slerp_NotNormalized(p00, p10, fracX),
-		Quat::Slerp_NotNormalized(p01, p11, fracX),
+		Quat::SlerpNotNormalized(p00, p10, fracX),
+		Quat::SlerpNotNormalized(p01, p11, fracX),
 		fracY
 	);
 	return result;

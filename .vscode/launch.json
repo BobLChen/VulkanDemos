@@ -34,10 +34,10 @@
             "preLaunchTask": "BuildAll"
         },
         {
-            "name": "Debug NativeWindow",
+            "name": "Debug Triangle",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/examples/NativeWindow",
+            "program": "${workspaceFolder}/build/examples/Triangle",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
