@@ -7,6 +7,6 @@
     #include "Math/Windows/WindowsPlatformMath.h"
 #elif PLATFORM_MAC
     #include "Math/Mac/MacPlatformMath.h"
-#elif PLATFORM_UNIX
+#elif PLATFORM_LINUX
     #include "Math/Linux/LinuxPlatformMath.h"
 #endif

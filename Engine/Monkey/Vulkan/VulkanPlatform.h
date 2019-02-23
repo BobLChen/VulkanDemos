@@ -10,7 +10,7 @@
 	#include "Vulkan/Mac/VulkanPlatformDefines.h"
 #endif
 
-#if PLATFORM_UNIX
+#if PLATFORM_LINUX
 	#include "Vulkan/Linux/VulkanPlatformDefines.h"
 #endif
 

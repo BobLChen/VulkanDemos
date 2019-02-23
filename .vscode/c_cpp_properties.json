@@ -10,7 +10,7 @@
                 "${workspaceFolder}/external/imgui/**",
                 "${workspaceFolder}/external/vulkan/linux/include/**"
             ],
-            "defines": ["PLATFORM_UNIX=1"],
+            "defines": ["PLATFORM_LINUX=1"],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",

@@ -29,6 +29,11 @@ public:
 		return m_LockToVsync;
 	}
 
+	inline VkSwapchainKHR GetInstanceHandle()
+	{
+		return m_SwapChain;
+	}
+
 protected:
 	int32 AcquireImageIndex(VkSemaphore* OutSemaphore);
 	

@@ -22,8 +22,8 @@
 	#define PLATFORM_ANDROID 0
 #endif
 
-#if !defined(PLATFORM_UNIX)
-	#define PLATFORM_UNIX 0
+#if !defined(PLATFORM_LINUX)
+	#define PLATFORM_LINUX 0
 #endif
 
 #include "PerPlatformCppDefines.h"

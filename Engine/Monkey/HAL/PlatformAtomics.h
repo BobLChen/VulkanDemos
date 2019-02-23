@@ -7,7 +7,7 @@
 	#include "HAL/Windows/WindowsPlatformAtomics.h"
 #elif PLATFORM_MAC
 	#include "HAL/Mac/MacPlatformAtomics.h"
-#elif PLATFORM_UNIX
+#elif PLATFORM_LINUX
 	#include "HAL/Linux/LinuxPlatformAtomics.h"
 #endif
 

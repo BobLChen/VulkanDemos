@@ -59,4 +59,19 @@ SETUP_SAMPLE_START(Triangle)
 		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/2_Triangle/Triangle.cpp
 	)
+	
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+	# SET(RESOURCE_FILES
+	# 	shader.vert
+	# 	shader.frag
+	# 	vert.spv
+	# 	frag.spv
+	# )
 SETUP_SAMPLE_END(Triangle)

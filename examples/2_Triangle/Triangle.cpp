@@ -1,11 +1,14 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
+#include "Configuration/Platform.h"
 #include "Application/AppModeBase.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
+#include "Vulkan/VulkanSwapChain.h"
 #include "Math/Vector4.h"
 #include <vector>
+#include <fstream>
 
 class TriangleMode : public AppModeBase
 {
@@ -13,6 +16,8 @@ public:
 	TriangleMode(int width, int height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_CmdLine(cmdLine)
+		, m_Ready(false)
+		, m_CurrentBackBuffer(0)
 	{
 
 	}
@@ -26,6 +31,13 @@ public:
 	{
 		std::string assetsPath = m_CmdLine[0];
 		int32 length = 0;
+		for (int32 i = 0; i < assetsPath.size(); ++i)
+		{
+			if (assetsPath[i] == '\\')
+			{
+				assetsPath[i] = '/';
+			}
+		}
 		for (int32 i = assetsPath.size() - 1; i >= 0; --i)
 		{
 			if (assetsPath[i] == '/')
@@ -47,20 +59,32 @@ public:
 		CreateUniformBuffers();
 		CreateDescriptorSetLayout();
 		CreatePipelines();
-	}
+		CreateDescriptorPool();
+		CreateDescriptorSet();
+		SetupCommandBuffers();
 
-	virtual void Loop() override
-	{
-
+		m_Ready = true;
 	}
 
 	virtual void Exist() override
 	{
+		VERIFYVULKANRESULT(vkWaitForFences(m_Device, m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
+
+		DestroyDescriptorPool();
 		DestroyPipelines();
 		DestroyDescriptorSetLayout();
 		DestroyUniformBuffers();
 		DestroyMeshBuffers();
 		DestroyFences();
+	}
+
+	virtual void Loop() override
+	{
+		if (!m_Ready)
+		{
+			return;
+		}
+		Draw();
 	}
 
 private:
@@ -88,8 +112,15 @@ private:
 
 	VkShaderModule LoadSPIPVShader(std::string filepath)
 	{
+#if PLATFORM_LINUX
 		std::string finalPath = m_AssetsPath + "../../examples/" + filepath;
-		FILE* file = fopen(finalPath.c_str(), "rt");
+#elif PLATFORM_WINDOWS
+		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
+#elif PLATFORM_MAC
+		std::string finalPath = m_AssetsPath + "../../examples/" + filepath;
+#endif
+
+		FILE* file = fopen(finalPath.c_str(), "rb");
 		if (!file)
 		{
 			MLOGE("File not found :%s", filepath.c_str());
@@ -121,6 +152,141 @@ private:
 		delete[] data;
 		
 		return shaderModule;
+	}
+
+	void Draw()
+	{
+		UpdateUniformBuffers();
+
+		VkSwapchainKHR swapchain = m_VulkanRHI->GetSwapChain()->GetInstanceHandle();
+		VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		VkSemaphore presentCompleteSemaphore = m_VulkanRHI->GetPresentCompleteSemaphore();
+		VkSemaphore renderCompleteSemaphore = m_VulkanRHI->GetRenderCompleteSemaphore();
+		VkQueue queue = m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle();
+		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
+
+		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, m_VulkanRHI->GetPresentCompleteSemaphore(), nullptr, &m_CurrentBackBuffer));
+		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer], VK_TRUE, UINT64_MAX));
+		VERIFYVULKANRESULT(vkResetFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer]));
+		
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask = &waitStageMask;									
+		submitInfo.pWaitSemaphores = &presentCompleteSemaphore;
+		submitInfo.waitSemaphoreCount = 1;																														
+		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+		submitInfo.signalSemaphoreCount = 1;											
+		submitInfo.pCommandBuffers = &drawCmdBuffers[m_CurrentBackBuffer];
+		submitInfo.commandBufferCount = 1;												
+		
+		VERIFYVULKANRESULT(vkQueueSubmit(queue, 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
+
+		VkPresentInfoKHR presentInfo = {};
+		ZeroVulkanStruct(presentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapchain;
+		presentInfo.pImageIndices = &m_CurrentBackBuffer;
+		presentInfo.pWaitSemaphores = &renderCompleteSemaphore;
+		presentInfo.waitSemaphoreCount = 1;
+
+		vkQueuePresentKHR(queue, &presentInfo);
+	}
+
+	void SetupCommandBuffers()
+	{
+		VkCommandBufferBeginInfo cmdBeginInfo;
+		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+
+		VkClearValue clearValues[2];
+		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo;
+		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+		renderPassBeginInfo.pNext = NULL;
+		renderPassBeginInfo.renderPass = m_VulkanRHI->GetRenderPass();
+		renderPassBeginInfo.renderArea.offset.x = 0;
+		renderPassBeginInfo.renderArea.offset.y = 0;
+		renderPassBeginInfo.renderArea.extent.width = GetWidth();
+		renderPassBeginInfo.renderArea.extent.height = GetHeight();
+		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.pClearValues = clearValues;
+
+		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
+		std::vector<VkFramebuffer> frameBuffers = m_VulkanRHI->GetFrameBuffers();
+		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
+		{
+			renderPassBeginInfo.framebuffer = frameBuffers[i];
+
+			VkViewport viewport = {};
+			viewport.height = GetHeight();
+			viewport.width = GetWidth();
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			
+			VkRect2D scissor = {};
+			scissor.extent.width = GetWidth();
+			scissor.extent.height = GetHeight();
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+
+			VkDeviceSize offsets[1] = { 0 };
+
+			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
+
+			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, &m_VertexBuffer.buffer, offsets);
+			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndicesCount, 1, 0, 0, 1);
+			vkCmdEndRenderPass(drawCmdBuffers[i]);
+
+			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+		}
+	}
+
+	void CreateDescriptorSet()
+	{
+		VkDescriptorSetAllocateInfo allocInfo;
+		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+		allocInfo.descriptorPool = m_DescriptorPool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+
+		VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_DescriptorSet));
+
+		VkWriteDescriptorSet writeDescriptorSet;
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		writeDescriptorSet.dstSet = m_DescriptorSet;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSet.pBufferInfo = &m_MVPDescriptor;
+		writeDescriptorSet.dstBinding = 0;
+
+		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+	}
+
+	void CreateDescriptorPool()
+	{
+		VkDescriptorPoolSize poolSize = {};
+		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = 1;
+
+		VkDescriptorPoolCreateInfo descriptorPoolInfo;
+		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+		descriptorPoolInfo.poolSizeCount = 1;
+		descriptorPoolInfo.pPoolSizes = &poolSize;
+		descriptorPoolInfo.maxSets = 1;
+
+		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
+	}
+
+	void DestroyDescriptorPool()
+	{
+		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
 	}
 
 	void CreatePipelines()
@@ -229,6 +395,8 @@ private:
 		pipelineCreateInfo.pRasterizationState = &rasterizationState;
 		pipelineCreateInfo.pColorBlendState = &colorBlendState;
 		pipelineCreateInfo.pMultisampleState = &multisampleState;
+		pipelineCreateInfo.pViewportState = &viewportState;
+		pipelineCreateInfo.pDepthStencilState = &depthStencilState;
 		pipelineCreateInfo.pDynamicState = &dynamicState;
 		
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
@@ -239,7 +407,7 @@ private:
 
 	void DestroyPipelines()
 	{
-		
+		vkDestroyPipeline(m_Device, m_Pipeline, VULKAN_CPU_ALLOCATOR);
 	}
 	
 	void CreateDescriptorSetLayout()
@@ -276,6 +444,25 @@ private:
 		{
 			m_MVPData.datas[i] = 0;
 		}
+		
+		// 1  0  0  0
+		// 0  1  0  0
+		// 0  0  1  0
+		// 0  0  0  1
+		m_MVPData.datas[0]  = 1.0f;
+		m_MVPData.datas[5] = 1.0f;
+		m_MVPData.datas[10] = 1.0f;
+		m_MVPData.datas[15] = 1.0f;
+
+		m_MVPData.datas[16] = 1.0f;
+		m_MVPData.datas[21] = 1.0f;
+		m_MVPData.datas[26] = 1.0f;
+		m_MVPData.datas[31] = 1.0f;
+
+		m_MVPData.datas[32] = 1.0f;
+		m_MVPData.datas[37] = 1.0f;
+		m_MVPData.datas[42] = 1.0f;
+		m_MVPData.datas[47] = 1.0f;
 		
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, 48 * sizeof(float), 0, (void**)&pData));
@@ -484,6 +671,7 @@ private:
 
 	std::vector<std::string> m_CmdLine;
 	std::string m_AssetsPath;
+	bool m_Ready;
 
 	std::vector<VkFence> m_Fences;
 	VkDevice m_Device;
@@ -494,9 +682,12 @@ private:
 	UBOData m_MVPData;
 	VkDescriptorBufferInfo m_MVPDescriptor;
 	VkDescriptorSetLayout m_DescriptorSetLayout;
+	VkDescriptorSet m_DescriptorSet;
 	VkPipelineLayout m_PipelineLayout;
 	VkPipeline m_Pipeline;
+	VkDescriptorPool m_DescriptorPool;
 	uint32 m_IndicesCount;
+	uint32 m_CurrentBackBuffer;
 };
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)

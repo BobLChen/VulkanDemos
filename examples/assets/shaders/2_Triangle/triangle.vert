@@ -17,9 +17,9 @@ out gl_PerVertex
     vec4 gl_Position;   
 };
 
+
 void main() 
 {
 	outColor = inColor;
-	// gl_Position = ubo.projectionMatrix * ubo.viewMatrix * ubo.modelMatrix * vec4(inPos.xyz, 1.0);
-	gl_Position = vec4(inPos.xyz, 1.0);
+	gl_Position = ubo.projectionMatrix * ubo.viewMatrix * ubo.modelMatrix * vec4(inPos.xyz, 1.0);
 }
