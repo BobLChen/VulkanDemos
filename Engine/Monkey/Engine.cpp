@@ -19,7 +19,7 @@ std::shared_ptr<VulkanRHI> Engine::GetVulkanRHI()
 	return m_VulkanRHI;
 }
 
-int32 Engine::PreInit(const char* cmdLine, int32 width, int32 height, const char* title)
+int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)
 {
 	SlateApplication::Create(this);
 	SlateApplication::Get().MakeWindow(width, height, title);

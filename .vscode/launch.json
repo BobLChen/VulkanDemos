@@ -60,7 +60,7 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "BuildAll"
+            // "preLaunchTask": "BuildAll"
         }
     ]
 }

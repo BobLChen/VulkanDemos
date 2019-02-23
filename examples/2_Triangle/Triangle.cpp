@@ -10,8 +10,9 @@
 class TriangleMode : public AppModeBase
 {
 public:
-	TriangleMode(int width, int height, const char* title)
+	TriangleMode(int width, int height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
+		, m_CmdLine(cmdLine)
 	{
 
 	}
@@ -23,7 +24,17 @@ public:
 
 	virtual void PreInit() override
 	{
-		
+		std::string assetsPath = m_CmdLine[0];
+		int32 length = 0;
+		for (int32 i = assetsPath.size() - 1; i >= 0; --i)
+		{
+			if (assetsPath[i] == '/')
+			{
+				break;
+			}
+			length += 1;
+		}
+		m_AssetsPath = assetsPath.substr(0, assetsPath.size() - length);
 	}
 
 	virtual void Init() override
@@ -75,19 +86,166 @@ private:
 		float datas[48];
 	};
 
+	VkShaderModule LoadSPIPVShader(std::string filepath)
+	{
+		std::string finalPath = m_AssetsPath + "../../examples/" + filepath;
+		FILE* file = fopen(finalPath.c_str(), "rt");
+		if (!file)
+		{
+			MLOGE("File not found :%s", filepath.c_str());
+			return VK_NULL_HANDLE;
+		}
+
+		fseek(file, 0, SEEK_END);
+		int32 dataSize = ftell(file);
+		fseek(file, 0, SEEK_SET);
+
+		if (dataSize <= 0)
+		{
+			fclose(file);
+			MLOGE("File has no data :%s", filepath.c_str());
+			return VK_NULL_HANDLE;
+		}
+
+		uint8* data = new uint8[dataSize];
+		fread(data, 1, dataSize, file);
+		fclose(file);
+
+		VkShaderModuleCreateInfo moduleCreateInfo;
+		ZeroVulkanStruct(moduleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+		moduleCreateInfo.codeSize = dataSize;
+		moduleCreateInfo.pCode = (uint32_t*)data;
+
+		VkShaderModule shaderModule;
+		VERIFYVULKANRESULT(vkCreateShaderModule(m_Device, &moduleCreateInfo, VULKAN_CPU_ALLOCATOR, &shaderModule));
+		delete[] data;
+		
+		return shaderModule;
+	}
+
 	void CreatePipelines()
 	{
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
+		ZeroVulkanStruct(inputAssemblyState, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
+		inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		
+		VkPipelineRasterizationStateCreateInfo rasterizationState;
+		ZeroVulkanStruct(rasterizationState, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
+		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizationState.depthClampEnable = VK_FALSE;
+		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
+		rasterizationState.depthBiasEnable = VK_FALSE;
+		rasterizationState.lineWidth = 1.0f;
 
+		VkPipelineColorBlendAttachmentState blendAttachmentState[1] = {};
+		blendAttachmentState[0].colorWriteMask = 0xF;
+		blendAttachmentState[0].blendEnable = VK_FALSE;
+
+		VkPipelineColorBlendStateCreateInfo colorBlendState;
+		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
+		colorBlendState.attachmentCount = 1;
+		colorBlendState.pAttachments = blendAttachmentState;
+
+		VkPipelineViewportStateCreateInfo viewportState;
+		ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount  = 1;
+
+		std::vector<VkDynamicState> dynamicStateEnables;
+		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
+		VkPipelineDynamicStateCreateInfo dynamicState;
+		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+		dynamicState.dynamicStateCount = dynamicStateEnables.size();
+		dynamicState.pDynamicStates = dynamicStateEnables.data();
+
+		VkPipelineDepthStencilStateCreateInfo depthStencilState;
+		ZeroVulkanStruct(depthStencilState, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
+		depthStencilState.depthTestEnable = VK_TRUE;
+		depthStencilState.depthWriteEnable = VK_TRUE;
+		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthStencilState.depthBoundsTestEnable = VK_FALSE;
+		depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
+		depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
+		depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+		depthStencilState.front = depthStencilState.back;
+
+		VkPipelineMultisampleStateCreateInfo multisampleState;
+		ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
+		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampleState.pSampleMask = nullptr;
+		
+		// (triangle.vert):
+		// layout (location = 0) in vec3 inPos;
+		// layout (location = 1) in vec3 inColor;
+		// Attribute location 0: Position
+		// Attribute location 1: Color
+		// vertex input bindding
+		VkVertexInputBindingDescription vertexInputBinding = {};
+		vertexInputBinding.binding = 0;
+		vertexInputBinding.stride = sizeof(Vertex);
+		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
+		// position
+		vertexInputAttributs[0].binding = 0;
+		vertexInputAttributs[0].location = 0;
+		vertexInputAttributs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributs[0].offset = offsetof(Vertex, position);
+		// color
+		vertexInputAttributs[1].binding = 0;
+		vertexInputAttributs[1].location = 1;
+		vertexInputAttributs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributs[1].offset = offsetof(Vertex, color);
+		
+		VkPipelineVertexInputStateCreateInfo vertexInputState;
+		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+		vertexInputState.vertexBindingDescriptionCount = 1;
+		vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
+		vertexInputState.vertexAttributeDescriptionCount = 2;
+		vertexInputState.pVertexAttributeDescriptions = vertexInputAttributs.data();
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
+		ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+		ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		shaderStages[0].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.vert.spv");
+		shaderStages[0].pName = "main";
+		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		shaderStages[1].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.frag.spv");
+		shaderStages[1].pName = "main";
+
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+		pipelineCreateInfo.layout = m_PipelineLayout;
+		pipelineCreateInfo.renderPass = m_VulkanRHI->GetRenderPass();
+		pipelineCreateInfo.stageCount = shaderStages.size();
+		pipelineCreateInfo.pStages = shaderStages.data();
+		pipelineCreateInfo.pVertexInputState = &vertexInputState;
+		pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+		pipelineCreateInfo.pRasterizationState = &rasterizationState;
+		pipelineCreateInfo.pColorBlendState = &colorBlendState;
+		pipelineCreateInfo.pMultisampleState = &multisampleState;
+		pipelineCreateInfo.pDynamicState = &dynamicState;
+		
+		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
+		
+		vkDestroyShaderModule(m_Device, shaderStages[0].module, VULKAN_CPU_ALLOCATOR);
+		vkDestroyShaderModule(m_Device, shaderStages[1].module, VULKAN_CPU_ALLOCATOR);
 	}
 
 	void DestroyPipelines()
 	{
-
+		
 	}
-
+	
 	void CreateDescriptorSetLayout()
 	{
 		VkDescriptorSetLayoutBinding layoutBinding;
+		layoutBinding.binding = 0;
 		layoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBinding.descriptorCount = 1;
 		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
@@ -324,6 +482,9 @@ private:
 		}
 	}
 
+	std::vector<std::string> m_CmdLine;
+	std::string m_AssetsPath;
+
 	std::vector<VkFence> m_Fences;
 	VkDevice m_Device;
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;
@@ -338,7 +499,7 @@ private:
 	uint32 m_IndicesCount;
 };
 
-AppModeBase* CreateAppMode(const char* cmdLine, int32 cmdShow)
+AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return new TriangleMode(800, 600, "Triangle");
+	return new TriangleMode(800, 600, "Triangle", cmdLine);
 }
