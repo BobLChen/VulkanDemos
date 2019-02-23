@@ -117,7 +117,7 @@ private:
 #elif PLATFORM_WINDOWS
 		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
 #elif PLATFORM_MAC
-		std::string finalPath = m_AssetsPath + "../../examples/" + filepath;
+		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
 #endif
 
 		FILE* file = fopen(finalPath.c_str(), "rb");
