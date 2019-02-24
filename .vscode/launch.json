@@ -37,18 +37,18 @@
             "name": "Debug Triangle",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/examples/Triangle",
+            "program": "${workspaceFolder}/build/Debug/examples/Triangle",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/bin"
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
                 },
                 {
                     "name": "VK_LAYER_PATH",
-                    "value": "external/vulkan/linux/etc/explicit_layer.d"
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
                 }
             ],
             "externalConsole": true,

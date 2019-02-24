@@ -111,13 +111,7 @@ private:
 
 	VkShaderModule LoadSPIPVShader(std::string filepath)
 	{
-#if PLATFORM_LINUX
-		std::string finalPath = m_AssetsPath + "../../examples/" + filepath;
-#elif PLATFORM_WINDOWS
 		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
-#elif PLATFORM_MAC
-		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
-#endif
 
 		FILE* file = fopen(finalPath.c_str(), "rb");
 		if (!file)
