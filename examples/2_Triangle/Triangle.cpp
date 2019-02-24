@@ -57,10 +57,10 @@ public:
 		CreateFences();
 		CreateMeshBuffers();
 		CreateUniformBuffers();
+        CreateDescriptorPool();
 		CreateDescriptorSetLayout();
+        CreateDescriptorSet();
 		CreatePipelines();
-		CreateDescriptorPool();
-		CreateDescriptorSet();
 		SetupCommandBuffers();
 
 		m_Ready = true;
@@ -69,10 +69,9 @@ public:
 	virtual void Exist() override
 	{
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
-
+        DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
-		DestroyDescriptorSetLayout();
 		DestroyUniformBuffers();
 		DestroyMeshBuffers();
 		DestroyFences();
@@ -165,7 +164,7 @@ private:
 		VkQueue queue = m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle();
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
 
-		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, m_VulkanRHI->GetPresentCompleteSemaphore(), nullptr, &m_CurrentBackBuffer));
+		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, presentCompleteSemaphore, nullptr, &m_CurrentBackBuffer));
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer], VK_TRUE, UINT64_MAX));
 		VERIFYVULKANRESULT(vkResetFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer]));
 		
@@ -203,7 +202,6 @@ private:
 
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.pNext = NULL;
 		renderPassBeginInfo.renderPass = m_VulkanRHI->GetRenderPass();
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
@@ -211,7 +209,7 @@ private:
 		renderPassBeginInfo.renderArea.extent.height = GetHeight();
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues = clearValues;
-
+        
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer> frameBuffers = m_VulkanRHI->GetFrameBuffers();
 		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
@@ -233,8 +231,8 @@ private:
 			VkDeviceSize offsets[1] = { 0 };
 
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
-
 			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            
 			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
 			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
@@ -242,8 +240,8 @@ private:
 			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, &m_VertexBuffer.buffer, offsets);
 			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndicesCount, 1, 0, 0, 1);
+            
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
-
 			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
 	}
@@ -265,10 +263,10 @@ private:
 		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		writeDescriptorSet.pBufferInfo = &m_MVPDescriptor;
 		writeDescriptorSet.dstBinding = 0;
-
+        
 		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
-
+    
 	void CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize = {};
@@ -288,7 +286,8 @@ private:
 	{
 		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
 	}
-
+    
+    // http://xiaopengyou.fun/article/31
 	void CreatePipelines()
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
@@ -304,16 +303,16 @@ private:
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 		rasterizationState.depthBiasEnable = VK_FALSE;
 		rasterizationState.lineWidth = 1.0f;
-
+        
 		VkPipelineColorBlendAttachmentState blendAttachmentState[1] = {};
-		blendAttachmentState[0].colorWriteMask = 0xF;
+		blendAttachmentState[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		blendAttachmentState[0].blendEnable = VK_FALSE;
-
+        
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
 		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
 		colorBlendState.attachmentCount = 1;
 		colorBlendState.pAttachments = blendAttachmentState;
-
+        
 		VkPipelineViewportStateCreateInfo viewportState;
 		ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
 		viewportState.viewportCount = 1;
@@ -325,8 +324,8 @@ private:
 		VkPipelineDynamicStateCreateInfo dynamicState;
 		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
 		dynamicState.dynamicStateCount = dynamicStateEnables.size();
-		dynamicState.pDynamicStates = dynamicStateEnables.data();
-
+		dynamicState.pDynamicStates    = dynamicStateEnables.data();
+        
 		VkPipelineDepthStencilStateCreateInfo depthStencilState;
 		ZeroVulkanStruct(depthStencilState, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
 		depthStencilState.depthTestEnable = VK_TRUE;
@@ -351,19 +350,19 @@ private:
 		// Attribute location 1: Color
 		// vertex input bindding
 		VkVertexInputBindingDescription vertexInputBinding = {};
-		vertexInputBinding.binding = 0;
-		vertexInputBinding.stride = sizeof(Vertex);
+		vertexInputBinding.binding = 0; // Vertex Buffer 0
+		vertexInputBinding.stride = sizeof(Vertex); // Position + Color
 		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
+        
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
 		// position
 		vertexInputAttributs[0].binding = 0;
-		vertexInputAttributs[0].location = 0;
+        vertexInputAttributs[0].location = 0; // triangle.vert : layout (location = 0)
 		vertexInputAttributs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 		vertexInputAttributs[0].offset = offsetof(Vertex, position);
 		// color
 		vertexInputAttributs[1].binding = 0;
-		vertexInputAttributs[1].location = 1;
+		vertexInputAttributs[1].location = 1; // triangle.vert : layout (location = 1)
 		vertexInputAttributs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 		vertexInputAttributs[1].offset = offsetof(Vertex, color);
 		
@@ -383,7 +382,7 @@ private:
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 		shaderStages[1].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.frag.spv");
 		shaderStages[1].pName = "main";
-
+        
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout = m_PipelineLayout;
@@ -412,6 +411,10 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
+        // m_MVPDescriptor
+        // m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
+        // m_MVPDescriptor.offset = 0;
+        // m_MVPDescriptor.range  = 48 * sizeof(float);
 		VkDescriptorSetLayoutBinding layoutBinding;
 		layoutBinding.binding = 0;
 		layoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
