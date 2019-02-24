@@ -221,7 +221,7 @@ private:
             viewport.height = renderPassBeginInfo.renderArea.extent.height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
-			
+            
 			VkRect2D scissor = {};
             scissor.extent.width  = viewport.width;
             scissor.extent.height = viewport.height;
@@ -341,7 +341,7 @@ private:
 
 		VkPipelineMultisampleStateCreateInfo multisampleState;
 		ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampleState.rasterizationSamples = m_VulkanRHI->GetSampleCount();
 		multisampleState.pSampleMask = nullptr;
 		
 		// (triangle.vert):

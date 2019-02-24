@@ -24,6 +24,7 @@ VulkanRHI::VulkanRHI()
     , m_PixelFormat(PF_B8G8R8A8)
     , m_DepthFormat(PF_D24)
     , m_RenderPass(VK_NULL_HANDLE)
+    , m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
 {
     
 }
@@ -134,7 +135,7 @@ void VulkanRHI::CreateRenderPass()
     std::vector<VkAttachmentDescription> attachments(2);
     // color attachment
     attachments[0].format = PixelFormatToVkFormat(m_PixelFormat, false);
-    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].samples = m_SampleCount;
     attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -143,7 +144,7 @@ void VulkanRHI::CreateRenderPass()
     attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     // depth stencil attachment
     attachments[1].format = PixelFormatToVkFormat(m_DepthFormat, false);
-    attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].samples = m_SampleCount;
     attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -304,7 +305,7 @@ void VulkanRHI::CreateDepthStencil()
     imageCreateInfo.extent = { (uint32)width, (uint32)height, 1 };
     imageCreateInfo.mipLevels = 1;
     imageCreateInfo.arrayLayers = 1;
-    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.samples = m_SampleCount;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     imageCreateInfo.flags = 0;

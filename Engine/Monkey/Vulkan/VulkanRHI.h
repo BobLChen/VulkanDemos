@@ -127,7 +127,12 @@ public:
 		return m_SupportsDebugUtilsExt;
 	}
 	
-	virtual const char* GetName() 
+    inline VkSampleCountFlagBits GetSampleCount() const
+    {
+        return m_SampleCount;
+    }
+    
+	inline const char* GetName()
 	{ 
 		return "Vulkan";
 	}
@@ -180,7 +185,7 @@ protected:
 	void CreateFrameBuffer();
 
 	void DestroyFrameBuffer();
-
+    
 protected:
     
 	VkInstance m_Instance;
@@ -212,7 +217,8 @@ protected:
     PixelFormat m_DepthFormat;
     VkRenderPass m_RenderPass;
     VkPipelineCache m_PipelineCache;
-	
+    VkSampleCountFlagBits m_SampleCount;
+    
 	bool m_SupportsDebugUtilsExt;
 };
 
