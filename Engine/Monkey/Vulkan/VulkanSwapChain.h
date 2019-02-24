@@ -33,7 +33,26 @@ public:
 	{
 		return m_SwapChain;
 	}
+    
+    inline int32 GetWidth() const
+    {
+        return m_SwapChainInfo.imageExtent.width;
+    }
 
+    inline int32 GetHeight() const
+    {
+        return m_SwapChainInfo.imageExtent.height;
+    }
+    
+    inline int32 GetBackBufferCount() const
+    {
+        return m_SwapChainInfo.minImageCount;
+    }
+    
+    const VkSwapchainCreateInfoKHR& GetInfo() const
+    {
+        return m_SwapChainInfo;
+    }
 protected:
 	int32 AcquireImageIndex(VkSemaphore* OutSemaphore);
 	
@@ -50,7 +69,8 @@ protected:
 	std::vector<VkSemaphore> m_ImageAcquiredSemaphore;
 	std::vector<VulkanFence*> m_ImageAcquiredFences;
 	int8 m_LockToVsync;
-	uint32 m_PresentID = 0;
+	uint32 m_PresentID;
+    VkSwapchainCreateInfoKHR m_SwapChainInfo;
 
 	friend class VulkanViewport;
 	friend class VulkanQueue;

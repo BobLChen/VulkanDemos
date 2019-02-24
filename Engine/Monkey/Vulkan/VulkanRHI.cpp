@@ -87,8 +87,8 @@ void VulkanRHI::InitInstance()
 
 void VulkanRHI::CreateFrameBuffer()
 {
-	int width = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
-	int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+    int width  = m_SwapChain->GetWidth();
+    int height = m_SwapChain->GetHeight();
 
 	VkImageView attachments[2];
 	attachments[1] = m_DepthStencilView;
@@ -229,7 +229,7 @@ void VulkanRHI::CreateCommandPool()
 {
     VkCommandPoolCreateInfo createInfo;
     ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-    createInfo.queueFamilyIndex = m_Device->GetPresentQueue()->GetFamilyIndex();
+    createInfo.queueFamilyIndex = m_Device->GetGraphicsQueue()->GetFamilyIndex();
     createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     VERIFYVULKANRESULT(vkCreateCommandPool(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_CommandPool));
 }
@@ -260,7 +260,6 @@ void VulkanRHI::RecreateSwapChain()
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
         createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.flags = 0;
         createInfo.image = m_FrameImages[i];
         VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &(m_FrameImageViews[i])));
     }
@@ -295,8 +294,8 @@ void VulkanRHI::DestoryCommandBuffers()
 
 void VulkanRHI::CreateDepthStencil()
 {
-    int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
-    int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+    int width  = m_SwapChain->GetWidth();
+    int height = m_SwapChain->GetHeight();
     
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -314,7 +313,7 @@ void VulkanRHI::CreateDepthStencil()
     VkImageViewCreateInfo imageViewCreateInfo;
     ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    imageViewCreateInfo.format = VK_FORMAT_D24_UNORM_S8_UINT;
+    imageViewCreateInfo.format = PixelFormatToVkFormat(m_DepthFormat, false);
     imageViewCreateInfo.flags = 0;
     imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
     imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
@@ -331,7 +330,7 @@ void VulkanRHI::CreateDepthStencil()
     
     VkMemoryAllocateInfo memAllocateInfo;
     ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    memAllocateInfo.allocationSize = memRequire.size;
+    memAllocateInfo.allocationSize  = memRequire.size;
     memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
     
     vkAllocateMemory(m_Device->GetInstanceHandle(), &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);

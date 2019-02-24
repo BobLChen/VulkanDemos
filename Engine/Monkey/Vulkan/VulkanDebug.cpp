@@ -45,8 +45,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallBack(
 
 void VulkanRHI::SetupDebugLayerCallback()
 {
-    VkDebugReportCallbackCreateInfoEXT debugInfo = {};
-    debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+    VkDebugReportCallbackCreateInfoEXT debugInfo;
+    ZeroVulkanStruct(debugInfo, VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT);
     debugInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
     debugInfo.pfnCallback = VulkanDebugCallBack;
     debugInfo.pUserData = this;

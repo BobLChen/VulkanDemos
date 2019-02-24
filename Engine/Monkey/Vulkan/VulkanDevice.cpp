@@ -26,14 +26,13 @@ VulkanDevice::~VulkanDevice()
 
 void VulkanDevice::CreateDevice()
 {
-	VkDeviceCreateInfo deviceInfo;
-	ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-
 	bool debugMarkersFound = false;
 	std::vector<const char*> deviceExtensions;
 	std::vector<const char*> validationLayers;
 	GetDeviceExtensionsAndLayers(deviceExtensions, validationLayers, debugMarkersFound);
 
+    VkDeviceCreateInfo deviceInfo;
+    ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
 	deviceInfo.enabledExtensionCount = deviceExtensions.size();
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount = validationLayers.size();

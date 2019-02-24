@@ -17,14 +17,12 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 {
 	VulkanPlatform::CreateSurface(instance, &m_Surface);
 	
-	VkSurfaceFormatKHR currFormat;
-	memset(&currFormat, 0, sizeof(VkSurfaceFormatKHR));
-
 	uint32 numFormats;
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceFormatsKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFormats, nullptr));
 	std::vector<VkSurfaceFormatKHR> formats(numFormats);
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceFormatsKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFormats, formats.data()));
 	
+    VkSurfaceFormatKHR currFormat = {};
 	if (outPixelFormat != PF_Unknown)
 	{
 		bool bFound = false;
@@ -168,38 +166,41 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
     uint32 sizeX = surfProperties.currentExtent.width  == 0xFFFFFFFF ? width : surfProperties.currentExtent.width;
 	uint32 sizeY = surfProperties.currentExtent.height == 0xFFFFFFFF ? height : surfProperties.currentExtent.height;
 	
-	VkSwapchainCreateInfoKHR swapChainInfo;
-	ZeroVulkanStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-	swapChainInfo.surface = m_Surface;
-	swapChainInfo.minImageCount = desiredNumBuffers;
-	swapChainInfo.imageFormat = currFormat.format;
-	swapChainInfo.imageColorSpace = currFormat.colorSpace;
-	swapChainInfo.imageExtent.width = sizeX;
-	swapChainInfo.imageExtent.height = sizeY;
-	swapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	swapChainInfo.preTransform = preTransform;
-	swapChainInfo.imageArrayLayers = 1;
-	swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	swapChainInfo.presentMode = presentMode;
-	swapChainInfo.oldSwapchain = VK_NULL_HANDLE;
-	swapChainInfo.clipped = VK_TRUE;
-	swapChainInfo.compositeAlpha = compositeAlpha;
+	ZeroVulkanStruct(m_SwapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
+	m_SwapChainInfo.surface = m_Surface;
+	m_SwapChainInfo.minImageCount = desiredNumBuffers;
+	m_SwapChainInfo.imageFormat = currFormat.format;
+	m_SwapChainInfo.imageColorSpace = currFormat.colorSpace;
+	m_SwapChainInfo.imageExtent.width = sizeX;
+	m_SwapChainInfo.imageExtent.height = sizeY;
+	m_SwapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	m_SwapChainInfo.preTransform = preTransform;
+	m_SwapChainInfo.imageArrayLayers = 1;
+	m_SwapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	m_SwapChainInfo.presentMode = presentMode;
+	m_SwapChainInfo.oldSwapchain = VK_NULL_HANDLE;
+	m_SwapChainInfo.clipped = VK_TRUE;
+	m_SwapChainInfo.compositeAlpha = compositeAlpha;
 	
 	*outDesiredNumBackBuffers = desiredNumBuffers;
 
-	if (swapChainInfo.imageExtent.width == 0)
+	if (m_SwapChainInfo.imageExtent.width == 0)
 	{
-		swapChainInfo.imageExtent.width = width;
+		m_SwapChainInfo.imageExtent.width = width;
 	}
-	if (swapChainInfo.imageExtent.height == 0)
+	if (m_SwapChainInfo.imageExtent.height == 0)
 	{
-		swapChainInfo.imageExtent.height = height;
+		m_SwapChainInfo.imageExtent.height = height;
 	}
 
 	VkBool32 supportsPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
+    if (!supportsPresent)
+    {
+        MLOGE("Present queue not support.")
+    }
 
-	VERIFYVULKANRESULT(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &swapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
+	VERIFYVULKANRESULT(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &m_SwapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
 
 	uint32 numSwapChainImages;
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
@@ -222,6 +223,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	}
 	
 	m_PresentID = 0;
+    MLOGE("SwapChain: Backbuffer:%d Format:%d ColorSpace:%d Size:%dx%d Present:%d", m_SwapChainInfo.minImageCount, m_SwapChainInfo.imageFormat, m_SwapChainInfo.imageColorSpace, m_SwapChainInfo.imageExtent.width, m_SwapChainInfo.imageExtent.height, m_SwapChainInfo.presentMode);
 }
 
 void VulkanSwapChain::Destroy()
