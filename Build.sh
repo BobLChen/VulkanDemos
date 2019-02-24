@@ -4,6 +4,7 @@ if [ ! -d "build" ]; then
     exit
 else
     cd build
+    cd Debug
 fi
 Local_Dir=$(cd "$(dirname "$0")"; pwd)
 echo "Now work at Dir:$Local_Dir"
