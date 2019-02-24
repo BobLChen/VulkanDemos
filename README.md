@@ -3,12 +3,15 @@ Vulkan Examples
 
 ## Requirements
 ### Windows
-- CMake 3.13.2
+- CMake 3.13.0
 - virtual studio 2017
 
 ### MacOS
 - XCode 10
-- CMake 3.13.2
+- CMake 3.13.0
+
+### Linux
+- CMake 3.13.0
 
 ## Usage
 ### Command line
@@ -27,3 +30,13 @@ Vulkan Examples
 - Choose your generator
 - Click Generate button
 
+## Example
+
+### Triangle
+**MacOS**
+<br/>
+![MacOS](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/macos.png)
+
+**Windows**
+<br/>
+![Windows](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/windows.JPG)
