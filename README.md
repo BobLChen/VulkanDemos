@@ -33,10 +33,4 @@ Vulkan Examples
 ## Example
 
 ### Triangle
-**MacOS**
-<br/>
-![MacOS](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/macos.png)
-
-**Windows**
-<br/>
-![Windows](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/windows.JPG)
+![Triangle](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/triangle.jpg)
