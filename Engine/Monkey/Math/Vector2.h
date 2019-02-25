@@ -5,11 +5,14 @@
 
 struct Vector2
 {
+public:
 	float x;
 	float y;
 
 	static const Vector2 ZeroVector;
 	static const Vector2 UnitVector;
+    
+public:
 
 	FORCEINLINE Vector2();
 

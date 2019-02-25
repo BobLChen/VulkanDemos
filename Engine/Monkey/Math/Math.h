@@ -5,11 +5,11 @@
 
 #include <string>
 
-class Rotator;
-class Plane;
-class Vector;
-class Vector2;
-class Quat;
+struct Rotator;
+struct Plane;
+struct Vector;
+struct Vector2;
+struct Quat;
 
 #undef  PI
 #define PI 					(3.1415926535897932f)
@@ -298,13 +298,142 @@ struct MMath : public PlatformMath
 	{
 		return degVal * (PI / 180.f);
 	}
-
-	FORCEINLINE static void VectorQuaternionMultiply(void *result, const void* quat1, const void* quat2)
+    
+    static FORCEINLINE void VectorMatrixMultiply(void* result, const void* matrix1, const void* matrix2)
+    {
+        typedef float Float4x4[4][4];
+        const Float4x4& a = *((const Float4x4*) matrix1);
+        const Float4x4& b = *((const Float4x4*) matrix2);
+        
+        Float4x4 temp;
+        temp[0][0] = a[0][0] * b[0][0] + a[0][1] * b[1][0] + a[0][2] * b[2][0] + a[0][3] * b[3][0];
+        temp[0][1] = a[0][0] * b[0][1] + a[0][1] * b[1][1] + a[0][2] * b[2][1] + a[0][3] * b[3][1];
+        temp[0][2] = a[0][0] * b[0][2] + a[0][1] * b[1][2] + a[0][2] * b[2][2] + a[0][3] * b[3][2];
+        temp[0][3] = a[0][0] * b[0][3] + a[0][1] * b[1][3] + a[0][2] * b[2][3] + a[0][3] * b[3][3];
+        
+        temp[1][0] = a[1][0] * b[0][0] + a[1][1] * b[1][0] + a[1][2] * b[2][0] + a[1][3] * b[3][0];
+        temp[1][1] = a[1][0] * b[0][1] + a[1][1] * b[1][1] + a[1][2] * b[2][1] + a[1][3] * b[3][1];
+        temp[1][2] = a[1][0] * b[0][2] + a[1][1] * b[1][2] + a[1][2] * b[2][2] + a[1][3] * b[3][2];
+        temp[1][3] = a[1][0] * b[0][3] + a[1][1] * b[1][3] + a[1][2] * b[2][3] + a[1][3] * b[3][3];
+        
+        temp[2][0] = a[2][0] * b[0][0] + a[2][1] * b[1][0] + a[2][2] * b[2][0] + a[2][3] * b[3][0];
+        temp[2][1] = a[2][0] * b[0][1] + a[2][1] * b[1][1] + a[2][2] * b[2][1] + a[2][3] * b[3][1];
+        temp[2][2] = a[2][0] * b[0][2] + a[2][1] * b[1][2] + a[2][2] * b[2][2] + a[2][3] * b[3][2];
+        temp[2][3] = a[2][0] * b[0][3] + a[2][1] * b[1][3] + a[2][2] * b[2][3] + a[2][3] * b[3][3];
+        
+        temp[3][0] = a[3][0] * b[0][0] + a[3][1] * b[1][0] + a[3][2] * b[2][0] + a[3][3] * b[3][0];
+        temp[3][1] = a[3][0] * b[0][1] + a[3][1] * b[1][1] + a[3][2] * b[2][1] + a[3][3] * b[3][1];
+        temp[3][2] = a[3][0] * b[0][2] + a[3][1] * b[1][2] + a[3][2] * b[2][2] + a[3][3] * b[3][2];
+        temp[3][3] = a[3][0] * b[0][3] + a[3][1] * b[1][3] + a[3][2] * b[2][3] + a[3][3] * b[3][3];
+        
+        memcpy(result, &temp, 16 * sizeof(float));
+    }
+    
+    static FORCEINLINE void VectorMatrixInverse(void* dstMatrix, const void* srcMatrix)
+    {
+        typedef float Float4x4[4][4];
+        const Float4x4& m = *((const Float4x4*)srcMatrix);
+        Float4x4 result;
+        float det[4];
+        Float4x4 tmp;
+        
+        tmp[0][0] = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+        tmp[0][1] = m[1][2] * m[3][3] - m[1][3] * m[3][2];
+        tmp[0][2] = m[1][2] * m[2][3] - m[1][3] * m[2][2];
+        
+        tmp[1][0] = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+        tmp[1][1] = m[0][2] * m[3][3] - m[0][3] * m[3][2];
+        tmp[1][2] = m[0][2] * m[2][3] - m[0][3] * m[2][2];
+        
+        tmp[2][0] = m[1][2] * m[3][3] - m[1][3] * m[3][2];
+        tmp[2][1] = m[0][2] * m[3][3] - m[0][3] * m[3][2];
+        tmp[2][2] = m[0][2] * m[1][3] - m[0][3] * m[1][2];
+        
+        tmp[3][0] = m[1][2] * m[2][3] - m[1][3] * m[2][2];
+        tmp[3][1] = m[0][2] * m[2][3] - m[0][3] * m[2][2];
+        tmp[3][2] = m[0][2] * m[1][3] - m[0][3] * m[1][2];
+        
+        det[0] = m[1][1] * tmp[0][0] - m[2][1] * tmp[0][1] + m[3][1] * tmp[0][2];
+        det[1] = m[0][1] * tmp[1][0] - m[2][1] * tmp[1][1] + m[3][1] * tmp[1][2];
+        det[2] = m[0][1] * tmp[2][0] - m[1][1] * tmp[2][1] + m[3][1] * tmp[2][2];
+        det[3] = m[0][1] * tmp[3][0] - m[1][1] * tmp[3][1] + m[2][1] * tmp[3][2];
+        
+        float determinant = m[0][0] * det[0] - m[1][0] * det[1] + m[2][0] * det[2] - m[3][0] * det[3];
+        const float rDet = 1.0f / determinant;
+        
+        result[0][0] =  rDet * det[0];
+        result[0][1] = -rDet * det[1];
+        result[0][2] =  rDet * det[2];
+        result[0][3] = -rDet * det[3];
+        result[1][0] = -rDet * (m[1][0]*tmp[0][0] - m[2][0]*tmp[0][1] + m[3][0]*tmp[0][2]);
+        result[1][1] =  rDet * (m[0][0]*tmp[1][0] - m[2][0]*tmp[1][1] + m[3][0]*tmp[1][2]);
+        result[1][2] = -rDet * (m[0][0]*tmp[2][0] - m[1][0]*tmp[2][1] + m[3][0]*tmp[2][2]);
+        result[1][3] =  rDet * (m[0][0]*tmp[3][0] - m[1][0]*tmp[3][1] + m[2][0]*tmp[3][2]);
+        result[2][0] =  rDet * (
+                                m[1][0] * (m[2][1] * m[3][3] - m[2][3] * m[3][1]) -
+                                m[2][0] * (m[1][1] * m[3][3] - m[1][3] * m[3][1]) +
+                                m[3][0] * (m[1][1] * m[2][3] - m[1][3] * m[2][1])
+                                );
+        result[2][1] = -rDet * (
+                                m[0][0] * (m[2][1] * m[3][3] - m[2][3] * m[3][1]) -
+                                m[2][0] * (m[0][1] * m[3][3] - m[0][3] * m[3][1]) +
+                                m[3][0] * (m[0][1] * m[2][3] - m[0][3] * m[2][1])
+                                );
+        result[2][2] =  rDet * (
+                                m[0][0] * (m[1][1] * m[3][3] - m[1][3] * m[3][1]) -
+                                m[1][0] * (m[0][1] * m[3][3] - m[0][3] * m[3][1]) +
+                                m[3][0] * (m[0][1] * m[1][3] - m[0][3] * m[1][1])
+                                );
+        result[2][3] = -rDet * (
+                                m[0][0] * (m[1][1] * m[2][3] - m[1][3] * m[2][1]) -
+                                m[1][0] * (m[0][1] * m[2][3] - m[0][3] * m[2][1]) +
+                                m[2][0] * (m[0][1] * m[1][3] - m[0][3] * m[1][1])
+                                );
+        result[3][0] = -rDet * (
+                                m[1][0] * (m[2][1] * m[3][2] - m[2][2] * m[3][1]) -
+                                m[2][0] * (m[1][1] * m[3][2] - m[1][2] * m[3][1]) +
+                                m[3][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                                );
+        result[3][1] =  rDet * (
+                                m[0][0] * (m[2][1] * m[3][2] - m[2][2] * m[3][1]) -
+                                m[2][0] * (m[0][1] * m[3][2] - m[0][2] * m[3][1]) +
+                                m[3][0] * (m[0][1] * m[2][2] - m[0][2] * m[2][1])
+                                );
+        result[3][2] = -rDet * (
+                                m[0][0] * (m[1][1] * m[3][2] - m[1][2] * m[3][1]) -
+                                m[1][0] * (m[0][1] * m[3][2] - m[0][2] * m[3][1]) +
+                                m[3][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1])
+                                );
+        result[3][3] =  rDet * (
+                                m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+                                m[1][0] * (m[0][1] * m[2][2] - m[0][2] * m[2][1]) +
+                                m[2][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1])
+                                );
+        
+        memcpy(dstMatrix, &result, 16 * sizeof(float));
+    }
+    
+    static FORCEINLINE void VectorTransformVector(void* result, const void* vec,  const void* matrix)
+    {
+        typedef float Float4[4];
+        typedef float Float4x4[4][4];
+        
+        const Float4& vec4 = *((const Float4*)vec);
+        const Float4x4& m44 = *((const Float4x4*)matrix);
+        Float4& rVec4 = *((Float4*)result);
+        
+        rVec4[0] = vec4[0] * m44[0][0] + vec4[1] * m44[1][0] + vec4[2] * m44[2][0] + vec4[3] * m44[3][0];
+        rVec4[1] = vec4[0] * m44[0][1] + vec4[1] * m44[1][1] + vec4[2] * m44[2][1] + vec4[3] * m44[3][1];
+        rVec4[2] = vec4[0] * m44[0][2] + vec4[1] * m44[1][2] + vec4[2] * m44[2][2] + vec4[3] * m44[3][2];
+        rVec4[3] = vec4[0] * m44[0][3] + vec4[1] * m44[1][3] + vec4[2] * m44[2][3] + vec4[3] * m44[3][3];
+    }
+    
+	static FORCEINLINE void VectorQuaternionMultiply(void* result, const void* quat1, const void* quat2)
 	{
 		typedef float Float4[4];
 		const Float4& a = *((const Float4*)quat1);
 		const Float4& b = *((const Float4*)quat2);
-		Float4 & r = *((Float4*)result);
+		Float4& r = *((Float4*)result);
 
 		const float t0 = (a[2] - a[1]) * (b[1] - b[2]);
 		const float t1 = (a[3] + a[0]) * (b[3] + b[0]);

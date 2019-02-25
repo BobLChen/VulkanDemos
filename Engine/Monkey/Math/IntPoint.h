@@ -18,6 +18,8 @@ public:
 	static const IntPoint ZeroValue;
 	static const IntPoint NoneValue;
 
+public:
+    
 	IntPoint();
 
 	IntPoint(int32 inX, int32 inY);

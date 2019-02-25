@@ -12,6 +12,7 @@ class MD5
 {
 public:
 	MD5();
+    
 	~MD5();
 
 	void Update(const uint8* input, int32 inputLen);
@@ -102,8 +103,6 @@ typedef union
 	uint8  c[64];
 	uint32 l[16];
 } SHA1_WORKSPACE_BLOCK;
-
-#define HASHES_SHA_DIVIDER "+++"
 
 class SHAHash
 {

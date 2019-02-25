@@ -4,7 +4,7 @@
 #include "Vector4.h"
 #include "Math.h"
 
-class Matrix;
+struct Matrix4x4;
 
 struct Plane : public Vector
 {
@@ -33,9 +33,9 @@ public:
 	
 	Plane Flip() const;
 
-	Plane TransformBy(const Matrix& m) const;
+	Plane TransformBy(const Matrix4x4& m) const;
 
-	Plane TransformByUsingAdjointT(const Matrix& m, float detM, const Matrix& ta) const;
+	Plane TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matrix4x4& ta) const;
 
 	bool operator==(const Plane& v) const;
 

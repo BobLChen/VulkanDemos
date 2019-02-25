@@ -24,15 +24,6 @@ static uint8 PADDING[64] = {
 	0, 0, 0, 0, 0
 };
 
-MD5::MD5()
-{
-	m_Context.count[0] = m_Context.count[1] = 0;
-	m_Context.state[0] = 0x67452301;
-	m_Context.state[1] = 0xefcdab89;
-	m_Context.state[2] = 0x98badcfe;
-	m_Context.state[3] = 0x10325476;
-}
-
 #define MD5_F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define MD5_G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define MD5_H(x, y, z) ((x) ^ (y) ^ (z))
@@ -62,6 +53,15 @@ MD5::MD5()
 	(a) += MD5_I ((b), (c), (d)) + (x) + (uint32)(ac); \
 	(a) = ROTLEFT ((a), (s)); \
 	(a) += (b); \
+}
+
+MD5::MD5()
+{
+    m_Context.count[0] = m_Context.count[1] = 0;
+    m_Context.state[0] = 0x67452301;
+    m_Context.state[1] = 0xefcdab89;
+    m_Context.state[2] = 0x98badcfe;
+    m_Context.state[3] = 0x10325476;
 }
 
 MD5::~MD5()
@@ -105,7 +105,7 @@ void MD5::Final(uint8* digest)
 {
 	uint8 bits[8];
 	int32 index, padLen;
-
+    
 	Encode(bits, m_Context.count, 8);
 
 	index = (int32)((m_Context.count[0] >> 3) & 0x3f);
@@ -113,9 +113,7 @@ void MD5::Final(uint8* digest)
 	Update(PADDING, padLen);
 
 	Update(bits, 8);
-
 	Encode(digest, m_Context.state, 16);
-
 	std::memset(&m_Context, 0, sizeof(m_Context));
 }
 
@@ -205,8 +203,7 @@ void MD5::Transform(uint32* state, const uint8* block)
 	state[1] += b;
 	state[2] += c;
 	state[3] += d;
-
-	// Zeroize sensitive information.
+    
 	std::memset(x, 0, sizeof(x));
 }
 

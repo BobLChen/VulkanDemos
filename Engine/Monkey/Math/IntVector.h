@@ -6,7 +6,7 @@
 #include "Math.h"
 #include <string>
 
-class Vector;
+struct Vector;
 
 struct IntVector
 {

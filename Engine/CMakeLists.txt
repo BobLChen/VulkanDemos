@@ -55,7 +55,7 @@ set(Monkey_Math_HDRS
 	Monkey/Math/Plane.h
 	Monkey/Math/Quat.h
 	Monkey/Math/Rotator.h
-	Monkey/Math/Matrix.h
+	Monkey/Math/Matrix4x4.h
 )
 set(Monkey_Math_SRCS
 	Monkey/Math/Math.cpp

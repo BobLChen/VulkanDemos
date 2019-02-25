@@ -7,7 +7,7 @@
 #include "Axis.h"
 #include "Utils/StringUtils.h"
 
-class Quat;
+struct Quat;
 
 struct Rotator
 {
@@ -314,7 +314,9 @@ FORCEINLINE void Rotator::SetComponentForAxis(Axis::Type axis, float component)
 {
 	switch (axis)
 	{
-	case Axis::X:
+    case Axis::None:
+        break;
+    case Axis::X:
 		roll = component;
 		break;
 	case Axis::Y:

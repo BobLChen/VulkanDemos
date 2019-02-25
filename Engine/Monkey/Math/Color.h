@@ -6,7 +6,7 @@
 #include "Math/Vector.h"
 #include "Utils/StringUtils.h"
 
-class Color;
+struct Color;
 
 enum class GammaSpace
 {

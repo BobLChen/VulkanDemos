@@ -4,8 +4,5 @@
 
 struct GenericPlatformAtomics
 {
-	static FORCEINLINE bool CanUseCompareExchange128()
-	{
-		return false;
-	}
+	
 };

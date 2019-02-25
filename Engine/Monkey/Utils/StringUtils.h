@@ -137,12 +137,12 @@ struct StringUtils
 		return '0' + char(num);
 	}
 
-	static void ByteToHex(uint8 In, std::string& result)
+	static void ByteToHex(uint8 val, std::string& result)
 	{
-		result += NibbleToTChar(In >> 4);
-		result += NibbleToTChar(In & 15);
+		result += NibbleToTChar(val >> 4);
+		result += NibbleToTChar(val & 15);
 	}
-
+    
 	static std::string BytesToHex(const uint8* bytes, int32 count)
 	{
 		std::string result;
@@ -173,7 +173,7 @@ struct StringUtils
 	{
 		int32 numBytes = 0;
 		const bool padNibble = (hexString.size() % 2) == 1;
-		const char* charPos = hexString.c_str();
+		const char* charPos  = hexString.c_str();
 		if (padNibble)
 		{
 			outBytes[numBytes++] = CharToNibble(*charPos++);

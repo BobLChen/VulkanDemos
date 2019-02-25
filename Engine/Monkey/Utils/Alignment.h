@@ -4,25 +4,25 @@
 #include "Common/Log.h"
 
 template <typename T>
-FORCEINLINE constexpr T Align(T Val, uint64 Alignment)
+FORCEINLINE constexpr T Align(T val, uint64 alignment)
 {
-	return (T)(((uint64)Val + Alignment - 1) & ~(Alignment - 1));
+    return (T)(((uint64)val + alignment - 1) & ~(alignment - 1));
 }
 
 template <typename T>
-FORCEINLINE constexpr T AlignDown(T Val, uint64 Alignment)
+FORCEINLINE constexpr T AlignDown(T val, uint64 alignment)
 {
-	return (T)(((uint64)Val) & ~(Alignment - 1));
+    return (T)(((uint64)val) & ~(alignment - 1));
 }
 
 template <typename T>
-FORCEINLINE constexpr bool IsAligned(T Val, uint64 Alignment)
+FORCEINLINE constexpr bool IsAligned(T val, uint64 alignment)
 {
-	return !((uint64)Val & (Alignment - 1));
+    return !((uint64)val & (alignment - 1));
 }
 
 template <typename T>
-FORCEINLINE constexpr T AlignArbitrary(T Val, uint64 Alignment)
+FORCEINLINE constexpr T AlignArbitrary(T val, uint64 alignment)
 {
-	return (T)((((uint64)Val + Alignment - 1) / Alignment) * Alignment);
+    return (T)((((uint64)val + alignment - 1) / alignment) * alignment);
 }

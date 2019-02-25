@@ -2,12 +2,11 @@
 
 #include "Configuration/Platform.h"
 
-// Unsigned base types.
 typedef unsigned char 		uint8;
 typedef unsigned short int	uint16;
 typedef unsigned int		uint32;
 typedef unsigned long long	uint64;
-// Signed base types.
+
 typedef	signed char			int8;
 typedef signed short int	int16;
 typedef signed int	 		int32;
@@ -21,7 +20,7 @@ typedef unsigned long		SIZE_T;
 typedef long				SSIZE_T;
 #endif
 
-#define ENGINE_NAME "MONKEY"
+#define ENGINE_NAME     "MONKEY"
 
 #if PLATFORM_WINDOWS
 	#define FORCEINLINE __inline

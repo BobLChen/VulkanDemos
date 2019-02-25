@@ -9,8 +9,8 @@
 #include "IntPoint.h"
 #include "Axis.h"
 
-class Vector4;
-class Plane;
+struct Vector4;
+struct Plane;
 
 struct Vector
 {
@@ -933,6 +933,9 @@ FORCEINLINE void Vector::SetComponentForAxis(Axis::Type axis, float component)
 	case Axis::Z:
 		z = component;
 		break;
+    case Axis::None:
+        
+        break;
 	}
 }
 

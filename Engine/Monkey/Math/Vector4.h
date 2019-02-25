@@ -18,12 +18,10 @@ public:
 	float w;
 
 public:
+    
+	FORCEINLINE Vector4(const Vector& inVector, float inW = 1.0f);
 
-	Vector4();
-
-	Vector4(const Vector& inVector, float inW = 1.0f);
-
-	Vector4(const LinearColor& InColor);
+	FORCEINLINE Vector4(const LinearColor& inColor);
 
 	explicit Vector4(float inX = 0.0f, float inY = 0.0f, float inZ = 0.0f, float inW = 1.0f);
 
@@ -115,15 +113,6 @@ public:
 		return v.operator*(scale);
 	}
 };
-
-FORCEINLINE Vector4::Vector4()
-	: x(0)
-	, y(0)
-	, z(0)
-	, w(0)
-{
-
-}
 
 FORCEINLINE Vector4::Vector4(const Vector& inVector, float inW)
 	: x(inVector.x)

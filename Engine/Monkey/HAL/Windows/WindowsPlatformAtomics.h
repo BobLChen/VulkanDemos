@@ -260,12 +260,7 @@ struct WindowsPlatformAtomics : public GenericPlatformAtomics
 		return (void*)::_InterlockedCompareExchange((long*)dest, (long)exchange, (long)comparand);
 #endif
 	}
-
-	static FORCEINLINE bool CanUseCompareExchange128()
-	{
-		return false;
-	}
-
+	
 };
 
 typedef WindowsPlatformAtomics PlatformAtomics;
