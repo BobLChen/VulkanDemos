@@ -5,7 +5,7 @@
 #include "Utils/StringUtils.h"
 
 #include "Math.h"
-#include "Vector.h"
+#include "Vector3.h"
 #include "Axis.h"
 
 struct Quat;
@@ -57,15 +57,15 @@ public:
 
 	FORCEINLINE Rotator GridSnap(const Rotator& rotGrid) const;
 
-	FORCEINLINE Vector GetVector() const;
+	FORCEINLINE Vector3 GetVector() const;
 
 	FORCEINLINE Quat Quaternion() const;
 
-	FORCEINLINE Vector Euler() const;
+	FORCEINLINE Vector3 Euler() const;
 
-	FORCEINLINE Vector RotateVector(const Vector& v) const;
+	FORCEINLINE Vector3 RotateVector(const Vector3& v) const;
 
-	FORCEINLINE Vector UnrotateVector(const Vector& v) const;
+	FORCEINLINE Vector3 UnrotateVector(const Vector3& v) const;
 
 	FORCEINLINE Rotator Clamp() const;
 
@@ -103,7 +103,7 @@ public:
 
 	FORCEINLINE static float DecompressAxisFromShort(uint16 angle);
 
-	FORCEINLINE static Rotator MakeFromEuler(const Vector& Euler);
+	FORCEINLINE static Rotator MakeFromEuler(const Vector3& Euler);
 
 	FORCEINLINE void DiagnosticCheckNaN() const
 	{
@@ -329,21 +329,21 @@ FORCEINLINE void Rotator::SetComponentForAxis(Axis::Type axis, float component)
 	}
 }
 
-FORCEINLINE Vector Rotator::GetVector() const
+FORCEINLINE Vector3 Rotator::GetVector() const
 {
 	float cp, sp, cy, sy;
 	MMath::SinCos(&sp, &cp, MMath::DegreesToRadians(pitch));
 	MMath::SinCos(&sy, &cy, MMath::DegreesToRadians(yaw));
-	Vector v = Vector(cp * cy, cp * sy, sp);
+	Vector3 v = Vector3(cp * cy, cp * sy, sp);
 	return v;
 }
 
-FORCEINLINE Vector Rotator::Euler() const
+FORCEINLINE Vector3 Rotator::Euler() const
 {
-	return Vector(roll, pitch, yaw);
+	return Vector3(roll, pitch, yaw);
 }
 
-FORCEINLINE Rotator Rotator::MakeFromEuler(const Vector& euler)
+FORCEINLINE Rotator Rotator::MakeFromEuler(const Vector3& euler)
 {
 	return Rotator(euler.x, euler.y, euler.z);
 }

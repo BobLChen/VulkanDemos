@@ -232,8 +232,8 @@ LinearColor LinearColor::GetHSV(uint8 h, uint8 s, uint8 v)
 	float brightness = v * 1.4f / 255.f;
 	brightness *= 0.7f / (0.01f + MMath::Sqrt(brightness));
 	brightness = MMath::Clamp(brightness, 0.f, 1.f);
-	const Vector hue = (h < 86) ? Vector((85 - h) / 85.f, (h - 0) / 85.f, 0) : (h < 171) ? Vector(0, (170 - h) / 85.f, (h - 85) / 85.f) : Vector((h - 170) / 85.f, 0, (255 - h) / 84.f);
-	const Vector colorVector = (hue + s / 255.f * (Vector(1, 1, 1) - hue)) * brightness;
+	const Vector3 hue = (h < 86) ? Vector3((85 - h) / 85.f, (h - 0) / 85.f, 0) : (h < 171) ? Vector3(0, (170 - h) / 85.f, (h - 85) / 85.f) : Vector3((h - 170) / 85.f, 0, (255 - h) / 84.f);
+	const Vector3 colorVector = (hue + s / 255.f * (Vector3(1, 1, 1) - hue)) * brightness;
 	return LinearColor(colorVector.x, colorVector.y, colorVector.z, 1);
 }
 

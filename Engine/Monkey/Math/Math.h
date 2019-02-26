@@ -7,7 +7,7 @@
 
 struct Rotator;
 struct Plane;
-struct Vector;
+struct Vector3;
 struct Vector2;
 struct Quat;
 struct Matrix4x4;
@@ -905,31 +905,31 @@ public:
 
 	template<class U> static Quat CubicInterp(const Quat& p0, const Quat& t0, const Quat& p1, const Quat& t1, const U& a);
 
-	static Vector VRand();
+	static Vector3 VRand();
 
-	static Vector VRandCone(Vector const& dir, float coneHalfAngleRad);
+	static Vector3 VRandCone(Vector3 const& dir, float coneHalfAngleRad);
 
-	static Vector VRandCone(Vector const& dir, float horizontalConeHalfAngleRad, float verticalConeHalfAngleRad);
+	static Vector3 VRandCone(Vector3 const& dir, float horizontalConeHalfAngleRad, float verticalConeHalfAngleRad);
 
 	static Vector2 RandPointInCircle(float circleRadius);
 
-	static Vector GetReflectionVector(const Vector& direction, const Vector& surfaceNormal);
+	static Vector3 GetReflectionVector(const Vector3& direction, const Vector3& surfaceNormal);
 
-	static bool GetDotDistance(Vector2 &outDotDist, const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+	static bool GetDotDistance(Vector2 &outDotDist, const Vector3 &direction, const Vector3 &axisX, const Vector3 &axisY, const Vector3 &axisZ);
 
-	static Vector2 GetAzimuthAndElevation(const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+	static Vector2 GetAzimuthAndElevation(const Vector3 &direction, const Vector3 &axisX, const Vector3 &axisY, const Vector3 &axisZ);
 
 	static float GetRangePct(Vector2 const& range, float value);
 
 	static float GetRangeValue(Vector2 const& range, float pct);
 
-	static Vector RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane);
+	static Vector3 RayPlaneIntersection(const Vector3& rayOrigin, const Vector3& rayDirection, const Plane& plane);
 
-	static Vector LinePlaneIntersection(const Vector &point1, const Vector &point2, const Vector &planeOrigin, const Vector &planeNormal);
+	static Vector3 LinePlaneIntersection(const Vector3 &point1, const Vector3 &point2, const Vector3 &planeOrigin, const Vector3 &planeNormal);
 	
-	static Vector LinePlaneIntersection(const Vector &point1, const Vector &point2, const Plane &plane);
+	static Vector3 LinePlaneIntersection(const Vector3 &point1, const Vector3 &point2, const Plane &plane);
 
-	static bool LineSphereIntersection(const Vector& start, const Vector& dir, float length, const Vector& origin, float radius);
+	static bool LineSphereIntersection(const Vector3& start, const Vector3& dir, float length, const Vector3& origin, float radius);
 
 	static float InterpConstantTo(float current, float target, float deltaTime, float interpSpeed);
 

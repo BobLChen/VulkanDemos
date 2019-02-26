@@ -3,7 +3,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Math/Math.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 #include "Utils/StringUtils.h"
 
 struct Color;

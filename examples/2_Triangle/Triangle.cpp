@@ -439,7 +439,7 @@ private:
 	void UpdateUniformBuffers()
 	{
 		m_MVPData.model.SetIdentity();
-		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(pitch, 0, 0), Vector::ZeroVector);
+		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(pitch, 0, 0), Vector3::ZeroVector);
 		pitch += 0.1f;
 
 		m_MVPData.view.SetIdentity();

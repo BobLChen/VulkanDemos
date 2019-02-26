@@ -48,7 +48,7 @@ set(Monkey_Math_HDRS
 	Monkey/Math/GenericPlatformMath.h
 	Monkey/Math/PlatformMath.h
 	Monkey/Math/Color.h
-	Monkey/Math/Vector.h
+	Monkey/Math/Vector3.h
 	Monkey/Math/IntVector.h
 	Monkey/Math/Vector4.h
 	Monkey/Math/Axis.h

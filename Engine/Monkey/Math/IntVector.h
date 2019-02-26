@@ -6,7 +6,7 @@
 #include "Math.h"
 #include <string>
 
-struct Vector;
+struct Vector3;
 
 struct IntVector
 {
@@ -27,7 +27,7 @@ public:
 
 	explicit IntVector(int32 inValue);
 
-	explicit IntVector(Vector v);
+	explicit IntVector(Vector3 v);
 
 	FORCEINLINE const int32& operator()(int32 index) const;
 

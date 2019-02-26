@@ -7,7 +7,7 @@
 #include "Axis.h"
 #include "Rotator.h"
 #include "Matrix4x4.h"
-#include "Vector.h"
+#include "Vector3.h"
 
 struct Quat
 {
@@ -27,7 +27,7 @@ public:
 
 	Quat(const Quat& q);
 
-	Quat(Vector axis, float angleRad);
+	Quat(Vector3 axis, float angleRad);
 
 	explicit Quat(const Matrix4x4& m);
 
@@ -49,7 +49,7 @@ public:
 
 	FORCEINLINE Quat operator*=(const Quat& q);
 
-	FORCEINLINE Vector operator*(const Vector& v) const;
+	FORCEINLINE Vector3 operator*(const Vector3& v) const;
 
 	FORCEINLINE Matrix4x4 operator*(const Matrix4x4& m) const;
 
@@ -67,7 +67,7 @@ public:
 
 	FORCEINLINE float operator|(const Quat& q) const;
 
-	FORCEINLINE Vector Euler() const;
+	FORCEINLINE Vector3 Euler() const;
 
 	FORCEINLINE void Normalize(float tolerance = SMALL_NUMBER);
 
@@ -81,13 +81,13 @@ public:
 
 	FORCEINLINE float GetAngle() const;
 
-	FORCEINLINE void ToAxisAndAngle(Vector& axis, float& angle) const;
+	FORCEINLINE void ToAxisAndAngle(Vector3& axis, float& angle) const;
 
-	FORCEINLINE void ToSwingTwist(const Vector& inTwistAxis, Quat& outSwing, Quat& outTwist) const;
+	FORCEINLINE void ToSwingTwist(const Vector3& inTwistAxis, Quat& outSwing, Quat& outTwist) const;
 
-	FORCEINLINE Vector RotateVector(Vector v) const;
+	FORCEINLINE Vector3 RotateVector(Vector3 v) const;
 
-	FORCEINLINE Vector UnrotateVector(Vector v) const;
+	FORCEINLINE Vector3 UnrotateVector(Vector3 v) const;
 
 	FORCEINLINE Quat Log() const;
 
@@ -97,23 +97,23 @@ public:
 
 	FORCEINLINE void EnforceShortestArcWith(const Quat& otherQuat);
 
-	FORCEINLINE Vector GetAxisX() const;
+	FORCEINLINE Vector3 GetAxisX() const;
 
-	FORCEINLINE Vector GetAxisY() const;
+	FORCEINLINE Vector3 GetAxisY() const;
 
-	FORCEINLINE Vector GetAxisZ() const;
+	FORCEINLINE Vector3 GetAxisZ() const;
 
-	FORCEINLINE Vector GetForwardVector() const;
+	FORCEINLINE Vector3 GetForwardVector() const;
 
-	FORCEINLINE Vector GetRightVector() const;
+	FORCEINLINE Vector3 GetRightVector() const;
 
-	FORCEINLINE Vector GetUpVector() const;
+	FORCEINLINE Vector3 GetUpVector() const;
 
-	FORCEINLINE Vector GetVector() const;
+	FORCEINLINE Vector3 GetVector() const;
 
 	FORCEINLINE Rotator GetRotator() const;
 
-	FORCEINLINE Vector GetRotationAxis() const;
+	FORCEINLINE Vector3 GetRotationAxis() const;
 
 	FORCEINLINE float AngularDistance(const Quat& q) const;
 
@@ -121,11 +121,11 @@ public:
 
 	FORCEINLINE std::string ToString() const;
 
-	static FORCEINLINE  Quat MakeFromEuler(const Vector& euler);
+	static FORCEINLINE  Quat MakeFromEuler(const Vector3& euler);
 
-	static FORCEINLINE Quat FindBetweenNormals(const Vector& normal1, const Vector& mormal2);
+	static FORCEINLINE Quat FindBetweenNormals(const Vector3& normal1, const Vector3& mormal2);
 
-	static FORCEINLINE Quat FindBetweenVectors(const Vector& vector1, const Vector& vector2);
+	static FORCEINLINE Quat FindBetweenVectors(const Vector3& vector1, const Vector3& vector2);
 
 	static FORCEINLINE float Error(const Quat& q1, const Quat& q2);
 
@@ -155,7 +155,7 @@ public:
 		return SlerpFullPathNotNormalized(quat1, quat2, alpha).GetNormalized();
 	}
 
-	static FORCEINLINE Quat FindBetween(const Vector& vector1, const Vector& vector2)
+	static FORCEINLINE Quat FindBetween(const Vector3& vector1, const Vector3& vector2)
 	{
 		return FindBetweenVectors(vector1, vector2);
 	}
@@ -264,7 +264,7 @@ FORCEINLINE Quat::Quat(const Quat& q)
 
 }
 
-FORCEINLINE Quat::Quat(Vector axis, float angleRad)
+FORCEINLINE Quat::Quat(Vector3 axis, float angleRad)
 {
 	const float halfA = 0.5f * angleRad;
 	float s, c;
@@ -278,7 +278,7 @@ FORCEINLINE Quat::Quat(Vector axis, float angleRad)
 	DiagnosticCheckNaN();
 }
 
-FORCEINLINE Vector Quat::operator*(const Vector& v) const
+FORCEINLINE Vector3 Quat::operator*(const Vector3& v) const
 {
 	return RotateVector(v);
 }
@@ -451,20 +451,20 @@ FORCEINLINE float Quat::GetAngle() const
 	return 2.f * MMath::Acos(w);
 }
 
-FORCEINLINE void Quat::ToAxisAndAngle(Vector& axis, float& angle) const
+FORCEINLINE void Quat::ToAxisAndAngle(Vector3& axis, float& angle) const
 {
 	angle = GetAngle();
 	axis = GetRotationAxis();
 }
 
-FORCEINLINE Vector Quat::GetRotationAxis() const
+FORCEINLINE Vector3 Quat::GetRotationAxis() const
 {
 	const float s = MMath::Sqrt(MMath::Max(1.f - (w * w), 0.f));
 	if (s >= 0.0001f)
 	{
-		return Vector(x / s, y / s, z / s);
+		return Vector3(x / s, y / s, z / s);
 	}
-	return Vector(1.f, 0.f, 0.f);
+	return Vector3(1.f, 0.f, 0.f);
 }
 
 FORCEINLINE float Quat::AngularDistance(const Quat& q) const
@@ -473,19 +473,19 @@ FORCEINLINE float Quat::AngularDistance(const Quat& q) const
 	return MMath::Acos((2 * innerProd * innerProd) - 1.f);
 }
 
-FORCEINLINE Vector Quat::RotateVector(Vector v) const
+FORCEINLINE Vector3 Quat::RotateVector(Vector3 v) const
 {
-	const Vector q(x, y, z);
-	const Vector t = 2.f * Vector::CrossProduct(q, v);
-	const Vector result = v + (w * t) + Vector::CrossProduct(q, t);
+	const Vector3 q(x, y, z);
+	const Vector3 t = 2.f * Vector3::CrossProduct(q, v);
+	const Vector3 result = v + (w * t) + Vector3::CrossProduct(q, t);
 	return result;
 }
 
-FORCEINLINE Vector Quat::UnrotateVector(Vector v) const
+FORCEINLINE Vector3 Quat::UnrotateVector(Vector3 v) const
 {
-	const Vector q(-x, -y, -z);
-	const Vector t = 2.f * Vector::CrossProduct(q, v);
-	const Vector result = v + (w * t) + Vector::CrossProduct(q, t);
+	const Vector3 q(-x, -y, -z);
+	const Vector3 t = 2.f * Vector3::CrossProduct(q, v);
+	const Vector3 result = v + (w * t) + Vector3::CrossProduct(q, t);
 	return result;
 }
 
@@ -557,37 +557,37 @@ FORCEINLINE void Quat::EnforceShortestArcWith(const Quat& otherQuat)
 	w *= bias;
 }
 
-FORCEINLINE Vector Quat::GetAxisX() const
+FORCEINLINE Vector3 Quat::GetAxisX() const
 {
-	return RotateVector(Vector(1.f, 0.f, 0.f));
+	return RotateVector(Vector3(1.f, 0.f, 0.f));
 }
 
-FORCEINLINE Vector Quat::GetAxisY() const
+FORCEINLINE Vector3 Quat::GetAxisY() const
 {
-	return RotateVector(Vector(0.f, 1.f, 0.f));
+	return RotateVector(Vector3(0.f, 1.f, 0.f));
 }
 
-FORCEINLINE Vector Quat::GetAxisZ() const
+FORCEINLINE Vector3 Quat::GetAxisZ() const
 {
-	return RotateVector(Vector(0.f, 0.f, 1.f));
+	return RotateVector(Vector3(0.f, 0.f, 1.f));
 }
 
-FORCEINLINE Vector Quat::GetForwardVector() const
+FORCEINLINE Vector3 Quat::GetForwardVector() const
 {
 	return GetAxisX();
 }
 
-FORCEINLINE Vector Quat::GetRightVector() const
+FORCEINLINE Vector3 Quat::GetRightVector() const
 {
 	return GetAxisY();
 }
 
-FORCEINLINE Vector Quat::GetUpVector() const
+FORCEINLINE Vector3 Quat::GetUpVector() const
 {
 	return GetAxisZ();
 }
 
-FORCEINLINE Vector Quat::GetVector() const
+FORCEINLINE Vector3 Quat::GetVector() const
 {
 	return GetAxisX();
 }

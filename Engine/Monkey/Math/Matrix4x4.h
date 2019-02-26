@@ -5,7 +5,7 @@
 #include "Utils/StringUtils.h"
 
 #include "Math/Math.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Plane.h"
 #include "Math/Rotator.h"
@@ -23,9 +23,9 @@ public:
 
 	Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW);
 
-	Matrix4x4(const Vector& inX, const Vector& inY, const Vector& inZ, const Vector& inW);
+	Matrix4x4(const Vector3& inX, const Vector3& inY, const Vector3& inZ, const Vector3& inW);
 
-	Matrix4x4(const Rotator& rot, const Vector& origin);
+	Matrix4x4(const Rotator& rot, const Vector3& origin);
 
 	FORCEINLINE void Perspective(float HalfFOV, float Width, float Height, float MinZ, float MaxZ);
 
@@ -51,13 +51,13 @@ public:
 
 	FORCEINLINE Vector4 TransformVector4(const Vector4& v) const;
 
-	FORCEINLINE Vector4 TransformPosition(const Vector &v) const;
+	FORCEINLINE Vector4 TransformPosition(const Vector3 &v) const;
 
-	FORCEINLINE Vector InverseTransformPosition(const Vector &v) const;
+	FORCEINLINE Vector3 InverseTransformPosition(const Vector3 &v) const;
 
-	FORCEINLINE Vector4 TransformVector(const Vector& v) const;
+	FORCEINLINE Vector4 TransformVector(const Vector3& v) const;
 
-	FORCEINLINE Vector InverseTransformVector(const Vector &v) const;
+	FORCEINLINE Vector3 InverseTransformVector(const Vector3 &v) const;
 
 	FORCEINLINE Matrix4x4 GetTransposed() const;
 
@@ -75,39 +75,39 @@ public:
 
 	FORCEINLINE Matrix4x4 GetMatrixWithoutScale(float tolerance = SMALL_NUMBER) const;
 
-	FORCEINLINE Vector ExtractScaling(float tolerance = SMALL_NUMBER);
+	FORCEINLINE Vector3 ExtractScaling(float tolerance = SMALL_NUMBER);
 
-	FORCEINLINE Vector GetScaleVector(float tolerance = SMALL_NUMBER) const;
+	FORCEINLINE Vector3 GetScaleVector(float tolerance = SMALL_NUMBER) const;
 
 	FORCEINLINE Matrix4x4 RemoveTranslation() const;
 
-	FORCEINLINE Matrix4x4 ConcatTranslation(const Vector& translation) const;
+	FORCEINLINE Matrix4x4 ConcatTranslation(const Vector3& translation) const;
 
 	FORCEINLINE bool ContainsNaN() const;
 
-	FORCEINLINE void ScaleTranslation(const Vector& scale3D);
+	FORCEINLINE void ScaleTranslation(const Vector3& scale3D);
 
 	FORCEINLINE float GetMaximumAxisScale() const;
 
 	FORCEINLINE Matrix4x4 ApplyScale(float scale);
 
-	FORCEINLINE Vector GetOrigin() const;
+	FORCEINLINE Vector3 GetOrigin() const;
 
-	FORCEINLINE Vector GetScaledAxis(Axis::Type axis) const;
+	FORCEINLINE Vector3 GetScaledAxis(Axis::Type axis) const;
 
-	FORCEINLINE void GetScaledAxes(Vector& x, Vector& y, Vector& z) const;
+	FORCEINLINE void GetScaledAxes(Vector3& x, Vector3& y, Vector3& z) const;
 
-	FORCEINLINE Vector GetUnitAxis(Axis::Type axis) const;
+	FORCEINLINE Vector3 GetUnitAxis(Axis::Type axis) const;
 
-	FORCEINLINE void GetUnitAxes(Vector& x, Vector& y, Vector& z) const;
+	FORCEINLINE void GetUnitAxes(Vector3& x, Vector3& y, Vector3& z) const;
 
-	FORCEINLINE void SetAxis(int32 i, const Vector& axis);
+	FORCEINLINE void SetAxis(int32 i, const Vector3& axis);
 
-	FORCEINLINE void SetOrigin(const Vector& newOrigin);
+	FORCEINLINE void SetOrigin(const Vector3& newOrigin);
 
-	FORCEINLINE void SetAxes(Vector* axis0 = nullptr, Vector* axis1 = nullptr, Vector* axis2 = nullptr, Vector* origin = nullptr);
+	FORCEINLINE void SetAxes(Vector3* axis0 = nullptr, Vector3* axis1 = nullptr, Vector3* axis2 = nullptr, Vector3* origin = nullptr);
 
-	FORCEINLINE Vector GetColumn(int32 i) const;
+	FORCEINLINE Vector3 GetColumn(int32 i) const;
 
 	FORCEINLINE bool GetFrustumNearPlane(Plane& outPlane) const;
 
@@ -175,7 +175,7 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane
 	m[3][0] = inW.x; m[3][1] = inW.y;  m[3][2] = inW.z;  m[3][3] = inW.w;
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector& origin)
+FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector3& origin)
 {
 	float sp, sy, sr;
 	float cp, cy, cr;
@@ -188,7 +188,7 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector& origin)
 	m[3][0] = origin.x;						m[3][1] = origin.y;					m[3][2] = origin.z;		m[3][3] = 1.f;
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4(const Vector& inX, const Vector& inY, const Vector& inZ, const Vector& inW)
+FORCEINLINE Matrix4x4::Matrix4x4(const Vector3& inX, const Vector3& inY, const Vector3& inZ, const Vector3& inW)
 {
 	m[0][0] = inX.x; m[0][1] = inX.y;  m[0][2] = inX.z;  m[0][3] = 0.0f;
 	m[1][0] = inY.x; m[1][1] = inY.y;  m[1][2] = inY.z;  m[1][3] = 0.0f;
@@ -333,23 +333,23 @@ FORCEINLINE Vector4 Matrix4x4::TransformVector4(const Vector4 &v) const
 	return result;
 }
 
-FORCEINLINE Vector4 Matrix4x4::TransformPosition(const Vector &v) const
+FORCEINLINE Vector4 Matrix4x4::TransformPosition(const Vector3 &v) const
 {
 	return TransformVector4(Vector4(v.x, v.y, v.z, 1.0f));
 }
 
-FORCEINLINE Vector Matrix4x4::InverseTransformPosition(const Vector &v) const
+FORCEINLINE Vector3 Matrix4x4::InverseTransformPosition(const Vector3 &v) const
 {
 	Matrix4x4 invSelf = this->InverseFast();
 	return invSelf.TransformPosition(v);
 }
 
-FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector& v) const
+FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
 {
 	return TransformVector4(Vector4(v.x, v.y, v.z, 0.0f));
 }
 
-FORCEINLINE Vector Matrix4x4::InverseTransformVector(const Vector &v) const
+FORCEINLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
 {
 	Matrix4x4 invSelf = this->InverseFast();
 	return invSelf.TransformVector(v);
@@ -505,9 +505,9 @@ FORCEINLINE Matrix4x4 Matrix4x4::GetMatrixWithoutScale(float tolerance) const
 	return result;
 }
 
-FORCEINLINE Vector Matrix4x4::ExtractScaling(float tolerance)
+FORCEINLINE Vector3 Matrix4x4::ExtractScaling(float tolerance)
 {
-	Vector scale3D(0, 0, 0);
+	Vector3 scale3D(0, 0, 0);
 
 	const float squareSum0 = (m[0][0] * m[0][0]) + (m[0][1] * m[0][1]) + (m[0][2] * m[0][2]);
 	const float squareSum1 = (m[1][0] * m[1][0]) + (m[1][1] * m[1][1]) + (m[1][2] * m[1][2]);
@@ -558,9 +558,9 @@ FORCEINLINE Vector Matrix4x4::ExtractScaling(float tolerance)
 	return scale3D;
 }
 
-FORCEINLINE Vector Matrix4x4::GetScaleVector(float tolerance) const
+FORCEINLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
 {
-	Vector scale3D(1, 1, 1);
+	Vector3 scale3D(1, 1, 1);
 
 	for (int32 i = 0; i < 3; i++)
 	{
@@ -587,7 +587,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::RemoveTranslation() const
 	return result;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::ConcatTranslation(const Vector& translation) const
+FORCEINLINE Matrix4x4 Matrix4x4::ConcatTranslation(const Vector3& translation) const
 {
 	Matrix4x4 result;
 
@@ -643,49 +643,49 @@ FORCEINLINE float Matrix4x4::GetMaximumAxisScale() const
 	return MMath::Sqrt(maxRowScaleSquared);
 }
 
-FORCEINLINE void Matrix4x4::ScaleTranslation(const Vector& inScale3D)
+FORCEINLINE void Matrix4x4::ScaleTranslation(const Vector3& inScale3D)
 {
 	m[3][0] *= inScale3D.x;
 	m[3][1] *= inScale3D.y;
 	m[3][2] *= inScale3D.z;
 }
 
-FORCEINLINE Vector Matrix4x4::GetOrigin() const
+FORCEINLINE Vector3 Matrix4x4::GetOrigin() const
 {
-	return Vector(m[3][0], m[3][1], m[3][2]);
+	return Vector3(m[3][0], m[3][1], m[3][2]);
 }
 
-FORCEINLINE Vector Matrix4x4::GetScaledAxis(Axis::Type inAxis) const
+FORCEINLINE Vector3 Matrix4x4::GetScaledAxis(Axis::Type inAxis) const
 {
 	switch (inAxis)
 	{
 	case Axis::X:
-		return Vector(m[0][0], m[0][1], m[0][2]);
+		return Vector3(m[0][0], m[0][1], m[0][2]);
 
 	case Axis::Y:
-		return Vector(m[1][0], m[1][1], m[1][2]);
+		return Vector3(m[1][0], m[1][1], m[1][2]);
 
 	case Axis::Z:
-		return Vector(m[2][0], m[2][1], m[2][2]);
+		return Vector3(m[2][0], m[2][1], m[2][2]);
 
 	default:
-		return Vector::ZeroVector;
+		return Vector3::ZeroVector;
 	}
 }
 
-FORCEINLINE void Matrix4x4::GetScaledAxes(Vector &x, Vector &y, Vector &z) const
+FORCEINLINE void Matrix4x4::GetScaledAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
 {
 	x.x = m[0][0]; x.y = m[0][1]; x.z = m[0][2];
 	y.x = m[1][0]; y.y = m[1][1]; y.z = m[1][2];
 	z.x = m[2][0]; z.y = m[2][1]; z.z = m[2][2];
 }
 
-FORCEINLINE Vector Matrix4x4::GetUnitAxis(Axis::Type inAxis) const
+FORCEINLINE Vector3 Matrix4x4::GetUnitAxis(Axis::Type inAxis) const
 {
 	return GetScaledAxis(inAxis).GetSafeNormal();
 }
 
-FORCEINLINE void Matrix4x4::GetUnitAxes(Vector &x, Vector &y, Vector &z) const
+FORCEINLINE void Matrix4x4::GetUnitAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
 {
 	GetScaledAxes(x, y, z);
 	x.Normalize();
@@ -693,21 +693,21 @@ FORCEINLINE void Matrix4x4::GetUnitAxes(Vector &x, Vector &y, Vector &z) const
 	z.Normalize();
 }
 
-FORCEINLINE void Matrix4x4::SetAxis(int32 i, const Vector& axis)
+FORCEINLINE void Matrix4x4::SetAxis(int32 i, const Vector3& axis)
 {
 	m[i][0] = axis.x;
 	m[i][1] = axis.y;
 	m[i][2] = axis.z;
 }
 
-FORCEINLINE void Matrix4x4::SetOrigin(const Vector& newOrigin)
+FORCEINLINE void Matrix4x4::SetOrigin(const Vector3& newOrigin)
 {
 	m[3][0] = newOrigin.x;
 	m[3][1] = newOrigin.y;
 	m[3][2] = newOrigin.z;
 }
 
-FORCEINLINE void Matrix4x4::SetAxes(Vector* axis0, Vector* axis1, Vector* axis2, Vector* origin)
+FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axis2, Vector3* origin)
 {
 	if (axis0 != NULL)
 	{
@@ -735,9 +735,9 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector* axis0, Vector* axis1, Vector* axis2,
 	}
 }
 
-FORCEINLINE Vector Matrix4x4::GetColumn(int32 i) const
+FORCEINLINE Vector3 Matrix4x4::GetColumn(int32 i) const
 {
-	return Vector(m[0][i], m[1][i], m[2][i]);
+	return Vector3(m[0][i], m[1][i], m[2][i]);
 }
 
 FORCEINLINE bool MakeFrustumPlane(float a, float b, float c, float d, Plane& outPlane)

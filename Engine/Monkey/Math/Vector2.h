@@ -174,8 +174,8 @@ FORCEINLINE Vector2 Vector2::operator*(float scale) const
 
 FORCEINLINE Vector2 Vector2::operator/(float scale) const
 {
-	const float rScale = 1.f / scale;
-	return Vector2(x * rScale, y * rScale);
+	const float invScale = 1.f / scale;
+	return Vector2(x * invScale, y * invScale);
 }
 
 FORCEINLINE Vector2 Vector2::operator+(float a) const
@@ -270,38 +270,44 @@ FORCEINLINE Vector2 Vector2::operator-() const
 
 FORCEINLINE Vector2 Vector2::operator+=(const Vector2& v)
 {
-	x += v.x; y += v.y;
+	x += v.x; 
+	y += v.y;
 	return *this;
 }
 
 FORCEINLINE Vector2 Vector2::operator-=(const Vector2& v)
 {
-	x -= v.x; y -= v.y;
+	x -= v.x; 
+	y -= v.y;
 	return *this;
 }
 
 FORCEINLINE Vector2 Vector2::operator*=(float scale)
 {
-	x *= scale; y *= scale;
+	x *= scale; 
+	y *= scale;
 	return *this;
 }
 
 FORCEINLINE Vector2 Vector2::operator/=(float v)
 {
-	const float rv = 1.f / v;
-	x *= rv; y *= rv;
+	const float invF = 1.f / v;
+	x *= invF; 
+	y *= invF;
 	return *this;
 }
 
 FORCEINLINE Vector2 Vector2::operator*=(const Vector2& v)
 {
-	x *= v.x; y *= v.y;
+	x *= v.x; 
+	y *= v.y;
 	return *this;
 }
 
 FORCEINLINE Vector2 Vector2::operator/=(const Vector2& v)
 {
-	x /= v.x; y /= v.y;
+	x /= v.x; 
+	y /= v.y;
 	return *this;
 }
 

@@ -5,7 +5,7 @@
 #include "Utils/StringUtils.h"
 
 #include "Math.h"
-#include "Vector.h"
+#include "Vector3.h"
 #include "Vector2.h"
 #include "Color.h"
 
@@ -21,7 +21,7 @@ public:
 
 public:
     
-	Vector4(const Vector& inVector, float inW = 1.0f);
+	Vector4(const Vector3& inVector, float inW = 1.0f);
 
 	Vector4(const LinearColor& inColor);
 
@@ -102,12 +102,12 @@ public:
 
 	friend FORCEINLINE float Dot3(const Vector4& v1, const Vector4& v2)
 	{
-		return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
 	friend FORCEINLINE float Dot4(const Vector4& v1, const Vector4& v2)
 	{
-		return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z + v1.w*v2.w;
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z + v1.w * v2.w;
 	}
 
 	friend FORCEINLINE Vector4 operator*(float scale, const Vector4& v)
@@ -116,7 +116,7 @@ public:
 	}
 };
 
-FORCEINLINE Vector4::Vector4(const Vector& inVector, float inW)
+FORCEINLINE Vector4::Vector4(const Vector3& inVector, float inW)
 	: x(inVector.x)
 	, y(inVector.y)
 	, z(inVector.z)
@@ -213,8 +213,8 @@ FORCEINLINE Vector4 Vector4::operator*(float scale) const
 
 FORCEINLINE Vector4 Vector4::operator/(float scale) const
 {
-	const float rScale = 1.f / scale;
-	return Vector4(x * rScale, y * rScale, z * rScale, w * rScale);
+	const float invScale = 1.f / scale;
+	return Vector4(x * invScale, y * invScale, z * invScale, w * invScale);
 }
 
 FORCEINLINE Vector4 Vector4::operator*(const Vector4& v) const

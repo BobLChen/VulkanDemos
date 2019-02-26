@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Vector.h"
+#include "Vector3.h"
 #include "Vector4.h"
 #include "Math.h"
 
 struct Matrix4x4;
 
-struct Plane : public Vector
+struct Plane : public Vector3
 {
 public:
 	float w;
@@ -21,13 +21,13 @@ public:
 
 	Plane(float inX, float inY, float inZ, float inW);
 
-	Plane(Vector inNormal, float inW);
+	Plane(Vector3 inNormal, float inW);
 
-	Plane(Vector inBase, const Vector &inNormal);
+	Plane(Vector3 inBase, const Vector3 &inNormal);
 
-	Plane(Vector a, Vector b, Vector c);
+	Plane(Vector3 a, Vector3 b, Vector3 c);
 
-	FORCEINLINE float PlaneDot(const Vector &p) const;
+	FORCEINLINE float PlaneDot(const Vector3 &p) const;
 
 	FORCEINLINE bool Normalize(float tolerance = SMALL_NUMBER);
 	
@@ -73,47 +73,47 @@ FORCEINLINE Plane::Plane()
 }
 
 FORCEINLINE Plane::Plane(const Plane& p)
-	: Vector(p)
+	: Vector3(p)
 	, w(p.w)
 {
 
 }
 
 FORCEINLINE Plane::Plane(const Vector4& v)
-	: Vector(v)
+	: Vector3(v)
 	, w(v.w)
 {
 
 }
 
 FORCEINLINE Plane::Plane(float inX, float inY, float inZ, float inW)
-	: Vector(inX, inY, inZ)
+	: Vector3(inX, inY, inZ)
 	, w(inW)
 {
 
 }
 
-FORCEINLINE Plane::Plane(Vector inNormal, float inW)
-	: Vector(inNormal)
+FORCEINLINE Plane::Plane(Vector3 inNormal, float inW)
+	: Vector3(inNormal)
 	, w(inW)
 {
 
 }
 
-FORCEINLINE Plane::Plane(Vector inBase, const Vector &inNormal)
-	: Vector(inNormal)
+FORCEINLINE Plane::Plane(Vector3 inBase, const Vector3 &inNormal)
+	: Vector3(inNormal)
 	, w(inBase | inNormal)
 {
 
 }
 
-FORCEINLINE Plane::Plane(Vector a, Vector b, Vector c)
-	: Vector(((b - a) ^ (c - a)).GetSafeNormal())
+FORCEINLINE Plane::Plane(Vector3 a, Vector3 b, Vector3 c)
+	: Vector3(((b - a) ^ (c - a)).GetSafeNormal())
 {
-	w = a | (Vector)(*this);
+	w = a | (Vector3)(*this);
 }
 
-FORCEINLINE float Plane::PlaneDot(const Vector &p) const
+FORCEINLINE float Plane::PlaneDot(const Vector3 &p) const
 {
 	return x * p.x + y * p.y + z * p.z - w;
 }
