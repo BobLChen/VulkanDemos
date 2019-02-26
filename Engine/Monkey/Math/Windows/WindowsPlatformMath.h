@@ -98,7 +98,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return temp;
 	}
 
-#pragma intrinsic( _BitScanReverse )
+#pragma intrinsic(_BitScanReverse)
 	static FORCEINLINE uint32 FloorLog2(uint32 value)
 	{
 		unsigned long log2;
@@ -179,6 +179,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return bitIndex;
 	}
 #endif
+
 };
 
 typedef WindowsPlatformMath PlatformMath;

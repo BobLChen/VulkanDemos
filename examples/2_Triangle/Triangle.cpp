@@ -7,6 +7,7 @@
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
 #include "Math/Vector4.h"
+#include "Math/Matrix4x4.h"
 #include <vector>
 #include <fstream>
 
@@ -31,14 +32,14 @@ public:
 	{
 		std::string assetsPath = m_CmdLine[0];
 		int32 length = 0;
-		for (int32 i = 0; i < assetsPath.size(); ++i)
+		for (size_t i = 0; i < assetsPath.size(); ++i)
 		{
 			if (assetsPath[i] == '\\')
 			{
 				assetsPath[i] = '/';
 			}
 		}
-		for (int32 i = assetsPath.size() - 1; i >= 0; --i)
+		for (size_t i = assetsPath.size() - 1; i >= 0; --i)
 		{
 			if (assetsPath[i] == '/')
 			{
@@ -68,7 +69,7 @@ public:
 
 	virtual void Exist() override
 	{
-		VERIFYVULKANRESULT(vkWaitForFences(m_Device, m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
+		VERIFYVULKANRESULT(vkWaitForFences(m_Device, (uint32_t)m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
         DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
@@ -106,7 +107,9 @@ private:
 
 	struct UBOData
 	{
-		float datas[48];
+		Matrix4x4 model;
+		Matrix4x4 view;
+		Matrix4x4 projection;
 	};
 
 	VkShaderModule LoadSPIPVShader(std::string filepath)
@@ -211,14 +214,14 @@ private:
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
 
 			VkViewport viewport = {};
-            viewport.width  = renderPassBeginInfo.renderArea.extent.width;
-            viewport.height = renderPassBeginInfo.renderArea.extent.height;
+            viewport.width  = (float)renderPassBeginInfo.renderArea.extent.width;
+            viewport.height = (float)renderPassBeginInfo.renderArea.extent.height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
             
 			VkRect2D scissor = {};
-            scissor.extent.width  = viewport.width;
-            scissor.extent.height = viewport.height;
+            scissor.extent.width  = (uint32)viewport.width;
+            scissor.extent.height = (uint32)viewport.height;
 			scissor.offset.x = 0;
 			scissor.offset.y = 0;
 
@@ -318,7 +321,7 @@ private:
 		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
 		VkPipelineDynamicStateCreateInfo dynamicState;
 		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-		dynamicState.dynamicStateCount = dynamicStateEnables.size();
+		dynamicState.dynamicStateCount = (uint32_t)dynamicStateEnables.size();
 		dynamicState.pDynamicStates    = dynamicStateEnables.data();
         
 		VkPipelineDepthStencilStateCreateInfo depthStencilState;
@@ -382,7 +385,7 @@ private:
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout = m_PipelineLayout;
 		pipelineCreateInfo.renderPass = m_VulkanRHI->GetRenderPass();
-		pipelineCreateInfo.stageCount = shaderStages.size();
+		pipelineCreateInfo.stageCount = (uint32_t)shaderStages.size();
 		pipelineCreateInfo.pStages = shaderStages.data();
 		pipelineCreateInfo.pVertexInputState = &vertexInputState;
 		pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
@@ -405,10 +408,6 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-        // m_MVPDescriptor
-        // m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
-        // m_MVPDescriptor.offset = 0;
-        // m_MVPDescriptor.range  = 48 * sizeof(float);
 		VkDescriptorSetLayoutBinding layoutBinding;
 		layoutBinding.binding = 0;
 		layoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -435,35 +434,23 @@ private:
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
 	}
 	
+	float pitch = 0.0f;
+
 	void UpdateUniformBuffers()
 	{
-		for (int i = 0; i < 48; ++i)
-		{
-			m_MVPData.datas[i] = 0;
-		}
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(pitch, 0, 0), Vector::ZeroVector);
+		pitch += 1.0f;
+
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
 		
-		// 1  0  0  0
-		// 0  1  0  0
-		// 0  0  1  0
-		// 0  0  0  1
-		m_MVPData.datas[0]  = 1.0f;
-		m_MVPData.datas[5] = 1.0f;
-		m_MVPData.datas[10] = 1.0f;
-		m_MVPData.datas[15] = 1.0f;
-
-		m_MVPData.datas[16] = 1.0f;
-		m_MVPData.datas[21] = 1.0f;
-		m_MVPData.datas[26] = 1.0f;
-		m_MVPData.datas[31] = 1.0f;
-
-		m_MVPData.datas[32] = 1.0f;
-		m_MVPData.datas[37] = 1.0f;
-		m_MVPData.datas[42] = 1.0f;
-		m_MVPData.datas[47] = 1.0f;
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 		
 		uint8_t *pData = nullptr;
-		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, 48 * sizeof(float), 0, (void**)&pData));
-		std::memcpy(pData, m_MVPData.datas, 48 * sizeof(float));
+		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
+		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
 		vkUnmapMemory(m_Device, m_MVPBuffer.memory);
 	}
 
@@ -471,7 +458,7 @@ private:
 	{
 		VkBufferCreateInfo bufferInfo;
 		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-		bufferInfo.size = 48 * sizeof(float);
+		bufferInfo.size = sizeof(UBOData);
 		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		VERIFYVULKANRESULT(vkCreateBuffer(m_Device, &bufferInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.buffer));
 
@@ -489,7 +476,7 @@ private:
 		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_MVPBuffer.buffer, m_MVPBuffer.memory, 0));
 		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
 		m_MVPDescriptor.offset = 0;
-		m_MVPDescriptor.range  = 48 * sizeof(float);
+		m_MVPDescriptor.range  = sizeof(UBOData);
 
 		UpdateUniformBuffers();
 	}
@@ -511,7 +498,7 @@ private:
 
 		// 索引数据
 		std::vector<uint16> indices = { 0, 1, 2 };
-		m_IndicesCount = indices.size();
+		m_IndicesCount = (uint32)indices.size();
 
 		// 顶点数据以及索引数据在整个生命周期中几乎不会发生改变，因此最佳的方式是将这些数据存储到GPU的内存中。
 		// 存储到GPU内存也能加快GPU的访问。为了存储到GPU内存中，需要如下几个步骤。

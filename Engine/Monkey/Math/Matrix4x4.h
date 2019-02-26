@@ -19,11 +19,15 @@ public:
 	static const Matrix4x4 Identity;
 
 public:
-	FORCEINLINE Matrix4x4();
+	Matrix4x4();
 
-	FORCEINLINE Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW);
+	Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW);
 
-	FORCEINLINE Matrix4x4(const Vector& inX, const Vector& inY, const Vector& inZ, const Vector& inW);
+	Matrix4x4(const Vector& inX, const Vector& inY, const Vector& inZ, const Vector& inW);
+
+	Matrix4x4(const Rotator& rot, const Vector& origin);
+
+	FORCEINLINE void Perspective(float HalfFOV, float Width, float Height, float MinZ, float MaxZ);
 
 	FORCEINLINE void SetIdentity();
 
@@ -121,11 +125,11 @@ public:
 
 	FORCEINLINE void To3x4MatrixTranspose(float* Out) const;
 
-	Rotator Rotator() const;
+	FORCEINLINE Rotator ToRotator() const;
 
-	Quat ToQuat() const;
+	FORCEINLINE Quat ToQuat() const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 };
 
 template<uint32 NumRows, uint32 NumColumns>
@@ -141,7 +145,10 @@ public:
 };
 
 template<uint32 NumRows, uint32 NumColumns>
-FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix() { }
+FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix() 
+{ 
+
+}
 
 template<uint32 NumRows, uint32 NumColumns>
 FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
@@ -154,55 +161,6 @@ FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
 		}
 	}
 }
-
-static FORCEINLINE void Inverse4x4(double* dst, const float* src)
-{
-	const double s0 = (double)(src[0]);
-    const double s1 = (double)(src[1]);
-    const double s2 = (double)(src[2]);
-    const double s3 = (double)(src[3]);
-	const double s4 = (double)(src[4]);
-    const double s5 = (double)(src[5]);
-    const double s6 = (double)(src[6]);
-    const double s7 = (double)(src[7]);
-	const double s8 = (double)(src[8]);
-    const double s9 = (double)(src[9]);
-    const double s10 = (double)(src[10]);
-    const double s11 = (double)(src[11]);
-	const double s12 = (double)(src[12]);
-    const double s13 = (double)(src[13]);
-    const double s14 = (double)(src[14]);
-    const double s15 = (double)(src[15]);
-
-	double inv[16];
-	inv[0] = s5 * s10 * s15 - s5 * s11 * s14 - s9 * s6 * s15 + s9 * s7 * s14 + s13 * s6 * s11 - s13 * s7 * s10;
-	inv[1] = -s1 * s10 * s15 + s1 * s11 * s14 + s9 * s2 * s15 - s9 * s3 * s14 - s13 * s2 * s11 + s13 * s3 * s10;
-	inv[2] = s1 * s6  * s15 - s1 * s7  * s14 - s5 * s2 * s15 + s5 * s3 * s14 + s13 * s2 * s7 - s13 * s3 * s6;
-	inv[3] = -s1 * s6  * s11 + s1 * s7  * s10 + s5 * s2 * s11 - s5 * s3 * s10 - s9 * s2 * s7 + s9 * s3 * s6;
-	inv[4] = -s4 * s10 * s15 + s4 * s11 * s14 + s8 * s6 * s15 - s8 * s7 * s14 - s12 * s6 * s11 + s12 * s7 * s10;
-	inv[5] = s0 * s10 * s15 - s0 * s11 * s14 - s8 * s2 * s15 + s8 * s3 * s14 + s12 * s2 * s11 - s12 * s3 * s10;
-	inv[6] = -s0 * s6  * s15 + s0 * s7  * s14 + s4 * s2 * s15 - s4 * s3 * s14 - s12 * s2 * s7 + s12 * s3 * s6;
-	inv[7] = s0 * s6  * s11 - s0 * s7  * s10 - s4 * s2 * s11 + s4 * s3 * s10 + s8 * s2 * s7 - s8 * s3 * s6;
-	inv[8] = s4 * s9  * s15 - s4 * s11 * s13 - s8 * s5 * s15 + s8 * s7 * s13 + s12 * s5 * s11 - s12 * s7 * s9;
-	inv[9] = -s0 * s9  * s15 + s0 * s11 * s13 + s8 * s1 * s15 - s8 * s3 * s13 - s12 * s1 * s11 + s12 * s3 * s9;
-	inv[10] = s0 * s5  * s15 - s0 * s7  * s13 - s4 * s1 * s15 + s4 * s3 * s13 + s12 * s1 * s7 - s12 * s3 * s5;
-	inv[11] = -s0 * s5  * s11 + s0 * s7  * s9 + s4 * s1 * s11 - s4 * s3 * s9 - s8 * s1 * s7 + s8 * s3 * s5;
-	inv[12] = -s4 * s9  * s14 + s4 * s10 * s13 + s8 * s5 * s14 - s8 * s6 * s13 - s12 * s5 * s10 + s12 * s6 * s9;
-	inv[13] = s0 * s9  * s14 - s0 * s10 * s13 - s8 * s1 * s14 + s8 * s2 * s13 + s12 * s1 * s10 - s12 * s2 * s9;
-	inv[14] = -s0 * s5  * s14 + s0 * s6  * s13 + s4 * s1 * s14 - s4 * s2 * s13 - s12 * s1 * s6 + s12 * s2 * s5;
-	inv[15] = s0 * s5  * s10 - s0 * s6  * s9 - s4 * s1 * s10 + s4 * s2 * s9 + s8 * s1 * s6 - s8 * s2 * s5;
-
-	double det = s0 * inv[0] + s1 * inv[4] + s2 * inv[8] + s3 * inv[12];
-	if (det != 0.0)
-	{
-		det = 1.0 / det;
-	}
-	for (int i = 0; i < 16; i++)
-	{
-		dst[i] = inv[i] * det;
-	}
-}
-
 
 FORCEINLINE Matrix4x4::Matrix4x4()
 {
@@ -217,12 +175,58 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane
 	m[3][0] = inW.x; m[3][1] = inW.y;  m[3][2] = inW.z;  m[3][3] = inW.w;
 }
 
+FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector& origin)
+{
+	float sp, sy, sr;
+	float cp, cy, cr;
+	MMath::SinCos(&sp, &cp, MMath::DegreesToRadians(rot.pitch));
+	MMath::SinCos(&sy, &cy, MMath::DegreesToRadians(rot.yaw));
+	MMath::SinCos(&sr, &cr, MMath::DegreesToRadians(rot.roll));
+	m[0][0] = cp * cy;						m[0][1] = cp * sy;					m[0][2] = sp;			m[0][3] = 0.f;
+	m[1][0] = sr * sp * cy - cr * sy;		m[1][1] = sr * sp * sy + cr * cy;	m[1][2] = -sr * cp;		m[1][3] = 0.f;
+	m[2][0] = -(cr * sp * cy + sr * sy);	m[2][1] = cy * sr - cr * sp * sy;	m[2][2] = cr * cp;		m[2][3] = 0.f;
+	m[3][0] = origin.x;						m[3][1] = origin.y;					m[3][2] = origin.z;		m[3][3] = 1.f;
+}
+
 FORCEINLINE Matrix4x4::Matrix4x4(const Vector& inX, const Vector& inY, const Vector& inZ, const Vector& inW)
 {
 	m[0][0] = inX.x; m[0][1] = inX.y;  m[0][2] = inX.z;  m[0][3] = 0.0f;
 	m[1][0] = inY.x; m[1][1] = inY.y;  m[1][2] = inY.z;  m[1][3] = 0.0f;
 	m[2][0] = inZ.x; m[2][1] = inZ.y;  m[2][2] = inZ.z;  m[2][3] = 0.0f;
 	m[3][0] = inW.x; m[3][1] = inW.y;  m[3][2] = inW.z;  m[3][3] = 1.0f;
+}
+
+FORCEINLINE void Matrix4x4::To3x4MatrixTranspose(float* out) const
+{
+	const float* src = &(m[0][0]);
+	float* dest = out;
+
+	dest[0] = src[0];   // [0][0]
+	dest[1] = src[4];   // [1][0]
+	dest[2] = src[8];   // [2][0]
+	dest[3] = src[12];  // [3][0]
+
+	dest[4] = src[1];   // [0][1]
+	dest[5] = src[5];   // [1][1]
+	dest[6] = src[9];   // [2][1]
+	dest[7] = src[13];  // [3][1]
+
+	dest[8] = src[2];   // [0][2]
+	dest[9] = src[6];   // [1][2]
+	dest[10] = src[10]; // [2][2]
+	dest[11] = src[14]; // [3][2]
+}
+
+FORCEINLINE std::string Matrix4x4::ToString() const
+{
+	std::string output;
+
+	output += StringUtils::Printf(("[%g %g %g %g] "), m[0][0], m[0][1], m[0][2], m[0][3]);
+	output += StringUtils::Printf(("[%g %g %g %g] "), m[1][0], m[1][1], m[1][2], m[1][3]);
+	output += StringUtils::Printf(("[%g %g %g %g] "), m[2][0], m[2][1], m[2][2], m[2][3]);
+	output += StringUtils::Printf(("[%g %g %g %g] "), m[3][0], m[3][1], m[3][2], m[3][3]);
+
+	return output;
 }
 
 FORCEINLINE void Matrix4x4::SetIdentity()
@@ -872,21 +876,13 @@ FORCEINLINE Matrix4x4 Matrix4x4::ApplyScale(float scale)
 	return scaleMatrix * (*this);
 }
 
-FORCEINLINE Plane Plane::TransformBy(const Matrix4x4& m) const
+FORCEINLINE void  Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
 {
-	const Matrix4x4 tmpTA = m.TransposeAdjoint();
-	const float detM = m.Determinant();
-	return this->TransformByUsingAdjointT(m, detM, tmpTA);
-}
-
-FORCEINLINE Plane Plane::TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matrix4x4& ta) const
-{
-	Vector newNorm = ta.TransformVector(*this).GetSafeNormal();
-
-	if (detM < 0.f)
-	{
-		newNorm *= -1.0f;
-	}
-
-	return Plane(m.TransformPosition(*this * w), newNorm);
+	float aspect = width / height;
+	float tanHalfFovy = MMath::Tan(fovy / 2);
+	
+	m[0][0] = 1 / (aspect * tanHalfFovy);	m[0][1] = 0.0f;					m[0][2] = 0.0f;									m[0][3] = 0.0f;
+	m[1][0] = 0.0f;							m[1][1] = 1 / (tanHalfFovy);	m[1][2] = 0.0f;									m[1][3] = 0.0f;
+	m[2][0] = 0.0f;							m[2][1] = 0.0f;					m[2][2] = zFar / (zNear - zFar);				m[2][3] = -1;
+	m[3][0] = 0.0f;							m[3][1] = 0.0f;					m[3][2] = zFar * zNear / (zNear - zFar);		m[3][3] = 0.0f;
 }

@@ -3,10 +3,12 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Utils/StringUtils.h"
+
+#include "Math.h"
 #include "Vector.h"
 #include "Vector2.h"
 #include "Color.h"
-#include "Math.h"
+
 #include <string>
 
 struct Vector4
@@ -19,9 +21,9 @@ public:
 
 public:
     
-	FORCEINLINE Vector4(const Vector& inVector, float inW = 1.0f);
+	Vector4(const Vector& inVector, float inW = 1.0f);
 
-	FORCEINLINE Vector4(const LinearColor& inColor);
+	Vector4(const LinearColor& inColor);
 
 	explicit Vector4(float inX = 0.0f, float inY = 0.0f, float inZ = 0.0f, float inW = 1.0f);
 
@@ -43,33 +45,33 @@ public:
 
 	FORCEINLINE Vector4 operator*(float scale) const;
 
-	Vector4 operator/(float scale) const;
+	FORCEINLINE Vector4 operator/(float scale) const;
 
-	Vector4 operator/(const Vector4& v) const;
+	FORCEINLINE Vector4 operator/(const Vector4& v) const;
 
-	Vector4 operator*(const Vector4& v) const;
+	FORCEINLINE Vector4 operator*(const Vector4& v) const;
 
-	Vector4 operator*=(const Vector4& v);
+	FORCEINLINE Vector4 operator*=(const Vector4& v);
 
-	Vector4 operator/=(const Vector4& v);
+	FORCEINLINE Vector4 operator/=(const Vector4& v);
 
-	Vector4 operator*=(float f);
+	FORCEINLINE Vector4 operator*=(float f);
 
-	bool operator==(const Vector4& v) const;
+	FORCEINLINE bool operator==(const Vector4& v) const;
 
-	bool operator!=(const Vector4& v) const;
+	FORCEINLINE bool operator!=(const Vector4& v) const;
 
-	Vector4 operator^(const Vector4& v) const;
+	FORCEINLINE Vector4 operator^(const Vector4& v) const;
 
-	float& Component(int32 index);
+	FORCEINLINE float& Component(int32 index);
 
-	const float& Component(int32 index) const;
+	FORCEINLINE const float& Component(int32 index) const;
 
-	bool Equals(const Vector4& v, float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool Equals(const Vector4& v, float tolerance = KINDA_SMALL_NUMBER) const;
 
-	bool IsUnit3(float LengthSquaredTolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool IsUnit3(float LengthSquaredTolerance = KINDA_SMALL_NUMBER) const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 
 	FORCEINLINE Vector4 GetSafeNormal(float tolerance = SMALL_NUMBER) const;
 
@@ -77,21 +79,21 @@ public:
 
 	FORCEINLINE void Set(float inX, float inY, float inZ, float inW);
 
-	float Size3() const;
+	FORCEINLINE float Size3() const;
 
-	float SizeSquared3() const;
+	FORCEINLINE float SizeSquared3() const;
 
-	float Size() const;
+	FORCEINLINE float Size() const;
 
-	float SizeSquared() const;
+	FORCEINLINE float SizeSquared() const;
 
-	bool ContainsNaN() const;
+	FORCEINLINE bool ContainsNaN() const;
 
-	bool IsNearlyZero3(float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool IsNearlyZero3(float tolerance = KINDA_SMALL_NUMBER) const;
 
-	Vector4 Reflect3(const Vector4& normal) const;
+	FORCEINLINE Vector4 Reflect3(const Vector4& normal) const;
 
-	void FindBestAxisVectors3(Vector4& axis1, Vector4& axis2) const;
+	FORCEINLINE void FindBestAxisVectors3(Vector4& axis1, Vector4& axis2) const;
 
 	FORCEINLINE void DiagnosticCheckNaN() 
 	{
@@ -377,12 +379,4 @@ FORCEINLINE Vector4 Vector4::operator*=(float f)
 FORCEINLINE Vector4 Vector4::operator/(const Vector4& v) const
 {
 	return Vector4(x / v.x, y / v.y, z / v.z, w / v.w);
-}
-
-FORCEINLINE Vector::Vector(const Vector4& v)
-	: x(v.x)
-	, y(v.y)
-	, z(v.z)
-{
-	DiagnosticCheckNaN();
 }

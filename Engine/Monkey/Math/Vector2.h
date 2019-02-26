@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/Common.h"
-#include "Math/IntPoint.h"
+#include "IntPoint.h"
 
 struct Vector2
 {
@@ -11,14 +11,14 @@ public:
 
 	static const Vector2 ZeroVector;
 	static const Vector2 UnitVector;
-    
+	
 public:
 
-	FORCEINLINE Vector2();
+	Vector2();
 
-	FORCEINLINE Vector2(float inX, float inY);
+	Vector2(float inX, float inY);
 
-	FORCEINLINE Vector2(IntPoint inPos);
+	Vector2(IntPoint inPos);
 
 	FORCEINLINE Vector2 operator+(const Vector2& v) const;
 
@@ -32,25 +32,25 @@ public:
 
 	FORCEINLINE Vector2 operator*(const Vector2& v) const;
 
-	Vector2 operator/(float scale) const;
+	FORCEINLINE Vector2 operator/(float scale) const;
 
-	Vector2 operator/(const Vector2& v) const;
+	FORCEINLINE Vector2 operator/(const Vector2& v) const;
 
 	FORCEINLINE float operator|(const Vector2& v) const;
 
 	FORCEINLINE float operator^(const Vector2& v) const;
 
-	bool operator==(const Vector2& v) const;
+	FORCEINLINE bool operator==(const Vector2& v) const;
 
-	bool operator!=(const Vector2& v) const;
+	FORCEINLINE bool operator!=(const Vector2& v) const;
 
-	bool operator<(const Vector2& other) const;
+	FORCEINLINE bool operator<(const Vector2& other) const;
 
-	bool operator>(const Vector2& other) const;
+	FORCEINLINE bool operator>(const Vector2& other) const;
 
-	bool operator<=(const Vector2& other) const;
+	FORCEINLINE bool operator<=(const Vector2& other) const;
 
-	bool operator>=(const Vector2& other) const;
+	FORCEINLINE bool operator>=(const Vector2& other) const;
 
 	FORCEINLINE Vector2 operator-() const;
 
@@ -60,19 +60,19 @@ public:
 
 	FORCEINLINE Vector2 operator*=(float scale);
 
-	Vector2 operator/=(float v);
+	FORCEINLINE Vector2 operator/=(float v);
 
-	Vector2 operator*=(const Vector2& v);
+	FORCEINLINE Vector2 operator*=(const Vector2& v);
 
-	Vector2 operator/=(const Vector2& v);
+	FORCEINLINE Vector2 operator/=(const Vector2& v);
 
-	float& operator[](int32 index);
+	FORCEINLINE float& operator[](int32 index);
 
-	float operator[](int32 index) const;
+	FORCEINLINE float operator[](int32 index) const;
 
-	float& Component(int32 index);
+	FORCEINLINE float& Component(int32 index);
 
-	float Component(int32 index) const;
+	FORCEINLINE float Component(int32 index) const;
 
 	FORCEINLINE static float DotProduct(const Vector2& a, const Vector2& b);
 
@@ -82,43 +82,43 @@ public:
 
 	FORCEINLINE static float CrossProduct(const Vector2& a, const Vector2& b);
 
-	bool Equals(const Vector2& v, float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool Equals(const Vector2& v, float tolerance = KINDA_SMALL_NUMBER) const;
 
-	void Set(float inX, float inY);
+	FORCEINLINE void Set(float inX, float inY);
 
-	float GetMax() const;
+	FORCEINLINE float GetMax() const;
 
-	float GetAbsMax() const;
+	FORCEINLINE float GetAbsMax() const;
 
-	float GetMin() const;
+	FORCEINLINE float GetMin() const;
 
-	float Size() const;
+	FORCEINLINE float Size() const;
 
-	float SizeSquared() const;
+	FORCEINLINE float SizeSquared() const;
 
-	Vector2 GetRotated(float angleDeg) const;
+	FORCEINLINE Vector2 GetRotated(float angleDeg) const;
 
-	Vector2 GetSafeNormal(float tolerance = SMALL_NUMBER) const;
+	FORCEINLINE Vector2 GetSafeNormal(float tolerance = SMALL_NUMBER) const;
 
-	void Normalize(float tolerance = SMALL_NUMBER);
+	FORCEINLINE void Normalize(float tolerance = SMALL_NUMBER);
 
-	bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
 
-	void ToDirectionAndLength(Vector2 &outDir, float &outLength) const;
+	FORCEINLINE void ToDirectionAndLength(Vector2 &outDir, float &outLength) const;
 
-	bool IsZero() const;
+	FORCEINLINE bool IsZero() const;
 
-	IntPoint GetIntPoint() const;
+	FORCEINLINE IntPoint GetIntPoint() const;
 
-	Vector2 RoundToVector() const;
+	FORCEINLINE Vector2 RoundToVector() const;
 
-	Vector2 ClampAxes(float minAxisVal, float maxAxisVal) const;
+	FORCEINLINE Vector2 ClampAxes(float minAxisVal, float maxAxisVal) const;
 
 	FORCEINLINE Vector2 GetSignVector() const;
 
 	FORCEINLINE Vector2 GetAbs() const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 
 	FORCEINLINE void DiagnosticCheckNaN() 
 	{
@@ -419,7 +419,7 @@ FORCEINLINE IntPoint Vector2::GetIntPoint() const
 
 FORCEINLINE Vector2 Vector2::RoundToVector() const
 {
-	return Vector2(MMath::RoundToInt(x), MMath::RoundToInt(y));
+	return Vector2((float)MMath::RoundToInt(x), (float)MMath::RoundToInt(y));
 }
 
 FORCEINLINE Vector2 Vector2::ClampAxes(float minAxisVal, float maxAxisVal) const

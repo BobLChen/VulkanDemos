@@ -2,10 +2,11 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
+#include "Utils/StringUtils.h"
+
 #include "Math.h"
 #include "Vector.h"
 #include "Axis.h"
-#include "Utils/StringUtils.h"
 
 struct Quat;
 
@@ -20,105 +21,105 @@ public:
 
 public:
 
-	FORCEINLINE void DiagnosticCheckNaN() const 
+	Rotator();
+
+	Rotator(float inPitch, float inYaw, float inRoll);
+
+	explicit Rotator(float inF);
+
+	explicit Rotator(const Quat& quat);
+
+	FORCEINLINE Rotator operator+(const Rotator& r) const;
+
+	FORCEINLINE Rotator operator-(const Rotator& r) const;
+
+	FORCEINLINE Rotator operator*(float scale) const;
+
+	FORCEINLINE Rotator operator*=(float scale);
+
+	FORCEINLINE bool operator==(const Rotator& r) const;
+
+	FORCEINLINE bool operator!=(const Rotator& v) const;
+
+	FORCEINLINE Rotator operator+=(const Rotator& r);
+
+	FORCEINLINE Rotator operator-=(const Rotator& r);
+
+	FORCEINLINE bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
+
+	FORCEINLINE bool IsZero() const;
+
+	FORCEINLINE bool Equals(const Rotator& r, float tolerance = KINDA_SMALL_NUMBER) const;
+
+	FORCEINLINE Rotator Add(float deltaPitch, float deltaYaw, float deltaRoll);
+
+	FORCEINLINE Rotator GetInverse() const;
+
+	FORCEINLINE Rotator GridSnap(const Rotator& rotGrid) const;
+
+	FORCEINLINE Vector GetVector() const;
+
+	FORCEINLINE Quat Quaternion() const;
+
+	FORCEINLINE Vector Euler() const;
+
+	FORCEINLINE Vector RotateVector(const Vector& v) const;
+
+	FORCEINLINE Vector UnrotateVector(const Vector& v) const;
+
+	FORCEINLINE Rotator Clamp() const;
+
+	FORCEINLINE Rotator GetNormalized() const;
+
+	FORCEINLINE Rotator GetDenormalized() const;
+
+	FORCEINLINE float GetComponentForAxis(Axis::Type Axis) const;
+
+	FORCEINLINE void SetComponentForAxis(Axis::Type Axis, float Component);
+
+	FORCEINLINE void Normalize();
+
+	FORCEINLINE void GetWindingAndRemainder(Rotator& winding, Rotator& remainder) const;
+
+	FORCEINLINE float GetManhattanDistance(const Rotator & rotator) const;
+
+	FORCEINLINE Rotator GetEquivalentRotator() const;
+
+	FORCEINLINE void SetClosestToMe(Rotator& makeClosest) const;
+
+	FORCEINLINE std::string ToString() const;
+
+	FORCEINLINE bool ContainsNaN() const;
+
+	FORCEINLINE static float ClampAxis(float angle);
+
+	FORCEINLINE static float NormalizeAxis(float angle);
+
+	FORCEINLINE static uint8 CompressAxisToByte(float angle);
+
+	FORCEINLINE static float DecompressAxisFromByte(uint8 angle);
+
+	FORCEINLINE static uint16 CompressAxisToShort(float angle);
+
+	FORCEINLINE static float DecompressAxisFromShort(uint16 angle);
+
+	FORCEINLINE static Rotator MakeFromEuler(const Vector& Euler);
+
+	FORCEINLINE void DiagnosticCheckNaN() const
 	{
 
 	}
 
-	FORCEINLINE void DiagnosticCheckNaN(const char* message) const 
+	FORCEINLINE void DiagnosticCheckNaN(const char* message) const
 	{
 
 	}
-
-	FORCEINLINE Rotator() 
-	{ 
-
-	}
-
-	explicit FORCEINLINE Rotator(float inF);
-
-	FORCEINLINE Rotator(float inPitch, float inYaw, float inRoll);
-
-	explicit Rotator(const Quat& Quat);
-
-	Rotator operator+(const Rotator& r) const;
-
-	Rotator operator-(const Rotator& r) const;
-
-	Rotator operator*(float scale) const;
-
-	Rotator operator*=(float scale);
-
-	bool operator==(const Rotator& r) const;
-
-	bool operator!=(const Rotator& v) const;
-
-	Rotator operator+=(const Rotator& r);
-
-	Rotator operator-=(const Rotator& r);
-
-	bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
-
-	bool IsZero() const;
-
-	bool Equals(const Rotator& r, float tolerance = KINDA_SMALL_NUMBER) const;
-
-	Rotator Add(float deltaPitch, float deltaYaw, float deltaRoll);
-
-	Rotator GetInverse() const;
-
-	Rotator GridSnap(const Rotator& rotGrid) const;
-
-	Vector GetVector() const;
-
-	Quat Quaternion() const;
-
-	Vector Euler() const;
-
-	Vector RotateVector(const Vector& v) const;
-
-	Vector UnrotateVector(const Vector& v) const;
-
-	Rotator Clamp() const;
-
-	Rotator GetNormalized() const;
-
-	Rotator GetDenormalized() const;
-
-	float GetComponentForAxis(Axis::Type Axis) const;
-
-	void SetComponentForAxis(Axis::Type Axis, float Component);
-
-	void Normalize();
-
-	void GetWindingAndRemainder(Rotator& winding, Rotator& remainder) const;
-
-	float GetManhattanDistance(const Rotator & rotator) const;
-
-	Rotator GetEquivalentRotator() const;
-
-	void SetClosestToMe(Rotator& makeClosest) const;
-
-	std::string ToString() const;
-
-	bool ContainsNaN() const;
-
-public:
-
-	static float ClampAxis(float angle);
-
-	static float NormalizeAxis(float angle);
-
-	static uint8 CompressAxisToByte(float angle);
-
-	static float DecompressAxisFromByte(uint8 angle);
-
-	static uint16 CompressAxisToShort(float angle);
-
-	static float DecompressAxisFromShort(uint16 angle);
-
-	static Rotator MakeFromEuler(const Vector& Euler);
 };
+
+FORCEINLINE Rotator::Rotator()
+{
+
+}
 
 FORCEINLINE Rotator::Rotator(float inF)
 	: pitch(inF)
@@ -347,16 +348,6 @@ FORCEINLINE Rotator Rotator::MakeFromEuler(const Vector& euler)
 	return Rotator(euler.x, euler.y, euler.z);
 }
 
-//FORCEINLINE Vector Rotator::RotateVector(const Vector& v) const
-//{
-//	return RotationMatrix(*this).TransformVector(v);
-//}
-//
-//FORCEINLINE Vector Rotator::UnrotateVector(const Vector& v) const
-//{
-//	return RotationMatrix(*this).GetTransposed().TransformVector(v);
-//}
-
 FORCEINLINE void Rotator::GetWindingAndRemainder(Rotator& winding, Rotator& remainder) const
 {
 	remainder.yaw = NormalizeAxis(yaw);
@@ -403,14 +394,3 @@ FORCEINLINE void Rotator::SetClosestToMe(Rotator& makeClosest) const
 	}
 }
 
-template<class U>
-FORCEINLINE Rotator MMath::Lerp(const Rotator& a, const Rotator& b, const U& alpha)
-{
-	return a + (b - a).GetNormalized() * alpha;
-}
-
-template<class U>
-FORCEINLINE Rotator MMath::LerpRange(const Rotator& a, const Rotator& b, const U& alpha)
-{
-	return (a * (1 - alpha) + b * alpha).GetNormalized();
-}

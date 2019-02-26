@@ -371,10 +371,3 @@ Color Color::MakeRedToGreenColorFromScalar(float Scalar)
 	int32 b = 0;
 	return Color(r, g, b);
 }
-
-void ComputeAndFixedColorAndIntensity(const LinearColor& InLinearColor, Color& outColor, float& outIntensity)
-{
-	float maxComponent = MMath::Max(DELTA, MMath::Max(InLinearColor.r, MMath::Max(InLinearColor.g, InLinearColor.b)));
-	outColor = (InLinearColor / maxComponent).ToFColor(true);
-	outIntensity = maxComponent;
-}

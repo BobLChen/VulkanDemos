@@ -24,61 +24,61 @@ public:
 
 	IntPoint(int32 inX, int32 inY);
 
-	const int32& operator()(int32 pointIndex) const;
+	FORCEINLINE const int32& operator()(int32 pointIndex) const;
 
-	int32& operator()(int32 pointIndex);
+	FORCEINLINE int32& operator()(int32 pointIndex);
 
-	int32& operator[](int32 index);
+	FORCEINLINE int32& operator[](int32 index);
 
-	int32 operator[](int32 index) const;
+	FORCEINLINE int32 operator[](int32 index) const;
 
-	IntPoint& operator=(const IntPoint& other);
+	FORCEINLINE IntPoint& operator=(const IntPoint& other);
 
-	bool operator==(const IntPoint& other) const;
+	FORCEINLINE bool operator==(const IntPoint& other) const;
 
-	bool operator!=(const IntPoint& other) const;
+	FORCEINLINE bool operator!=(const IntPoint& other) const;
 
-	IntPoint& operator*=(int32 scale);
+	FORCEINLINE IntPoint& operator*=(int32 scale);
 
-	IntPoint& operator/=(int32 divisor);
+	FORCEINLINE IntPoint& operator/=(int32 divisor);
 
-	IntPoint& operator+=(const IntPoint& other);
+	FORCEINLINE IntPoint& operator+=(const IntPoint& other);
 
-	IntPoint& operator-=(const IntPoint& other);
+	FORCEINLINE IntPoint& operator-=(const IntPoint& other);
 
-	IntPoint& operator/=(const IntPoint& other);
+	FORCEINLINE IntPoint& operator/=(const IntPoint& other);
 
-	IntPoint operator*(int32 scale) const;
+	FORCEINLINE IntPoint operator*(int32 scale) const;
 
-	IntPoint operator/(int32 divisor) const;
+	FORCEINLINE IntPoint operator/(int32 divisor) const;
 
-	IntPoint operator+(const IntPoint& other) const;
+	FORCEINLINE IntPoint operator+(const IntPoint& other) const;
 
-	IntPoint operator-(const IntPoint& other) const;
+	FORCEINLINE IntPoint operator-(const IntPoint& other) const;
 
-	IntPoint operator/(const IntPoint& other) const;
+	FORCEINLINE IntPoint operator/(const IntPoint& other) const;
 
 	FORCEINLINE IntPoint ComponentMin(const IntPoint& other) const;
 
 	FORCEINLINE IntPoint ComponentMax(const IntPoint& other) const;
 
-	int32 GetMax() const;
+	FORCEINLINE int32 GetMax() const;
 
-	int32 GetMin() const;
+	FORCEINLINE int32 GetMin() const;
 
-	int32 Size() const;
+	FORCEINLINE int32 Size() const;
 
-	int32 SizeSquared() const;
+	FORCEINLINE int32 SizeSquared() const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 
-	static int32 Num();
+	static FORCEINLINE int32 Num();
 
-	static IntPoint DivideAndRoundUp(IntPoint lhs, int32 divisor);
+	static FORCEINLINE IntPoint DivideAndRoundUp(IntPoint lhs, int32 divisor);
 
-	static IntPoint DivideAndRoundUp(IntPoint lhs, IntPoint divisor);
+	static FORCEINLINE IntPoint DivideAndRoundUp(IntPoint lhs, IntPoint divisor);
 
-	static IntPoint DivideAndRoundDown(IntPoint lhs, int32 divisor);
+	static FORCEINLINE IntPoint DivideAndRoundDown(IntPoint lhs, int32 divisor);
 };
 
 FORCEINLINE IntPoint::IntPoint()
@@ -87,7 +87,6 @@ FORCEINLINE IntPoint::IntPoint()
 {
 
 }
-
 
 FORCEINLINE IntPoint::IntPoint(int32 inX, int32 inY)
 	: x(inX)

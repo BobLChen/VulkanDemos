@@ -2,8 +2,9 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Color.h"
+
 #include "Math.h"
+#include "Color.h"
 #include "Vector2.h"
 #include "IntVector.h"
 #include "IntPoint.h"
@@ -27,19 +28,19 @@ public:
 
 public:
 	
-	explicit FORCEINLINE Vector(float inF);
+	Vector(const Vector4& v);
 
-	FORCEINLINE Vector(float inX, float inY, float inZ);
+	Vector(float inX, float inY, float inZ);
 
-	explicit FORCEINLINE Vector(const Vector2 v, float inZ);
+	explicit Vector(float inF);
 
-	FORCEINLINE Vector(const Vector4& v);
+	explicit Vector(const Vector2 v, float inZ);
 
 	explicit Vector(IntVector inVector);
 
 	explicit Vector(IntPoint a);
 
-	explicit FORCEINLINE Vector();
+	explicit Vector();
 
 	FORCEINLINE Vector operator^(const Vector& v) const;
 
@@ -59,19 +60,19 @@ public:
 
 	FORCEINLINE Vector operator*(float scale) const;
 
-	Vector operator/(float scale) const;
+	FORCEINLINE Vector operator/(float scale) const;
 
 	FORCEINLINE Vector operator*(const Vector& v) const;
 
 	FORCEINLINE Vector operator/(const Vector& v) const;
 
-	bool operator==(const Vector& v) const;
+	FORCEINLINE bool operator==(const Vector& v) const;
 
-	bool operator!=(const Vector& v) const;
+	FORCEINLINE bool operator!=(const Vector& v) const;
 
-	bool Equals(const Vector& v, float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool Equals(const Vector& v, float tolerance = KINDA_SMALL_NUMBER) const;
 
-	bool AllComponentsEqual(float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool AllComponentsEqual(float tolerance = KINDA_SMALL_NUMBER) const;
 
 	FORCEINLINE Vector operator-() const;
 
@@ -81,93 +82,93 @@ public:
 
 	FORCEINLINE Vector operator*=(float scale);
 
-	Vector operator/=(float v);
+	FORCEINLINE Vector operator/=(float v);
 
-	Vector operator*=(const Vector& v);
+	FORCEINLINE Vector operator*=(const Vector& v);
 
-	Vector operator/=(const Vector& v);
+	FORCEINLINE Vector operator/=(const Vector& v);
 
-	float& operator[](int32 index);
+	FORCEINLINE float& operator[](int32 index);
 
-	float operator[](int32 index)const;
+	FORCEINLINE float operator[](int32 index)const;
 
-	float& component(int32 index);
+	FORCEINLINE float& component(int32 index);
 
-	float component(int32 index) const;
+	FORCEINLINE float component(int32 index) const;
 
-	float GetComponentForAxis(Axis::Type axis) const;
+	FORCEINLINE float GetComponentForAxis(Axis::Type axis) const;
 
-	void SetComponentForAxis(Axis::Type axis, float component);
+	FORCEINLINE void SetComponentForAxis(Axis::Type axis, float component);
 
-	void Set(float inX, float inY, float inZ);
+	FORCEINLINE void Set(float inX, float inY, float inZ);
 
-	float GetMax() const;
+	FORCEINLINE float GetMax() const;
 
-	float GetAbsMax() const;
+	FORCEINLINE float GetAbsMax() const;
 
-	float GetMin() const;
+	FORCEINLINE float GetMin() const;
 
-	float GetAbsMin() const;
+	FORCEINLINE float GetAbsMin() const;
 
-	Vector ComponentMin(const Vector& other) const;
+	FORCEINLINE Vector ComponentMin(const Vector& other) const;
 
-	Vector ComponentMax(const Vector& other) const;
+	FORCEINLINE Vector ComponentMax(const Vector& other) const;
 
-	Vector GetAbs() const;
+	FORCEINLINE Vector GetAbs() const;
 
-	float Size() const;
+	FORCEINLINE float Size() const;
 
-	float SizeSquared() const;
+	FORCEINLINE float SizeSquared() const;
 
-	float Size2D() const;
+	FORCEINLINE float Size2D() const;
 
-	float SizeSquared2D() const;
+	FORCEINLINE float SizeSquared2D() const;
 
-	bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool IsNearlyZero(float tolerance = KINDA_SMALL_NUMBER) const;
 
-	bool IsZero() const;
+	FORCEINLINE bool IsZero() const;
 
-	bool Normalize(float tolerance = SMALL_NUMBER);
+	FORCEINLINE bool Normalize(float tolerance = SMALL_NUMBER);
 
-	bool IsNormalized() const;
+	FORCEINLINE bool IsNormalized() const;
 
-	void ToDirectionAndLength(Vector &outDir, float &outLength) const;
+	FORCEINLINE void ToDirectionAndLength(Vector &outDir, float &outLength) const;
 
 	FORCEINLINE Vector GetSignVector() const;
 
-	Vector Projection() const;
+	FORCEINLINE Vector Projection() const;
 
 	FORCEINLINE Vector GetUnsafeNormal() const;
 
-	Vector GridSnap(const float& gridSz) const;
+	FORCEINLINE Vector GridSnap(const float& gridSz) const;
 
-	Vector BoundToCube(float radius) const;
+	FORCEINLINE Vector BoundToCube(float radius) const;
 
-	Vector BoundToBox(const Vector& min, const Vector max) const;
+	FORCEINLINE Vector BoundToBox(const Vector& min, const Vector max) const;
 
-	Vector GetClampedToSize(float min, float max) const;
+	FORCEINLINE Vector GetClampedToSize(float min, float max) const;
 
-	Vector GetClampedToSize2D(float min, float max) const;
+	FORCEINLINE Vector GetClampedToSize2D(float min, float max) const;
 
-	Vector GetClampedToMaxSize(float maxSize) const;
+	FORCEINLINE Vector GetClampedToMaxSize(float maxSize) const;
 
-	Vector GetClampedToMaxSize2D(float maxSize) const;
+	FORCEINLINE Vector GetClampedToMaxSize2D(float maxSize) const;
 
-	void AddBounded(const Vector& v, float radius = MAX_int16);
+	FORCEINLINE void AddBounded(const Vector& v, float radius = MAX_int16);
 
-	Vector Reciprocal() const;
+	FORCEINLINE Vector Reciprocal() const;
 
-	bool IsUniform(float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool IsUniform(float tolerance = KINDA_SMALL_NUMBER) const;
 
-	Vector MirrorByVector(const Vector& mirrorNormal) const;
+	FORCEINLINE Vector MirrorByVector(const Vector& mirrorNormal) const;
 
-	Vector RotateAngleAxis(const float angleDeg, const Vector& Axis) const;
+	FORCEINLINE Vector RotateAngleAxis(const float angleDeg, const Vector& Axis) const;
 
-	Vector GetSafeNormal(float tolerance = SMALL_NUMBER) const;
+	FORCEINLINE Vector GetSafeNormal(float tolerance = SMALL_NUMBER) const;
 
-	Vector GetSafeNormal2D(float tolerance = SMALL_NUMBER) const;
+	FORCEINLINE Vector GetSafeNormal2D(float tolerance = SMALL_NUMBER) const;
 
-	Vector GetUnsafeNormal2D() const;
+	FORCEINLINE Vector GetUnsafeNormal2D() const;
 
 	FORCEINLINE float CosineAngle2D(Vector b) const;
 
@@ -175,31 +176,39 @@ public:
 
 	FORCEINLINE Vector ProjectOnToNormal(const Vector& normal) const;
 
-	void FindBestAxisVectors(Vector& axis1, Vector& axis2) const;
+	FORCEINLINE void FindBestAxisVectors(Vector& axis1, Vector& axis2) const;
 
-	void UnwindEuler();
+	FORCEINLINE void UnwindEuler();
 
-	bool ContainsNaN() const;
+	FORCEINLINE bool ContainsNaN() const;
 
 	FORCEINLINE bool IsUnit(float lengthSquaredTolerance = KINDA_SMALL_NUMBER) const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 
-	Vector2 UnitCartesianToSpherical() const;
+	FORCEINLINE Vector2 UnitCartesianToSpherical() const;
 
-	float HeadingAngle() const;
+	FORCEINLINE float HeadingAngle() const;
 
-	static  void CreateOrthonormalBasis(Vector& xAxis, Vector& yAxis, Vector& zAxis);
+	FORCEINLINE Vector MirrorByPlane(const Plane& plane) const;
 
-	static bool PointsAreSame(const Vector &p, const Vector &q);
+	FORCEINLINE Quat ToOrientationQuat() const;
 
-	static bool PointsAreNear(const Vector &point1, const Vector &point2, float dist);
+	FORCEINLINE Rotator Rotation() const;
 
-	static float PointPlaneDist(const Vector &point, const Vector &planeBase, const Vector &planeNormal);
+	FORCEINLINE Rotator ToOrientationRotator() const;
 
-	static Vector PointPlaneProject(const Vector& point, const Vector& planeBase, const Vector& planeNormal);
+	static FORCEINLINE void CreateOrthonormalBasis(Vector& xAxis, Vector& yAxis, Vector& zAxis);
 
-	static Vector VectorPlaneProject(const Vector& v, const Vector& planeNormal);
+	static FORCEINLINE bool PointsAreSame(const Vector &p, const Vector &q);
+
+	static FORCEINLINE bool PointsAreNear(const Vector &point1, const Vector &point2, float dist);
+
+	static FORCEINLINE float PointPlaneDist(const Vector &point, const Vector &planeBase, const Vector &planeNormal);
+
+	static FORCEINLINE Vector PointPlaneProject(const Vector& point, const Vector& planeBase, const Vector& planeNormal);
+
+	static FORCEINLINE Vector VectorPlaneProject(const Vector& v, const Vector& planeNormal);
 
 	static FORCEINLINE float Dist(const Vector &v1, const Vector &v2);
 
@@ -217,27 +226,25 @@ public:
 
 	static FORCEINLINE float BoxPushOut(const Vector& normal, const Vector& Size);
 
-	static bool Parallel(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
+	static FORCEINLINE bool Parallel(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
 
-	static bool Coincident(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
+	static FORCEINLINE bool Coincident(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
 
-	static bool Orthogonal(const Vector& normal1, const Vector& normal2, float OrthogonalCosineThreshold = THRESH_NORMALS_ARE_ORTHOGONAL);
+	static FORCEINLINE bool Orthogonal(const Vector& normal1, const Vector& normal2, float OrthogonalCosineThreshold = THRESH_NORMALS_ARE_ORTHOGONAL);
 
-	static bool Coplanar(const Vector& Base1, const Vector& normal1, const Vector& Base2, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
+	static FORCEINLINE bool Coplanar(const Vector& Base1, const Vector& normal1, const Vector& Base2, const Vector& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
 
-	static float Triple(const Vector& x, const Vector& y, const Vector& z);
+	static FORCEINLINE float Triple(const Vector& x, const Vector& y, const Vector& z);
 
-	static  float EvaluateBezier(const Vector* controlPoints, int32 numPoints, std::vector<Vector>& outPoints);
+	static FORCEINLINE float EvaluateBezier(const Vector* controlPoints, int32 numPoints, std::vector<Vector>& outPoints);
 
-	static Vector RadiansToDegrees(const Vector& radVector);
+	static FORCEINLINE Vector RadiansToDegrees(const Vector& radVector);
 
-	static Vector DegreesToRadians(const Vector& degVector);
+	static FORCEINLINE Vector DegreesToRadians(const Vector& degVector);
 
-	Vector MirrorByPlane(const Plane& plane) const;
+	static FORCEINLINE Vector PointPlaneProject(const Vector& point, const Plane& plane);
 
-	static Vector PointPlaneProject(const Vector& point, const Plane& plane);
-
-	static Vector PointPlaneProject(const Vector& point, const Vector& a, const Vector& b, const Vector& c);
+	static FORCEINLINE Vector PointPlaneProject(const Vector& point, const Vector& a, const Vector& b, const Vector& c);
 
 	FORCEINLINE void DiagnosticCheckNaN() const
 	{
@@ -250,12 +257,49 @@ public:
 	}
 };
 
+FORCEINLINE Vector::Vector(const Vector2 v, float inZ)
+	: x(v.x), y(v.y), z(inZ)
+{
+	DiagnosticCheckNaN();
+}
+
+FORCEINLINE Vector::Vector()
+{
+
+}
+
+FORCEINLINE Vector::Vector(float inF)
+	: x(inF), y(inF), z(inF)
+{
+	DiagnosticCheckNaN();
+}
+
+FORCEINLINE Vector::Vector(float inX, float inY, float inZ)
+	: x(inX), y(inY), z(inZ)
+{
+	DiagnosticCheckNaN();
+}
+
+FORCEINLINE Vector::Vector(IntVector inVector)
+	: x((float)inVector.x)
+	, y((float)inVector.y)
+	, z((float)inVector.z)
+{
+	DiagnosticCheckNaN();
+}
+
+FORCEINLINE Vector::Vector(IntPoint a)
+	: x((float)a.x)
+	, y((float)a.y)
+	, z(0.f)
+{
+	DiagnosticCheckNaN();
+}
+
 FORCEINLINE Vector operator*(float scale, const Vector& v)
 {
 	return v.operator*(scale);
 }
-
-#define INTEL_ORDER_VECTOR(x) (x)
 
 FORCEINLINE float ComputeSquaredDistanceFromBoxToPoint(const Vector& mins, const Vector& maxs, const Vector& point)
 {
@@ -291,21 +335,7 @@ FORCEINLINE float ComputeSquaredDistanceFromBoxToPoint(const Vector& mins, const
 	return distSquared;
 }
 
-FORCEINLINE Vector::Vector(const Vector2 v, float inZ)
-	: x(v.x), y(v.y), z(inZ)
-{
-	DiagnosticCheckNaN();
-}
-
-FORCEINLINE IntVector::IntVector(Vector inVector)
-	: x(MMath::TruncToInt(inVector.x))
-	, y(MMath::TruncToInt(inVector.y))
-	, z(MMath::TruncToInt(inVector.z))
-{ 
-
-}
-
-inline Vector Vector::RotateAngleAxis(const float angleDeg, const Vector& axis) const
+FORCEINLINE Vector Vector::RotateAngleAxis(const float angleDeg, const Vector& axis) const
 {
 	float s, c;
 	MMath::SinCos(&s, &c, MMath::DegreesToRadians(angleDeg));
@@ -331,7 +361,7 @@ inline Vector Vector::RotateAngleAxis(const float angleDeg, const Vector& axis) 
 	);
 }
 
-inline void Vector::CreateOrthonormalBasis(Vector& xAxis, Vector& yAxis, Vector& zAxis)
+FORCEINLINE void Vector::CreateOrthonormalBasis(Vector& xAxis, Vector& yAxis, Vector& zAxis)
 {
 	xAxis -= (xAxis | zAxis) / (zAxis | zAxis) * zAxis;
 	yAxis -= (yAxis | zAxis) / (zAxis | zAxis) * zAxis;
@@ -351,7 +381,7 @@ inline void Vector::CreateOrthonormalBasis(Vector& xAxis, Vector& yAxis, Vector&
 	zAxis.Normalize();
 }
 
-inline bool Vector::PointsAreSame(const Vector &p, const Vector &q)
+FORCEINLINE bool Vector::PointsAreSame(const Vector &p, const Vector &q)
 {
 	float temp;
 	temp = p.x - q.x;
@@ -370,7 +400,7 @@ inline bool Vector::PointsAreSame(const Vector &p, const Vector &q)
 	return false;
 }
 
-inline bool Vector::PointsAreNear(const Vector &point1, const Vector &point2, float dist)
+FORCEINLINE bool Vector::PointsAreNear(const Vector &point1, const Vector &point2, float dist)
 {
 	float temp;
 	temp = (point1.x - point2.x); if (MMath::Abs(temp) >= dist) return false;
@@ -379,7 +409,7 @@ inline bool Vector::PointsAreNear(const Vector &point1, const Vector &point2, fl
 	return true;
 }
 
-inline float Vector::PointPlaneDist
+FORCEINLINE float Vector::PointPlaneDist
 (
 	const Vector &point,
 	const Vector &planeBase,
@@ -389,50 +419,51 @@ inline float Vector::PointPlaneDist
 	return (point - planeBase) | planeNormal;
 }
 
-inline Vector Vector::PointPlaneProject(const Vector& point, const Vector& planeBase, const Vector& PlaneNorm)
+FORCEINLINE Vector Vector::PointPlaneProject(const Vector& point, const Vector& planeBase, const Vector& PlaneNorm)
 {
 	return point - Vector::PointPlaneDist(point, planeBase, PlaneNorm) * PlaneNorm;
 }
 
-inline Vector Vector::VectorPlaneProject(const Vector& v, const Vector& planeNormal)
+FORCEINLINE Vector Vector::VectorPlaneProject(const Vector& v, const Vector& planeNormal)
 {
 	return v - v.ProjectOnToNormal(planeNormal);
 }
 
-inline bool Vector::Parallel(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold)
+FORCEINLINE bool Vector::Parallel(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold)
 {
 	const float NormalDot = normal1 | normal2;
 	return MMath::Abs(NormalDot) >= parallelCosineThreshold;
 }
 
-inline bool Vector::Coincident(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold)
+FORCEINLINE bool Vector::Coincident(const Vector& normal1, const Vector& normal2, float parallelCosineThreshold)
 {
 	const float NormalDot = normal1 | normal2;
 	return NormalDot >= parallelCosineThreshold;
 }
 
-inline bool Vector::Orthogonal(const Vector& normal1, const Vector& normal2, float OrthogonalCosineThreshold)
+FORCEINLINE bool Vector::Orthogonal(const Vector& normal1, const Vector& normal2, float OrthogonalCosineThreshold)
 {
 	const float NormalDot = normal1 | normal2;
 	return MMath::Abs(NormalDot) <= OrthogonalCosineThreshold;
 }
 
-inline bool Vector::Coplanar(const Vector &Base1, const Vector &normal1, const Vector &Base2, const Vector &normal2, float parallelCosineThreshold)
+FORCEINLINE bool Vector::Coplanar(const Vector &Base1, const Vector &normal1, const Vector &Base2, const Vector &normal2, float parallelCosineThreshold)
 {
 	if (!Vector::Parallel(normal1, normal2, parallelCosineThreshold)) return false;
 	else if (Vector::PointPlaneDist(Base2, Base1, normal1) > THRESH_POINT_ON_PLANE) return false;
 	else return true;
 }
 
-inline float Vector::Triple(const Vector& x, const Vector& y, const Vector& z)
+FORCEINLINE float Vector::Triple(const Vector& x, const Vector& y, const Vector& z)
 {
-	return
-		((x.x * (y.y * z.z - y.z * z.y))
-			+ (x.y * (y.z * z.x - y.x * z.z))
-			+ (x.z * (y.x * z.y - y.y * z.x)));
+	return (
+		(x.x * (y.y * z.z - y.z * z.y)) +
+		(x.y * (y.z * z.x - y.x * z.z)) +
+		(x.z * (y.x * z.y - y.y * z.x))
+		);
 }
 
-inline float Vector::EvaluateBezier(const Vector* controlPoints, int32 numPoints, std::vector<Vector>& outPoints)
+FORCEINLINE float Vector::EvaluateBezier(const Vector* controlPoints, int32 numPoints, std::vector<Vector>& outPoints)
 {
 	const float q = 1.f / (numPoints - 1);
 
@@ -446,10 +477,10 @@ inline float Vector::EvaluateBezier(const Vector* controlPoints, int32 numPoints
 	const Vector c = 3 * (p2 - 2 * p1 + p0);
 	const Vector d = p3 - 3 * p2 + 3 * p1 - p0;
 
-	Vector s = a;						
+	Vector s = a;
 	Vector u = b * q + c * q*q + d * q*q*q;
 	Vector v = 2 * c*q*q + 6 * d*q*q*q;
-	Vector w = 6 * d*q*q*q;				
+	Vector w = 6 * d*q*q*q;
 
 	float length = 0.f;
 
@@ -471,45 +502,14 @@ inline float Vector::EvaluateBezier(const Vector* controlPoints, int32 numPoints
 	return length;
 }
 
-inline Vector Vector::RadiansToDegrees(const Vector& radVector)
+FORCEINLINE Vector Vector::RadiansToDegrees(const Vector& radVector)
 {
 	return radVector * (180.f / PI);
 }
 
-inline Vector Vector::DegreesToRadians(const Vector& degVector)
+FORCEINLINE Vector Vector::DegreesToRadians(const Vector& degVector)
 {
 	return degVector * (PI / 180.f);
-}
-
-FORCEINLINE Vector::Vector()
-{
-
-}
-
-FORCEINLINE Vector::Vector(float inF)
-	: x(inF), y(inF), z(inF)
-{
-	DiagnosticCheckNaN();
-}
-
-FORCEINLINE Vector::Vector(float inX, float inY, float inZ)
-	: x(inX), y(inY), z(inZ)
-{
-	DiagnosticCheckNaN();
-}
-
-FORCEINLINE Vector::Vector(IntVector inVector)
-	: x(inVector.x)
-	, y(inVector.y)
-	, z(inVector.z)
-{
-	DiagnosticCheckNaN();
-}
-
-FORCEINLINE Vector::Vector(IntPoint a)
-	: x(a.x), y(a.y), z(0.f)
-{
-	DiagnosticCheckNaN();
 }
 
 FORCEINLINE Vector Vector::operator^(const Vector& v) const

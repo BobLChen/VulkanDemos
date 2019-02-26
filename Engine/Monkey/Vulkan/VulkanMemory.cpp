@@ -312,7 +312,7 @@ void VulkanDeviceMemoryManager::Destory()
 
 bool VulkanDeviceMemoryManager::SupportsMemoryType(VkMemoryPropertyFlags properties) const
 {
-    for (int32 index = 0; index < m_MemoryProperties.memoryTypeCount; ++index)
+    for (uint32 index = 0; index < m_MemoryProperties.memoryTypeCount; ++index)
     {
         if (m_MemoryProperties.memoryTypes[index].propertyFlags == properties)
         {
@@ -552,7 +552,7 @@ VulkanResourceHeapPage::VulkanResourceHeapPage(VulkanResourceHeap* owner, Vulkan
     , m_FrameFreed(0)
     , m_ID(id)
 {
-    m_MaxSize = m_DeviceMemoryAllocation->GetSize();
+    m_MaxSize = (uint32)m_DeviceMemoryAllocation->GetSize();
     VulkanRange fullRange;
     fullRange.offset = 0;
     fullRange.size   = m_MaxSize;
@@ -756,7 +756,7 @@ void VulkanResourceHeap::DumpMemory()
         {
             subAllocUsedMemory += usedPages[index]->m_UsedSize;
             subAllocAllocatedMemory += usedPages[index]->m_MaxSize;
-            numSubAllocations += usedPages[index]->m_ResourceAllocations.size();
+            numSubAllocations += (uint32)usedPages[index]->m_ResourceAllocations.size();
             MLOG("\t\t%d: ID %4d %4d suballocs, %4d free chunks (%d used/%d free/%d max) DeviceMemory %p", index, usedPages[index]->GetID(), (int32)usedPages[index]->m_ResourceAllocations.size(), (int32)usedPages[index]->m_FreeList.size(), usedPages[index]->m_UsedSize, usedPages[index]->m_MaxSize - usedPages[index]->m_UsedSize, usedPages[index]->m_MaxSize, (void*)usedPages[index]->m_DeviceMemoryAllocation->GetHandle());
         }
         
@@ -870,7 +870,7 @@ VulkanSubResourceAllocator::VulkanSubResourceAllocator(VulkanResourceHeapManager
     , m_FrameFreed(0)
     , m_UsedSize(0)
 {
-    m_MaxSize = deviceMemoryAllocation->GetSize();
+    m_MaxSize = (uint32)deviceMemoryAllocation->GetSize();
     VulkanRange fullRange;
     fullRange.offset = 0;
     fullRange.size   = m_MaxSize;

@@ -37,14 +37,19 @@ public:
 	static float sRGBToLinearTable[256];
 
 public:
+	
+	explicit LinearColor(const Color& Color);
 
-	FORCEINLINE explicit LinearColor()
-		: r(0), g(0), b(0), a(0)
+	explicit LinearColor()
+		: r(0)
+		, g(0)
+		, b(0)
+		, a(0)
 	{
 
 	}
 
-	constexpr FORCEINLINE LinearColor(float inR, float inG, float inB, float inA = 1.0f)
+	constexpr LinearColor(float inR, float inG, float inB, float inA = 1.0f)
 		: r(inR)
 		, g(inG)
 		, b(inB)
@@ -52,6 +57,20 @@ public:
 	{
 
 	}
+
+	FORCEINLINE Color ToRGBE() const;
+
+	FORCEINLINE LinearColor LinearRGBToHSV() const;
+
+	FORCEINLINE LinearColor HSVToLinearRGB() const;
+
+	FORCEINLINE Color Quantize() const;
+
+	FORCEINLINE Color QuantizeRound() const;
+
+	FORCEINLINE Color ToFColor(const bool sRGB) const;
+
+	FORCEINLINE LinearColor Desaturate(float desaturation) const;
 
 	FORCEINLINE float& Component(int32 index)
 	{
@@ -206,19 +225,14 @@ public:
 		return MMath::Abs(this->r - other.r) < tolerance && MMath::Abs(this->g - other.g) < tolerance && MMath::Abs(this->b - other.b) < tolerance && MMath::Abs(this->a - other.a) < tolerance;
 	}
 
-	LinearColor CopyWithNewOpacity(float newOpacicty) const
+	FORCEINLINE LinearColor CopyWithNewOpacity(float newOpacicty) const
 	{
 		LinearColor newCopy = *this;
 		newCopy.a = newOpacicty;
 		return newCopy;
 	}
 
-	static inline float Dist(const LinearColor &v1, const LinearColor &v2)
-	{
-		return MMath::Sqrt(MMath::Square(v2.r - v1.r) + MMath::Square(v2.g - v1.g) + MMath::Square(v2.b - v1.b) + MMath::Square(v2.a - v1.a));
-	}
-
-	inline float ComputeLuminance() const
+	FORCEINLINE float ComputeLuminance() const
 	{
 		return r * 0.3f + g * 0.59f + b * 0.11f;
 	}
@@ -228,7 +242,7 @@ public:
 		return MMath::Max(MMath::Max(MMath::Max(r, g), b), a);
 	}
 
-	bool IsAlmostBlack() const
+	FORCEINLINE bool IsAlmostBlack() const
 	{
 		return MMath::Square(r) < DELTA && MMath::Square(g) < DELTA && MMath::Square(b) < DELTA;
 	}
@@ -243,45 +257,28 @@ public:
 		return r * 0.3f + g * 0.59f + b * 0.11f;
 	}
 
-	std::string ToString() const
+	FORCEINLINE std::string ToString() const
 	{
 		return StringUtils::Printf("(r=%f,g=%f,b=%f,a=%f)", r, g, b, a);
 	}
 
+	static FORCEINLINE float Dist(const LinearColor &v1, const LinearColor &v2)
+	{
+		return MMath::Sqrt(MMath::Square(v2.r - v1.r) + MMath::Square(v2.g - v1.g) + MMath::Square(v2.b - v1.b) + MMath::Square(v2.a - v1.a));
+	}
+
 	static LinearColor GetHSV(uint8 h, uint8 s, uint8 v);
 
-	static  LinearColor MakeRandomColor();
+	static LinearColor MakeRandomColor();
 
-	static  LinearColor MakeFromColorTemperature(float temp);
-
-	explicit LinearColor(const Color& Color);
-
-	Color ToRGBE() const;
+	static LinearColor MakeFromColorTemperature(float temp);
 
 	static LinearColor FromSRGBColor(const Color& Color);
 
 	static LinearColor FromPow22Color(const Color& Color);
 
-	LinearColor LinearRGBToHSV() const;
-
-	LinearColor HSVToLinearRGB() const;
-
 	static LinearColor LerpUsingHSV(const LinearColor& from, const LinearColor& to, const float progress);
-
-	Color Quantize() const;
-
-	Color QuantizeRound() const;
-
-	Color ToFColor(const bool sRGB) const;
-
-	LinearColor Desaturate(float desaturation) const;
-
 };
-
-FORCEINLINE LinearColor operator*(float scalar, const LinearColor& Color)
-{
-	return Color.operator*(scalar);
-}
 
 struct Color
 {
@@ -309,12 +306,12 @@ public:
 
 public:
 
-	FORCEINLINE Color() 
+	Color() 
 	{
 
 	}
 
-	constexpr FORCEINLINE Color(uint8 inR, uint8 inG, uint8 inB, uint8 inA = 255)
+	constexpr Color(uint8 inR, uint8 inG, uint8 inB, uint8 inA = 255)
 		: b(inB)
 		, g(inG)
 		, r(inR)
@@ -323,17 +320,17 @@ public:
 
 	}
 
-	FORCEINLINE explicit Color(uint32 inColor)
+	explicit Color(uint32 inColor)
 	{
 		DWColor() = inColor;
 	}
 
-	uint32& DWColor() 
+	FORCEINLINE uint32& DWColor()
 	{ 
 		return *((uint32*)this);
 	}
 
-	const uint32& DWColor() const 
+	FORCEINLINE const uint32& DWColor() const
 	{ 
 		return *((uint32*)this);
 	}
@@ -356,7 +353,7 @@ public:
 		a = (uint8)MMath::Min((int32)a + (int32)C.a, 255);
 	}
 
-	Color WithAlpha(uint8 alpha) const
+	FORCEINLINE Color WithAlpha(uint8 alpha) const
 	{
 		return Color(r, g, b, alpha);
 	}
@@ -402,8 +399,13 @@ public:
 
 	static Color MakeRedToGreenColorFromScalar(float scalar);
 
-	static  Color MakeFromColorTemperature(float temp);
+	static Color MakeFromColorTemperature(float temp);
 
 private:
 	explicit Color(const LinearColor& linearColor);
 };
+
+FORCEINLINE LinearColor operator*(float scalar, const LinearColor& Color)
+{
+	return Color.operator*(scalar);
+}

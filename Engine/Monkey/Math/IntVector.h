@@ -29,49 +29,49 @@ public:
 
 	explicit IntVector(Vector v);
 
-	const int32& operator()(int32 index) const;
+	FORCEINLINE const int32& operator()(int32 index) const;
 
-	int32& operator()(int32 index);
+	FORCEINLINE int32& operator()(int32 index);
 
-	const int32& operator[](int32 index) const;
+	FORCEINLINE const int32& operator[](int32 index) const;
 
-	int32& operator[](int32 index);
+	FORCEINLINE int32& operator[](int32 index);
 
-	bool operator==(const IntVector& other) const;
+	FORCEINLINE bool operator==(const IntVector& other) const;
 
-	bool operator!=(const IntVector& other) const;
+	FORCEINLINE bool operator!=(const IntVector& other) const;
 
-	IntVector& operator*=(int32 scale);
+	FORCEINLINE IntVector& operator*=(int32 scale);
 
-	IntVector& operator/=(int32 divisor);
+	FORCEINLINE IntVector& operator/=(int32 divisor);
 
-	IntVector& operator+=(const IntVector& other);
+	FORCEINLINE IntVector& operator+=(const IntVector& other);
 
-	IntVector& operator-=(const IntVector& other);
+	FORCEINLINE IntVector& operator-=(const IntVector& other);
 
-	IntVector& operator=(const IntVector& other);
+	FORCEINLINE IntVector& operator=(const IntVector& other);
 
-	IntVector operator*(int32 scale) const;
+	FORCEINLINE IntVector operator*(int32 scale) const;
 
-	IntVector operator/(int32 divisor) const;
+	FORCEINLINE IntVector operator/(int32 divisor) const;
 
-	IntVector operator+(const IntVector& other) const;
+	FORCEINLINE IntVector operator+(const IntVector& other) const;
 
-	IntVector operator-(const IntVector& other) const;
+	FORCEINLINE IntVector operator-(const IntVector& other) const;
 
-	bool IsZero() const;
+	FORCEINLINE bool IsZero() const;
 
-	float GetMax() const;
+	FORCEINLINE int32 GetMax() const;
 
-	float GetMin() const;
+	FORCEINLINE int32 GetMin() const;
 
-	int32 Size() const;
+	FORCEINLINE int32 Size() const;
 
-	std::string ToString() const;
+	FORCEINLINE std::string ToString() const;
 
-	static IntVector DivideAndRoundUp(IntVector lhs, int32 divisor);
+	FORCEINLINE static IntVector DivideAndRoundUp(IntVector lhs, int32 divisor);
 
-	static int32 Num();
+	FORCEINLINE static int32 Num();
 };
 
 FORCEINLINE IntVector::IntVector()
@@ -193,14 +193,14 @@ FORCEINLINE IntVector IntVector::DivideAndRoundUp(IntVector lhs, int32 divisor)
 	return IntVector(MMath::DivideAndRoundUp(lhs.x, divisor), MMath::DivideAndRoundUp(lhs.y, divisor), MMath::DivideAndRoundUp(lhs.z, divisor));
 }
 
-FORCEINLINE float IntVector::GetMax() const
+FORCEINLINE int32 IntVector::GetMax() const
 {
-	return MMath::Max(MMath::Max(x, y), z);
+	return MMath::Max<int32>(MMath::Max<int32>(x, y), z);
 }
 
-FORCEINLINE float IntVector::GetMin() const
+FORCEINLINE int32 IntVector::GetMin() const
 {
-	return MMath::Min(MMath::Min(x, y), z);
+	return MMath::Min<int32>(MMath::Min<int32>(x, y), z);
 }
 
 FORCEINLINE int32 IntVector::Num()
@@ -228,11 +228,13 @@ FORCEINLINE std::string IntVector::ToString() const
 
 struct IntVector4
 {
+public:
 	int32 x;
 	int32 y;
 	int32 z;
 	int32 w;
 
+public:
 	FORCEINLINE IntVector4()
 	{
 
@@ -279,11 +281,13 @@ struct IntVector4
 
 struct UintVector4
 {
+public:
 	uint32 x;
 	uint32 y;
 	uint32 z;
 	uint32 w;
 
+public:
 	FORCEINLINE UintVector4()
 	{
 

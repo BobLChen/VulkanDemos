@@ -13,81 +13,64 @@ public:
 
 public:
 
-	FORCEINLINE Plane();
+	Plane();
 
-	FORCEINLINE Plane(const Plane& p);
+	Plane(const Plane& p);
 
-	FORCEINLINE Plane(const Vector4& v);
+	Plane(const Vector4& v);
 
-	FORCEINLINE Plane(float inX, float inY, float inZ, float inW);
+	Plane(float inX, float inY, float inZ, float inW);
 
-	FORCEINLINE Plane(Vector inNormal, float inW);
+	Plane(Vector inNormal, float inW);
 
-	FORCEINLINE Plane(Vector inBase, const Vector &inNormal);
+	Plane(Vector inBase, const Vector &inNormal);
 
 	Plane(Vector a, Vector b, Vector c);
 
 	FORCEINLINE float PlaneDot(const Vector &p) const;
 
-	bool Normalize(float tolerance = SMALL_NUMBER);
+	FORCEINLINE bool Normalize(float tolerance = SMALL_NUMBER);
 	
-	Plane Flip() const;
+	FORCEINLINE Plane Flip() const;
 
-	Plane TransformBy(const Matrix4x4& m) const;
+	FORCEINLINE Plane TransformBy(const Matrix4x4& m) const;
 
-	Plane TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matrix4x4& ta) const;
+	FORCEINLINE Plane TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matrix4x4& ta) const;
 
-	bool operator==(const Plane& v) const;
+	FORCEINLINE bool operator==(const Plane& v) const;
 
-	bool operator!=(const Plane& v) const;
+	FORCEINLINE bool operator!=(const Plane& v) const;
 
-	bool Equals(const Plane& v, float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCEINLINE bool Equals(const Plane& v, float tolerance = KINDA_SMALL_NUMBER) const;
 
 	FORCEINLINE float operator|(const Plane& v) const;
 
-	Plane operator+(const Plane& v) const;
+	FORCEINLINE Plane operator+(const Plane& v) const;
 
-	Plane operator-(const Plane& v) const;
+	FORCEINLINE Plane operator-(const Plane& v) const;
 
-	Plane operator/(float scale) const;
+	FORCEINLINE Plane operator/(float scale) const;
 
-	Plane operator*(float scale) const;
+	FORCEINLINE Plane operator*(float scale) const;
 
-	Plane operator*(const Plane& v);
+	FORCEINLINE Plane operator*(const Plane& v);
 
-	Plane operator+=(const Plane& v);
+	FORCEINLINE Plane operator+=(const Plane& v);
 
-	Plane operator-=(const Plane& v);
+	FORCEINLINE Plane operator-=(const Plane& v);
 
-	Plane operator*=(float scale);
+	FORCEINLINE Plane operator*=(float scale);
 
-	Plane operator*=(const Plane& v);
+	FORCEINLINE Plane operator*=(const Plane& v);
 
-	Plane operator/=(float v);
+	FORCEINLINE Plane operator/=(float v);
 
 };
-
-inline Vector Vector::MirrorByPlane(const Plane& plane) const
-{
-	return *this - plane * (2.f * plane.PlaneDot(*this));
-}
-
-inline Vector Vector::PointPlaneProject(const Vector& point, const Plane& plane)
-{
-	return point - plane.PlaneDot(point) * plane;
-}
-
-inline Vector Vector::PointPlaneProject(const Vector& point, const Vector& a, const Vector& b, const Vector& c)
-{
-	Plane plane(a, b, c);
-	return point - plane.PlaneDot(point) * plane;
-}
 
 FORCEINLINE Plane::Plane()
 {
 
 }
-
 
 FORCEINLINE Plane::Plane(const Plane& p)
 	: Vector(p)

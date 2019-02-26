@@ -7,20 +7,32 @@
 #include "Vector.h"
 #include "IntVector.h"
 #include "Plane.h"
+#include "Quat.h"
+#include "Rotator.h"
 
+// ---------------------------------------- Globals ----------------------------------------
+
+// IntPoint
 const IntPoint IntPoint::ZeroValue(0,  0);
 const IntPoint IntPoint::NoneValue(-1, -1);
+// IntVector
 const IntVector IntVector::ZeroValue(0, 0, 0);
 const IntVector IntVector::NoneValue(-1, -1, -1);
-
+// Vector2
 const Vector2 Vector2::ZeroVector(0.0f, 0.0f);
 const Vector2 Vector2::UnitVector(1.0f, 1.0f);
-
+// Vector
 const Vector Vector::ZeroVector(0.0f, 0.0f, 0.0f);
 const Vector Vector::OneVector(1.0f, 1.0f, 1.0f);
 const Vector Vector::UpVector(0.0f, 1.0f, 0.0f);
 const Vector Vector::ForwardVector(0.0f, 0.0f, 1.0f);
 const Vector Vector::RightVector(1.0f, 0.0f, 0.0f);
+// rotator
+const Rotator Rotator::ZeroRotator(0.f, 0.f, 0.f);
+// quat
+const Quat Quat::Identity(0, 0, 0, 1);
+// matrix
+const Matrix4x4 Matrix4x4::Identity(Plane(1, 0, 0, 0), Plane(0, 1, 0, 0), Plane(0, 0, 1, 0), Plane(0, 0, 0, 1));
 
 const uint32 MMath::BitFlag[32] =
 {
@@ -34,12 +46,53 @@ const uint32 MMath::BitFlag[32] =
 	(1U << 28),	(1U << 29),	(1U << 30),	(1U << 31),
 };
 
-inline Vector MMath::LinePlaneIntersection(const Vector &point1, const Vector &point2, const Vector &planeOrigin, const Vector &planeNormal)
+// ---------------------------------------- Helper ----------------------------------------
+Quat FindBetweenHelper(const Vector& a, const Vector& b, float normAB)
+{
+	float w = normAB + Vector::DotProduct(a, b);
+	Quat result;
+
+	if (w >= 1e-6f * normAB)
+	{
+		result = Quat(
+			a.y * b.z - a.z * b.y,
+			a.z * b.x - a.x * b.z,
+			a.x * b.y - a.y * b.x,
+			w
+		);
+	}
+	else
+	{
+		w = 0.f;
+		result = MMath::Abs(a.x) > MMath::Abs(a.y)
+			? Quat(-a.z, 0.f, a.x, w)
+			: Quat(0.f, -a.z, a.y, w);
+	}
+
+	result.Normalize();
+	return result;
+}
+
+// ---------------------------------------- Math ----------------------------------------
+
+template<class U>
+Rotator MMath::Lerp(const Rotator& a, const Rotator& b, const U& alpha)
+{
+	return a + (b - a).GetNormalized() * alpha;
+}
+
+template<class U>
+Rotator MMath::LerpRange(const Rotator& a, const Rotator& b, const U& alpha)
+{
+	return (a * (1 - alpha) + b * alpha).GetNormalized();
+}
+
+Vector MMath::LinePlaneIntersection(const Vector &point1, const Vector &point2, const Vector &planeOrigin, const Vector &planeNormal)
 {
 	return point1 + (point2 - point1) * (((planeOrigin - point1) | planeNormal) / ((point2 - point1) | planeNormal));
 }
 
-inline Vector MMath::GetReflectionVector(const Vector& direction, const Vector& surfaceNormal)
+Vector MMath::GetReflectionVector(const Vector& direction, const Vector& surfaceNormal)
 {
 	return direction - 2 * (direction | surfaceNormal.GetSafeNormal()) * surfaceNormal.GetSafeNormal();
 }
@@ -71,6 +124,89 @@ bool MMath::GetDotDistance(Vector2 &outDotDist, const Vector &direction, const V
 	return (dirDotX >= 0.f);
 }
 
+Vector MMath::VRandCone(Vector const& dir, float coneHalfAngleRad)
+{
+	if (coneHalfAngleRad > 0.f)
+	{
+		float const randU = MMath::FRand();
+		float const randV = MMath::FRand();
+
+		float theta = 2.f * PI * randU;
+		float phi = MMath::Acos((2.f * randV) - 1.f);
+
+		phi = MMath::Fmod(phi, coneHalfAngleRad);
+
+		Matrix4x4 const dirMat(dir.Rotation(), Vector::ZeroVector);
+		Vector const dirZ = dirMat.GetScaledAxis(Axis::X);
+		Vector const dirY = dirMat.GetScaledAxis(Axis::Y);
+
+		Vector result = dir.RotateAngleAxis(phi * 180.f / PI, dirY);
+		result = result.RotateAngleAxis(theta * 180.f / PI, dirZ);
+		result = result.GetSafeNormal();
+
+		return result;
+	}
+	else
+	{
+		return dir.GetSafeNormal();
+	}
+}
+
+Vector MMath::VRandCone(Vector const& dir, float HorizontalConeHalfAngleRad, float VerticalConeHalfAngleRad)
+{
+	if ((VerticalConeHalfAngleRad > 0.f) && (HorizontalConeHalfAngleRad > 0.f))
+	{
+		float const randU = MMath::FRand();
+		float const randV = MMath::FRand();
+
+		float theta = 2.f * PI * randU;
+		float phi = MMath::Acos((2.f * randV) - 1.f);
+
+		float coneHalfAngleRad = MMath::Square(MMath::Cos(theta) / VerticalConeHalfAngleRad) + MMath::Square(MMath::Sin(theta) / HorizontalConeHalfAngleRad);
+		coneHalfAngleRad = MMath::Sqrt(1.f / coneHalfAngleRad);
+
+		phi = MMath::Fmod(phi, coneHalfAngleRad);
+
+		Matrix4x4 const dirMat(dir.Rotation(), Vector::ZeroVector);
+		Vector const dirZ = dirMat.GetScaledAxis(Axis::X);
+		Vector const dirY = dirMat.GetScaledAxis(Axis::Y);
+
+		Vector result = dir.RotateAngleAxis(phi * 180.f / PI, dirY);
+		result = result.RotateAngleAxis(theta * 180.f / PI, dirZ);
+		result = result.GetSafeNormal();
+
+		return result;
+	}
+	else
+	{
+		return dir.GetSafeNormal();
+	}
+}
+
+template<class U>
+Quat MMath::Lerp(const Quat& a, const Quat& b, const U& alpha)
+{
+	return Quat::slerp(a, b, alpha);
+}
+
+template<class U>
+Quat MMath::BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY)
+{
+	Quat result;
+	result = Lerp(
+		Quat::SlerpNotNormalized(p00, p10, fracX),
+		Quat::SlerpNotNormalized(p01, p11, fracX),
+		fracY
+	);
+	return result;
+}
+
+template<class U>
+Quat MMath::CubicInterp(const Quat& P0, const Quat& T0, const Quat& P1, const Quat& T1, const U& a)
+{
+	return Quat::Squad(P0, T0, P1, T1, a);
+}
+
 Vector2 MMath::GetAzimuthAndElevation(const Vector &Direction, const Vector &AxisX, const Vector &AxisY, const Vector &AxisZ)
 {
 	const Vector normalDir = Direction.GetSafeNormal();
@@ -83,12 +219,12 @@ Vector2 MMath::GetAzimuthAndElevation(const Vector &Direction, const Vector &Axi
 	return Vector2(MMath::Acos(azimuthCos) * azimuthSign, MMath::Asin(elevationSin));
 }
 
-FORCEINLINE float MMath::GetRangePct(Vector2 const& range, float value)
+float MMath::GetRangePct(Vector2 const& range, float value)
 {
 	return GetRangePct(range.x, range.y, value);
 }
 
-FORCEINLINE float MMath::GetRangeValue(Vector2 const& range, float pct)
+float MMath::GetRangeValue(Vector2 const& range, float pct)
 {
 	return Lerp<float>(range.x, range.y, pct);
 }
@@ -105,7 +241,7 @@ void MMath::PolarToCartesian(const Vector2 inPolar, Vector2& outCart)
 	outCart.y = inPolar.x * Sin(inPolar.y);
 }
 
-inline Vector MMath::RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane)
+Vector MMath::RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane)
 {
 	const Vector planeNormal = Vector(plane.x, plane.y, plane.z);
 	const Vector planeOrigin = planeNormal * plane.w;
@@ -114,12 +250,12 @@ inline Vector MMath::RayPlaneIntersection(const Vector& rayOrigin, const Vector&
 	return rayOrigin + rayDirection * distance;
 }
 
-inline Vector MMath::LinePlaneIntersection(const Vector& point1, const Vector& point2, const Plane& plane)
+Vector MMath::LinePlaneIntersection(const Vector& point1, const Vector& point2, const Plane& plane)
 {
 	return point1 + (point2 - point1) *	((plane.w - (point1 | plane)) / ((point2 - point1) | plane));
 }
 
-inline Vector MMath::VRand()
+Vector MMath::VRand()
 {
 	Vector result;
 	float l;
@@ -133,7 +269,7 @@ inline Vector MMath::VRand()
 	return result * (1.0f / Sqrt(l));
 }
 
-inline bool MMath::LineSphereIntersection(const Vector& start, const Vector& dir, float length, const Vector& origin, float radius)
+bool MMath::LineSphereIntersection(const Vector& start, const Vector& dir, float length, const Vector& origin, float radius)
 {
 	const Vector eo = start - origin;
 	const float	 v = (dir | (origin - start));
@@ -331,4 +467,330 @@ float MMath::PerlinNoise1D(const float value)
 	const float v = rx1 * g[p[bx1]];
 
 	return 2.0f * (u + sx * (v - u));
+}
+
+// ---------------------------------------- Quat ----------------------------------------
+
+Quat Quat::MakeFromEuler(const Vector& euler)
+{
+	return Rotator::MakeFromEuler(euler).Quaternion();
+}
+
+Vector Quat::Euler() const
+{
+	return Rotator().Euler();
+}
+
+void Quat::ToSwingTwist(const Vector& inTwistAxis, Quat& outSwing, Quat& outTwist) const
+{
+
+	Vector projection = Vector::DotProduct(inTwistAxis, Vector(x, y, z)) * inTwistAxis;
+
+	outTwist = Quat(projection.x, projection.y, projection.z, w);
+
+	if (outTwist.SizeSquared() == 0.0f)
+	{
+		outTwist = Quat::Identity;
+	}
+	else
+	{
+		outTwist.Normalize();
+	}
+
+	outSwing = *this * outTwist.Inverse();
+}
+
+Rotator Quat::GetRotator() const
+{
+	DiagnosticCheckNaN();
+	const float singularityTest = z * x - w * y;
+	const float yawY = 2.f * (w * z + x * y);
+	const float yawX = (1.f - 2.f * (MMath::Square(y) + MMath::Square(z)));
+
+	const float SINGULARITY_THRESHOLD = 0.4999995f;
+	const float RAD_TO_DEG = (180.f) / PI;
+	Rotator rotatorFromQuat;
+
+	if (singularityTest < -SINGULARITY_THRESHOLD)
+	{
+		rotatorFromQuat.pitch = -90.f;
+		rotatorFromQuat.yaw = MMath::Atan2(yawY, yawX) * RAD_TO_DEG;
+		rotatorFromQuat.roll = Rotator::NormalizeAxis(-rotatorFromQuat.yaw - (2.f * MMath::Atan2(x, w) * RAD_TO_DEG));
+	}
+	else if (singularityTest > SINGULARITY_THRESHOLD)
+	{
+		rotatorFromQuat.pitch = 90.f;
+		rotatorFromQuat.yaw = MMath::Atan2(yawY, yawX) * RAD_TO_DEG;
+		rotatorFromQuat.roll = Rotator::NormalizeAxis(rotatorFromQuat.yaw - (2.f * MMath::Atan2(x, w) * RAD_TO_DEG));
+	}
+	else
+	{
+		rotatorFromQuat.pitch = MMath::FastAsin(2.f*(singularityTest)) * RAD_TO_DEG;
+		rotatorFromQuat.yaw = MMath::Atan2(yawY, yawX) * RAD_TO_DEG;
+		rotatorFromQuat.roll = MMath::Atan2(-2.f * (w * x + y * z), (1.f - 2.f * (MMath::Square(x) + MMath::Square(y)))) * RAD_TO_DEG;
+	}
+
+	return rotatorFromQuat;
+}
+
+Quat Quat::FindBetweenNormals(const Vector& a, const Vector& b)
+{
+	const float normAB = 1.f;
+	return FindBetweenHelper(a, b, normAB);
+}
+
+Quat Quat::FindBetweenVectors(const Vector& a, const Vector& b)
+{
+	const float normAB = MMath::Sqrt(a.SizeSquared() * b.SizeSquared());
+	return FindBetweenHelper(a, b, normAB);
+}
+
+Quat Quat::SlerpFullPathNotNormalized(const Quat &quat1, const Quat &quat2, float alpha)
+{
+	const float cosAngle = MMath::Clamp(quat1 | quat2, -1.f, 1.f);
+	const float angle = MMath::Acos(cosAngle);
+
+	if (MMath::Abs(angle) < KINDA_SMALL_NUMBER)
+	{
+		return quat1;
+	}
+
+	const float sinAngle = MMath::Sin(angle);
+	const float invSinAngle = 1.f / sinAngle;
+	const float scale0 = MMath::Sin((1.0f - alpha) * angle) * invSinAngle;
+	const float scale1 = MMath::Sin(alpha * angle) * invSinAngle;
+
+	return quat1 * scale0 + quat2 * scale1;
+}
+
+Quat Quat::Squad(const Quat& quat1, const Quat& tang1, const Quat& quat2, const Quat& tang2, float Alpha)
+{
+	const Quat q1 = Quat::SlerpNotNormalized(quat1, quat2, Alpha);
+	const Quat q2 = Quat::SlerpFullPathNotNormalized(tang1, tang2, Alpha);
+	const Quat result = Quat::SlerpFullPath(q1, q2, 2.f * Alpha * (1.f - Alpha));
+
+	return result;
+}
+
+Quat Quat::SquadFullPath(const Quat& quat1, const Quat& tang1, const Quat& quat2, const Quat& tang2, float Alpha)
+{
+	const Quat q1 = Quat::SlerpFullPathNotNormalized(quat1, quat2, Alpha);
+	const Quat q2 = Quat::SlerpFullPathNotNormalized(tang1, tang2, Alpha);
+	const Quat result = Quat::SlerpFullPath(q1, q2, 2.f * Alpha * (1.f - Alpha));
+
+	return result;
+}
+
+void Quat::CalcTangents(const Quat& PrevP, const Quat& P, const Quat& NextP, float Tension, Quat& OutTan)
+{
+	const Quat InvP = P.Inverse();
+	const Quat Part1 = (InvP * PrevP).Log();
+	const Quat Part2 = (InvP * NextP).Log();
+
+	const Quat PreExp = (Part1 + Part2) * -0.5f;
+
+	OutTan = P * PreExp.Exp();
+}
+
+Quat Quat::SlerpNotNormalized(const Quat& quat1, const Quat& quat2, float slerp)
+{
+	const float RawCosom =
+		quat1.x * quat2.x +
+		quat1.y * quat2.y +
+		quat1.z * quat2.z +
+		quat1.w * quat2.w;
+
+	const float cosom = MMath::FloatSelect(RawCosom, RawCosom, -RawCosom);
+
+	float scale0, scale1;
+
+	if (cosom < 0.9999f)
+	{
+		const float omega = MMath::Acos(cosom);
+		const float invSin = 1.f / MMath::Sin(omega);
+		scale0 = MMath::Sin((1.f - slerp) * omega) * invSin;
+		scale1 = MMath::Sin(slerp * omega) * invSin;
+	}
+	else
+	{
+		scale0 = 1.0f - slerp;
+		scale1 = slerp;
+	}
+
+	scale1 = MMath::FloatSelect(RawCosom, scale1, -scale1);
+
+	Quat result;
+	result.x = scale0 * quat1.x + scale1 * quat2.x;
+	result.y = scale0 * quat1.y + scale1 * quat2.y;
+	result.z = scale0 * quat1.z + scale1 * quat2.z;
+	result.w = scale0 * quat1.w + scale1 * quat2.w;
+
+	return result;
+}
+
+// ---------------------------------------- Rotator ----------------------------------------
+
+Vector Rotator::RotateVector(const Vector& v) const
+{
+	Matrix4x4 matrix4x4(*this, Vector::ZeroVector);
+	return matrix4x4.TransformVector(v);
+}
+
+Vector Rotator::UnrotateVector(const Vector& v) const
+{
+	Matrix4x4 matrix4x4(*this, Vector::ZeroVector);
+	return matrix4x4.GetTransposed().TransformVector(v);
+}
+
+Rotator::Rotator(const Quat& quat)
+{
+	*this = quat.GetRotator();
+	DiagnosticCheckNaN();
+}
+
+Rotator Rotator::GetInverse() const
+{
+	return Quaternion().Inverse().GetRotator();
+}
+
+Quat Rotator::Quaternion() const
+{
+	DiagnosticCheckNaN();
+
+	const float DEG_TO_RAD = PI / (180.f);
+	const float DIVIDE_BY_2 = DEG_TO_RAD / 2.f;
+	float sp, sy, sr;
+	float cp, cy, cr;
+
+	MMath::SinCos(&sp, &cp, pitch * DIVIDE_BY_2);
+	MMath::SinCos(&sy, &cy, yaw * DIVIDE_BY_2);
+	MMath::SinCos(&sr, &cr, roll * DIVIDE_BY_2);
+
+	Quat rotationQuat;
+	rotationQuat.x = cr * sp * sy - sr * cp * cy;
+	rotationQuat.y = -cr * sp * cy - sr * cp * sy;
+	rotationQuat.z = cr * cp * sy - sr * sp * cy;
+	rotationQuat.w = cr * cp * cy + sr * sp * sy;
+
+	return rotationQuat;
+}
+
+// ---------------------------------------- Vector ----------------------------------------
+
+Vector::Vector(const Vector4& v)
+	: x(v.x)
+	, y(v.y)
+	, z(v.z)
+{
+	DiagnosticCheckNaN();
+}
+
+Rotator Vector::Rotation() const
+{
+	return ToOrientationRotator();
+}
+
+Rotator Vector::ToOrientationRotator() const
+{
+	Rotator r;
+
+	r.yaw = MMath::Atan2(y, x) * (180.f / PI);
+	r.pitch = MMath::Atan2(z, MMath::Sqrt(x * x + y * y)) * (180.f / PI);
+	r.roll = 0;
+
+	return r;
+}
+
+Quat Vector::ToOrientationQuat() const
+{
+	const float yawRad = MMath::Atan2(y, x);
+	const float pitchRad = MMath::Atan2(z, MMath::Sqrt(x * x + y * y));
+	const float DIVIDE_BY_2 = 0.5f;
+
+	float sp, sy;
+	float cp, cy;
+
+	MMath::SinCos(&sp, &cp, pitchRad * DIVIDE_BY_2);
+	MMath::SinCos(&sy, &cy, yawRad * DIVIDE_BY_2);
+	
+	Quat rotationQuat;
+	rotationQuat.x = sp * sy;
+	rotationQuat.y = -sp * cy;
+	rotationQuat.z = cp * sy;
+	rotationQuat.w = cp * cy;
+
+	return rotationQuat;
+}
+
+Vector Vector::MirrorByPlane(const Plane& plane) const
+{
+	return *this - plane * (2.f * plane.PlaneDot(*this));
+}
+
+Vector Vector::PointPlaneProject(const Vector& point, const Plane& plane)
+{
+	return point - plane.PlaneDot(point) * plane;
+}
+
+Vector Vector::PointPlaneProject(const Vector& point, const Vector& a, const Vector& b, const Vector& c)
+{
+	Plane plane(a, b, c);
+	return point - plane.PlaneDot(point) * plane;
+}
+
+// ---------------------------------------- IntVector ----------------------------------------
+
+IntVector::IntVector(Vector inVector)
+	: x(MMath::TruncToInt(inVector.x))
+	, y(MMath::TruncToInt(inVector.y))
+	, z(MMath::TruncToInt(inVector.z))
+{
+
+}
+
+// ---------------------------------------- Matrix4x4 ----------------------------------------
+
+Rotator Matrix4x4::ToRotator() const
+{
+	const Vector xAxis = GetScaledAxis(Axis::X);
+	const Vector yAxis = GetScaledAxis(Axis::Y);
+	const Vector zAxis = GetScaledAxis(Axis::Z);
+
+	Rotator	rotator = Rotator(
+		MMath::Atan2(xAxis.z, MMath::Sqrt(MMath::Square(xAxis.x) + MMath::Square(xAxis.y))) * 180.f / PI,
+		MMath::Atan2(xAxis.y, xAxis.x) * 180.f / PI,
+		0
+	);
+
+	const Vector syAxis = Matrix4x4(rotator, Vector::ZeroVector).GetScaledAxis(Axis::Y);
+	rotator.roll = MMath::Atan2(zAxis | syAxis, yAxis | syAxis) * 180.f / PI;
+	rotator.DiagnosticCheckNaN();
+	return rotator;
+}
+
+Quat Matrix4x4::ToQuat() const
+{
+	Quat result(*this);
+	return result;
+}
+
+// ---------------------------------------- Plane ----------------------------------------
+
+Plane Plane::TransformBy(const Matrix4x4& m) const
+{
+	const Matrix4x4 tmpTA = m.TransposeAdjoint();
+	const float detM = m.Determinant();
+	return this->TransformByUsingAdjointT(m, detM, tmpTA);
+}
+
+Plane Plane::TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matrix4x4& ta) const
+{
+	Vector newNorm = ta.TransformVector(*this).GetSafeNormal();
+
+	if (detM < 0.f)
+	{
+		newNorm *= -1.0f;
+	}
+
+	return Plane(m.TransformPosition(*this * w), newNorm);
 }

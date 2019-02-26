@@ -10,6 +10,7 @@ struct Plane;
 struct Vector;
 struct Vector2;
 struct Quat;
+struct Matrix4x4;
 
 #undef  PI
 #define PI 					(3.1415926535897932f)
@@ -65,6 +66,10 @@ struct Quat;
 
 struct MMath : public PlatformMath
 {
+public:
+	static const uint32 BitFlag[32];
+
+public:
 	static FORCEINLINE int32 RandHelper(int32 value)
 	{
 		return value > 0 ? Min(TruncToInt(FRand() * value), value - 1) : 0;
@@ -91,23 +96,53 @@ struct MMath : public PlatformMath
 		return (RandRange(0, 1) == 1) ? true : false;
 	}
 
-	static Vector VRand();
+	static FORCEINLINE void Inverse4x4(double* dst, const float* src)
+	{
+		const double s0 = (double)(src[0]);
+		const double s1 = (double)(src[1]);
+		const double s2 = (double)(src[2]);
+		const double s3 = (double)(src[3]);
+		const double s4 = (double)(src[4]);
+		const double s5 = (double)(src[5]);
+		const double s6 = (double)(src[6]);
+		const double s7 = (double)(src[7]);
+		const double s8 = (double)(src[8]);
+		const double s9 = (double)(src[9]);
+		const double s10 = (double)(src[10]);
+		const double s11 = (double)(src[11]);
+		const double s12 = (double)(src[12]);
+		const double s13 = (double)(src[13]);
+		const double s14 = (double)(src[14]);
+		const double s15 = (double)(src[15]);
 
-	static Vector VRandCone(Vector const& dir, float coneHalfAngleRad);
+		double inv[16];
+		inv[0] = s5 * s10 * s15 - s5 * s11 * s14 - s9 * s6 * s15 + s9 * s7 * s14 + s13 * s6 * s11 - s13 * s7 * s10;
+		inv[1] = -s1 * s10 * s15 + s1 * s11 * s14 + s9 * s2 * s15 - s9 * s3 * s14 - s13 * s2 * s11 + s13 * s3 * s10;
+		inv[2] = s1 * s6  * s15 - s1 * s7  * s14 - s5 * s2 * s15 + s5 * s3 * s14 + s13 * s2 * s7 - s13 * s3 * s6;
+		inv[3] = -s1 * s6  * s11 + s1 * s7  * s10 + s5 * s2 * s11 - s5 * s3 * s10 - s9 * s2 * s7 + s9 * s3 * s6;
+		inv[4] = -s4 * s10 * s15 + s4 * s11 * s14 + s8 * s6 * s15 - s8 * s7 * s14 - s12 * s6 * s11 + s12 * s7 * s10;
+		inv[5] = s0 * s10 * s15 - s0 * s11 * s14 - s8 * s2 * s15 + s8 * s3 * s14 + s12 * s2 * s11 - s12 * s3 * s10;
+		inv[6] = -s0 * s6  * s15 + s0 * s7  * s14 + s4 * s2 * s15 - s4 * s3 * s14 - s12 * s2 * s7 + s12 * s3 * s6;
+		inv[7] = s0 * s6  * s11 - s0 * s7  * s10 - s4 * s2 * s11 + s4 * s3 * s10 + s8 * s2 * s7 - s8 * s3 * s6;
+		inv[8] = s4 * s9  * s15 - s4 * s11 * s13 - s8 * s5 * s15 + s8 * s7 * s13 + s12 * s5 * s11 - s12 * s7 * s9;
+		inv[9] = -s0 * s9  * s15 + s0 * s11 * s13 + s8 * s1 * s15 - s8 * s3 * s13 - s12 * s1 * s11 + s12 * s3 * s9;
+		inv[10] = s0 * s5  * s15 - s0 * s7  * s13 - s4 * s1 * s15 + s4 * s3 * s13 + s12 * s1 * s7 - s12 * s3 * s5;
+		inv[11] = -s0 * s5  * s11 + s0 * s7  * s9 + s4 * s1 * s11 - s4 * s3 * s9 - s8 * s1 * s7 + s8 * s3 * s5;
+		inv[12] = -s4 * s9  * s14 + s4 * s10 * s13 + s8 * s5 * s14 - s8 * s6 * s13 - s12 * s5 * s10 + s12 * s6 * s9;
+		inv[13] = s0 * s9  * s14 - s0 * s10 * s13 - s8 * s1 * s14 + s8 * s2 * s13 + s12 * s1 * s10 - s12 * s2 * s9;
+		inv[14] = -s0 * s5  * s14 + s0 * s6  * s13 + s4 * s1 * s14 - s4 * s2 * s13 - s12 * s1 * s6 + s12 * s2 * s5;
+		inv[15] = s0 * s5  * s10 - s0 * s6  * s9 - s4 * s1 * s10 + s4 * s2 * s9 + s8 * s1 * s6 - s8 * s2 * s5;
 
-	static Vector VRandCone(Vector const& dir, float horizontalConeHalfAngleRad, float verticalConeHalfAngleRad);
-
-	static Vector2 RandPointInCircle(float circleRadius);
-
-	static Vector GetReflectionVector(const Vector& direction, const Vector& surfaceNormal);
-	
-	static bool GetDotDistance(Vector2 &outDotDist, const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
-
-	static Vector2 GetAzimuthAndElevation(const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
-
-	static float GetRangePct(Vector2 const& range, float value);
-
-	static float GetRangeValue(Vector2 const& range, float pct);
+		double det = s0 * inv[0] + s1 * inv[4] + s2 * inv[8] + s3 * inv[12];
+		if (det != 0.0)
+		{
+			det = 1.0 / det;
+		}
+		for (int i = 0; i < 16; i++)
+		{
+			dst[i] = inv[i] * det;
+		}
+	}
 
 	static FORCEINLINE float GetMappedRangeValueClamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
 	{
@@ -190,7 +225,7 @@ struct MMath : public PlatformMath
 		}
 		else
 		{
-			return FloorToFloat((location + 0.5 * grid) / grid) * grid;
+			return FloorToFloat((location + 0.5f * grid) / grid) * grid;
 		}
 	}
 
@@ -452,7 +487,7 @@ struct MMath : public PlatformMath
 		r[3] = t0 + t9 - t5;
 	}
 
-	static float FindDeltaAngleDegrees(float a1, float a2)
+	static FORCEINLINE float FindDeltaAngleDegrees(float a1, float a2)
 	{
 		float delta = a2 - a1;
 
@@ -468,7 +503,7 @@ struct MMath : public PlatformMath
 		return delta;
 	}
 
-	static float FindDeltaAngleRadians(float a1, float a2)
+	static FORCEINLINE float FindDeltaAngleRadians(float a1, float a2)
 	{
 		float delta = a2 - a1;
 
@@ -484,7 +519,7 @@ struct MMath : public PlatformMath
 		return delta;
 	}
 
-	static float UnwindRadians(float value)
+	static FORCEINLINE float UnwindRadians(float value)
 	{
 		while (value > PI)
 		{
@@ -499,7 +534,7 @@ struct MMath : public PlatformMath
 		return value;
 	}
 
-	static float UnwindDegrees(float value)
+	static FORCEINLINE float UnwindDegrees(float value)
 	{
 		while (value > 180.f)
 		{
@@ -514,8 +549,6 @@ struct MMath : public PlatformMath
 		return value;
 	}
 
-	static FORCEINLINE void CartesianToPolar(const Vector2 inCart, Vector2& outPolar);
-
 	static FORCEINLINE void CartesianToPolar(const float x, const float y, float& outRad, float& outAng)
 	{
 		outRad = Sqrt(Square(x) + Square(y));
@@ -527,8 +560,6 @@ struct MMath : public PlatformMath
 		outX = rad * Cos(ang);
 		outY = rad * Sin(ang);
 	}
-
-	static FORCEINLINE void PolarToCartesian(const Vector2 inPolar, Vector2& outCart);
 
 	static FORCEINLINE float GetRangePct(float minValue, float maxValue, float value)
 	{
@@ -703,17 +734,7 @@ struct MMath : public PlatformMath
 			InterpCircularOut(0.f, 1.f, alpha * 2.f - 1.f) * 0.5f + 0.5f);
 	}
 
-	template< class U > static Rotator Lerp(const Rotator& a, const Rotator& b, const U& alpha);
-
-	template< class U > static Rotator LerpRange(const Rotator& a, const Rotator& b, const U& alpha);
-
-	template< class U > static Quat Lerp(const Quat& a, const Quat& b, const U& alpha);
-	
-	template< class U > static Quat BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY);
-	
-	template< class U > static Quat CubicInterp(const Quat& p0, const Quat& t0, const Quat& p1, const Quat& t1, const U& a);
-
-	template< class U >
+	template<class U>
 	static FORCEINLINE U CubicCRSplineInterp(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
 	{
 		float invT1MinusT0 = 1.0f / (t1 - t0);
@@ -759,9 +780,9 @@ struct MMath : public PlatformMath
 		return  ((l012 * ((t2 - t) * invT2MinusT1)) + (l123 * ((t - t1) * invT2MinusT1)));
 	}
 
-	static float MakePulsatingValue(const double inCurrentTime, const float inPulsesPerSecond, const float inPhase = 0.0f)
+	static FORCEINLINE float MakePulsatingValue(const double inCurrentTime, const float inPulsesPerSecond, const float inPhase = 0.0f)
 	{
-		return 0.5f + 0.5f * MMath::Sin(((0.25f + inPhase) * PI * 2.0) + (inCurrentTime * PI * 2.0) * inPulsesPerSecond);
+		return (float)(0.5f + 0.5f * MMath::Sin(((0.25f + inPhase) * PI * 2.0f) + ((float)inCurrentTime * PI * 2.0f) * inPulsesPerSecond));
 	}
 
 	static FORCEINLINE float RoundFromZero(float f)
@@ -804,7 +825,7 @@ struct MMath : public PlatformMath
 		return CeilToDouble(f);
 	}
 
-	static float SmoothStep(float a, float b, float X)
+	static FORCEINLINE float SmoothStep(float a, float b, float X)
 	{
 		if (X < a)
 		{
@@ -818,7 +839,7 @@ struct MMath : public PlatformMath
 		return InterpFraction * InterpFraction * (3.0f - 2.0f * InterpFraction);
 	}
 
-	static inline bool ExtractBoolFromBitfield(uint8* ptr, uint32 index)
+	static FORCEINLINE bool ExtractBoolFromBitfield(uint8* ptr, uint32 index)
 	{
 		uint8* bytePtr = ptr + index / 8;
 		uint8 mast = 1 << (index & 0x7);
@@ -826,7 +847,7 @@ struct MMath : public PlatformMath
 		return (*bytePtr & mast) != 0;
 	}
 
-	static inline void SetBoolInBitField(uint8* ptr, uint32 index, bool bset)
+	static FORCEINLINE void SetBoolInBitField(uint8* ptr, uint32 index, bool bset)
 	{
 		uint8* bytePtr = ptr + index / 8;
 		uint8 mast = 1 << (index & 0x7);
@@ -841,19 +862,19 @@ struct MMath : public PlatformMath
 		}
 	}
 
-	static uint8 Quantize8UnsignedByte(float x)
+	static FORCEINLINE uint8 Quantize8UnsignedByte(float x)
 	{
 		int32 Ret = (int32)(x * 255.999f);
 		return Ret;
 	}
 
-	static uint8 Quantize8SignedByte(float x)
+	static FORCEINLINE uint8 Quantize8SignedByte(float x)
 	{
 		float y = x * 0.5f + 0.5f;
 		return Quantize8UnsignedByte(y);
 	}
 
-	static int32 GreatestCommonDivisor(int32 a, int32 b)
+	static FORCEINLINE int32 GreatestCommonDivisor(int32 a, int32 b)
 	{
 		while (b != 0)
 		{
@@ -864,11 +885,43 @@ struct MMath : public PlatformMath
 		return a;
 	}
 
-	static int32 LeastCommonMultiplier(int32 a, int32 b)
+	static FORCEINLINE int32 LeastCommonMultiplier(int32 a, int32 b)
 	{
 		int32 currentGcd = GreatestCommonDivisor(a, b);
 		return currentGcd == 0 ? 0 : (a / currentGcd) * b;
 	}
+
+	static void CartesianToPolar(const Vector2 inCart, Vector2& outPolar);
+
+	static void PolarToCartesian(const Vector2 inPolar, Vector2& outCart);
+
+	template<class U> static Rotator Lerp(const Rotator& a, const Rotator& b, const U& alpha);
+
+	template<class U> static Rotator LerpRange(const Rotator& a, const Rotator& b, const U& alpha);
+
+	template<class U> static Quat Lerp(const Quat& a, const Quat& b, const U& alpha);
+
+	template<class U> static Quat BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY);
+
+	template<class U> static Quat CubicInterp(const Quat& p0, const Quat& t0, const Quat& p1, const Quat& t1, const U& a);
+
+	static Vector VRand();
+
+	static Vector VRandCone(Vector const& dir, float coneHalfAngleRad);
+
+	static Vector VRandCone(Vector const& dir, float horizontalConeHalfAngleRad, float verticalConeHalfAngleRad);
+
+	static Vector2 RandPointInCircle(float circleRadius);
+
+	static Vector GetReflectionVector(const Vector& direction, const Vector& surfaceNormal);
+
+	static bool GetDotDistance(Vector2 &outDotDist, const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+
+	static Vector2 GetAzimuthAndElevation(const Vector &direction, const Vector &axisX, const Vector &axisY, const Vector &axisZ);
+
+	static float GetRangePct(Vector2 const& range, float value);
+
+	static float GetRangeValue(Vector2 const& range, float pct);
 
 	static Vector RayPlaneIntersection(const Vector& rayOrigin, const Vector& rayDirection, const Plane& plane);
 
@@ -901,6 +954,4 @@ struct MMath : public PlatformMath
 	static double RoundHalfToZero(double f);
 
 	static float PerlinNoise1D(const float value);
-
-	static const uint32 BitFlag[32];
 };
