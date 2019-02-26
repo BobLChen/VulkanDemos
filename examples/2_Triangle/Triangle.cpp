@@ -440,7 +440,7 @@ private:
 	{
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(pitch, 0, 0), Vector::ZeroVector);
-		pitch += 1.0f;
+		pitch += 0.1f;
 
 		m_MVPData.view.SetIdentity();
 		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
