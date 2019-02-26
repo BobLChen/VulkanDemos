@@ -4,6 +4,7 @@
 #include "Common/Common.h"
 
 #include <string>
+#include <cstring>
 
 struct Rotator;
 struct Plane;
