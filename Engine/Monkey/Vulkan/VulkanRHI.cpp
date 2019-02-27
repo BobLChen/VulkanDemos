@@ -88,8 +88,8 @@ void VulkanRHI::InitInstance()
 
 void VulkanRHI::CreateFrameBuffer()
 {
-    int width  = m_SwapChain->GetWidth();
-    int height = m_SwapChain->GetHeight();
+    int32 width  = m_SwapChain->GetWidth();
+    int32 height = m_SwapChain->GetHeight();
 
 	VkImageView attachments[2];
 	attachments[1] = m_DepthStencilView;
@@ -243,13 +243,13 @@ void VulkanRHI::DestoryCommandPool()
 void VulkanRHI::RecreateSwapChain()
 {
     uint32 desiredNumBackBuffers = 3;
-    int width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
-    int height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+    int32 width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
+    int32 height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
     
     m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
     
     m_FrameImageViews.resize(m_FrameImages.size());
-    for (int i = 0; i < m_FrameImages.size(); ++i)
+    for (int32 i = 0; i < m_FrameImages.size(); ++i)
     {
         VkImageViewCreateInfo createInfo;
         ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
@@ -268,7 +268,7 @@ void VulkanRHI::RecreateSwapChain()
 
 void VulkanRHI::DestorySwapChain()
 {
-    for (int i = 0; i < m_FrameImageViews.size(); ++i)
+    for (int32 i = 0; i < m_FrameImageViews.size(); ++i)
     {
         vkDestroyImageView(m_Device->GetInstanceHandle(), m_FrameImageViews[i], VULKAN_CPU_ALLOCATOR);
     }
@@ -295,8 +295,8 @@ void VulkanRHI::DestoryCommandBuffers()
 
 void VulkanRHI::CreateDepthStencil()
 {
-    int width  = m_SwapChain->GetWidth();
-    int height = m_SwapChain->GetHeight();
+    int32 width  = m_SwapChain->GetWidth();
+    int32 height = m_SwapChain->GetHeight();
     
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);

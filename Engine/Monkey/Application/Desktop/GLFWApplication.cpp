@@ -7,7 +7,7 @@
 
 std::shared_ptr<GLFWApplication> G_CurrentPlatformApplication = nullptr;
 
-void GLFWApplication::OnGLFWkeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void GLFWApplication::OnGLFWkeyCallback(GLFWwindow* window, int32 key, int32 scancode, int32 action, int32 mods)
 {
 	G_CurrentPlatformApplication->ProcessKey(key, scancode, action, mods);
 }
@@ -23,7 +23,7 @@ GLFWApplication::~GLFWApplication()
 
 }
 
-void GLFWApplication::ProcessKey(int key, int scancode, int action, int mods)
+void GLFWApplication::ProcessKey(int32 key, int32 scancode, int32 action, int32 mods)
 {
 	if (action == GLFW_RELEASE) {
 		if (key == GLFW_KEY_ESCAPE) {

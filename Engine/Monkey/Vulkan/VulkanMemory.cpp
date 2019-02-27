@@ -97,7 +97,7 @@ void VulkanFenceManager::Destory()
 	{
 		MLOG("No all fences are done!");
 	}
-	for (int i = 0; i < m_FreeFences.size(); ++i)
+	for (int32 i = 0; i < m_FreeFences.size(); ++i)
 	{
 		DestoryFence(m_FreeFences[i]);
 	}
@@ -133,7 +133,7 @@ bool VulkanFenceManager::WaitForFence(VulkanFence* fence, uint64 timeInNanosecon
 	case VK_TIMEOUT:
         return false;
 	default:
-		MLOG("Unkow error %d", (int)result);
+		MLOG("Unkow error %d", (int32)result);
         return false;
 	}
 }
@@ -150,7 +150,7 @@ void VulkanFenceManager::ResetFence(VulkanFence* fence)
 void VulkanFenceManager::ReleaseFence(VulkanFence*& fence)
 {
 	ResetFence(fence);
-	for (int i = 0; i < m_UsedFences.size(); ++i) {
+	for (int32 i = 0; i < m_UsedFences.size(); ++i) {
 		if (m_UsedFences[i] == fence)
 		{
 			m_UsedFences.erase(m_UsedFences.begin() + i);

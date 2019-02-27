@@ -27,7 +27,7 @@ void VulkanWindowsPlatform::GetInstanceExtensions(std::vector<const char*>& outE
 {
 	uint32_t count;
     const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
-    for (int i = 0; i < count; ++i)
+    for (int32 i = 0; i < count; ++i)
     {
         outExtensions.push_back(extensions[i]);
     }

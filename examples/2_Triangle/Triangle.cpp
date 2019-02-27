@@ -14,7 +14,7 @@
 class TriangleMode : public AppModeBase
 {
 public:
-	TriangleMode(int width, int height, const char* title, const std::vector<std::string>& cmdLine)
+	TriangleMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_CmdLine(cmdLine)
 		, m_Ready(false)
@@ -636,7 +636,7 @@ private:
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-		for (int i = 0; i < m_Fences.size(); ++i) 
+		for (int32 i = 0; i < m_Fences.size(); ++i) 
 		{
 			VERIFYVULKANRESULT(vkCreateFence(m_Device, &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Fences[i]));
 		}
@@ -644,7 +644,7 @@ private:
 
 	void DestroyFences()
 	{
-		for (int i = 0; i < m_Fences.size(); ++i)
+		for (int32 i = 0; i < m_Fences.size(); ++i)
 		{
 			vkDestroyFence(m_Device, m_Fences[i], VULKAN_CPU_ALLOCATOR);
 		}

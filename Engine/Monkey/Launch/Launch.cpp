@@ -17,8 +17,8 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
 	AppMode->PreInit();
 
-	int width = AppMode->GetWidth();
-	int height = AppMode->GetHeight();
+	int32 width = AppMode->GetWidth();
+	int32 height = AppMode->GetHeight();
 	const char* title = AppMode->GetTitle().c_str();
 	
 	return GameEngine.PreInit(cmdLine, width, height, title);

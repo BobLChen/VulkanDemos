@@ -48,7 +48,7 @@ namespace WindowMode
 class GenericWindow
 {
 public:
-	GenericWindow(int width, int height);
+	GenericWindow(int32 width, int32 height);
 
 	virtual ~GenericWindow();
 
@@ -116,18 +116,18 @@ public:
 
 	virtual void SetManualManageDPIChanges(const bool autoHandle);
 
-    virtual int GetWidth() const
+    virtual int32 GetWidth() const
     {
         return m_Width;
     }
     
-    virtual int GetHeight() const
+    virtual int32 GetHeight() const
     {
         return m_Height;
     }
 protected:
-    int m_Width;
-    int m_Height;
+    int32 m_Width;
+    int32 m_Height;
 };
 
 

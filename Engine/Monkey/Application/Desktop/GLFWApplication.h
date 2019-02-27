@@ -32,9 +32,9 @@ public:
 
 protected:
 
-	void ProcessKey(int key, int scancode, int action, int mods);
+	void ProcessKey(int32 key, int32 scancode, int32 action, int32 mods);
 
-	void static OnGLFWkeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	void static OnGLFWkeyCallback(GLFWwindow* window, int32 key, int32 scancode, int32 action, int32 mods);
 
 private:
 

@@ -139,7 +139,7 @@ public:
 		{
 			det = 1.0 / det;
 		}
-		for (int i = 0; i < 16; i++)
+		for (int32 i = 0; i < 16; i++)
 		{
 			dst[i] = inv[i] * det;
 		}
@@ -273,11 +273,11 @@ public:
 		float quotient = (INV_PI * 0.5f) * value;
 		if (value >= 0.0f)
 		{
-			quotient = (float)((int)(quotient + 0.5f));
+			quotient = (float)((int32)(quotient + 0.5f));
 		}
 		else
 		{
-			quotient = (float)((int)(quotient - 0.5f));
+			quotient = (float)((int32)(quotient - 0.5f));
 		}
 		float y = value - (2.0f * PI) * quotient;
 

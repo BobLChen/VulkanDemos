@@ -11,7 +11,7 @@
 class AppModeBase
 {
 public:
-	AppModeBase(int width, int height, const char* title)
+	AppModeBase(int32 width, int32 height, const char* title)
 		: m_Width(width)
 		, m_Height(height)
 		, m_Title(title)
@@ -44,12 +44,12 @@ public:
 		return m_Window;
 	}
 
-	int GetWidth() const
+	int32 GetWidth() const
 	{
 		return m_Width;
 	}
 
-	int GetHeight() const
+	int32 GetHeight() const
 	{
 		return m_Height;
 	}
@@ -76,8 +76,8 @@ public:
 	virtual void Exist() = 0;
 	
 private:
-	int m_Width;
-	int m_Height;
+	int32 m_Width;
+	int32 m_Height;
 	std::string m_Title;
 	Engine* m_Engine;
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;
