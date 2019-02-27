@@ -97,6 +97,8 @@ set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanDebug.cpp
 	Monkey/Vulkan/VulkanSwapChain.cpp
 	Monkey/Vulkan/VulkanMemory.cpp
+	Monkey/Vulkan/IndexBuffer.cpp
+	Monkey/Vulkan/VertexBuffer.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -109,6 +111,8 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
+	Monkey/Vulkan/IndexBuffer.h
+	Monkey/Vulkan/VertexBuffer.h
 )
 
 set(Monkey_HAL_HDRS
