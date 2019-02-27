@@ -28,22 +28,24 @@ enum class VertexAttribute
 struct VertexStreamInfo
 {
 	uint32 channelMask;
-	uint32 offset;
-	uint8  stride;
-	
+    uint32 offset;
+	uint32 size;
+    uint32 alignment;
+    
 	VertexStreamInfo()
 		: channelMask(0)
 		, offset(0)
-		, stride(0)
+        , size(0)
+        , alignment(0)
 	{
-
+        
 	}
 
 	bool operator == (const VertexStreamInfo& rhs) const
 	{
-		return channelMask == rhs.channelMask && offset == rhs.offset && stride == rhs.stride;
+		return channelMask == rhs.channelMask && offset == rhs.offset && size == rhs.size && alignment == rhs.alignment;
 	}
-
+    
 	bool operator != (const VertexStreamInfo& rhs) const
 	{
 		return !(*this == rhs);
@@ -54,14 +56,12 @@ struct VertexChannelInfo
 {
 	uint8 stream;
 	uint8 offset;
-	uint8 format;
-	uint8 dimension;
+	VkFormat format;
 
 	VertexChannelInfo()
 		: stream(0)
 		, offset(0)
-		, format(0)
-		, dimension(0)
+		, format(VK_FORMAT_R32_SFLOAT)
 	{
 
 	}
@@ -70,17 +70,7 @@ struct VertexChannelInfo
 	{
 		return streams[stream].offset + offset;
 	}
-
-	uint32 CalcStride(const std::vector<VertexStreamInfo>& streams) const
-	{
-		return streams[stream].stride;
-	}
-	
-	bool IsValid() const
-	{
-		return dimension != 0;
-	}
-
+    
 	void Reset()
 	{
 		*this = VertexChannelInfo();
@@ -88,7 +78,7 @@ struct VertexChannelInfo
 
 	bool operator == (const VertexChannelInfo& rhs) const
 	{
-		return stream == rhs.stream && offset == rhs.offset && format == rhs.format && dimension == rhs.dimension;
+		return stream == rhs.stream && offset == rhs.offset && format == rhs.format;
 	}
 
 	bool operator != (const VertexChannelInfo& rhs) const
@@ -104,21 +94,35 @@ public:
 	VertexData();
 
 	virtual ~VertexData();
+    
+    void AddStream(std::vector<VertexChannelInfo>& channels, uint8* dataPtr)
+    {
+        
+    }
 
-	int32 GetStreamCount() const;
+	int32 GetStreamCount() const
+    {
+        return m_Streams.size();
+    }
 
-	int32 GetStreamIndex(VertexAttribute attribute) const;
+	int32 GetStreamIndex(VertexAttribute attribute) const
+    {
+        uint32 channelMask = 1 << (int32)attribute;
+        for (int32 i = 0; i < m_Streams.size(); ++i)
+        {
+            if (m_Streams[i].channelMask & channelMask)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
 
 	uint32 GetChannelOffset(VertexAttribute attribute) const
-	{ 
+	{
 		return m_Channels[(int32)attribute].CalcOffset(m_Streams);
 	}
-
-	uint32 GetChannelStride(VertexAttribute attribute) const
-	{ 
-		return m_Channels[(int32)attribute].CalcStride(m_Streams);
-	}
-	
+    
 	uint8* GetDataPtr() const 
 	{ 
 		return m_Data;
