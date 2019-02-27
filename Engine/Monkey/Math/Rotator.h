@@ -149,14 +149,14 @@ FORCEINLINE Rotator Rotator::operator-(const Rotator& r) const
 
 FORCEINLINE Rotator Rotator::operator*(float scale) const
 {
-	return Rotator(pitch*scale, yaw*scale, roll*scale);
+	return Rotator(pitch * scale, yaw * scale, roll * scale);
 }
 
 FORCEINLINE Rotator Rotator::operator*= (float scale)
 {
 	pitch = pitch * scale; 
-	yaw   = yaw * scale;
-	roll  = roll * scale;
+	yaw   = yaw   * scale;
+	roll  = roll  * scale;
 	DiagnosticCheckNaN();
 	return *this;
 }
@@ -201,11 +201,11 @@ FORCEINLINE bool Rotator::IsZero() const
 	return (ClampAxis(pitch) == 0.f) && (ClampAxis(yaw) == 0.f) && (ClampAxis(roll) == 0.f);
 }
 
-FORCEINLINE bool Rotator::Equals(const Rotator& r, float tolerance) const
+FORCEINLINE bool Rotator::Equals(const Rotator& rhs, float tolerance) const
 {
-	return (MMath::Abs(NormalizeAxis(pitch - r.pitch)) <= tolerance)
-		&& (MMath::Abs(NormalizeAxis(yaw   - r.yaw))   <= tolerance)
-		&& (MMath::Abs(NormalizeAxis(roll  - r.roll))  <= tolerance);
+	return (MMath::Abs(NormalizeAxis(pitch - rhs.pitch)) <= tolerance)
+		&& (MMath::Abs(NormalizeAxis(yaw   - rhs.yaw))   <= tolerance)
+		&& (MMath::Abs(NormalizeAxis(roll  - rhs.roll))  <= tolerance);
 }
 
 FORCEINLINE Rotator Rotator::Add(float deltaPitch, float deltaYaw, float deltaRoll)

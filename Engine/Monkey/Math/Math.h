@@ -454,7 +454,7 @@ public:
         typedef float Float4[4];
         typedef float Float4x4[4][4];
         
-        const Float4& vec4 = *((const Float4*)vec);
+        const Float4& vec4  = *((const Float4*)vec);
         const Float4x4& m44 = *((const Float4x4*)matrix);
         Float4& rVec4 = *((Float4*)result);
         

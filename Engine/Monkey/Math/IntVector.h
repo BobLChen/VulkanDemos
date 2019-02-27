@@ -210,10 +210,10 @@ FORCEINLINE int32 IntVector::Num()
 
 FORCEINLINE int32 IntVector::Size() const
 {
-	int64 X64 = (int64)x;
-	int64 Y64 = (int64)y;
-	int64 Z64 = (int64)z;
-	return int32(MMath::Sqrt(float(X64 * X64 + Y64 * Y64 + Z64 * Z64)));
+	int64 x64 = (int64)x;
+	int64 y64 = (int64)y;
+	int64 z64 = (int64)z;
+	return int32(MMath::Sqrt(x64 * x64 + y64 * y64 + z64 * z64));
 }
 
 FORCEINLINE bool IntVector::IsZero() const

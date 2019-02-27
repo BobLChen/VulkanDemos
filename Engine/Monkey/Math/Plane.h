@@ -186,31 +186,46 @@ FORCEINLINE Plane Plane::operator*(const Plane& v)
 
 FORCEINLINE Plane Plane::operator+=(const Plane& v)
 {
-	x += v.x; y += v.y; z += v.z; w += v.w;
+	x += v.x; 
+	y += v.y; 
+	z += v.z; 
+	w += v.w;
 	return *this;
 }
 
 FORCEINLINE Plane Plane::operator-=(const Plane& v)
 {
-	x -= v.x; y -= v.y; z -= v.z; w -= v.w;
+	x -= v.x; 
+	y -= v.y; 
+	z -= v.z; 
+	w -= v.w;
 	return *this;
 }
 
 FORCEINLINE Plane Plane::operator*=(float scale)
 {
-	x *= scale; y *= scale; z *= scale; w *= scale;
+	x *= scale; 
+	y *= scale; 
+	z *= scale; 
+	w *= scale;
 	return *this;
 }
 
 FORCEINLINE Plane Plane::operator*=(const Plane& v)
 {
-	x *= v.x; y *= v.y; z *= v.z; w *= v.w;
+	x *= v.x; 
+	y *= v.y; 
+	z *= v.z; 
+	w *= v.w;
 	return *this;
 }
 
 FORCEINLINE Plane Plane::operator/=(float v)
 {
-	const float RV = 1.f / v;
-	x *= RV; y *= RV; z *= RV; w *= RV;
+	const float rv = 1.f / v;
+	x *= rv; 
+	y *= rv; 
+	z *= rv; 
+	w *= rv;
 	return *this;
 }

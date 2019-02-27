@@ -663,9 +663,9 @@ Quat Rotator::Quaternion() const
 	float cp, cy, cr;
 
 	MMath::SinCos(&sp, &cp, pitch * DIVIDE_BY_2);
-	MMath::SinCos(&sy, &cy, yaw * DIVIDE_BY_2);
-	MMath::SinCos(&sr, &cr, roll * DIVIDE_BY_2);
-
+	MMath::SinCos(&sy, &cy, yaw   * DIVIDE_BY_2);
+	MMath::SinCos(&sr, &cr, roll  * DIVIDE_BY_2);
+	
 	Quat rotationQuat;
 	rotationQuat.x = cr * sp * sy - sr * cp * cy;
 	rotationQuat.y = -cr * sp * cy - sr * cp * sy;

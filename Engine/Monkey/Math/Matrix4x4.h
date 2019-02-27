@@ -286,7 +286,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::operator*(float other) const
 
 FORCEINLINE void Matrix4x4::operator*=(float other)
 {
-	*this = *this*other;
+	*this = *this * other;
 }
 
 FORCEINLINE bool Matrix4x4::operator==(const Matrix4x4& other) const
