@@ -31,6 +31,24 @@ public:
 
 	FORCEINLINE void SetIdentity();
 
+	FORCEINLINE void Prepend(const Matrix4x4& other);
+
+	FORCEINLINE void Append(const Matrix4x4& other);
+
+	FORCEINLINE void PrependRotation(const Rotator& rotator, const Vector3& pivot);
+
+	FORCEINLINE void AppendRotation(const Rotator& rotator, const Vector3& pivot);
+	
+	FORCEINLINE void AppendTranslation(const Vector3& translation);
+	
+	FORCEINLINE void CopyColumnFrom(int32 column, const Vector4 &vec);
+
+	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
+
+	FORCEINLINE void copyRawFrom(int32 column, const Vector4 &vec);
+
+	FORCEINLINE void copyRawTo(int32 column, Vector4 &vec) const;
+	
 	FORCEINLINE Matrix4x4 operator* (const Matrix4x4& other) const;
 
 	FORCEINLINE void operator*=(const Matrix4x4& other);
@@ -61,13 +79,19 @@ public:
 
 	FORCEINLINE Matrix4x4 GetTransposed() const;
 
+	FORCEINLINE void SetTransposed();
+
 	FORCEINLINE float Determinant() const;
 
 	FORCEINLINE float RotDeterminant() const;
 
 	FORCEINLINE Matrix4x4 InverseFast() const;
 
+	FORCEINLINE void SetInverseFast();
+
 	FORCEINLINE Matrix4x4 Inverse() const;
+
+	FORCEINLINE void SetInverse();
 
 	FORCEINLINE Matrix4x4 TransposeAdjoint() const;
 
@@ -237,6 +261,61 @@ FORCEINLINE void Matrix4x4::SetIdentity()
 	m[3][0] = 0; m[3][1] = 0;  m[3][2] = 0;  m[3][3] = 1;
 }
 
+FORCEINLINE void Matrix4x4::PrependRotation(const Rotator& rotator, const Vector3& pivot)
+{
+	Matrix4x4 rotMatrix(rotator, pivot);
+	MMath::VectorMatrixMultiply(this, &rotMatrix, this);
+}
+
+FORCEINLINE void Matrix4x4::AppendRotation(const Rotator& rotator, const Vector3& pivot)
+{
+	Matrix4x4 rotMatrix(rotator, pivot);
+	MMath::VectorMatrixMultiply(this, this, &rotMatrix);
+}
+
+FORCEINLINE void Matrix4x4::AppendTranslation(const Vector3& translation)
+{
+	m[3][0] += translation.x; 
+	m[3][1] += translation.y;
+	m[3][2] += translation.z;
+}
+
+FORCEINLINE void Matrix4x4::Prepend(const Matrix4x4& other)
+{
+	MMath::VectorMatrixMultiply(this, &other, this);
+}
+
+FORCEINLINE void Matrix4x4::Append(const Matrix4x4& other)
+{
+	MMath::VectorMatrixMultiply(this, this, &other);
+}
+
+FORCEINLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
+{
+	m[0][column] = vec.x; m[1][column] = vec.y; m[2][column] = vec.z; m[3][column] = vec.w;
+}
+
+FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
+{
+	vec.x = m[0][column];
+	vec.y = m[1][column];
+	vec.z = m[2][column];
+	vec.w = m[3][column];
+}
+
+FORCEINLINE void Matrix4x4::copyRawFrom(int32 raw, const Vector4 &vec)
+{
+	m[raw][0] = vec.x; m[raw][1] = vec.y; m[raw][2] = vec.z; m[raw][3] = vec.w;
+}
+
+FORCEINLINE void Matrix4x4::copyRawTo(int32 raw, Vector4 &vec) const
+{
+	vec.x = m[raw][0];
+	vec.y = m[raw][1];
+	vec.z = m[raw][2];
+	vec.w = m[raw][3];
+}
+
 FORCEINLINE void Matrix4x4::operator*=(const Matrix4x4& other)
 {
     MMath::VectorMatrixMultiply(this, this, &other);
@@ -355,6 +434,11 @@ FORCEINLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
 	return invSelf.TransformVector(v);
 }
 
+FORCEINLINE void Matrix4x4::SetTransposed()
+{
+	*this = GetTransposed();
+}
+
 FORCEINLINE Matrix4x4 Matrix4x4::GetTransposed() const
 {
 	Matrix4x4 result;
@@ -418,11 +502,21 @@ FORCEINLINE float Matrix4x4::RotDeterminant() const
 		m[2][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1]);
 }
 
+FORCEINLINE void Matrix4x4::SetInverseFast()
+{
+	*this = InverseFast();
+}
+
 FORCEINLINE Matrix4x4 Matrix4x4::InverseFast() const
 {
 	Matrix4x4 result;
     MMath::VectorMatrixInverse(&result, this);
 	return result;
+}
+
+FORCEINLINE void Matrix4x4::SetInverse()
+{
+	*this = Inverse();
 }
 
 FORCEINLINE Matrix4x4 Matrix4x4::Inverse() const
