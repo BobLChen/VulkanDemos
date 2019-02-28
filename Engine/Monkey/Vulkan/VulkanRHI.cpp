@@ -12,8 +12,6 @@
 
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
-	, m_PresentComplete(VK_NULL_HANDLE)
-	, m_RenderComplete(VK_NULL_HANDLE)
 	, m_CommandPool(VK_NULL_HANDLE)
 	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
     , m_Device(nullptr)
@@ -58,7 +56,6 @@ void VulkanRHI::Shutdown()
     DestoryCommandBuffers();
     DestoryCommandPool();
     DestorySwapChain();
-	DestorySemaphore();
     
     m_Device->Destroy();
     m_Device = nullptr;
@@ -76,7 +73,6 @@ void VulkanRHI::InitInstance()
     SetupDebugLayerCallback();
 #endif
     SelectAndInitDevice();
-	CreateSemaphores();
     RecreateSwapChain();
     CreateCommandPool();
     CreateCommandBuffers();
@@ -203,27 +199,6 @@ void VulkanRHI::CreateRenderPass()
 void VulkanRHI::DestoryRenderPass()
 {
     vkDestroyRenderPass(m_Device->GetInstanceHandle(), m_RenderPass, VULKAN_CPU_ALLOCATOR);
-}
-
-void VulkanRHI::CreateSemaphores()
-{
-	VkSemaphoreCreateInfo createInfo;
-	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-	vkCreateSemaphore(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_PresentComplete);
-	vkCreateSemaphore(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
-
-	ZeroVulkanStruct(m_SubmitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-	m_SubmitInfo.pWaitDstStageMask = &m_SubmitPipelineStages;
-	m_SubmitInfo.waitSemaphoreCount = 1;
-	m_SubmitInfo.pWaitSemaphores = &m_PresentComplete;
-	m_SubmitInfo.signalSemaphoreCount = 1;
-	m_SubmitInfo.pSignalSemaphores = &m_RenderComplete;
-}
-
-void VulkanRHI::DestorySemaphore()
-{
-	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_PresentComplete, VULKAN_CPU_ALLOCATOR);
-	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::CreateCommandPool()

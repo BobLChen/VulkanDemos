@@ -1,4 +1,5 @@
 #include "VulkanDevice.h"
+#include "VulkanQueue.h"
 #include "VulkanMemory.h"
 #include "VulkanSwapChain.h"
 #include "Math/Math.h"
@@ -287,7 +288,7 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	return m_CurrentImageIndex;
 }
 
-VulkanSwapChain::Status VulkanSwapChain::Present(VulkanQueue* gfxQueue, VulkanQueue* presentQueue, VkSemaphore* backBufferRenderingDoneSemaphore)
+VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* backBufferRenderingDoneSemaphore)
 {
 	if (m_CurrentImageIndex == -1)
 	{

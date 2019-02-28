@@ -115,6 +115,13 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VertexBuffer.h
 )
 
+set(Monkey_Loader_HDRS
+	Monkey/Loader/tiny_obj_loader.h
+)
+set(Monkey_Loader_SRCS
+
+)
+
 set(Monkey_HAL_HDRS
 	Monkey/HAL/PlatformAtomics.h
 	Monkey/HAL/GenericPlatformAtomics.h
@@ -254,6 +261,9 @@ add_library(Monkey STATIC
 	${Monkey_HAL_Mac_SRCS}
 	${Monkey_HAL_Linux_HDRS}
 	${Monkey_HAL_Linux_SRCS}
+
+	${Monkey_Loader_HDRS}
+	${Monkey_Loader_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -283,3 +293,5 @@ source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
 source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})
 source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS})
 source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linux_HDRS})
+
+source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})

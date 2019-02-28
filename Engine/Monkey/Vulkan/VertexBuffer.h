@@ -5,12 +5,14 @@
 
 #include "VulkanPlatform.h"
 #include "RHIDefinitions.h"
+#include "VulkanDevice.h"
 
 #include <vector>
 
 enum class VertexAttribute
 {
-	Position = 1,
+	None = 0,
+	Position,
 	UV0,
 	UV1,
 	Normal,
@@ -28,25 +30,25 @@ enum class VertexAttribute
 struct VertexStreamInfo
 {
 	uint32 channelMask;
-    uint32 offset;
 	uint32 size;
     uint32 alignment;
+	uint32 allocationSize;
     
 	VertexStreamInfo()
 		: channelMask(0)
-		, offset(0)
         , size(0)
         , alignment(0)
+		, allocationSize(0)
 	{
         
 	}
 
-	bool operator == (const VertexStreamInfo& rhs) const
+	FORCEINLINE bool operator == (const VertexStreamInfo& rhs) const
 	{
-		return channelMask == rhs.channelMask && offset == rhs.offset && size == rhs.size && alignment == rhs.alignment;
+		return channelMask == rhs.channelMask && size == rhs.size && alignment == rhs.alignment && allocationSize == rhs.allocationSize;
 	}
     
-	bool operator != (const VertexStreamInfo& rhs) const
+	FORCEINLINE bool operator != (const VertexStreamInfo& rhs) const
 	{
 		return !(*this == rhs);
 	}
@@ -56,56 +58,54 @@ struct VertexChannelInfo
 {
 	uint8 stream;
 	uint8 offset;
-	VkFormat format;
+	VertexElementType format;
+	VertexAttribute attribute;
 
 	VertexChannelInfo()
 		: stream(0)
 		, offset(0)
-		, format(VK_FORMAT_R32_SFLOAT)
+		, format(VertexElementType::VET_None)
+		, attribute(VertexAttribute::None)
 	{
 
 	}
 
-	uint32 CalcOffset(const std::vector<VertexStreamInfo>& streams) const
-	{
-		return streams[stream].offset + offset;
-	}
-    
-	void Reset()
+	FORCEINLINE void Reset()
 	{
 		*this = VertexChannelInfo();
 	}
 
-	bool operator == (const VertexChannelInfo& rhs) const
+	FORCEINLINE bool operator == (const VertexChannelInfo& rhs) const
 	{
-		return stream == rhs.stream && offset == rhs.offset && format == rhs.format;
+		return stream == rhs.stream && offset == rhs.offset && format == rhs.format && attribute == rhs.attribute;
 	}
 
-	bool operator != (const VertexChannelInfo& rhs) const
+	FORCEINLINE bool operator != (const VertexChannelInfo& rhs) const
 	{
 		return !(*this == rhs);
 	}
 };
 
-class VertexData
+class VertexBuffer
 {
 public:
 	
-	VertexData();
+	VertexBuffer();
 
-	virtual ~VertexData();
+	virtual ~VertexBuffer();
     
-    void AddStream(std::vector<VertexChannelInfo>& channels, uint8* dataPtr)
-    {
-        
-    }
+	void AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr);
 
-	int32 GetStreamCount() const
+	void Upload(std::shared_ptr<VulkanRHI> vulkanRHI);
+
+	void Download(std::shared_ptr<VulkanRHI> vulkanRHI);
+
+	FORCEINLINE int32 GetStreamCount() const
     {
         return m_Streams.size();
     }
 
-	int32 GetStreamIndex(VertexAttribute attribute) const
+	FORCEINLINE int32 GetStreamIndex(VertexAttribute attribute) const
     {
         uint32 channelMask = 1 << (int32)attribute;
         for (int32 i = 0; i < m_Streams.size(); ++i)
@@ -118,70 +118,76 @@ public:
         return -1;
     }
 
-	uint32 GetChannelOffset(VertexAttribute attribute) const
+	FORCEINLINE uint32 GetChannelOffset(VertexAttribute attribute) const
 	{
-		return m_Channels[(int32)attribute].CalcOffset(m_Streams);
+		return m_Channels[(int32)attribute].offset;
 	}
     
-	uint8* GetDataPtr() const 
+	FORCEINLINE uint8* GetDataPtr(int32 stream) const
 	{ 
-		return m_Data;
+		return m_Datas[stream];
 	}
 
-	int32 GetDataSize() const 
+	FORCEINLINE int32 GetDataSize() const
 	{ 
 		return m_DataSize;
 	}
 
-	int32 GetVertexSize() const 
-	{ 
-		return m_VertexSize;
-	}
-
-	int32 GetVertexCount() const 
+	FORCEINLINE int32 GetVertexCount() const
 	{ 
 		return m_VertexCount;
 	}
 
-	uint32 GetChannelMask() const
+	FORCEINLINE uint32 GetChannelMask() const
 	{
 		return m_CurrentChannels;
 	}
 
-	const std::vector<VertexStreamInfo>& GetStreams() const
+	FORCEINLINE const std::vector<VertexStreamInfo>& GetStreams() const
 	{
 		return m_Streams;
 	}
 
-	const VertexChannelInfo& GetChannel(int32 index) const
+	FORCEINLINE const VertexChannelInfo& GetChannel(int32 index) const
 	{
 		return m_Channels[index];
 	}
 
-	const std::vector<VertexChannelInfo>& GetChannels() const
+	FORCEINLINE const std::vector<VertexChannelInfo>& GetChannels() const
 	{
 		return m_Channels;
 	}
 
-	const VertexStreamInfo& GetStream(int32 index) const
+	FORCEINLINE const VertexStreamInfo& GetStream(int32 index) const
 	{
 		return m_Streams[index];
 	}
 
-	bool HasAttribute(VertexAttribute attribute) const
+	FORCEINLINE bool HasAttribute(VertexAttribute attribute) const
 	{
 		return m_CurrentChannels & (1 << (int32)attribute);
 	}
 
+	FORCEINLINE const std::vector<VkBuffer>& GetVKBuffers() const
+	{
+		return m_Buffers;
+	}
+
+	FORCEINLINE const std::vector<VkDeviceMemory>& GetVKMemories() const
+	{
+		return m_Memories;
+	}
 protected:
+	
 	std::vector<VertexChannelInfo> m_Channels;
 	std::vector<VertexStreamInfo>  m_Streams;
+	std::vector<uint8*>            m_Datas;
 
-	uint32 m_VertexSize;
+	std::vector<VkDeviceMemory>    m_Memories;
+	std::vector<VkBuffer>		   m_Buffers;
+
 	uint32 m_VertexCount;
-
-	uint8* m_Data;
 	uint32 m_DataSize;
-
 	uint32 m_CurrentChannels;
+	bool m_Uploaded;
 };

@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
+#include "RHIDefinitions.h"
 #include <string>
 
 class VulkanDevice;
@@ -22,119 +23,109 @@ public:
 
 	void Shutdown();;
 
-	inline const std::vector<const char*>& GetInstanceExtensions() const
+	FORCEINLINE const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
 	}
 
-	inline const std::vector<const char*>& GetInstanceLayers() const
+	FORCEINLINE const std::vector<const char*>& GetInstanceLayers() const
 	{
 		return m_InstanceLayers;
 	}
 
-	inline VkInstance GetInstance() const
+	FORCEINLINE VkInstance GetInstance() const
 	{
 		return m_Instance;
 	}
 
-	inline std::shared_ptr<VulkanDevice> GetDevice()
+	FORCEINLINE std::shared_ptr<VulkanDevice> GetDevice()
 	{
 		return m_Device;
 	}
     
-	inline VkSemaphore GetPresentCompleteSemaphore()
-	{
-		return m_PresentComplete;
-	}
-
-	inline VkSemaphore GetRenderCompleteSemaphore()
-	{
-		return m_RenderComplete;
-	}
-
-	inline VkSubmitInfo GetSumbitInfo()
-	{
-		return m_SubmitInfo;
-	}
-
-	inline VkCommandPool GetCommandPool()
+	FORCEINLINE VkCommandPool GetCommandPool()
 	{
 		return m_CommandPool;
 	}
 
-	inline std::vector<VkCommandBuffer>& GetCommandBuffers()
+	FORCEINLINE std::vector<VkCommandBuffer>& GetCommandBuffers()
 	{
 		return m_CommandBuffers;
 	}
 
-	inline std::shared_ptr<VulkanSwapChain> GetSwapChain()
+	FORCEINLINE std::shared_ptr<VulkanSwapChain> GetSwapChain()
 	{
 		return m_SwapChain;
 	}
 
-	inline std::vector<VkImage>& GetFrameImages()
+	FORCEINLINE std::vector<VkImage>& GetFrameImages()
 	{
 		return m_FrameImages;
 	}
 
-	inline std::vector<VkImageView>& GetFrameImageViews()
+	FORCEINLINE std::vector<VkImageView>& GetFrameImageViews()
 	{
 		return m_FrameImageViews;
 	}
 
-	inline std::vector<VkFramebuffer>& GetFrameBuffers()
+	FORCEINLINE std::vector<VkFramebuffer>& GetFrameBuffers()
 	{
 		return m_FrameBuffers;
 	}
 
-	inline VkImage GetDepthStencilImage()
+	FORCEINLINE VkImage GetDepthStencilImage()
 	{
 		return m_DepthStencilImage;
 	}
 
-	inline VkImageView GetDepthStencilView()
+	FORCEINLINE VkImageView GetDepthStencilView()
 	{
 		return m_DepthStencilView;
 	}
 
-	inline VkDeviceMemory GetDepthStencilMemory()
+	FORCEINLINE VkDeviceMemory GetDepthStencilMemory()
 	{
 		return m_DepthStencilMemory;
 	}
 
-	inline PixelFormat GetPixelFormat()
+	FORCEINLINE PixelFormat GetPixelFormat()
 	{
 		return m_PixelFormat;
 	}
 
-	inline PixelFormat GetDepthFormat()
+	FORCEINLINE PixelFormat GetDepthFormat()
 	{
 		return m_DepthFormat;
 	}
 
-	inline VkRenderPass GetRenderPass()
+	FORCEINLINE VkRenderPass GetRenderPass()
 	{
 		return m_RenderPass;
 	}
 
-	inline VkPipelineCache GetPipelineCache()
+	FORCEINLINE VkPipelineCache GetPipelineCache()
 	{
 		return m_PipelineCache;
 	}
 
-	inline bool SupportsDebugUtilsExt() const
+	FORCEINLINE bool SupportsDebugUtilsExt() const
 	{
 		return m_SupportsDebugUtilsExt;
 	}
 	
-    inline VkSampleCountFlagBits GetSampleCount() const
+    FORCEINLINE VkSampleCountFlagBits GetSampleCount() const
     {
         return m_SampleCount;
     }
     
-	inline const char* GetName()
+	FORCEINLINE const char* GetName()
 	{ 
 		return "Vulkan";
+	}
+
+	FORCEINLINE VkPipelineStageFlags GetStageMask() const
+	{
+		return m_SubmitPipelineStages;
 	}
 
 protected:
@@ -153,10 +144,6 @@ protected:
 #endif
 
 	void InitInstance();
-
-	void CreateSemaphores();
-
-	void DestorySemaphore();
 
 	void RecreateSwapChain();
 
@@ -192,11 +179,6 @@ protected:
     std::vector<const char*> m_InstanceLayers;
     std::vector<const char*> m_InstanceExtensions;
     
-    VkSemaphore m_PresentComplete;
-	VkSemaphore m_RenderComplete;
-	
-    VkSubmitInfo m_SubmitInfo;
-	
     VkCommandPool m_CommandPool;
     std::vector<VkCommandBuffer> m_CommandBuffers;
     
@@ -223,7 +205,7 @@ protected:
 };
 
 
-inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
+FORCEINLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 {
 	VkFormat result = (VkFormat)G_PixelFormats[format].platformFormat;
 	if (bIsSRGB)
@@ -268,5 +250,155 @@ inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 	return result;
 }
 
+static FORCEINLINE VkFormat UEToVkFormat(VertexElementType Type)
+{
+	switch (Type)
+	{
+	case VET_Float1:
+		return VK_FORMAT_R32_SFLOAT;
+	case VET_Float2:
+		return VK_FORMAT_R32G32_SFLOAT;
+	case VET_Float3:
+		return VK_FORMAT_R32G32B32_SFLOAT;
+	case VET_PackedNormal:
+		return VK_FORMAT_R8G8B8A8_SNORM;
+	case VET_UByte4:
+		return VK_FORMAT_R8G8B8A8_UINT;
+	case VET_UByte4N:
+		return VK_FORMAT_R8G8B8A8_UNORM;
+	case VET_Color:
+		return VK_FORMAT_B8G8R8A8_UNORM;
+	case VET_Short2:
+		return VK_FORMAT_R16G16_SINT;
+	case VET_Short4:
+		return VK_FORMAT_R16G16B16A16_SINT;
+	case VET_Short2N:
+		return VK_FORMAT_R16G16_SNORM;
+	case VET_Half2:
+		return VK_FORMAT_R16G16_SFLOAT;
+	case VET_Half4:
+		return VK_FORMAT_R16G16B16A16_SFLOAT;
+	case VET_Short4N:
+		return VK_FORMAT_R16G16B16A16_SNORM;
+	case VET_UShort2:
+		return VK_FORMAT_R16G16_UINT;
+	case VET_UShort4:
+		return VK_FORMAT_R16G16B16A16_UINT;
+	case VET_UShort2N:
+		return VK_FORMAT_R16G16_UNORM;
+	case VET_UShort4N:
+		return VK_FORMAT_R16G16B16A16_UNORM;
+	case VET_Float4:
+		return VK_FORMAT_R32G32B32A32_SFLOAT;
+	case VET_URGB10A2N:
+		return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
+	default:
+		break;
+	}
+
+	return VK_FORMAT_UNDEFINED;
+}
+
+static FORCEINLINE uint32 ElementTypeToSize(VertexElementType type)
+{
+	switch (type)
+	{
+	case VET_Float1:
+		return 4;
+	case VET_Float2:
+		return 8;
+	case VET_Float3:
+		return 12;
+	case VET_Float4:
+		return 16;
+	case VET_PackedNormal:
+		return 4;
+	case VET_UByte4:
+		return 4;
+	case VET_UByte4N:
+		return 4;
+	case VET_Color:
+		return 4;
+	case VET_Short2:
+		return 4;
+	case VET_Short4:
+		return 8;
+	case VET_UShort2:
+		return 4;
+	case VET_UShort4:
+		return 8;
+	case VET_Short2N:
+		return 4;
+	case VET_UShort2N:
+		return 4;
+	case VET_Half2:
+		return 4;
+	case VET_Half4:
+		return 8;
+	case VET_Short4N:
+		return 8;
+	case VET_UShort4N:
+		return 8;
+	case VET_URGB10A2N:
+		return 4;
+	default:
+		return 0;
+	};
+}
+
+static FORCEINLINE VkPrimitiveTopology UEToVulkanType(PrimitiveType primitiveType)
+{
+	switch (primitiveType)
+	{
+	case PT_PointList:			
+		return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+	case PT_LineList:			
+		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+	case PT_TriangleList:		
+		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	case PT_TriangleStrip:		
+		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+	default:
+		break;
+	}
+	return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+}
 
 
+static FORCEINLINE uint32 IndexTypeToSize(VkIndexType type)
+{
+	switch (type)
+	{
+	case VK_INDEX_TYPE_UINT16:
+		return 2;
+		break;
+	case VK_INDEX_TYPE_UINT32:
+		return 4;
+		break;
+	}
+}
+
+static FORCEINLINE uint32 PrimitiveTypeToSize(PrimitiveType type)
+{
+	switch (type)
+	{
+	case PT_TriangleList:
+		return 3;
+		break;
+	case PT_TriangleStrip:
+		return 2;
+		break;
+	case PT_LineList:
+		return 2;
+		break;
+	case PT_QuadList:
+		return 4;
+		break;
+	case PT_PointList:
+		return 1;
+		break;
+	default:
+		return 0;
+		break;
+	}
+}

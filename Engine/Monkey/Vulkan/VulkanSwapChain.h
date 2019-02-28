@@ -22,29 +22,31 @@ public:
 
 	void Destroy();
 
-	Status Present(VulkanQueue* GfxQueue, VulkanQueue* PresentQueue, VkSemaphore* BackBufferRenderingDoneSemaphore);
+	Status Present(std::shared_ptr<VulkanQueue> GfxQueue, std::shared_ptr<VulkanQueue> PresentQueue, VkSemaphore* BackBufferRenderingDoneSemaphore);
 
-	inline int8 DoesLockToVsync() 
+	int32 AcquireImageIndex(VkSemaphore* OutSemaphore);
+
+	FORCEINLINE int8 DoesLockToVsync() 
 	{ 
 		return m_LockToVsync;
 	}
 
-	inline VkSwapchainKHR GetInstanceHandle()
+	FORCEINLINE VkSwapchainKHR GetInstanceHandle()
 	{
 		return m_SwapChain;
 	}
     
-    inline int32 GetWidth() const
+    FORCEINLINE int32 GetWidth() const
     {
         return m_SwapChainInfo.imageExtent.width;
     }
 
-    inline int32 GetHeight() const
+    FORCEINLINE int32 GetHeight() const
     {
         return m_SwapChainInfo.imageExtent.height;
     }
     
-    inline int32 GetBackBufferCount() const
+    FORCEINLINE int32 GetBackBufferCount() const
     {
         return m_SwapChainInfo.minImageCount;
     }
@@ -53,8 +55,11 @@ public:
     {
         return m_SwapChainInfo;
     }
-protected:
-	int32 AcquireImageIndex(VkSemaphore* OutSemaphore);
+
+	const VulkanFence* GetFence(int32 index) const
+	{
+		return m_ImageAcquiredFences[index];
+	}
 	
 protected:
 	VkSwapchainKHR m_SwapChain;

@@ -68,10 +68,20 @@ SETUP_SAMPLE_START(Triangle)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-	# SET(RESOURCE_FILES
-	# 	shader.vert
-	# 	shader.frag
-	# 	vert.spv
-	# 	frag.spv
-	# )
 SETUP_SAMPLE_END(Triangle)
+
+SETUP_SAMPLE_START(OBJLoader)
+	SET(SOURCE_FILES
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
+	)
+	
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	
+SETUP_SAMPLE_END(OBJLoader)
