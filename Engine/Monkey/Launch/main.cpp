@@ -1,8 +1,5 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Configuration/PerPlatformCppDefines.h"
-#include "Vulkan/VulkanRHI.h"
-#include "Vulkan/VertexBuffer.h"
 #include <stdio.h>
 #include <string>
 #include <vector>

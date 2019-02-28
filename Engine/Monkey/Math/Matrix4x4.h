@@ -31,6 +31,50 @@ public:
 
 	FORCEINLINE void SetIdentity();
 
+	FORCEINLINE void Prepend(const Matrix4x4& other);
+
+	FORCEINLINE void Append(const Matrix4x4& other);
+
+	FORCEINLINE void PrependRotation(const Rotator& rotator, const Vector3& pivot);
+
+	FORCEINLINE void AppendRotation(const Rotator& rotator, const Vector3& pivot);
+
+	FORCEINLINE void PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
+
+	FORCEINLINE void AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
+	
+	FORCEINLINE void AppendTranslation(const Vector3& translation);
+
+	FORCEINLINE void PrependTranslation(const Vector3& translation);
+
+	FORCEINLINE void TranslateAxis(const Vector3& axis, float distance);
+
+	FORCEINLINE void TranslateX(float distance);
+
+	FORCEINLINE void TranslateY(float distance);
+
+	FORCEINLINE void TranslateZ(float distance);
+
+	FORCEINLINE void RotateAxis(const Vector3& axis, float angle, const Vector3* pivot);
+
+	FORCEINLINE void RotateX(float angle, bool local, const Vector3* pivot);
+
+	FORCEINLINE void RotateY(float angle, bool local, const Vector3* pivot);
+
+	FORCEINLINE void RotateZ(float angle, bool local, const Vector3* pivot);
+	
+	FORCEINLINE void AppendScale(const Vector3& scale);
+
+	FORCEINLINE void PrependScale(const Vector3& scale);
+	
+	FORCEINLINE void CopyColumnFrom(int32 column, const Vector4 &vec);
+
+	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
+
+	FORCEINLINE void CopyRawFrom(int32 column, const Vector4 &vec);
+
+	FORCEINLINE void CopyRawTo(int32 column, Vector4 &vec) const;
+	
 	FORCEINLINE Matrix4x4 operator* (const Matrix4x4& other) const;
 
 	FORCEINLINE void operator*=(const Matrix4x4& other);
@@ -61,13 +105,19 @@ public:
 
 	FORCEINLINE Matrix4x4 GetTransposed() const;
 
+	FORCEINLINE void SetTransposed();
+
 	FORCEINLINE float Determinant() const;
 
 	FORCEINLINE float RotDeterminant() const;
 
 	FORCEINLINE Matrix4x4 InverseFast() const;
 
+	FORCEINLINE void SetInverseFast();
+
 	FORCEINLINE Matrix4x4 Inverse() const;
+
+	FORCEINLINE void SetInverse();
 
 	FORCEINLINE Matrix4x4 TransposeAdjoint() const;
 
@@ -89,8 +139,6 @@ public:
 
 	FORCEINLINE float GetMaximumAxisScale() const;
 
-	FORCEINLINE Matrix4x4 ApplyScale(float scale);
-
 	FORCEINLINE Vector3 GetOrigin() const;
 
 	FORCEINLINE Vector3 GetScaledAxis(Axis::Type axis) const;
@@ -107,7 +155,19 @@ public:
 
 	FORCEINLINE void SetAxes(Vector3* axis0 = nullptr, Vector3* axis1 = nullptr, Vector3* axis2 = nullptr, Vector3* origin = nullptr);
 
-	FORCEINLINE Vector3 GetColumn(int32 i) const;
+	FORCEINLINE Vector3 GetColumn(int32 col) const;
+
+	FORCEINLINE Vector3 GetRight() const;
+
+	FORCEINLINE Vector3 GetUp() const;
+
+	FORCEINLINE Vector3 GetForward() const;
+
+	FORCEINLINE Vector3 GetLeft() const;
+
+	FORCEINLINE Vector3 GetBackward() const;
+
+	FORCEINLINE Vector3 GetDown() const;
 
 	FORCEINLINE bool GetFrustumNearPlane(Plane& outPlane) const;
 
@@ -130,6 +190,8 @@ public:
 	FORCEINLINE Quat ToQuat() const;
 
 	FORCEINLINE std::string ToString() const;
+
+	FORCEINLINE static void GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m);
 };
 
 template<uint32 NumRows, uint32 NumColumns>
@@ -235,6 +297,255 @@ FORCEINLINE void Matrix4x4::SetIdentity()
 	m[1][0] = 0; m[1][1] = 1;  m[1][2] = 0;  m[1][3] = 0;
 	m[2][0] = 0; m[2][1] = 0;  m[2][2] = 1;  m[2][3] = 0;
 	m[3][0] = 0; m[3][1] = 0;  m[3][2] = 0;  m[3][3] = 1;
+}
+
+FORCEINLINE void Matrix4x4::PrependRotation(const Rotator& rotator, const Vector3& pivot)
+{
+	Matrix4x4 rotMatrix(rotator, pivot);
+	MMath::VectorMatrixMultiply(this, &rotMatrix, this);
+}
+
+FORCEINLINE void Matrix4x4::AppendRotation(const Rotator& rotator, const Vector3& pivot)
+{
+	Matrix4x4 rotMatrix(rotator, pivot);
+	MMath::VectorMatrixMultiply(this, this, &rotMatrix);
+}
+
+FORCEINLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
+{
+	Matrix4x4 matrix;
+	if (pivot)
+	{
+		GetAxisRotation(axis.x, axis.y, axis.z, pivot->x, pivot->y, pivot->z, degrees, matrix);
+	}
+	else
+	{
+		GetAxisRotation(axis.x, axis.y, axis.z, 0, 0, 0, degrees, matrix);
+	}
+	Prepend(matrix);
+}
+
+FORCEINLINE void Matrix4x4::AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
+{
+	Matrix4x4 matrix;
+	if (pivot)
+	{
+		GetAxisRotation(axis.x, axis.y, axis.z, pivot->x, pivot->y, pivot->z, degrees, matrix);
+	}
+	else
+	{
+		GetAxisRotation(axis.x, axis.y, axis.z, 0, 0, 0, degrees, matrix);
+	}
+	Append(matrix);
+}
+
+FORCEINLINE void Matrix4x4::AppendTranslation(const Vector3& translation)
+{
+	m[3][0] += translation.x; 
+	m[3][1] += translation.y;
+	m[3][2] += translation.z;
+}
+
+FORCEINLINE void Matrix4x4::TranslateY(float distance)
+{
+	Vector4 pos;
+	Vector4 up;
+	CopyRawTo(3, pos);
+	CopyRawTo(1, up);
+	pos.x += distance * up.x;
+	pos.y += distance * up.y;
+	pos.z += distance * up.z;
+	CopyRawFrom(3, pos);
+}
+
+FORCEINLINE void Matrix4x4::TranslateZ(float distance)
+{
+	Vector4 pos;
+	Vector4 dir;
+	CopyRawTo(3, pos);
+	CopyRawTo(2, dir);
+	pos.x += distance * dir.x;
+	pos.y += distance * dir.y;
+	pos.z += distance * dir.z;
+	CopyRawFrom(3, pos);
+}
+
+FORCEINLINE void Matrix4x4::TranslateAxis(const Vector3& axis, float distance)
+{
+	Vector4 pos;
+	CopyRawTo(3, pos);
+	pos.x += distance * axis.x;
+	pos.y += distance * axis.y;
+	pos.z += distance * axis.z;
+	CopyRawFrom(3, pos);
+}
+
+FORCEINLINE void Matrix4x4::TranslateX(float distance)
+{
+	Vector4 pos;
+	Vector4 right;
+	CopyRawTo(3, pos);
+	CopyRawTo(0, right);
+	pos.x += distance * right.x;
+	pos.y += distance * right.y;
+	pos.z += distance * right.z;
+	CopyRawFrom(3, pos);
+}
+
+FORCEINLINE void Matrix4x4::GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m)
+{
+	float rad = degress / 180.0f * PI;
+
+	float u2 = u * u;
+	float v2 = v * v;
+	float w2 = w * w;
+	float l2 = u2 + v2 + w2;
+	float l = MMath::Sqrt(l2);
+
+	u /= l;
+	v /= l;
+	w /= l;
+	u2 /= l2;
+	v2 /= l2;
+	w2 /= l2;
+
+	float cos = MMath::Cos(rad);
+	float sin = MMath::Sin(rad);
+
+	m.m[0][0] = u2 + (v2 + w2) * cos;
+	m.m[0][1] = u * v * (1 - cos) + w * sin;
+	m.m[0][2] = u * w * (1 - cos) - v * sin;
+	m.m[0][3] = 0;
+
+	m.m[1][0] = u * v * (1 - cos) - w * sin;
+	m.m[1][1] = v2 + (u2 + w2) * cos;
+	m.m[1][2] = v * w * (1 - cos) + u * sin;
+	m.m[1][3] = 0;
+
+	m.m[2][0] = u * w * (1 - cos) + v * sin;
+	m.m[2][1] = v * w * (1 - cos) - u * sin;
+	m.m[2][2] = w2 + (u2 + v2) * cos;
+	m.m[2][3] = 0;
+
+	m.m[3][0] = (a * (v2 + w2) - u * (b * v + c * w)) * (1 - cos) + (b * w - c * v) * sin;
+	m.m[3][1] = (b * (u2 + w2) - v * (a * u + c * w)) * (1 - cos) + (c * u - a * w) * sin;
+	m.m[3][2] = (c * (u2 + v2) - w * (a * u + b * v)) * (1 - cos) + (a * v - b * u) * sin;
+	m.m[3][3] = 1;
+}
+
+FORCEINLINE void Matrix4x4::RotateX(float angle, bool local, const Vector3* pivot)
+{
+	if (local) {
+		Vector3 vec = GetRight();
+		RotateAxis(vec, angle, pivot);
+	}
+	else {
+		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+	}
+}
+
+FORCEINLINE void Matrix4x4::RotateY(float angle, bool local, const Vector3* pivot)
+{
+	if (local) {
+		Vector3 vec = GetUp();
+		RotateAxis(vec, angle, pivot);
+	}
+	else {
+		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+	}
+}
+
+FORCEINLINE void Matrix4x4::RotateZ(float angle, bool local, const Vector3* pivot)
+{
+	if (local) {
+		Vector3 vec = GetForward();
+		RotateAxis(vec, angle, pivot);
+	}
+	else {
+		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+	}
+}
+
+FORCEINLINE void Matrix4x4::RotateAxis(const Vector3& axis, float angle, const Vector3* pivot)
+{
+	Vector3 vec;
+	vec.x = axis.x;
+	vec.y = axis.y;
+	vec.z = axis.z;
+	vec.Normalize();
+
+	if (pivot) {
+		AppendRotation(angle, vec, pivot);
+	}
+	else {
+		Vector4 pos;
+		CopyRawTo(3, pos);
+		Vector3 pos3(pos.x, pos.y, pos.z);
+		AppendRotation(angle, vec, &pos3);
+	}
+}
+
+FORCEINLINE void Matrix4x4::PrependTranslation(const Vector3& translation)
+{
+	Matrix4x4 matrix;
+	matrix.SetOrigin(translation);
+	Prepend(matrix);
+}
+
+FORCEINLINE void Matrix4x4::AppendScale(const Vector3& scale)
+{
+	Matrix4x4 matrix;
+	matrix.SetIdentity();
+	matrix.m[0][0] = scale.x;
+	matrix.m[1][1] = scale.y;
+	matrix.m[2][2] = scale.z;
+	Append(matrix);
+}
+
+FORCEINLINE void Matrix4x4::PrependScale(const Vector3& scale)
+{
+	Matrix4x4 matrix;
+	matrix.SetIdentity();
+	matrix.m[0][0] = scale.x;
+	matrix.m[1][1] = scale.y;
+	matrix.m[2][2] = scale.z;
+	Prepend(matrix);
+}
+
+FORCEINLINE void Matrix4x4::Prepend(const Matrix4x4& other)
+{
+	MMath::VectorMatrixMultiply(this, &other, this);
+}
+
+FORCEINLINE void Matrix4x4::Append(const Matrix4x4& other)
+{
+	MMath::VectorMatrixMultiply(this, this, &other);
+}
+
+FORCEINLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
+{
+	m[0][column] = vec.x; m[1][column] = vec.y; m[2][column] = vec.z; m[3][column] = vec.w;
+}
+
+FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
+{
+	vec.x = m[0][column];
+	vec.y = m[1][column];
+	vec.z = m[2][column];
+	vec.w = m[3][column];
+}
+
+FORCEINLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
+{
+	m[raw][0] = vec.x; m[raw][1] = vec.y; m[raw][2] = vec.z; m[raw][3] = vec.w;
+}
+
+FORCEINLINE void Matrix4x4::CopyRawTo(int32 raw, Vector4 &vec) const
+{
+	vec.x = m[raw][0];
+	vec.y = m[raw][1];
+	vec.z = m[raw][2];
+	vec.w = m[raw][3];
 }
 
 FORCEINLINE void Matrix4x4::operator*=(const Matrix4x4& other)
@@ -355,6 +666,11 @@ FORCEINLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
 	return invSelf.TransformVector(v);
 }
 
+FORCEINLINE void Matrix4x4::SetTransposed()
+{
+	*this = GetTransposed();
+}
+
 FORCEINLINE Matrix4x4 Matrix4x4::GetTransposed() const
 {
 	Matrix4x4 result;
@@ -418,11 +734,21 @@ FORCEINLINE float Matrix4x4::RotDeterminant() const
 		m[2][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1]);
 }
 
+FORCEINLINE void Matrix4x4::SetInverseFast()
+{
+	*this = InverseFast();
+}
+
 FORCEINLINE Matrix4x4 Matrix4x4::InverseFast() const
 {
 	Matrix4x4 result;
     MMath::VectorMatrixInverse(&result, this);
 	return result;
+}
+
+FORCEINLINE void Matrix4x4::SetInverse()
+{
+	*this = Inverse();
 }
 
 FORCEINLINE Matrix4x4 Matrix4x4::Inverse() const
@@ -735,6 +1061,48 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axi
 	}
 }
 
+FORCEINLINE Vector3 Matrix4x4::GetRight() const
+{
+	Vector4 right;
+	CopyRawTo(0, right);
+	return Vector3(right.x, right.y, right.z);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetUp() const
+{
+	Vector4 up;
+	CopyRawTo(1, up);
+	return Vector3(up.x, up.y, up.z);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetForward() const
+{
+	Vector4 forward;
+	CopyRawTo(2, forward);
+	return Vector3(forward.x, forward.y, forward.z);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetLeft() const
+{
+	Vector4 right;
+	CopyRawTo(0, right);
+	return Vector3(-right.x, -right.y, -right.z);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetBackward() const
+{
+	Vector4 forward;
+	CopyRawTo(2, forward);
+	return Vector3(-forward.x, -forward.y, -forward.z);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetDown() const
+{
+	Vector4 up;
+	CopyRawTo(1, up);
+	return Vector3(-up.x, -up.y, -up.z);
+}
+
 FORCEINLINE Vector3 Matrix4x4::GetColumn(int32 i) const
 {
 	return Vector3(m[0][i], m[1][i], m[2][i]);
@@ -821,23 +1189,23 @@ FORCEINLINE bool Matrix4x4::GetFrustumBottomPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE void Matrix4x4::Mirror(Axis::Type MirrorAxis, Axis::Type FlipAxis)
+FORCEINLINE void Matrix4x4::Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis)
 {
-	if (MirrorAxis == Axis::X)
+	if (mirrorAxis == Axis::X)
 	{
 		m[0][0] *= -1.f;
 		m[1][0] *= -1.f;
 		m[2][0] *= -1.f;
 		m[3][0] *= -1.f;
 	}
-	else if (MirrorAxis == Axis::Y)
+	else if (mirrorAxis == Axis::Y)
 	{
 		m[0][1] *= -1.f;
 		m[1][1] *= -1.f;
 		m[2][1] *= -1.f;
 		m[3][1] *= -1.f;
 	}
-	else if (MirrorAxis == Axis::Z)
+	else if (mirrorAxis == Axis::Z)
 	{
 		m[0][2] *= -1.f;
 		m[1][2] *= -1.f;
@@ -845,35 +1213,24 @@ FORCEINLINE void Matrix4x4::Mirror(Axis::Type MirrorAxis, Axis::Type FlipAxis)
 		m[3][2] *= -1.f;
 	}
 
-	if (FlipAxis == Axis::X)
+	if (flipAxis == Axis::X)
 	{
 		m[0][0] *= -1.f;
 		m[0][1] *= -1.f;
 		m[0][2] *= -1.f;
 	}
-	else if (FlipAxis == Axis::Y)
+	else if (flipAxis == Axis::Y)
 	{
 		m[1][0] *= -1.f;
 		m[1][1] *= -1.f;
 		m[1][2] *= -1.f;
 	}
-	else if (FlipAxis == Axis::Z)
+	else if (flipAxis == Axis::Z)
 	{
 		m[2][0] *= -1.f;
 		m[2][1] *= -1.f;
 		m[2][2] *= -1.f;
 	}
-}
-
-FORCEINLINE Matrix4x4 Matrix4x4::ApplyScale(float scale)
-{
-	Matrix4x4 scaleMatrix(
-		Plane(scale, 0.0f, 0.0f, 0.0f),
-		Plane(0.0f, scale, 0.0f, 0.0f),
-		Plane(0.0f, 0.0f, scale, 0.0f),
-		Plane(0.0f, 0.0f, 0.0f, 1.0f)
-	);
-	return scaleMatrix * (*this);
 }
 
 FORCEINLINE void  Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
