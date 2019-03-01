@@ -37,6 +37,13 @@ set(ALL_LIBS
 	${Vulkan_LIBRARY}
 	glfw
 	imgui
+	spirv-cross-glsl 
+	spirv-cross-hlsl 
+	spirv-cross-cpp 
+	spirv-cross-reflect 
+	spirv-cross-msl 
+	spirv-cross-util 
+	spirv-cross-core
 	Monkey
 )
 
@@ -45,9 +52,11 @@ include_directories(
 	external/glfw/include/
 	external/glm/include/
 	external/imgui/
+	external/SPIRV-Cross/
 )
 
 add_subdirectory(Engine)
 add_subdirectory(external/imgui)
-add_subdirectory(examples)
 add_subdirectory(external/glfw)
+add_subdirectory(external/SPIRV-Cross)
+add_subdirectory(examples)
