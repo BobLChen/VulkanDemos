@@ -380,10 +380,10 @@ private:
 		ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.vert.spv");
+		shaderStages[0].module = LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.vert.spv");
 		shaderStages[0].pName = "main";
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.frag.spv");
+		shaderStages[1].module = LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.frag.spv");
 		shaderStages[1].pName = "main";
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
@@ -441,16 +441,12 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(0, 0, 0), Vector3::ZeroVector);
-
+        // m_MVPData.model.AppendRotation(1.0f, Vector3::UpVector);
+        
 		m_MVPData.view.SetIdentity();
 		m_MVPData.view.SetOrigin(Vector4(0, 0, 30.0f));
-		m_MVPData.view = m_MVPData.view.Inverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
-
+        m_MVPData.view.SetInverse();
+        
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
 		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
@@ -480,7 +476,12 @@ private:
 		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
 		m_MVPDescriptor.offset = 0;
 		m_MVPDescriptor.range = sizeof(UBOData);
-
+        
+        m_MVPData.model.SetIdentity();
+        m_MVPData.view.SetIdentity();
+        m_MVPData.projection.SetIdentity();
+        m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+        
 		UpdateUniformBuffers();
 	}
 

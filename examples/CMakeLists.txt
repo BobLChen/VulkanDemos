@@ -76,12 +76,12 @@ SETUP_SAMPLE_START(OBJLoader)
 		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
 	)
 	
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/3_OBJLoader/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
 			${file}
 		)
 	endforeach()
-	
+	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(OBJLoader)

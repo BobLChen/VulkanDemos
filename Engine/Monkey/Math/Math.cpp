@@ -25,7 +25,7 @@ const Vector2 Vector2::UnitVector(1.0f, 1.0f);
 const Vector3 Vector3::ZeroVector(0.0f, 0.0f, 0.0f);
 const Vector3 Vector3::OneVector(1.0f, 1.0f, 1.0f);
 const Vector3 Vector3::UpVector(0.0f, 1.0f, 0.0f);
-const Vector3 Vector3::ForwardVector(0.0f, 0.0f, 1.0f);
+const Vector3 Vector3::ForwardVector(0.0f, 0.0f, -1.0f);
 const Vector3 Vector3::RightVector(1.0f, 0.0f, 0.0f);
 // rotator
 const Rotator Rotator::ZeroRotator(0.f, 0.f, 0.f);
