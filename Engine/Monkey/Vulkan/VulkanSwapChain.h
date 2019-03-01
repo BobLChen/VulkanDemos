@@ -55,12 +55,7 @@ public:
     {
         return m_SwapChainInfo;
     }
-
-	const VulkanFence* GetFence(int32 index) const
-	{
-		return m_ImageAcquiredFences[index];
-	}
-	
+    
 protected:
 	VkSwapchainKHR m_SwapChain;
 	VkSurfaceKHR m_Surface;
@@ -72,7 +67,6 @@ protected:
 	uint32 m_NumAcquireCalls;
 	VkInstance m_Instance;
 	std::vector<VkSemaphore> m_ImageAcquiredSemaphore;
-	std::vector<VulkanFence*> m_ImageAcquiredFences;
 	int8 m_LockToVsync;
 	uint32 m_PresentID;
     VkSwapchainCreateInfoKHR m_SwapChainInfo;

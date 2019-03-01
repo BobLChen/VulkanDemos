@@ -207,14 +207,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
 	outImages.resize(numSwapChainImages);
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
-
-	m_ImageAcquiredFences.resize(numSwapChainImages);
-	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
-	for (int32 index = 0; index < numSwapChainImages; ++index)
-	{
-		m_ImageAcquiredFences[index] = fenceMgr.CreateFence(true);
-	}
-
+    
 	m_ImageAcquiredSemaphore.resize(numSwapChainImages);
 	for (int32 index = 0; index < numSwapChainImages; ++index)
 	{
@@ -231,13 +224,7 @@ void VulkanSwapChain::Destroy()
 {
 	vkDestroySwapchainKHR(m_Device->GetInstanceHandle(), m_SwapChain, VULKAN_CPU_ALLOCATOR);
 	m_SwapChain = VK_NULL_HANDLE;
-
-	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
-	for (int32 index = 0; index < m_ImageAcquiredFences.size(); ++index)
-	{
-		fenceMgr.ReleaseFence(m_ImageAcquiredFences[index]);
-	}
-
+    
 	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index)
 	{
 		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_ImageAcquiredSemaphore[index], VULKAN_CPU_ALLOCATOR);
@@ -254,16 +241,12 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	const int32 prevSemaphoreIndex = m_SemaphoreIndex;
 	m_SemaphoreIndex = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
 	
-	VulkanFenceManager& fenceMgr = m_Device->GetFenceManager();
-	fenceMgr.ResetFence(m_ImageAcquiredFences[m_SemaphoreIndex]);
-	const VkFence acquiredFence = m_ImageAcquiredFences[m_SemaphoreIndex]->GetHandle();
-
 	VkResult result = vkAcquireNextImageKHR(
 		m_Device->GetInstanceHandle(),
 		m_SwapChain, 
-		UINT64_MAX, 
+		MAX_int64, 
 		m_ImageAcquiredSemaphore[m_SemaphoreIndex], 
-		acquiredFence,
+		VK_NULL_HANDLE,
 		&imageIndex
 	);
 
@@ -282,9 +265,7 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	++m_NumAcquireCalls;
 	*outSemaphore = m_ImageAcquiredSemaphore[m_SemaphoreIndex];
 	m_CurrentImageIndex = (int32)imageIndex;
-
-	fenceMgr.WaitForFence(m_ImageAcquiredFences[m_SemaphoreIndex], UINT64_MAX);
-	
+    
 	return m_CurrentImageIndex;
 }
 
