@@ -4,3 +4,6 @@
 [submodule "external/SPIRV-Cross"]
 	path = external/SPIRV-Cross
 	url = https://github.com/BobLChen/SPIRV-Cross.git
+[submodule "external/shaderc"]
+	path = external/shaderc
+	url = https://github.com/BobLChen/shaderc.git
