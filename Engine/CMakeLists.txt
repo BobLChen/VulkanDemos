@@ -72,6 +72,14 @@ set(Monkey_Utils_HDRS
 	Monkey/Utils/SecureHash.cpp
 )
 
+set(Monkey_File_SRCS
+	Monkey/File/FileManager.cpp
+	
+)
+set(Monkey_File_HDRS
+	Monkey/File/FileManager.h
+)
+
 set(Monkey_Core_HDRS
 	Monkey/Core/PixelFormat.h
 )
@@ -125,6 +133,13 @@ set(Monkey_Graphics_Shader_HDRS
 )
 set(Monkey_Graphics_Shader_SRCS
 	Monkey/Graphics/Shader/Shader.cpp
+)
+
+set(Monkey_Graphics_Material_HDRS
+	Monkey/Graphics/Material/Material.h
+)
+set(Monkey_Graphics_Material_SRCS
+	Monkey/Graphics/Material/Material.cpp
 )
 
 set(Monkey_Loader_HDRS
@@ -252,6 +267,8 @@ add_library(Monkey STATIC
 
 	${Monkey_Utils_HDRS}
 	${Monkey_Utils_SRCS}
+	${Monkey_File_HDRS}
+	${Monkey_File_SRCS}
 	
 	${Monkey_Core_HDRS}
 	${Monkey_Core_SRCS}
@@ -282,6 +299,8 @@ add_library(Monkey STATIC
 
 	${Monkey_Graphics_Shader_HDRS}
 	${Monkey_Graphics_Shader_SRCS}
+	${Monkey_Graphics_Material_SRCS}
+	${Monkey_Graphics_Material_HDRS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -293,6 +312,7 @@ source_group(Monkey\\Vulkan\\Mac FILES ${Monkey_Vulkan_Mac_SRCS} ${Monkey_Vulkan
 source_group(Monkey\\Vulkan\\Linux FILES ${Monkey_Vulkan_Linux_SRCS} ${Monkey_Vulkan_Linux_HDRS})
 
 source_group(Monkey\\Utils FILES ${Monkey_Utils_HDRS} ${Monkey_Utils_SRCS})
+source_group(Monkey\\File FILES ${Monkey_File_HDRS} ${Monkey_File_SRCS})
 
 source_group(Monkey\\Math FILES ${Monkey_Math_HDRS} ${Monkey_Math_SRCS})
 source_group(Monkey\\Math\\Windows FILES ${Monkey_Math_Windows_HDRS} ${Monkey_Math_Windows_SRCS})
@@ -316,3 +336,4 @@ source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
 
 source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})
 source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})
+source_group(Monkey\\Graphics\\Material FILES ${Monkey_Graphics_Material_SRCS} ${Monkey_Graphics_Material_HDRS})

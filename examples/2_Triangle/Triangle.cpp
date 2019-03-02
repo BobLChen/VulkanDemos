@@ -2,12 +2,13 @@
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
 #include "Application/AppModeBase.h"
+#include "Math/Vector4.h"
+#include "Math/Matrix4x4.h"
+#include "File/FileManager.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
-#include "Math/Vector4.h"
-#include "Math/Matrix4x4.h"
 #include <vector>
 #include <fstream>
 
@@ -16,7 +17,6 @@ class TriangleMode : public AppModeBase
 public:
 	TriangleMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
-		, m_CmdLine(cmdLine)
 		, m_Ready(false)
 		, m_CurrentBackBuffer(0)
 	{
@@ -30,24 +30,7 @@ public:
 
 	virtual void PreInit() override
 	{
-		std::string assetsPath = m_CmdLine[0];
-		int32 length = 0;
-		for (size_t i = 0; i < assetsPath.size(); ++i)
-		{
-			if (assetsPath[i] == '\\')
-			{
-				assetsPath[i] = '/';
-			}
-		}
-		for (size_t i = assetsPath.size() - 1; i >= 0; --i)
-		{
-			if (assetsPath[i] == '/')
-			{
-				break;
-			}
-			length += 1;
-		}
-		m_AssetsPath = assetsPath.substr(0, assetsPath.size() - length);
+
 	}
 
 	virtual void Init() override
@@ -70,7 +53,9 @@ public:
 
 	virtual void Exist() override
 	{
+		// 等待所有渲染指令执行完毕
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, (uint32_t)m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
+		
         DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
@@ -116,38 +101,18 @@ private:
 
 	VkShaderModule LoadSPIPVShader(const std::string& filepath)
 	{
-		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
-
-		FILE* file = fopen(finalPath.c_str(), "rb");
-		if (!file)
-		{
-			MLOGE("File not found :%s", filepath.c_str());
-			return VK_NULL_HANDLE;
-		}
-
-		fseek(file, 0, SEEK_END);
-		int32 dataSize = ftell(file);
-		fseek(file, 0, SEEK_SET);
-
-		if (dataSize <= 0)
-		{
-			fclose(file);
-			MLOGE("File has no data :%s", filepath.c_str());
-			return VK_NULL_HANDLE;
-		}
-
-		uint8* data = new uint8[dataSize];
-		fread(data, 1, dataSize, file);
-		fclose(file);
+		uint8* dataPtr = nullptr;
+		uint32 dataSize = 0;
+		FileManager::ReadFile(filepath, dataPtr, dataSize);
 
 		VkShaderModuleCreateInfo moduleCreateInfo;
 		ZeroVulkanStruct(moduleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
 		moduleCreateInfo.codeSize = dataSize;
-		moduleCreateInfo.pCode = (uint32_t*)data;
+		moduleCreateInfo.pCode = (uint32_t*)dataPtr;
 
 		VkShaderModule shaderModule;
 		VERIFYVULKANRESULT(vkCreateShaderModule(m_Device, &moduleCreateInfo, VULKAN_CPU_ALLOCATOR, &shaderModule));
-		delete[] data;
+		delete[] dataPtr;
 		
 		return shaderModule;
 	}
@@ -158,10 +123,11 @@ private:
 
 		VkSwapchainKHR swapchain = m_VulkanRHI->GetSwapChain()->GetInstanceHandle();
 		VkPipelineStageFlags waitStageMask = m_VulkanRHI->GetStageMask();
-		VkQueue queue = m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle();
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
         
+		// 请求一个空闲的Backbuffer，这里会一直同步直到Present引擎交出一个。
 		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, m_PresentComplete, nullptr, &m_CurrentBackBuffer));
+		// 继续同步等待，所有提交的指令执行完毕。
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer], VK_TRUE, UINT64_MAX));
 		VERIFYVULKANRESULT(vkResetFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer]));
 		
@@ -175,7 +141,8 @@ private:
 		submitInfo.pCommandBuffers = &drawCmdBuffers[m_CurrentBackBuffer];
 		submitInfo.commandBufferCount = 1;												
 		
-		VERIFYVULKANRESULT(vkQueueSubmit(queue, 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
+		// 提交绘制命令
+		VERIFYVULKANRESULT(vkQueueSubmit(m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
 
 		VkPresentInfoKHR presentInfo = {};
 		ZeroVulkanStruct(presentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -185,7 +152,8 @@ private:
 		presentInfo.pWaitSemaphores = &m_RenderComplete;
 		presentInfo.waitSemaphoreCount = 1;
 
-		vkQueuePresentKHR(queue, &presentInfo);
+		// 提交Present命令
+		vkQueuePresentKHR(m_VulkanRHI->GetDevice()->GetPresentQueue()->GetHandle(), &presentInfo);
 	}
 
 	void SetupCommandBuffers()
@@ -280,7 +248,6 @@ private:
 		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
 	}
     
-    // http://xiaopengyou.fun/article/31
 	void CreatePipelines()
 	{
 		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
@@ -434,20 +401,10 @@ private:
 		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
 	}
 	
-	float pitch = 0.0f;
-
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model = m_MVPData.model * Matrix4x4(Rotator(pitch, 0, 0), Vector3::ZeroVector);
-		pitch += 0.1f;
+		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
-		
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
-		
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
 		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
@@ -478,7 +435,13 @@ private:
 		m_MVPDescriptor.offset = 0;
 		m_MVPDescriptor.range  = sizeof(UBOData);
 
-		UpdateUniformBuffers();
+		m_MVPData.model.SetIdentity();
+
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
+
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 	}
 	
 	void DestroyUniformBuffers()
@@ -664,8 +627,6 @@ private:
 		}
 	}
 
-	std::vector<std::string> m_CmdLine;
-	std::string m_AssetsPath;
 	bool m_Ready;
 
 	std::vector<VkFence> m_Fences;

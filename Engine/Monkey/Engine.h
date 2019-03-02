@@ -26,7 +26,13 @@ public:
 
 	std::shared_ptr<VulkanRHI> GetVulkanRHI();
 
+	const std::string& GetAssetsPath() const;
+
+	static Engine* Get();
 protected:
+	static Engine* g_Instance;
+	
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;
+	std::string m_AssetsPath;
 	bool m_IsRequestingExit;
 };

@@ -12,6 +12,8 @@
 #include "Loader/tiny_obj_loader.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
+#include "Graphics/Shader/Shader.h"
+#include "File/FileManager.h"
 #include <vector>
 #include <fstream>
 #include <istream>
@@ -21,7 +23,6 @@ class OBJLoaderMode : public AppModeBase
 public:
 	OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
-		, m_CmdLine(cmdLine)
 		, m_Ready(false)
 	{
 
@@ -34,24 +35,7 @@ public:
 
 	virtual void PreInit() override
 	{
-		std::string assetsPath = m_CmdLine[0];
-		int32 length = 0;
-		for (size_t i = 0; i < assetsPath.size(); ++i)
-		{
-			if (assetsPath[i] == '\\')
-			{
-				assetsPath[i] = '/';
-			}
-		}
-		for (size_t i = assetsPath.size() - 1; i >= 0; --i)
-		{
-			if (assetsPath[i] == '/')
-			{
-				break;
-			}
-			length += 1;
-		}
-		m_AssetsPath = assetsPath.substr(0, assetsPath.size() - length);
+		
 	}
 
 	virtual void Init() override
@@ -108,58 +92,6 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
-
-	std::string GetRealFilePath(const std::string& filepath)
-	{
-		return m_AssetsPath + "../../../examples/" + filepath;;
-	}
-
-	bool ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize)
-	{
-		std::string finalPath = m_AssetsPath + "../../../examples/" + filepath;
-
-		FILE* file = fopen(finalPath.c_str(), "rb");
-		if (!file)
-		{
-			MLOGE("File not found :%s", filepath.c_str());
-			return false;
-		}
-
-		fseek(file, 0, SEEK_END);
-		dataSize = ftell(file);
-		fseek(file, 0, SEEK_SET);
-
-		if (dataSize <= 0)
-		{
-			fclose(file);
-			MLOGE("File has no data :%s", filepath.c_str());
-			return false;
-		}
-
-		dataPtr = new uint8[dataSize];
-		fread(dataPtr, 1, dataSize, file);
-		fclose(file);
-		
-		return true;
-	}
-
-	VkShaderModule LoadSPIPVShader(std::string filepath)
-	{
-		uint32 dataSize = 0;
-		uint8* dataPtr = nullptr;
-		ReadFile(filepath, dataPtr, dataSize);
-		
-		VkShaderModuleCreateInfo moduleCreateInfo;
-		ZeroVulkanStruct(moduleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-		moduleCreateInfo.codeSize = dataSize;
-		moduleCreateInfo.pCode = (uint32_t*)dataPtr;
-
-		VkShaderModule shaderModule;
-		VERIFYVULKANRESULT(vkCreateShaderModule(m_Device, &moduleCreateInfo, VULKAN_CPU_ALLOCATOR, &shaderModule));
-		delete[] dataPtr;
-
-		return shaderModule;
-	}
 
 	void Draw()
 	{
@@ -376,14 +308,17 @@ private:
 		vertexInputState.vertexAttributeDescriptionCount = 2;
 		vertexInputState.pVertexAttributeDescriptions = vertexInputAttributs.data();
 
+		std::shared_ptr<ShaderModule> vertModule = Shader::LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.vert.spv");
+		std::shared_ptr<ShaderModule> fragModule = Shader::LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.frag.spv");
+
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
 		ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.vert.spv");
+		shaderStages[0].module = vertModule->GetHandle();
 		shaderStages[0].pName = "main";
 		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = LoadSPIPVShader("assets/shaders/3_OBJLoader/obj.frag.spv");
+		shaderStages[1].module = fragModule->GetHandle();
 		shaderStages[1].pName = "main";
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
@@ -401,9 +336,6 @@ private:
 		pipelineCreateInfo.pDepthStencilState = &depthStencilState;
 		pipelineCreateInfo.pDynamicState = &dynamicState;
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
-
-		vkDestroyShaderModule(m_Device, shaderStages[0].module, VULKAN_CPU_ALLOCATOR);
-		vkDestroyShaderModule(m_Device, shaderStages[1].module, VULKAN_CPU_ALLOCATOR);
 	}
 
 	void DestroyPipelines()
@@ -493,13 +425,12 @@ private:
 
 	void LoadOBJ()
 	{
-		
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
 		std::string warn;
 		std::string err;
-		tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, GetRealFilePath("assets/models/suzanne.obj").c_str());
+		tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, FileManager::GetFilePath("assets/models/suzanne.obj").c_str());
 
 		std::vector<float> vertices;
 		std::vector<uint16> indices;
@@ -612,8 +543,6 @@ private:
 		vkDestroySemaphore(m_Device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 	}
 
-	std::vector<std::string> m_CmdLine;
-	std::string m_AssetsPath;
 	bool m_Ready;
 
 	VkDevice m_Device;
