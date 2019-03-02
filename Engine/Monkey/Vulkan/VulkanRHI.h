@@ -375,7 +375,10 @@ static FORCEINLINE uint32 IndexTypeToSize(VkIndexType type)
 	case VK_INDEX_TYPE_UINT32:
 		return 4;
 		break;
-	}
+    default:
+        return 0;
+        break;
+    }
 }
 
 static FORCEINLINE uint32 PrimitiveTypeToSize(PrimitiveType type)

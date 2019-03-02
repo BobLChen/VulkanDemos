@@ -350,6 +350,7 @@ FORCEINLINE Quat Quat::operator-=(const Quat& q)
 FORCEINLINE Quat Quat::operator*=(const Quat& q)
 {
 	MMath::VectorQuaternionMultiply(this, this, &q);
+    return *this;
 }
 
 FORCEINLINE Quat Quat::operator*(const Quat& q) const
