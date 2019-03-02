@@ -12,6 +12,7 @@
 
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
+#include "Graphics/Shader/Shader.h"
 
 #include "Loader/tiny_obj_loader.h"
 

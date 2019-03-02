@@ -120,6 +120,13 @@ set(Monkey_Graphics_Data_SRCS
 	Monkey/Graphics/Data/VertexBuffer.cpp
 )
 
+set(Monkey_Graphics_Shader_HDRS
+	Monkey/Graphics/Shader/Shader.h
+)
+set(Monkey_Graphics_Shader_SRCS
+	Monkey/Graphics/Shader/Shader.cpp
+)
+
 set(Monkey_Loader_HDRS
 	Monkey/Loader/tiny_obj_loader.h
 )
@@ -272,6 +279,9 @@ add_library(Monkey STATIC
 
 	${Monkey_Graphics_Data_HDRS}
 	${Monkey_Graphics_Data_SRCS}
+
+	${Monkey_Graphics_Shader_HDRS}
+	${Monkey_Graphics_Shader_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -305,3 +315,4 @@ source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linu
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
 
 source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})
+source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})

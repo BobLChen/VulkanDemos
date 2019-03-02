@@ -8,7 +8,7 @@ layout (binding = 0) uniform UBO
 	mat4 modelMatrix;
 	mat4 viewMatrix;
 	mat4 projectionMatrix;
-} ubo;
+} uboMVP;
 
 layout (location = 0) out vec3 outNormal;
 
@@ -20,5 +20,5 @@ out gl_PerVertex
 void main() 
 {
 	outNormal = inNormal;
-	gl_Position = ubo.projectionMatrix * ubo.viewMatrix * ubo.modelMatrix * vec4(inPos.xyz, 1.0);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPos.xyz, 1.0);
 }
