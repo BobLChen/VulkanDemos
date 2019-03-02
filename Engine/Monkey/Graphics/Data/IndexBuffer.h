@@ -3,9 +3,9 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 
-#include "VulkanPlatform.h"
-#include "RHIDefinitions.h"
-#include "VulkanDevice.h"
+#include "Vulkan/VulkanPlatform.h"
+#include "Vulkan/RHIDefinitions.h"
+#include "Vulkan/VulkanDevice.h"
 
 #include <vector>
 

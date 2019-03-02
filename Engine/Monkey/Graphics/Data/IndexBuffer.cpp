@@ -1,7 +1,7 @@
 #include "Math/Math.h"
+#include "Vulkan/VulkanRHI.h"
 
 #include "IndexBuffer.h"
-#include "VulkanRHI.h"
 
 IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiveType, VkIndexType indexType)
 	: m_IndexType(indexType)

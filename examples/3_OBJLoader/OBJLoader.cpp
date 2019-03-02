@@ -6,12 +6,12 @@
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/IndexBuffer.h"
 #include "Vulkan/VulkanMemory.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "Loader/tiny_obj_loader.h"
+#include "Graphics/Data/VertexBuffer.h"
+#include "Graphics/Data/IndexBuffer.h"
 #include <vector>
 #include <fstream>
 #include <istream>

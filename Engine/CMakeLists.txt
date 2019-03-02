@@ -97,8 +97,6 @@ set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanDebug.cpp
 	Monkey/Vulkan/VulkanSwapChain.cpp
 	Monkey/Vulkan/VulkanMemory.cpp
-	Monkey/Vulkan/IndexBuffer.cpp
-	Monkey/Vulkan/VertexBuffer.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -111,8 +109,15 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
-	Monkey/Vulkan/IndexBuffer.h
-	Monkey/Vulkan/VertexBuffer.h
+)
+
+set(Monkey_Graphics_Data_HDRS
+	Monkey/Graphics/Data/IndexBuffer.h
+	Monkey/Graphics/Data/VertexBuffer.h
+)
+set(Monkey_Graphics_Data_SRCS
+	Monkey/Graphics/Data/IndexBuffer.cpp
+	Monkey/Graphics/Data/VertexBuffer.cpp
 )
 
 set(Monkey_Loader_HDRS
@@ -264,6 +269,9 @@ add_library(Monkey STATIC
 
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
+
+	${Monkey_Graphics_Data_HDRS}
+	${Monkey_Graphics_Data_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -295,3 +303,5 @@ source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS
 source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linux_HDRS})
 
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
+
+source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})

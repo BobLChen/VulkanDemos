@@ -6,11 +6,13 @@
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
-#include "Vulkan/VertexBuffer.h"
-#include "Vulkan/IndexBuffer.h"
 #include "Vulkan/VulkanMemory.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
+
+#include "Graphics/Data/VertexBuffer.h"
+#include "Graphics/Data/IndexBuffer.h"
+
 #include "Loader/tiny_obj_loader.h"
 
 #include "spirv_glsl.hpp"
@@ -108,6 +110,9 @@ static void print_resources(const Compiler &compiler, const char *tag, const vec
         
         fprintf(stderr, " ID %03u : %s%s", res.id,
                 !res.name.empty() ? res.name.c_str() : compiler.get_fallback_name(fallback_id).c_str(), array.c_str());
+        
+        std::string name = compiler.get_name(res.id);
+        std::string fallbackName = compiler.get_fallback_name(fallback_id);
         
         if (mask.get(DecorationLocation))
             fprintf(stderr, " (Location : %u)", compiler.get_decoration(res.id, DecorationLocation));
@@ -405,7 +410,7 @@ private:
         std::vector<uint32_t> spirv_binary(dataSize / 4);
         std::memcpy(spirv_binary.data(), dataPtr, dataSize);
         
-        spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
+        spirv_cross::Compiler glsl(std::move(spirv_binary));
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
         print_resources(glsl, resources);
         
