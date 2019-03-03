@@ -1,6 +1,6 @@
 #include "Math/Math.h"
 #include "Vulkan/VulkanRHI.h"
-
+#include "Engine.h"
 #include "IndexBuffer.h"
 
 IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiveType, VkIndexType indexType)
@@ -12,7 +12,7 @@ IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiv
 	, m_TriangleCount(0)
 	, m_Buffer(VK_NULL_HANDLE)
 	, m_Memory(VK_NULL_HANDLE)
-	, m_Uploaded(false)
+	, m_Valid(false)
 	, m_AllocationSize(0)
 	, m_Alignment(0)
 {
@@ -22,15 +22,17 @@ IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiv
 
 IndexBuffer::~IndexBuffer()
 {
+	DestroyBuffer();
+	
 	if (m_Data) {
 		delete[] m_Data;
 		m_Data = nullptr;
 	}
 }
 
-void IndexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
+void IndexBuffer::CreateBuffer()
 {
-	if (m_Uploaded)
+	if (m_Valid)
 	{
 		return;
 	}
@@ -44,7 +46,9 @@ void IndexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 
 	VkBuffer hostBuffer;
 	VkDeviceMemory hostMemory;
-	VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
+	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
+	std::shared_ptr<VulkanDevice> vulkanDevice = Engine::Get()->GetVulkanRHI()->GetDevice();
+	VkDevice device = vulkanDevice->GetInstanceHandle();
 
 	// index buffer
 	VkBufferCreateInfo bufferCreateInfo;
@@ -54,8 +58,8 @@ void IndexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 	VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &hostBuffer));
 
 	vkGetBufferMemoryRequirements(device, hostBuffer, &memReqInfo);
-	vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
-	memAllocInfo.allocationSize  = memReqInfo.size;
+	vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
+	memAllocInfo.allocationSize = memReqInfo.size;
 	memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 	m_Alignment = memReqInfo.alignment;
 	m_AllocationSize = memReqInfo.size;
@@ -71,7 +75,7 @@ void IndexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 	VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Buffer));
 
 	vkGetBufferMemoryRequirements(device, m_Buffer, &memReqInfo);
-	vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
+	vulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
 	memAllocInfo.allocationSize = memReqInfo.size;
 	memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 	VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_Memory));
@@ -118,21 +122,23 @@ void IndexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 	vkDestroyBuffer(device, hostBuffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(device, hostMemory, VULKAN_CPU_ALLOCATOR);
 
-	m_Uploaded = true;
+	m_Valid = true;
 }
 
-void IndexBuffer::Download(std::shared_ptr<VulkanRHI> vulkanRHI)
+void IndexBuffer::DestroyBuffer()
 {
-	if (!m_Uploaded)
+	if (!m_Valid)
 	{
 		return;
 	}
 
-	vkDestroyBuffer(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Buffer, VULKAN_CPU_ALLOCATOR);
-	vkFreeMemory(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Memory, VULKAN_CPU_ALLOCATOR);
+	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+
+	vkDestroyBuffer(device, m_Buffer, VULKAN_CPU_ALLOCATOR);
+	vkFreeMemory(device, m_Memory, VULKAN_CPU_ALLOCATOR);
 
 	m_Memory = VK_NULL_HANDLE;
 	m_Memory = VK_NULL_HANDLE;
 	
-	m_Uploaded = false;
+	m_Valid = false;
 }

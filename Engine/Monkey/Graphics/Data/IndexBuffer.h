@@ -17,10 +17,6 @@ public:
 
 	virtual ~IndexBuffer();
 
-	void Upload(std::shared_ptr<VulkanRHI> vulkanRHI);
-
-	void Download(std::shared_ptr<VulkanRHI> vulkanRHI);
-
 	FORCEINLINE VkIndexType GetIndexType() const
 	{
 		return m_IndexType;
@@ -71,6 +67,27 @@ public:
 		return m_TriangleCount;
 	}
 
+	FORCEINLINE void Invalid()
+	{
+		DestroyBuffer();
+		m_Valid = false;
+	}
+
+	FORCEINLINE bool Valid()
+	{
+		if (!m_Valid)
+		{
+			CreateBuffer();
+		}
+		return m_Valid;
+	}
+	
+protected:
+
+	void CreateBuffer();
+
+	void DestroyBuffer();
+
 protected:
 
 	VkIndexType m_IndexType;
@@ -83,7 +100,7 @@ protected:
 	VkBuffer m_Buffer;
 	VkDeviceMemory m_Memory;
 
-	bool m_Uploaded;
+	bool m_Valid;
 
 	uint32 m_AllocationSize;
 	uint32 m_Alignment;

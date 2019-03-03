@@ -1,8 +1,7 @@
 #include "Math/Math.h"
 #include "Vulkan/VulkanRHI.h"
-
 #include "VertexBuffer.h"
-
+#include "Engine.h"
 #include <string>
 #include <cstring>
 
@@ -10,7 +9,7 @@ VertexBuffer::VertexBuffer()
     : m_VertexCount(0)
     , m_DataSize(0)
     , m_CurrentChannels(0)
-	, m_Uploaded(false)
+	, m_Valid(false)
 {
     
 }
@@ -22,10 +21,17 @@ VertexBuffer::~VertexBuffer()
 		delete[] m_Datas[i];
 	}
 	m_Datas.clear();
+
+	DestroyBuffer();
 }
 
 void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr)
 {
+	if (m_Valid)
+	{
+		DestroyBuffer();
+	}
+
 	uint32 newChannelMask = 0;
 	for (int32 i = 0; i < channels.size(); ++i)
 	{
@@ -46,42 +52,59 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 	m_CurrentChannels = m_CurrentChannels | newChannelMask;
 }
 
-void VertexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
+void VertexBuffer::DestroyBuffer()
 {
-	if (m_Uploaded)
+	if (!m_Valid)
 	{
 		return;
 	}
 
-	std::vector<float> vertices = {
-		1.0f,  1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-	   -1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f
-	};
-	
-	VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
+	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+
+	for (int32 i = 0; i < m_Streams.size(); ++i)
+	{
+		vkDestroyBuffer(device, m_Buffers[i], VULKAN_CPU_ALLOCATOR);
+		vkFreeMemory(device, m_Memories[i], VULKAN_CPU_ALLOCATOR);
+		m_Memories[i] = VK_NULL_HANDLE;
+		m_Buffers[i] = VK_NULL_HANDLE;
+	}
+
+	m_Valid = false;
+}
+
+void VertexBuffer::CreateBuffer()
+{
+	if (m_Valid)
+	{
+		return;
+	}
+
+	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
+	std::shared_ptr<VulkanDevice> vulkanDevice = vulkanRHI->GetDevice();
+	VkDevice device = vulkanDevice->GetInstanceHandle();
+
 	VkMemoryRequirements memReqInfo;
 	VkMemoryAllocateInfo memAllocInfo;
 	ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 	VkBufferCreateInfo bufferCreateInfo;
 	ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-	
+
 	// ------------------------ host visible ------------------------
 	std::vector<VkBuffer> hostBuffers(m_Streams.size());
 	std::vector<VkDeviceMemory> hostMemories(m_Streams.size());
 
 	for (int32 i = 0; i < m_Streams.size(); ++i)
 	{
-		bufferCreateInfo.size  = m_Streams[i].size;
+		bufferCreateInfo.size = m_Streams[i].size;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &hostBuffers[i]));
 
 		vkGetBufferMemoryRequirements(device, hostBuffers[i], &memReqInfo);
 		uint32 memoryTypeIndex = 0;
 		vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
-		m_Streams[i].alignment       = memReqInfo.alignment;
-		m_Streams[i].allocationSize  = memReqInfo.size;
-		memAllocInfo.allocationSize  = memReqInfo.size;
+		m_Streams[i].alignment = memReqInfo.alignment;
+		m_Streams[i].allocationSize = memReqInfo.size;
+		memAllocInfo.allocationSize = memReqInfo.size;
 		memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 		VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &hostMemories[i]));
 		VERIFYVULKANRESULT(vkBindBufferMemory(device, hostBuffers[i], hostMemories[i], 0));
@@ -91,26 +114,26 @@ void VertexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 		std::memcpy(dataPtr, m_Datas[i], m_Streams[i].size);
 		vkUnmapMemory(device, hostMemories[i]);
 	}
-	
+
 	// ------------------------ device local ------------------------
 	m_Buffers.resize(m_Streams.size());
 	m_Memories.resize(m_Streams.size());
 
 	for (int32 i = 0; i < m_Streams.size(); ++i)
 	{
-		bufferCreateInfo.size  = m_Streams[i].size;
+		bufferCreateInfo.size = m_Streams[i].size;
 		bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 		VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Buffers[i]));
 
 		vkGetBufferMemoryRequirements(device, m_Buffers[i], &memReqInfo);
 		uint32 memoryTypeIndex = 0;
 		vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
-		memAllocInfo.allocationSize  = memReqInfo.size;
+		memAllocInfo.allocationSize = memReqInfo.size;
 		memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 		VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_Memories[i]));
 		VERIFYVULKANRESULT(vkBindBufferMemory(device, m_Buffers[i], m_Memories[i], 0));
 	}
-	
+
 	// TODO:放到延迟队列中创建
 	VkCommandBuffer xferCmdBuffer;
 	VkCommandBufferAllocateInfo xferCmdBufferInfo;
@@ -132,7 +155,7 @@ void VertexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 	}
 
 	VERIFYVULKANRESULT(vkEndCommandBuffer(xferCmdBuffer));
-	
+
 	VkSubmitInfo submitInfo;
 	ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
 	submitInfo.commandBufferCount = 1;
@@ -156,23 +179,5 @@ void VertexBuffer::Upload(std::shared_ptr<VulkanRHI> vulkanRHI)
 		vkFreeMemory(device, hostMemories[i], VULKAN_CPU_ALLOCATOR);
 	}
 
-	m_Uploaded = true;
-}
-
-void VertexBuffer::Download(std::shared_ptr<VulkanRHI> vulkanRHI)
-{
-	if (!m_Uploaded) 
-	{
-		return;
-	}
-
-	for (int32 i = 0; i < m_Streams.size(); ++i)
-	{
-		vkDestroyBuffer(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Buffers[i], VULKAN_CPU_ALLOCATOR);
-		vkFreeMemory(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Memories[i], VULKAN_CPU_ALLOCATOR);
-		m_Memories[i] = VK_NULL_HANDLE;
-		m_Buffers[i]  = VK_NULL_HANDLE;
-	}
-
-	m_Uploaded = false;
+	m_Valid = true;
 }

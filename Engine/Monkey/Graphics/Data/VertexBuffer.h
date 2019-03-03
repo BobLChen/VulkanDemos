@@ -177,8 +177,28 @@ public:
 	{
 		return m_Memories;
 	}
-protected:
+
+	FORCEINLINE void Invalid()
+	{
+		m_Valid = false;
+		DestroyBuffer();
+	}
+
+	FORCEINLINE bool Valid()
+	{
+		if (!m_Valid)
+		{
+			CreateBuffer();
+		}
+		return m_Valid;
+	}
 	
+protected:
+	void DestroyBuffer();
+
+	void CreateBuffer();
+
+protected:
 	std::vector<VertexChannelInfo> m_Channels;
 	std::vector<VertexStreamInfo>  m_Streams;
 	std::vector<uint8*>            m_Datas;
@@ -189,5 +209,5 @@ protected:
 	uint32 m_VertexCount;
 	uint32 m_DataSize;
 	uint32 m_CurrentChannels;
-	bool m_Uploaded;
+	bool m_Valid;
 };

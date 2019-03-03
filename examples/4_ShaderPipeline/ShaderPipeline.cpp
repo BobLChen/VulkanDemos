@@ -15,8 +15,6 @@
 #include "Graphics/Shader/Shader.h"
 #include "File/FileManager.h"
 #include <vector>
-#include <fstream>
-#include <istream>
 
 class OBJLoaderMode : public AppModeBase
 {
@@ -63,8 +61,6 @@ public:
         DestroyFences();
         DestorySemaphores();
         DestroyPipelines();
-        UnLoadOBJ();
-        UnLoadShader();
     }
     
     virtual void Loop() override
@@ -166,12 +162,23 @@ private:
             vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+
+			if (!m_IndexBuffer->Valid())
+			{
+				continue;
+			}
+			if (!m_VertexBuffer->Valid())
+			{
+				continue;
+			}
+
             vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_Shader->GetDescriptorSet()), 0, nullptr);
             vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
             vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
             vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
             vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
-            vkCmdEndRenderPass(drawCmdBuffers[i]);
+            
+			vkCmdEndRenderPass(drawCmdBuffers[i]);
             VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
         }
     }
@@ -312,11 +319,6 @@ private:
         m_Shader = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
     }
     
-    void UnLoadShader()
-    {
-        m_Shader = nullptr;
-    }
-    
     void LoadOBJ()
     {
         tinyobj::attrib_t attrib;
@@ -378,29 +380,15 @@ private:
         channels[1].stream = 0;
         channels[1].offset = 12;
         
-        m_VertexBuffer = new VertexBuffer();
+		m_VertexBuffer = std::make_shared<VertexBuffer>();
         m_VertexBuffer->AddStream(streamInfo, channels, vertStreamData);
-        m_VertexBuffer->Upload(GetVulkanRHI());
         
         // 索引数据
         uint32 indexStreamSize = indices.size() * sizeof(uint16);
         uint8* indexStreamData = new uint8[indexStreamSize];
         std::memcpy(indexStreamData, indices.data(), indexStreamSize);
         
-        m_IndexBuffer = new IndexBuffer(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
-        m_IndexBuffer->Upload(GetVulkanRHI());
-    }
-    
-    void UnLoadOBJ()
-    {
-        m_VertexBuffer->Download(GetVulkanRHI());
-        m_IndexBuffer->Download(GetVulkanRHI());
-        
-        delete m_VertexBuffer;
-        delete m_IndexBuffer;
-        
-        m_VertexBuffer = nullptr;
-        m_IndexBuffer = nullptr;
+		m_IndexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
     }
     
     void CreateFences()
@@ -440,8 +428,8 @@ private:
     VkDevice m_Device;
     std::shared_ptr<VulkanRHI> m_VulkanRHI;
     
-    VertexBuffer* m_VertexBuffer;
-    IndexBuffer* m_IndexBuffer;
+    std::shared_ptr<VertexBuffer> m_VertexBuffer;
+	std::shared_ptr<IndexBuffer> m_IndexBuffer;
     UBOData m_MVPData;
     std::shared_ptr<Shader> m_Shader;
     
