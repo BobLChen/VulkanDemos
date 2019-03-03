@@ -1,6 +1,7 @@
 #include "Material.h"
 #include "Vulkan/VulkanDevice.h"
 #include <vector>
+#include <cstring>
 
 Material::Material(std::shared_ptr<Shader> shader)
 {
