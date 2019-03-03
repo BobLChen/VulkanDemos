@@ -27,6 +27,60 @@ enum class VertexAttribute
 	AttributeCount,
 };
 
+FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
+{
+    if (strcmp(name, "inPosition") == 0)
+    {
+        return VertexAttribute::Position;
+    }
+    else if (strcmp(name, "inUV0") == 0)
+    {
+        return VertexAttribute::UV0;
+    }
+    else if (strcmp(name, "inUV1") == 0)
+    {
+        return VertexAttribute::UV1;
+    }
+    else if (strcmp(name, "inNormal") == 0)
+    {
+        return VertexAttribute::Normal;
+    }
+    else if (strcmp(name, "inTangent") == 0)
+    {
+        return VertexAttribute::Tangent;
+    }
+    else if (strcmp(name, "inColor") == 0)
+    {
+        return VertexAttribute::Color;
+    }
+    else if (strcmp(name, "inSkinWeight") == 0)
+    {
+        return VertexAttribute::SkinWeight;
+    }
+    else if (strcmp(name, "inSkinIndex") == 0)
+    {
+        return VertexAttribute::SkinIndex;
+    }
+    else if (strcmp(name, "inCustom0") == 0)
+    {
+        return VertexAttribute::Custom0;
+    }
+    else if (strcmp(name, "inCustom1") == 0)
+    {
+        return VertexAttribute::Custom1;
+    }
+    else if (strcmp(name, "inCustom2") == 0)
+    {
+        return VertexAttribute::Custom2;
+    }
+    else if (strcmp(name, "inCustom3") == 0)
+    {
+        return VertexAttribute::Custom3;
+    }
+    
+    return VertexAttribute::None;
+}
+
 struct VertexStreamInfo
 {
 	uint32 channelMask;
@@ -193,6 +247,8 @@ public:
 		return m_Valid;
 	}
 	
+    const VkPipelineVertexInputStateCreateInfo& GetVertexInputStateInfo();
+
 protected:
 	void DestroyBuffer();
 
@@ -210,4 +266,9 @@ protected:
 	uint32 m_DataSize;
 	uint32 m_CurrentChannels;
 	bool m_Valid;
+    
+    bool m_InputStateDirty;
+    VkPipelineVertexInputStateCreateInfo m_VertexInputStateInfo;
+    std::vector<VkVertexInputBindingDescription> m_VertexBindings;
+    std::vector<VkVertexInputAttributeDescription> m_VertexInputAttris;
 };

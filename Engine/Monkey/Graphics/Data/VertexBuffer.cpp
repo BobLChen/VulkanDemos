@@ -10,6 +10,7 @@ VertexBuffer::VertexBuffer()
     , m_DataSize(0)
     , m_CurrentChannels(0)
 	, m_Valid(false)
+    , m_InputStateDirty(false)
 {
     
 }
@@ -25,8 +26,59 @@ VertexBuffer::~VertexBuffer()
 	DestroyBuffer();
 }
 
+const VkPipelineVertexInputStateCreateInfo& VertexBuffer::GetVertexInputStateInfo()
+{
+    if (!m_InputStateDirty)
+    {
+        return m_VertexInputStateInfo;
+    }
+    
+    m_VertexBindings.clear();
+    m_VertexInputAttris.clear();
+    
+    for (int32 i = 0; i < m_Streams.size(); ++i)
+    {
+        int32 stride = 0;
+        uint32 channelMask = m_Streams[i].channelMask;
+        for (int32 j = 0; j < m_Channels.size(); ++j)
+        {
+            int32 attr = (int32)m_Channels[j].attribute;
+            if ((1 << attr) & channelMask)
+            {
+                VkVertexInputAttributeDescription inputAttribute = {};
+                inputAttribute.binding = i;
+                inputAttribute.location = j; // store channel index form query
+                inputAttribute.format = VEToVkFormat(m_Channels[j].format);
+                inputAttribute.offset = stride;
+                m_VertexInputAttris.push_back(inputAttribute);
+                stride += ElementTypeToSize(m_Channels[j].format);
+            }
+        }
+        
+        if (stride > 0)
+        {
+            VkVertexInputBindingDescription vertexInputBinding = {};
+            vertexInputBinding.binding = i;
+            vertexInputBinding.stride = stride;
+            vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            m_VertexBindings.push_back(vertexInputBinding);
+        }
+    }
+    
+    ZeroVulkanStruct(m_VertexInputStateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+    m_VertexInputStateInfo.vertexBindingDescriptionCount = m_VertexBindings.size();
+    m_VertexInputStateInfo.pVertexBindingDescriptions = m_VertexBindings.data();
+    m_VertexInputStateInfo.vertexAttributeDescriptionCount = m_VertexInputAttris.size();
+    m_VertexInputStateInfo.pVertexAttributeDescriptions = m_VertexInputAttris.data();
+    m_InputStateDirty = false;
+    
+    return m_VertexInputStateInfo;
+}
+
 void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr)
 {
+    m_InputStateDirty = true;
+    
 	if (m_Valid)
 	{
 		DestroyBuffer();
@@ -134,7 +186,7 @@ void VertexBuffer::CreateBuffer()
 		VERIFYVULKANRESULT(vkBindBufferMemory(device, m_Buffers[i], m_Memories[i], 0));
 	}
 
-	// TODO:·Åµ½ÑÓ³Ù¶ÓÁÐÖÐ´´½¨
+	// TODO:ï¿½Åµï¿½ï¿½Ó³Ù¶ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
 	VkCommandBuffer xferCmdBuffer;
 	VkCommandBufferAllocateInfo xferCmdBufferInfo;
 	ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);

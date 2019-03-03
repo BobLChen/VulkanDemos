@@ -250,7 +250,7 @@ FORCEINLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRG
 	return result;
 }
 
-static FORCEINLINE VkFormat UEToVkFormat(VertexElementType Type)
+static FORCEINLINE VkFormat VEToVkFormat(VertexElementType Type)
 {
 	switch (Type)
 	{

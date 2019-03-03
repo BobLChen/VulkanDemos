@@ -5,6 +5,7 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"
+#include "Graphics/Data/VertexBuffer.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -120,6 +121,12 @@ public:
     {
         return m_TeseShaderModule;
     }
+    
+    FORCEINLINE const std::unordered_map<int32, int32>& GetVertexInputBindings() const
+    {
+        return m_VertexInputBindings;
+    }
+    
 protected:
     
     void UpdateVertPipelineLayout();
@@ -147,12 +154,17 @@ protected:
 	std::vector<VkPipelineShaderStageCreateInfo> m_Stages;
     
 private:
+    
     std::vector<VkDescriptorSetLayoutBinding> m_SetLayoutBindings;
     std::vector<VkDescriptorPoolSize> m_PoolSizes;
     std::vector<UniformBuffer> m_UniformBuffers;
     std::unordered_map<std::string, int32> m_Variables;
+    
     VkDescriptorPool m_DescriptorPool;
     VkDescriptorSetLayout m_DescriptorSetLayout;
     VkDescriptorSet m_DescriptorSet;
+    
     bool m_Uploaded;
+    
+    std::unordered_map<int32, int32> m_VertexInputBindings;
 };

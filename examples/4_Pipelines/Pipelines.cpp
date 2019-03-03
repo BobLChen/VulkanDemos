@@ -13,20 +13,21 @@
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
 #include "Graphics/Shader/Shader.h"
+#include "Graphics/Material/Material.h"
 #include "File/FileManager.h"
 #include <vector>
 
-class OBJLoaderMode : public AppModeBase
+class Pipelines : public AppModeBase
 {
 public:
-    OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+    Pipelines(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
     : AppModeBase(width, height, title)
     , m_Ready(false)
     {
         
     }
     
-    virtual ~OBJLoaderMode()
+    virtual ~Pipelines()
     {
         
     }
@@ -77,12 +78,6 @@ public:
     }
     
 private:
-    
-    struct GPUBuffer
-    {
-        VkDeviceMemory memory;
-        VkBuffer buffer;
-    };
     
     struct UBOData
     {
@@ -247,36 +242,6 @@ private:
         multisampleState.rasterizationSamples = m_VulkanRHI->GetSampleCount();
         multisampleState.pSampleMask = nullptr;
         
-        // (triangle.vert):
-        // layout (location = 0) in vec3 inPos;
-        // layout (location = 1) in vec3 inColor;
-        // Attribute location 0: Position
-        // Attribute location 1: Color
-        // vertex input bindding
-        VkVertexInputBindingDescription vertexInputBinding = {};
-        vertexInputBinding.binding = 0; // Vertex Buffer 0
-        vertexInputBinding.stride = 24; // Position + Color
-        vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        
-        std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
-        // position
-        vertexInputAttributs[0].binding = 0;
-        vertexInputAttributs[0].location = 0; // triangle.vert : layout (location = 0)
-        vertexInputAttributs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        vertexInputAttributs[0].offset = 0;
-        // color
-        vertexInputAttributs[1].binding = 0;
-        vertexInputAttributs[1].location = 1; // triangle.vert : layout (location = 1)
-        vertexInputAttributs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        vertexInputAttributs[1].offset = 12;
-        
-        VkPipelineVertexInputStateCreateInfo vertexInputState;
-        ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-        vertexInputState.vertexBindingDescriptionCount = 1;
-        vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
-        vertexInputState.vertexAttributeDescriptionCount = 2;
-        vertexInputState.pVertexAttributeDescriptions = vertexInputAttributs.data();
-        
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
         ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
         ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -286,6 +251,9 @@ private:
         shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         shaderStages[1].module = m_Shader->GetFragModule()->GetHandle();
         shaderStages[1].pName = "main";
+        
+        // Material material(m_Shader);
+        VkPipelineVertexInputStateCreateInfo vertexInputState = m_VertexBuffer->GetVertexInputStateInfo();
         
         VkGraphicsPipelineCreateInfo pipelineCreateInfo;
         ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
@@ -320,7 +288,7 @@ private:
     
     void LoadShader()
     {
-        m_Shader = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
+        m_Shader = Shader::Create("assets/shaders/4_Pipelines/pipelines.vert.spv", "assets/shaders/4_Pipelines/pipelines.frag.spv");
     }
     
     void LoadOBJ()
@@ -446,5 +414,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-    return new OBJLoaderMode(800, 600, "ShaderPipeline", cmdLine);
+    return new Pipelines(800, 600, "Pipelines", cmdLine);
 }

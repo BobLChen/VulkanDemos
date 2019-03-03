@@ -89,10 +89,10 @@
             ],
         },
         {
-            "name": "Debug ShaderPipeline",
+            "name": "Debug Pipelines",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/ShaderPipeline",
+            "program": "${workspaceFolder}/build/Debug/examples/Pipelines",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -100,7 +100,12 @@ void Shader::DestroyPipelineLayout()
         vkFreeMemory(device, m_UniformBuffers[i].memory, VULKAN_CPU_ALLOCATOR);
         vkDestroyBuffer(device, m_UniformBuffers[i].buffer, VULKAN_CPU_ALLOCATOR);
     }
+    
     m_UniformBuffers.clear();
+    m_SetLayoutBindings.clear();
+    m_PoolSizes.clear();
+    m_Variables.clear();
+    m_VertexInputBindings.clear();
     
     m_Uploaded = false;
 }
@@ -153,7 +158,7 @@ void Shader::UpdateVertPipelineLayout()
     {
         spirv_cross::Resource& res = resources.uniform_buffers[i];
         spirv_cross::SPIRType type = compiler.get_type(res.type_id);
-        spirv_cross::Bitset mask = compiler.get_decoration_bitset(res.id);
+        // spirv_cross::Bitset mask = compiler.get_decoration_bitset(res.id);
         // uint32 set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
         uint32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
         spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
@@ -180,6 +185,16 @@ void Shader::UpdateVertPipelineLayout()
         m_UniformBuffers.push_back(uniformBuffer);
     }
     
+    for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
+    {
+        spirv_cross::Resource& res = resources.stage_inputs[i];
+        spirv_cross::SPIRType type = compiler.get_type(res.type_id);
+        spirv_cross::Bitset mask = compiler.get_decoration_bitset(res.id);
+        int32 loc = compiler.get_decoration(res.id, spv::DecorationLocation);
+        const std::string &varName = compiler.get_name(res.id);
+        VertexAttribute attribute = StringToVertexAttribute(varName.c_str());
+        m_VertexInputBindings.insert(std::make_pair((int32)attribute, loc));
+    }
 }
 
 void Shader::UpdatePipelineLayout()

@@ -86,13 +86,13 @@ SETUP_SAMPLE_START(OBJLoader)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(OBJLoader)
 
-SETUP_SAMPLE_START(ShaderPipeline)
+SETUP_SAMPLE_START(Pipelines)
 	SET(SOURCE_FILES
 		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/4_ShaderPipeline/ShaderPipeline.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
 	)
 	
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/3_OBJLoader/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/4_Pipelines/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -100,4 +100,4 @@ SETUP_SAMPLE_START(ShaderPipeline)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(ShaderPipeline)
+SETUP_SAMPLE_END(Pipelines)

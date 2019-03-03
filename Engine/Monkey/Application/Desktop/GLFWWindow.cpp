@@ -14,8 +14,8 @@ GLFWWindow::GLFWWindow(int32 width, int32 height, const char* title)
     , m_Visible(false)
 	, m_AspectRatio(width * 1.0f / height)
 	, m_DPIScaleFactor(1.0f)
-	, m_Maximized(false)
 	, m_Minimized(false)
+    , m_Maximized(false)
 {
 
 }
