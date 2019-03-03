@@ -25,7 +25,7 @@ public:
 
 	virtual void SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler);
 
-	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& parent, const bool showImmediately);
+	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately);
 
 public:
 

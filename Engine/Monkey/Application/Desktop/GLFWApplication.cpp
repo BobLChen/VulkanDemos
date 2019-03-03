@@ -13,14 +13,17 @@ void GLFWApplication::OnGLFWkeyCallback(GLFWwindow* window, int32 key, int32 sca
 }
 
 GLFWApplication::GLFWApplication()
-	: m_MainWindow(nullptr)
+	: m_Window(nullptr)
 {
     
 }
 
 GLFWApplication::~GLFWApplication()
 {
-
+	if (m_Window != nullptr)
+	{
+		MLOGE("Window not shutdown.");
+	}
 }
 
 void GLFWApplication::ProcessKey(int32 key, int32 scancode, int32 action, int32 mods)
@@ -54,26 +57,26 @@ std::shared_ptr<GenericWindow> GLFWApplication::MakeWindow(int32 width, int32 he
 
 std::shared_ptr<GenericWindow> GLFWApplication::GetWindow()
 {
-	return m_MainWindow;
+	return m_Window;
 }
 
-void GLFWApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& parent, const bool showImmediately)
+void GLFWApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
 {
-	m_MainWindow = std::dynamic_pointer_cast<GLFWWindow>(window);
-	m_MainWindow->Initialize(this);
+	m_Window = std::dynamic_pointer_cast<GLFWWindow>(window);
+	m_Window->Initialize(this);
 
 	if (showImmediately) {
-		m_MainWindow->Show();
+		m_Window->Show();
 	}
 
-	glfwSetKeyCallback(reinterpret_cast<GLFWwindow*>(m_MainWindow->GetOSWindowHandle()), &GLFWApplication::OnGLFWkeyCallback);
+	glfwSetKeyCallback(reinterpret_cast<GLFWwindow*>(m_Window->GetOSWindowHandle()), &GLFWApplication::OnGLFWkeyCallback);
 }
 
 void GLFWApplication::Destroy()
 {
-	if (m_MainWindow != nullptr) {
-		m_MainWindow->Destroy();
-		m_MainWindow = nullptr;
+	if (m_Window != nullptr) {
+		m_Window->Destroy();
+		m_Window = nullptr;
 	}
 }
 

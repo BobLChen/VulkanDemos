@@ -1,27 +1,33 @@
-#include "GLFWWindow.h"
 #include "Common/Log.h"
-#include "Configuration/Platform.h"
-#include "Application/Desktop/GLFWApplication.h"
+#include "GLFWWindow.h"
+#include "GLFWApplication.h"
 
 #include <math.h>
 #include <algorithm>
 
 GLFWWindow::GLFWWindow(int32 width, int32 height, const char* title)
 	: GenericWindow(width, height)
+	, m_Title(title)
     , m_Window(nullptr)
     , m_WindowMode(WindowMode::Windowed)
-	, m_MasterApplication(nullptr)
-	, m_Title(title)
+	, m_Application(nullptr)
     , m_Visible(false)
-	, m_AspectRatio(1.0f)
+	, m_AspectRatio(width * 1.0f / height)
 	, m_DPIScaleFactor(1.0f)
+	, m_Maximized(false)
+	, m_Minimized(false)
 {
-    
+
 }
 
 GLFWWindow::~GLFWWindow()
 {
-    
+	if (m_Window != nullptr)
+	{
+		glfwDestroyWindow(m_Window);
+		glfwTerminate();
+		m_Window = nullptr;
+	}
 }
 
 void GLFWWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
@@ -55,7 +61,7 @@ float GLFWWindow::GetDPIScaleFactor() const
 
 void GLFWWindow::SetDPIScaleFactor(float value)
 {
-	m_DPIScaleFactor = value;
+	
 }
 
 std::shared_ptr<GLFWWindow> GLFWWindow::Make(int32 width, int32 height, const char* title)
@@ -65,7 +71,7 @@ std::shared_ptr<GLFWWindow> GLFWWindow::Make(int32 width, int32 height, const ch
 
 void GLFWWindow::Initialize(GLFWApplication* const application)
 {
-	m_MasterApplication = application;
+	m_Application = application;
 	if (glfwInit() != GLFW_TRUE) {
 		printf("Failed init glfw.\n");
 		return;
@@ -79,12 +85,23 @@ void GLFWWindow::Initialize(GLFWApplication* const application)
 		printf("Failed glfwCreateWindow.\n");
 		return;
 	}
+
+	int32 frameWidth = -1;
+	int32 frameHeight = -1;
+	glfwGetFramebufferSize(m_Window, &frameWidth, &frameHeight);
+	glfwGetWindowPos(m_Window, &m_X, &m_Y);
+	m_DPIScaleFactor = frameWidth * 1.0f / m_Width;
 }
 
 void GLFWWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)
 {
-    m_Width = newWidth;
+	m_X = newX;
+	m_Y = newY;
+    m_Width  = newWidth;
     m_Height = newHeight;
+
+	glfwSetWindowPos(m_Window, newX, newY);
+	glfwSetWindowSize(m_Window, newWidth, newHeight);
 }
 
 bool GLFWWindow::GetFullScreenInfo(int32& x, int32& y, int32& width, int32& height) const
@@ -95,7 +112,9 @@ bool GLFWWindow::GetFullScreenInfo(int32& x, int32& y, int32& width, int32& heig
 
 void GLFWWindow::MoveWindowTo(int32 x, int32 y)
 {
-    
+	m_X = x;
+	m_Y = y;
+	glfwSetWindowPos(m_Window, x, y);
 }
 
 void GLFWWindow::BringToFront(bool force)
@@ -112,12 +131,13 @@ void GLFWWindow::Destroy()
 
 void GLFWWindow::Minimize()
 {
-	
+	m_Minimized = false;
 }
 
 void GLFWWindow::Maximize()
 {
-	
+	m_Maximized = true;
+	glfwMaximizeWindow(m_Window);
 }
 
 void GLFWWindow::Restore()
@@ -131,6 +151,7 @@ void GLFWWindow::Show()
 		return;
 	}
 	m_Visible = true;
+	glfwShowWindow(m_Window);
 }
 
 void GLFWWindow::Hide()
@@ -139,6 +160,7 @@ void GLFWWindow::Hide()
 		return;
 	}
 	m_Visible = false;
+	glfwHideWindow(m_Window);
 }
 
 void GLFWWindow::SetWindowMode(WindowMode::Type newWindowMode)
@@ -148,12 +170,12 @@ void GLFWWindow::SetWindowMode(WindowMode::Type newWindowMode)
 
 bool GLFWWindow::IsMaximized() const
 {
-	return true;
+	return m_Maximized;
 }
 
 bool GLFWWindow::IsMinimized() const
 {
-	return true;
+	return m_Minimized;
 }
 
 bool GLFWWindow::IsVisible() const
@@ -169,12 +191,12 @@ bool GLFWWindow::GetRestoredDimensions(int32& x, int32& y, int32& width, int32& 
 
 void GLFWWindow::SetWindowFocus()
 {
-    
+	glfwFocusWindow(m_Window);
 }
 
 void GLFWWindow::SetOpacity(const float opacity)
 {
-
+	glfwSetWindowOpacity(m_Window, opacity);
 }
 
 void GLFWWindow::Enable(bool enable)
@@ -184,7 +206,10 @@ void GLFWWindow::Enable(bool enable)
 
 bool GLFWWindow::IsPointInWindow(int32 x, int32 y) const
 {
-	return true;
+	if ((x > m_X && x < m_X + m_Width) && (y > m_Y && y < m_Y + m_Height)) {
+		return true;
+	}
+	return false;
 }
 
 int32 GLFWWindow::GetWindowBorderSize() const
@@ -199,7 +224,7 @@ int32 GLFWWindow::GetWindowTitleBarSize() const
 
 bool GLFWWindow::IsForegroundWindow() const
 {
-    return true;
+    return false;
 }
 
 void GLFWWindow::SetText(const char* const text)

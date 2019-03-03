@@ -24,6 +24,7 @@ IndexBuffer::~IndexBuffer()
 {
 	if (m_Data) {
 		delete[] m_Data;
+		m_Data = nullptr;
 	}
 }
 
@@ -129,6 +130,9 @@ void IndexBuffer::Download(std::shared_ptr<VulkanRHI> vulkanRHI)
 
 	vkDestroyBuffer(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Buffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Memory, VULKAN_CPU_ALLOCATOR);
+
+	m_Memory = VK_NULL_HANDLE;
+	m_Memory = VK_NULL_HANDLE;
 	
 	m_Uploaded = false;
 }

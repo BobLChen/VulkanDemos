@@ -16,7 +16,7 @@ public:
 
 	void Bind(std::shared_ptr<VulkanRHI> vulkanRHI, const VkCommandBuffer& cmdBuffer);
 
-	void Destroy(std::shared_ptr<VulkanRHI> vulkanRHI);
+	void DestroyPipeline(std::shared_ptr<VulkanRHI> vulkanRHI);
 
 	FORCEINLINE void SetShader(std::shared_ptr<Shader> shader)
 	{
@@ -565,7 +565,7 @@ protected:
 
 	virtual void InitState();
 
-	virtual void ReCreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI);
+	virtual void CreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI);
 
 	FORCEINLINE void InvalidPipeline()
 	{

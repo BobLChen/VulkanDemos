@@ -21,8 +21,6 @@ public:
 
 	static void Shutdown(bool shutdownPlatform = true);
 
-	static void InitHighDPI(const bool force);
-	
 	void SetCursorPos(const Vector2& mouseCoordinate);
 
 	void Tick(float detalTime);
@@ -118,7 +116,6 @@ public:
 	virtual void OnRequestingExit() override;
 
 private:
-
 	SlateApplication();
 	
 	float m_DeltaTime;

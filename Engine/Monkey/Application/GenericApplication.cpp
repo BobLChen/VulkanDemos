@@ -36,7 +36,7 @@ void GenericApplication::Destroy()
 
 }
 
-void GenericApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& parent, const bool showImmediately)
+void GenericApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
 {
 
 }

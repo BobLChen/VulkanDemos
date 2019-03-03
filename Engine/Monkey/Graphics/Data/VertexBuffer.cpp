@@ -170,6 +170,8 @@ void VertexBuffer::Download(std::shared_ptr<VulkanRHI> vulkanRHI)
 	{
 		vkDestroyBuffer(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Buffers[i], VULKAN_CPU_ALLOCATOR);
 		vkFreeMemory(vulkanRHI->GetDevice()->GetInstanceHandle(), m_Memories[i], VULKAN_CPU_ALLOCATOR);
+		m_Memories[i] = VK_NULL_HANDLE;
+		m_Buffers[i]  = VK_NULL_HANDLE;
 	}
 
 	m_Uploaded = false;

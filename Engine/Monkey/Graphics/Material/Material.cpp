@@ -16,15 +16,14 @@ void Material::Bind(std::shared_ptr<VulkanRHI> vulkanRHI, const VkCommandBuffer&
 {
 	if (m_InvalidPipeline)
 	{
-		ReCreatePipeline(vulkanRHI);
+		DestroyPipeline(vulkanRHI);
+		CreatePipeline(vulkanRHI);
 	}
 	vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 }
 
-void Material::ReCreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
+void Material::CreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
 {
-	Destroy(vulkanRHI);
-	
 	m_MultisampleState.rasterizationSamples = vulkanRHI->GetSampleCount();
 
 	// ”…ColorBlendAttachÃ·π©
@@ -88,7 +87,7 @@ void Material::ReCreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
 	VERIFYVULKANRESULT(vkCreateGraphicsPipelines(vulkanRHI->GetDevice()->GetInstanceHandle(), vulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
 }
 
-void Material::Destroy(std::shared_ptr<VulkanRHI> vulkanRHI)
+void Material::DestroyPipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
 {
 	if (m_Pipeline == VK_NULL_HANDLE)
 	{

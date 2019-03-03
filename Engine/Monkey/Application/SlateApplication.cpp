@@ -56,11 +56,6 @@ void SlateApplication::Shutdown(bool shutdownPlatform)
 	}
 }
 
-void SlateApplication::InitHighDPI(const bool force)
-{
-
-}
-
 void SlateApplication::SetCursorPos(const Vector2& mouseCoordinate)
 {
 	
@@ -91,7 +86,7 @@ void SlateApplication::OnRequestingExit()
 std::shared_ptr<GenericWindow> SlateApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
 	std::shared_ptr<GenericWindow> newWindow = G_PlatformApplication->MakeWindow(width, height, title);
-	G_PlatformApplication->InitializeWindow(newWindow, nullptr, true);
+	G_PlatformApplication->InitializeWindow(newWindow, true);
 	return newWindow;
 }
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "GLFWWindow.h"
-
 #include "Application/GenericApplication.h"
 #include "Application/GenericWindow.h"
+
+#include "GLFWWindow.h"
 
 #include <memory>
 #include <vector>
@@ -11,7 +11,6 @@
 class GLFWApplication : public GenericApplication
 {
 public:
-
 	GLFWApplication();
 
 	virtual ~GLFWApplication();
@@ -28,16 +27,14 @@ public:
     
 	virtual void SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler) override;
 
-	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const std::shared_ptr<GenericWindow>& parent, const bool showImmediately) override;
+	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately) override;
 
 protected:
-
 	void ProcessKey(int32 key, int32 scancode, int32 action, int32 mods);
 
 	void static OnGLFWkeyCallback(GLFWwindow* window, int32 key, int32 scancode, int32 action, int32 mods);
 
 private:
-
-	std::shared_ptr<GLFWWindow> m_MainWindow;
+	std::shared_ptr<GLFWWindow> m_Window;
 	
 };
