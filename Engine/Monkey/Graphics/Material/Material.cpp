@@ -26,13 +26,13 @@ void Material::CreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
 {
 	m_MultisampleState.rasterizationSamples = vulkanRHI->GetSampleCount();
 
-	// ÓÉColorBlendAttachÌá¹©
+	// ç”±ColorBlendAttachæä¾›
 	VkPipelineColorBlendStateCreateInfo colorBlendState;
 	ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
 	colorBlendState.attachmentCount = 1;
 	colorBlendState.pAttachments = &m_ColorBlendAttachmentState;
 
-	// ÔİÊ±Ó²±àÂë
+	// æš‚æ—¶ç¡¬ç¼–ç 
 	std::vector<VkDynamicState> dynamicStateEnables;
 	dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 	dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
@@ -42,13 +42,13 @@ void Material::CreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI)
 	dynamicState.pDynamicStates = dynamicStateEnables.data();
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
 
-	// MeshÌá¹©
+	// Meshæä¾›
 	std::vector<VkVertexInputBindingDescription> vertexInputBindings(1);
 	vertexInputBindings[0].binding = 0;
 	vertexInputBindings[0].stride = 24;
 	vertexInputBindings[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	// MeshÌá¹©Ò»²¿·Ö£¬ShaderÌá¹©Ò»²¿·Ö
+	// Meshæä¾›ä¸€éƒ¨åˆ†ï¼ŒShaderæä¾›ä¸€éƒ¨åˆ†
 	std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
 	vertexInputAttributs[0].binding = 0;
 	vertexInputAttributs[0].location = 0;

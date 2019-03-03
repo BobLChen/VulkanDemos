@@ -53,6 +53,7 @@ private:
         VkDeviceMemory memory;
         uint32 offset;
         uint32 size;
+        uint32 allocationSize;
     };
     
 public:

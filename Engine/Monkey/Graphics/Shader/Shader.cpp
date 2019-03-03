@@ -127,7 +127,8 @@ void Shader::CreateUniformBuffer(UniformBuffer& uniformBuffer, uint32 dataSize, 
     VERIFYVULKANRESULT(vkAllocateMemory(device, &allocInfo, VULKAN_CPU_ALLOCATOR, &uniformBuffer.memory));
     VERIFYVULKANRESULT(vkBindBufferMemory(device, uniformBuffer.buffer, uniformBuffer.memory, 0));
     
-    uniformBuffer.size   = memReqs.size;
+    uniformBuffer.size = dataSize;
+    uniformBuffer.allocationSize = memReqs.size;
     uniformBuffer.offset = 0;
 }
 

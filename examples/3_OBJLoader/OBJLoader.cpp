@@ -64,6 +64,9 @@ public:
 		DestroyDescriptorPool();
 		DestroyPipelines();
 		DestroyUniformBuffers();
+
+		m_IndexBuffer = nullptr;
+		m_VertexBuffer = nullptr;
 	}
 
 	virtual void Loop() override

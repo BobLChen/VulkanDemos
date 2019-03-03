@@ -61,6 +61,10 @@ public:
         DestroyFences();
         DestorySemaphores();
         DestroyPipelines();
+
+        m_IndexBuffer = nullptr;
+        m_VertexBuffer = nullptr;
+        m_Shader = nullptr;
     }
     
     virtual void Loop() override
