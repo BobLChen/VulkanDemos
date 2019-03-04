@@ -81,3 +81,6 @@ Vulkan Examples
 
 ### OBJ
 ![OBJLoader](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/3_OBJLoader/obj.png)
+
+### Pipelines
+![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/4_Pipelines/pipelines.png)
