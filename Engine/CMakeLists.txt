@@ -67,9 +67,11 @@ set(Monkey_Utils_SRCS
 	Monkey/Utils/StringUtils.h
 	Monkey/Utils/Alignment.h
 	Monkey/Utils/SecureHash.h
+	Monkey/Utils/Crc.h
 )
 set(Monkey_Utils_HDRS
 	Monkey/Utils/SecureHash.cpp
+	Monkey/Utils/Crc.cpp
 )
 
 set(Monkey_File_SRCS
