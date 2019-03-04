@@ -150,10 +150,6 @@ public:
     
 	void AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr);
 
-	void Upload(std::shared_ptr<VulkanRHI> vulkanRHI);
-
-	void Download(std::shared_ptr<VulkanRHI> vulkanRHI);
-
 	FORCEINLINE int32 GetStreamCount() const
     {
         return m_Streams.size();
