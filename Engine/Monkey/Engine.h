@@ -29,7 +29,9 @@ public:
 	const std::string& GetAssetsPath() const;
 
 	static Engine* Get();
+
 protected:
+
 	static Engine* g_Instance;
 	
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;

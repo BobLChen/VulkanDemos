@@ -5,7 +5,6 @@
 
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/RHIDefinitions.h"
-#include "Vulkan/VulkanDevice.h"
 
 #include <vector>
 

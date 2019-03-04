@@ -255,6 +255,24 @@ enum BlendFactor
 
 static_assert(BlendFactor_Num <= (1 << BlendFactor_NumBits), "BlendFactor_Num will not fit on BlendFactor_NumBits");
 
+enum VertexAttribute
+{
+	VA_None = 0,
+	VA_Position,
+	VA_UV0,
+	VA_UV1,
+	VA_Normal,
+	VA_Tangent,
+	VA_Color,
+	VA_SkinWeight,
+	VA_SkinIndex,
+	VA_Custom0,
+	VA_Custom1,
+	VA_Custom2,
+	VA_Custom3,
+	VA_Count,
+};
+
 enum VertexElementType
 {
     VET_None,
@@ -336,17 +354,17 @@ public:
                 ((bindIndex & RTD_Mask_BindIndex) << RTD_Shift_BindIndex);
     }
     
-    static inline uint16 GetUniformBufferIndex(uint32 data)
+    static FORCEINLINE uint16 GetUniformBufferIndex(uint32 data)
     {
         return (data >> RTD_Shift_UniformBufferIndex) & RTD_Mask_UniformBufferIndex;
     }
     
-    static inline uint16 GetResourceIndex(uint32 data)
+    static FORCEINLINE uint16 GetResourceIndex(uint32 data)
     {
         return (data >> RTD_Shift_ResourceIndex) & RTD_Mask_ResourceIndex;
     }
 
-    static inline uint16 GetBindIndex(uint32 data)
+    static FORCEINLINE uint16 GetBindIndex(uint32 data)
     {
         return (data >> RTD_Shift_BindIndex) & RTD_Mask_BindIndex;
     }
@@ -600,67 +618,7 @@ enum class AsyncComputeBudget
     EAll_4,
 };
 
-inline RHIFeatureLevel::Type GetMaxSupportedFeatureLevel(ShaderPlatform inShaderPlatform)
-{
-    return RHIFeatureLevel::SM5;
-}
-
-inline bool IsFeatureLevelSupported(ShaderPlatform inShaderPlatform, RHIFeatureLevel::Type inFeatureLevel)
-{
-    return inFeatureLevel <= GetMaxSupportedFeatureLevel(inShaderPlatform);
-}
-
-inline bool RHISupportsSeparateMSAAAndResolveTextures(const ShaderPlatform platform)
-{
-    return true;
-}
-
-inline bool RHISupportsComputeShaders(const ShaderPlatform platform)
-{
-    return IsFeatureLevelSupported(platform, RHIFeatureLevel::SM5);
-}
-
-inline bool RHISupportsGeometryShaders(const ShaderPlatform platform)
-{
-    return IsFeatureLevelSupported(platform, RHIFeatureLevel::SM5);
-}
-
-inline bool RHIHasTiledGPU(const ShaderPlatform platform)
-{
-    return false;
-}
-
-inline bool RHISupportsVertexShaderLayer(const ShaderPlatform platform)
-{
-    return IsFeatureLevelSupported(platform, RHIFeatureLevel::SM5);
-}
-
-inline bool RHISupportsDrawIndirect(const ShaderPlatform platform)
-{
-    return IsFeatureLevelSupported(platform, RHIFeatureLevel::SM5);
-}
-
-inline bool RHISupportsNativeShaderLibraries(const ShaderPlatform platform)
-{
-    return IsFeatureLevelSupported(platform, RHIFeatureLevel::SM5);
-}
-
-inline uint32 GetExpectedFeatureLevelMaxTextureSamplers(RHIFeatureLevel::Type featureLevel)
-{
-    return 16;
-}
-
-inline int32 GetFeatureLevelMaxNumberOfBones(RHIFeatureLevel::Type featureLevel)
-{
-    return 256;
-}
-
-inline bool IsUniformBufferResourceType(UniformBufferBaseType baseType)
-{
-    return baseType == UBMT_SRV || baseType == UBMT_UAV || baseType == UBMT_SAMPLER || baseType == UBMT_TEXTURE;
-}
-
-inline const char* GetShaderFrequencyString(ShaderFrequency frequency, bool bIncludePrefix = true)
+FORCEINLINE const char* GetShaderFrequencyString(ShaderFrequency frequency, bool bIncludePrefix = true)
 {
     const char* result = "SF_NumFrequencies";
     
@@ -693,3 +651,57 @@ inline const char* GetShaderFrequencyString(ShaderFrequency frequency, bool bInc
     result += index;
     return result;
 };
+
+FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
+{
+	if (strcmp(name, "inPosition") == 0)
+	{
+		return VertexAttribute::VA_Position;
+	}
+	else if (strcmp(name, "inUV0") == 0)
+	{
+		return VertexAttribute::VA_UV0;
+	}
+	else if (strcmp(name, "inUV1") == 0)
+	{
+		return VertexAttribute::VA_UV1;
+	}
+	else if (strcmp(name, "inNormal") == 0)
+	{
+		return VertexAttribute::VA_Normal;
+	}
+	else if (strcmp(name, "inTangent") == 0)
+	{
+		return VertexAttribute::VA_Tangent;
+	}
+	else if (strcmp(name, "inColor") == 0)
+	{
+		return VertexAttribute::VA_Color;
+	}
+	else if (strcmp(name, "inSkinWeight") == 0)
+	{
+		return VertexAttribute::VA_SkinWeight;
+	}
+	else if (strcmp(name, "inSkinIndex") == 0)
+	{
+		return VertexAttribute::VA_SkinIndex;
+	}
+	else if (strcmp(name, "inCustom0") == 0)
+	{
+		return VertexAttribute::VA_Custom0;
+	}
+	else if (strcmp(name, "inCustom1") == 0)
+	{
+		return VertexAttribute::VA_Custom1;
+	}
+	else if (strcmp(name, "inCustom2") == 0)
+	{
+		return VertexAttribute::VA_Custom2;
+	}
+	else if (strcmp(name, "inCustom3") == 0)
+	{
+		return VertexAttribute::VA_Custom3;
+	}
+
+	return VertexAttribute::VA_None;
+}

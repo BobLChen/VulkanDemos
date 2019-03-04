@@ -5,6 +5,7 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Graphics/Shader/Shader.h"
+#include "Graphics/Data/VertexBuffer.h"
 #include <memory>
 
 class Material
@@ -14,9 +15,7 @@ public:
 
     virtual ~Material();
 
-	void Bind(std::shared_ptr<VulkanRHI> vulkanRHI, const VkCommandBuffer& cmdBuffer);
-
-	void DestroyPipeline(std::shared_ptr<VulkanRHI> vulkanRHI);
+	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo, const VertexInputBindingInfo& inputBindingInfo);
 
 	FORCEINLINE void SetShader(std::shared_ptr<Shader> shader)
 	{
@@ -29,10 +28,6 @@ public:
 	}
 
     // ----------------------------------- VkPipelineInputAssemblyStateCreateInfo -----------------------------------
-	FORCEINLINE VkPrimitiveTopology GetTopology() const
-	{
-		return m_InputAssemblyState.topology;
-	}
 
 	FORCEINLINE void SetTopology(VkPrimitiveTopology topology)
 	{
@@ -44,7 +39,13 @@ public:
 		InvalidPipeline();
 	}
 
+	FORCEINLINE VkPrimitiveTopology GetTopology() const
+	{
+		return m_InputAssemblyState.topology;
+	}
+
     // ----------------------------------- VkPipelineRasterizationStateCreateInfo -----------------------------------
+
 	FORCEINLINE void SetpolygonMode(VkPolygonMode polygonMode)
 	{
 		if (m_RasterizationState.polygonMode == polygonMode) 
@@ -151,6 +152,7 @@ public:
 	}
 
     // ----------------------------------- VkPipelineColorBlendAttachmentState -----------------------------------
+
 	FORCEINLINE void SetColorWriteMask(VkColorComponentFlags mask)
 	{
 		if (m_ColorBlendAttachmentState.colorWriteMask == mask)
@@ -272,6 +274,7 @@ public:
 	}
 
     // ----------------------------------- VkPipelineDepthStencilStateCreateInfo -----------------------------------
+
 	FORCEINLINE void SetDepthTestEnable(VkBool32 enable)
 	{
 		if (m_DepthStencilState.depthTestEnable == enable)
@@ -559,36 +562,28 @@ public:
 		return m_DepthStencilState.maxDepthBounds;
 	}
 
-    // ----------------------------------- VkPipelineDepthStencilStateCreateInfo -----------------------------------
-    
 protected:
 
 	virtual void InitState();
-
-	virtual void CreatePipeline(std::shared_ptr<VulkanRHI> vulkanRHI);
 
 	FORCEINLINE void InvalidPipeline()
 	{
 		m_InvalidPipeline = true;
 	}
-    
-	FORCEINLINE void ValidPipeline()
-	{
-		m_InvalidPipeline = false;
-	}
 
 private:
-	VkPipelineInputAssemblyStateCreateInfo m_InputAssemblyState;
-	VkPipelineRasterizationStateCreateInfo m_RasterizationState;
-	VkPipelineColorBlendAttachmentState m_ColorBlendAttachmentState;
-	VkPipelineViewportStateCreateInfo m_ViewportState;
-	VkPipelineDepthStencilStateCreateInfo m_DepthStencilState;
-	VkPipelineMultisampleStateCreateInfo m_MultisampleState;
+
+	VkPipelineInputAssemblyStateCreateInfo	m_InputAssemblyState;
+	VkPipelineRasterizationStateCreateInfo	m_RasterizationState;
+	VkPipelineColorBlendAttachmentState		m_ColorBlendAttachmentState;
+	VkPipelineViewportStateCreateInfo		m_ViewportState;
+	VkPipelineDepthStencilStateCreateInfo	m_DepthStencilState;
+	VkPipelineMultisampleStateCreateInfo	m_MultisampleState;
 
 protected:
-	VkPipeline m_Pipeline;
 
-	bool m_InvalidPipeline;
+	uint32 m_Hash;
+	bool   m_InvalidPipeline;
 	std::shared_ptr<Shader> m_Shader;
 };
 

@@ -6,80 +6,8 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/RHIDefinitions.h"
 #include "Vulkan/VulkanDevice.h"
-
+#include "Utils/Crc.h"
 #include <vector>
-
-enum class VertexAttribute
-{
-	None = 0,
-	Position,
-	UV0,
-	UV1,
-	Normal,
-	Tangent,
-	Color,
-	SkinWeight,
-	SkinIndex,
-	Custom0,
-	Custom1,
-	Custom2,
-	Custom3,
-	AttributeCount,
-};
-
-FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
-{
-    if (strcmp(name, "inPosition") == 0)
-    {
-        return VertexAttribute::Position;
-    }
-    else if (strcmp(name, "inUV0") == 0)
-    {
-        return VertexAttribute::UV0;
-    }
-    else if (strcmp(name, "inUV1") == 0)
-    {
-        return VertexAttribute::UV1;
-    }
-    else if (strcmp(name, "inNormal") == 0)
-    {
-        return VertexAttribute::Normal;
-    }
-    else if (strcmp(name, "inTangent") == 0)
-    {
-        return VertexAttribute::Tangent;
-    }
-    else if (strcmp(name, "inColor") == 0)
-    {
-        return VertexAttribute::Color;
-    }
-    else if (strcmp(name, "inSkinWeight") == 0)
-    {
-        return VertexAttribute::SkinWeight;
-    }
-    else if (strcmp(name, "inSkinIndex") == 0)
-    {
-        return VertexAttribute::SkinIndex;
-    }
-    else if (strcmp(name, "inCustom0") == 0)
-    {
-        return VertexAttribute::Custom0;
-    }
-    else if (strcmp(name, "inCustom1") == 0)
-    {
-        return VertexAttribute::Custom1;
-    }
-    else if (strcmp(name, "inCustom2") == 0)
-    {
-        return VertexAttribute::Custom2;
-    }
-    else if (strcmp(name, "inCustom3") == 0)
-    {
-        return VertexAttribute::Custom3;
-    }
-    
-    return VertexAttribute::None;
-}
 
 struct VertexStreamInfo
 {
@@ -97,6 +25,11 @@ struct VertexStreamInfo
         
 	}
 
+	FORCEINLINE void Reset()
+	{
+		*this = VertexStreamInfo();
+	}
+
 	FORCEINLINE bool operator == (const VertexStreamInfo& rhs) const
 	{
 		return channelMask == rhs.channelMask && size == rhs.size && alignment == rhs.alignment && allocationSize == rhs.allocationSize;
@@ -110,16 +43,16 @@ struct VertexStreamInfo
 
 struct VertexChannelInfo
 {
-	uint8 stream;
-	uint8 offset;
+	uint8             stream;
+	uint8             offset;
 	VertexElementType format;
-	VertexAttribute attribute;
+	VertexAttribute   attribute;
 
 	VertexChannelInfo()
 		: stream(0)
 		, offset(0)
 		, format(VertexElementType::VET_None)
-		, attribute(VertexAttribute::None)
+		, attribute(VertexAttribute::VA_None)
 	{
 
 	}
@@ -140,6 +73,86 @@ struct VertexChannelInfo
 	}
 };
 
+class VertexInputDeclareInfo
+{
+public:
+	struct BindingDescription
+	{
+		uint32_t            binding;
+		uint32_t            stride;
+		VkVertexInputRate   inputRate;
+	};
+
+	struct AttributeDescription
+	{
+		uint32_t			binding;
+		VkFormat			format;
+		uint32_t			offset;
+		VertexAttribute		attribute;
+	};
+
+public:
+	VertexInputDeclareInfo()
+		: m_Valid(false)
+		, m_hash(0)
+	{
+
+	}
+
+	FORCEINLINE void AddBinding(const BindingDescription& binding)
+	{
+		m_Valid = false;
+		m_Bindings.push_back(binding);
+	}
+
+	FORCEINLINE void AddAttribute(const AttributeDescription& attribute)
+	{
+		m_Valid = false;
+		m_InputAttributes.push_back(attribute);
+	}
+
+	FORCEINLINE uint32 GetHash() const
+	{
+		return m_hash;
+	}
+
+	FORCEINLINE void Clear()
+	{
+		m_Valid = false;
+		m_hash  = 0;
+		m_Bindings.clear();
+		m_InputAttributes.clear();
+	}
+
+	FORCEINLINE const std::vector<BindingDescription>& GetBindings() const
+	{
+		return m_Bindings;
+	}
+
+	FORCEINLINE const std::vector<AttributeDescription>& GetAttributes() const
+	{
+		return m_InputAttributes;
+	}
+
+	FORCEINLINE void Update()
+	{
+		if (!m_Valid)
+		{
+			m_hash  = 0;
+			m_hash  = Crc::MemCrc32(m_Bindings.data(), m_Bindings.size() * sizeof(BindingDescription));
+			m_hash  = Crc::MemCrc32(m_InputAttributes.data(), m_InputAttributes.size() * sizeof(AttributeDescription), m_hash);
+			m_Valid = true;
+		}
+	}
+
+protected:
+	bool	m_Valid;
+	uint32	m_hash;
+
+	std::vector<BindingDescription>		m_Bindings;
+	std::vector<AttributeDescription>	m_InputAttributes;
+};
+
 class VertexBuffer
 {
 public:
@@ -157,7 +170,7 @@ public:
 
 	FORCEINLINE int32 GetStreamIndex(VertexAttribute attribute) const
     {
-        uint32 channelMask = 1 << (int32)attribute;
+        uint32 channelMask = 1 << attribute;
         for (int32 i = 0; i < m_Streams.size(); ++i)
         {
             if (m_Streams[i].channelMask & channelMask)
@@ -165,14 +178,45 @@ public:
                 return i;
             }
         }
+
         return -1;
     }
 
-	FORCEINLINE uint32 GetChannelOffset(VertexAttribute attribute) const
+	FORCEINLINE int32 GetChannelIndex(VertexAttribute attribute) const
 	{
-		return m_Channels[(int32)attribute].offset;
+		for (int32 i = 0; i < m_Channels.size(); ++i)
+		{
+			if (m_Channels[i].attribute == attribute)
+			{
+				return i;
+			}
+		}
+
+		return -1;
 	}
-    
+
+	FORCEINLINE const VertexStreamInfo& GetStream(int32 index) const
+	{
+		return m_Streams[index];
+	}
+
+	FORCEINLINE const VertexChannelInfo& GetChannel(int32 index) const
+	{
+		return m_Channels[index];
+	}
+
+	FORCEINLINE const VertexStreamInfo& GetStream(VertexAttribute attribute) const
+	{
+		int32 index = GetStreamIndex(attribute);
+		return GetStream(index);
+	}
+
+	FORCEINLINE const VertexChannelInfo& GetChannel(VertexAttribute attribute) const
+	{
+		int32 index = GetChannelIndex(attribute);
+		return GetChannel(index);
+	}
+
 	FORCEINLINE uint8* GetDataPtr(int32 stream) const
 	{ 
 		return m_Datas[stream];
@@ -198,19 +242,9 @@ public:
 		return m_Streams;
 	}
 
-	FORCEINLINE const VertexChannelInfo& GetChannel(int32 index) const
-	{
-		return m_Channels[index];
-	}
-
 	FORCEINLINE const std::vector<VertexChannelInfo>& GetChannels() const
 	{
 		return m_Channels;
-	}
-
-	FORCEINLINE const VertexStreamInfo& GetStream(int32 index) const
-	{
-		return m_Streams[index];
 	}
 
 	FORCEINLINE bool HasAttribute(VertexAttribute attribute) const
@@ -243,28 +277,28 @@ public:
 		return m_Valid;
 	}
 	
-    const VkPipelineVertexInputStateCreateInfo& GetVertexInputStateInfo();
+    const VertexInputDeclareInfo& GetVertexInputStateInfo();
 
 protected:
+
 	void DestroyBuffer();
 
 	void CreateBuffer();
 
 protected:
-	std::vector<VertexChannelInfo> m_Channels;
-	std::vector<VertexStreamInfo>  m_Streams;
-	std::vector<uint8*>            m_Datas;
 
-	std::vector<VkDeviceMemory>    m_Memories;
-	std::vector<VkBuffer>		   m_Buffers;
+	std::vector<VertexChannelInfo>	m_Channels;
+	std::vector<VertexStreamInfo>	m_Streams;
+	std::vector<uint8*>				m_Datas;
 
-	uint32 m_VertexCount;
-	uint32 m_DataSize;
-	uint32 m_CurrentChannels;
-	bool m_Valid;
-    
-    bool m_InputStateDirty;
-    VkPipelineVertexInputStateCreateInfo m_VertexInputStateInfo;
-    std::vector<VkVertexInputBindingDescription> m_VertexBindings;
-    std::vector<VkVertexInputAttributeDescription> m_VertexInputAttris;
+	std::vector<VkDeviceMemory>		m_Memories;
+	std::vector<VkBuffer>			m_Buffers;
+
+	uint32							m_VertexCount;
+	uint32							m_DataSize;
+	uint32							m_CurrentChannels;
+
+	bool							m_Valid;
+    bool							m_InputStateDirty;
+	VertexInputDeclareInfo			m_VertexInputStateInfo;
 };

@@ -6,7 +6,7 @@ enum
 	Crc32Poly = 0x04c11db7
 };
 
-uint32 FCrc::g_CRCTablesSB8[8][256] =
+uint32 Crc::g_CRCTablesSB8[8][256] =
 {
 	{
 		0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
@@ -154,7 +154,7 @@ uint32 FCrc::g_CRCTablesSB8[8][256] =
 	}
 };
 
-uint32 FCrc::MemCrc32(const void* dataPtr, int32 length, uint32 crc)
+uint32 Crc::MemCrc32(const void* dataPtr, int32 length, uint32 crc)
 {
 	crc = ~crc;
 
@@ -199,7 +199,7 @@ uint32 FCrc::MemCrc32(const void* dataPtr, int32 length, uint32 crc)
 	return ~crc;
 }
 
-uint32 FCrc::ReverseBits(uint32 bits)
+uint32 Crc::ReverseBits(uint32 bits)
 {
 	bits = (bits << 16) | (bits >> 16);
 	bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
@@ -209,27 +209,12 @@ uint32 FCrc::ReverseBits(uint32 bits)
 	return bits;
 }
 
-uint32 FCrc::StrCrc32(const uint32* data, uint32 crc)
+uint32 Crc::StrCrc32(const char* data, int32 length, uint32 crc)
 {
 	crc = ~crc;
-	while (uint32 ch = *data++)
+	for (int32 i = 0; i < length; ++i)
 	{
-		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc ^ ch) & 0xFF];
-		ch >>= 8;
-		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc ^ ch) & 0xFF];
-		ch >>= 8;
-		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc ^ ch) & 0xFF];
-		ch >>= 8;
-		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc ^ ch) & 0xFF];
-	}
-	return ~crc;
-}
-
-uint32 FCrc::StrCrc32(const uint32* data, uint32 crc)
-{
-	crc = ~crc;
-	while (uint32 ch = *data++)
-	{
+		char ch = *data++;
 		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc ^ ch) & 0xFF];
 		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc) & 0xFF];
 		crc = (crc >> 8) ^ g_CRCTablesSB8[0][(crc) & 0xFF];

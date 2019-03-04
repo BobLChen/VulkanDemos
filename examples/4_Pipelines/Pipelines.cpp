@@ -21,8 +21,9 @@ class Pipelines : public AppModeBase
 {
 public:
     Pipelines(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-    : AppModeBase(width, height, title)
-    , m_Ready(false)
+		: AppModeBase(width, height, title)
+		, m_Ready(false)
+		, m_CurrentBackBuffer(0)
     {
         
     }
@@ -39,19 +40,23 @@ public:
     
     virtual void Init() override
     {
-        m_VulkanRHI = GetVulkanRHI();
-        m_Device = m_VulkanRHI->GetDevice()->GetInstanceHandle();
-        
-        m_MVPData.model.SetIdentity();
-        m_MVPData.view.SetIdentity();
-        m_MVPData.projection.SetIdentity();
-        m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
-        
+		// 准备MVP数据
+		m_MVPData.model.SetIdentity();
+		m_MVPData.view.SetIdentity();
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+
+		// 加载Shader以及Material
+		m_Shader   = Shader::Create("assets/shaders/4_Pipelines/pipelines.vert.spv", "assets/shaders/4_Pipelines/pipelines.frag.spv");
+		m_Material = std::make_shared<Material>(m_Shader);
+
+		// 加载Mesh
         LoadOBJ();
-        LoadShader();
-        CreateFences();
-        CreateSemaphores();
-        CreatePipelines();
+
+		// 创建同步对象
+		CreateSynchronousObject();
+
+		// 录制Command命令
         SetupCommandBuffers();
         
         m_Ready = true;
@@ -59,22 +64,19 @@ public:
     
     virtual void Exist() override
     {
-        DestroyFences();
-        DestorySemaphores();
-        DestroyPipelines();
+        DestroySynchronousObject();
 
-        m_IndexBuffer = nullptr;
+        m_IndexBuffer  = nullptr;
         m_VertexBuffer = nullptr;
-        m_Shader = nullptr;
+        m_Shader       = nullptr;
     }
     
     virtual void Loop() override
     {
-        if (!m_Ready)
+        if (m_Ready)
         {
-            return;
+			Draw();
         }
-        Draw();
     }
     
 private:
@@ -90,36 +92,40 @@ private:
     {
         UpdateUniformBuffers();
         
-        VkPipelineStageFlags waitStageMask = m_VulkanRHI->GetStageMask();
-        std::shared_ptr<VulkanQueue> gfxQueue = m_VulkanRHI->GetDevice()->GetGraphicsQueue();
-        std::shared_ptr<VulkanQueue> presentQueue = m_VulkanRHI->GetDevice()->GetPresentQueue();
-        std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
-        std::shared_ptr<VulkanSwapChain> swapChain = m_VulkanRHI->GetSwapChain();
-        
-        VkSemaphore presentCompleteSemaphore = VK_NULL_HANDLE;
-        m_CurrentBackBuffer = swapChain->AcquireImageIndex(&presentCompleteSemaphore);
-        
-        VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
+		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
+		VkDevice device	= vulkanRHI->GetDevice()->GetInstanceHandle();
+		VkPipelineStageFlags waitStageMask = vulkanRHI->GetStageMask();
+		std::shared_ptr<VulkanQueue> gfxQueue = vulkanRHI->GetDevice()->GetGraphicsQueue();
+		std::shared_ptr<VulkanQueue> presentQueue = vulkanRHI->GetDevice()->GetPresentQueue();
+		std::shared_ptr<VulkanSwapChain> swapChain = vulkanRHI->GetSwapChain();
+		std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
+		VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
+        VkSemaphore waitSemaphore = VK_NULL_HANDLE;
+
+        m_CurrentBackBuffer = swapChain->AcquireImageIndex(&waitSemaphore);
+
         fenceMgr.WaitForFence(m_Fences[m_CurrentBackBuffer], MAX_uint64);
         fenceMgr.ResetFence(m_Fences[m_CurrentBackBuffer]);
         
         VkSubmitInfo submitInfo = {};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.pWaitDstStageMask = &waitStageMask;
-        submitInfo.pWaitSemaphores = &presentCompleteSemaphore;
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &m_RenderComplete;
+        submitInfo.sType				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.pWaitDstStageMask	= &waitStageMask;
+        submitInfo.pWaitSemaphores		= &waitSemaphore;
+        submitInfo.waitSemaphoreCount	= 1;
+        submitInfo.pSignalSemaphores	= &m_RenderComplete;
         submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pCommandBuffers = &drawCmdBuffers[m_CurrentBackBuffer];
-        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers		= &drawCmdBuffers[m_CurrentBackBuffer];
+        submitInfo.commandBufferCount	= 1;
         
         VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]->GetHandle()));
-        
         swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
     }
     
     void SetupCommandBuffers()
     {
+		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
+		VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
+
         VkCommandBufferBeginInfo cmdBeginInfo;
         ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
         
@@ -129,28 +135,29 @@ private:
         
         VkRenderPassBeginInfo renderPassBeginInfo;
         ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-        renderPassBeginInfo.renderPass = m_VulkanRHI->GetRenderPass();
+        renderPassBeginInfo.renderPass = vulkanRHI->GetRenderPass();
         renderPassBeginInfo.renderArea.offset.x = 0;
         renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = m_VulkanRHI->GetSwapChain()->GetWidth();
-        renderPassBeginInfo.renderArea.extent.height = m_VulkanRHI->GetSwapChain()->GetHeight();
+        renderPassBeginInfo.renderArea.extent.width = vulkanRHI->GetSwapChain()->GetWidth();
+        renderPassBeginInfo.renderArea.extent.height = vulkanRHI->GetSwapChain()->GetHeight();
         renderPassBeginInfo.clearValueCount = 2;
         renderPassBeginInfo.pClearValues = clearValues;
         
-        std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
-        std::vector<VkFramebuffer> frameBuffers = m_VulkanRHI->GetFrameBuffers();
+        std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
+        std::vector<VkFramebuffer>& frameBuffers     = vulkanRHI->GetFrameBuffers();
+
         for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
         {
             renderPassBeginInfo.framebuffer = frameBuffers[i];
             
             VkViewport viewport = {};
-            viewport.width = (float)renderPassBeginInfo.renderArea.extent.width;
+            viewport.width  = (float)renderPassBeginInfo.renderArea.extent.width;
             viewport.height = (float)renderPassBeginInfo.renderArea.extent.height;
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
             
             VkRect2D scissor = {};
-            scissor.extent.width = (uint32)viewport.width;
+            scissor.extent.width  = (uint32)viewport.width;
             scissor.extent.height = (uint32)viewport.height;
             scissor.offset.x = 0;
             scissor.offset.y = 0;
@@ -166,14 +173,17 @@ private:
 			{
 				continue;
 			}
+
 			if (!m_VertexBuffer->Valid())
 			{
 				continue;
 			}
 
+			VkPipeline pipeline = m_Material->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader->GetVertexInputBindingInfo());
+
             vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_Shader->GetDescriptorSet()), 0, nullptr);
-            vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-            vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
+			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
             vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
             vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
             
@@ -182,113 +192,15 @@ private:
         }
     }
     
-    void CreatePipelines()
-    {
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyState;
-        ZeroVulkanStruct(inputAssemblyState, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
-        inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        
-        VkPipelineRasterizationStateCreateInfo rasterizationState;
-        ZeroVulkanStruct(rasterizationState, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
-        rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizationState.cullMode = VK_CULL_MODE_NONE;
-        rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizationState.depthClampEnable = VK_FALSE;
-        rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-        rasterizationState.depthBiasEnable = VK_FALSE;
-        rasterizationState.lineWidth = 1.0f;
-        
-        VkPipelineColorBlendAttachmentState blendAttachmentState[1] = {};
-        blendAttachmentState[0].colorWriteMask = (
-                                                  VK_COLOR_COMPONENT_R_BIT |
-                                                  VK_COLOR_COMPONENT_G_BIT |
-                                                  VK_COLOR_COMPONENT_B_BIT |
-                                                  VK_COLOR_COMPONENT_A_BIT
-                                                  );
-        blendAttachmentState[0].blendEnable = VK_FALSE;
-        
-        VkPipelineColorBlendStateCreateInfo colorBlendState;
-        ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
-        colorBlendState.attachmentCount = 1;
-        colorBlendState.pAttachments = blendAttachmentState;
-        
-        VkPipelineViewportStateCreateInfo viewportState;
-        ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
-        viewportState.viewportCount = 1;
-        viewportState.scissorCount = 1;
-        
-        std::vector<VkDynamicState> dynamicStateEnables;
-        dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT);
-        dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
-        VkPipelineDynamicStateCreateInfo dynamicState;
-        ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-        dynamicState.dynamicStateCount = (uint32_t)dynamicStateEnables.size();
-        dynamicState.pDynamicStates = dynamicStateEnables.data();
-        
-        VkPipelineDepthStencilStateCreateInfo depthStencilState;
-        ZeroVulkanStruct(depthStencilState, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-        depthStencilState.depthTestEnable = VK_TRUE;
-        depthStencilState.depthWriteEnable = VK_TRUE;
-        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-        depthStencilState.depthBoundsTestEnable = VK_FALSE;
-        depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
-        depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
-        depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
-        depthStencilState.stencilTestEnable = VK_FALSE;
-        depthStencilState.front = depthStencilState.back;
-        
-        VkPipelineMultisampleStateCreateInfo multisampleState;
-        ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-        multisampleState.rasterizationSamples = m_VulkanRHI->GetSampleCount();
-        multisampleState.pSampleMask = nullptr;
-        
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
-        ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-        ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = m_Shader->GetVertModule()->GetHandle();
-        shaderStages[0].pName = "main";
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = m_Shader->GetFragModule()->GetHandle();
-        shaderStages[1].pName = "main";
-        
-        // Material material(m_Shader);
-        VkPipelineVertexInputStateCreateInfo vertexInputState = m_VertexBuffer->GetVertexInputStateInfo();
-        
-        VkGraphicsPipelineCreateInfo pipelineCreateInfo;
-        ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-        pipelineCreateInfo.layout = m_Shader->GetPipelineLayout();
-        pipelineCreateInfo.renderPass = m_VulkanRHI->GetRenderPass();
-        pipelineCreateInfo.stageCount = (uint32_t)shaderStages.size();
-        pipelineCreateInfo.pStages = shaderStages.data();
-        pipelineCreateInfo.pVertexInputState = &vertexInputState;
-        pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
-        pipelineCreateInfo.pRasterizationState = &rasterizationState;
-        pipelineCreateInfo.pColorBlendState = &colorBlendState;
-        pipelineCreateInfo.pMultisampleState = &multisampleState;
-        pipelineCreateInfo.pViewportState = &viewportState;
-        pipelineCreateInfo.pDepthStencilState = &depthStencilState;
-        pipelineCreateInfo.pDynamicState = &dynamicState;
-        VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
-    }
-    
-    void DestroyPipelines()
-    {
-        vkDestroyPipeline(m_Device, m_Pipeline, VULKAN_CPU_ALLOCATOR);
-    }
-    
     void UpdateUniformBuffers()
     {
+		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+
         m_MVPData.view.SetIdentity();
         m_MVPData.view.SetOrigin(Vector4(0, 0, 30.0f));
         m_MVPData.view.SetInverse();
         
         m_Shader->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
-    }
-    
-    void LoadShader()
-    {
-        m_Shader = Shader::Create("assets/shaders/4_Pipelines/pipelines.vert.spv", "assets/shaders/4_Pipelines/pipelines.frag.spv");
     }
     
     void LoadOBJ()
@@ -340,14 +252,14 @@ private:
         
         VertexStreamInfo streamInfo;
         streamInfo.size = vertices.size() * sizeof(float);
-        streamInfo.channelMask = 1 << (int32)VertexAttribute::Position | 1 << (int32)VertexAttribute::Color;
+        streamInfo.channelMask = 1 << (int32)VertexAttribute::VA_Position | 1 << (int32)VertexAttribute::VA_Color;
         
         std::vector<VertexChannelInfo> channels(2);
-        channels[0].attribute = VertexAttribute::Position;
+        channels[0].attribute = VertexAttribute::VA_Position;
         channels[0].format = VertexElementType::VET_Float3;
         channels[0].stream = 0;
         channels[0].offset = 0;
-        channels[1].attribute = VertexAttribute::Color;
+        channels[1].attribute = VertexAttribute::VA_Color;
         channels[1].format = VertexElementType::VET_Float3;
         channels[1].stream = 0;
         channels[1].offset = 12;
@@ -363,52 +275,51 @@ private:
 		m_IndexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
     }
     
-    void CreateFences()
+    void CreateSynchronousObject()
     {
+		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
+		VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
+
         m_Fences.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
         VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
         for (int32 index = 0; index < m_Fences.size(); ++index)
         {
             m_Fences[index] = fenceMgr.CreateFence(true);
         }
+
+		VkSemaphoreCreateInfo createInfo;
+		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+		vkCreateSemaphore(device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
     }
     
-    void DestroyFences()
+    void DestroySynchronousObject()
     {
+		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
+		VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
+
         VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
         for (int32 index = 0; index < m_Fences.size(); ++index)
         {
             fenceMgr.WaitAndReleaseFence(m_Fences[index], MAX_int64);
         }
         m_Fences.clear();
+
+		vkDestroySemaphore(device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
     }
-    
-    void CreateSemaphores()
-    {
-        VkSemaphoreCreateInfo createInfo;
-        ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-        vkCreateSemaphore(m_Device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
-    }
-    
-    void DestorySemaphores()
-    {
-        vkDestroySemaphore(m_Device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
-    }
-    
-    bool m_Ready;
-    
-    VkDevice m_Device;
-    std::shared_ptr<VulkanRHI> m_VulkanRHI;
-    
-    std::shared_ptr<VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<IndexBuffer> m_IndexBuffer;
+
+private:
     UBOData m_MVPData;
+
+	std::shared_ptr<VertexBuffer> m_VertexBuffer;
+	std::shared_ptr<IndexBuffer> m_IndexBuffer;
+
     std::shared_ptr<Shader> m_Shader;
+	std::shared_ptr<Material> m_Material;
     
     VkSemaphore m_RenderComplete;
     std::vector<VulkanFence*> m_Fences;
-    VkPipeline m_Pipeline;
     
+	bool m_Ready;
     uint32 m_CurrentBackBuffer;
 };
 
