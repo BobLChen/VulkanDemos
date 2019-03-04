@@ -14,6 +14,8 @@ public:
     Material(std::shared_ptr<Shader> shader);
 
     virtual ~Material();
+    
+    static void DestroyCache();
 
 	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo, const VertexInputBindingInfo& inputBindingInfo);
 

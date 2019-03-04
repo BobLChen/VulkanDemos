@@ -247,8 +247,7 @@ void VertexBuffer::CreateBuffer()
 	// 提交命令并等待执行完毕
 	VERIFYVULKANRESULT(vkQueueSubmit(vulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence));
 	VERIFYVULKANRESULT(vkWaitForFences(device, 1, &fence, VK_TRUE, MAX_int64));
-
-
+    
 	vkDestroyFence(device, fence, VULKAN_CPU_ALLOCATOR);
 	vkFreeCommandBuffers(device, vulkanRHI->GetCommandPool(), 1, &xferCmdBuffer);
 

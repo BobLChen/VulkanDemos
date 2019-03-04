@@ -82,7 +82,12 @@ public:
 		m_Attributes.push_back(attribute);
 		m_Locations.push_back(location);
 	}
-
+    
+    FORCEINLINE int32 GetInputCount() const
+    {
+        return m_Attributes.size();
+    }
+    
 	FORCEINLINE void Clear()
 	{
 		m_Valid = false;
@@ -101,11 +106,16 @@ public:
 		}
 	}
 
+    FORCEINLINE const std::vector<VertexAttribute>& GetAttributes() const
+    {
+        return m_Attributes;
+    }
+    
 protected:
-	bool               m_Valid;
-	uint32             m_Hash;
-	std::vector<int32> m_Attributes;
-	std::vector<int32> m_Locations;
+	bool                         m_Valid;
+	uint32                       m_Hash;
+	std::vector<VertexAttribute> m_Attributes;
+	std::vector<int32>           m_Locations;
 };
 
 class Shader

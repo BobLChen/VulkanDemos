@@ -22,6 +22,16 @@ Material::~Material()
 	m_Shader = nullptr;
 }
 
+void Material::DestroyCache()
+{
+    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+    for (auto it = G_PipelineCache.begin(); it != G_PipelineCache.end(); ++it)
+    {
+        vkDestroyPipeline(device, it->second, VULKAN_CPU_ALLOCATOR);
+    }
+    G_PipelineCache.clear();
+}
+
 void Material::InitState()
 {
 	// input assembly
@@ -72,6 +82,16 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 	VkPipeline pipelineResult = VK_NULL_HANDLE;
 	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
 	
+    if (inputDeclareInfo.GetAttributes().size() != inputBindingInfo.GetAttributes().size())
+    {
+        MLOGE(
+              "VertexBuffer(%d) not match VertexShader(%d).",
+              (int32)inputDeclareInfo.GetAttributes().size(),
+              (int32)inputBindingInfo.GetAttributes().size()
+        );
+    }
+    // TODO:快速校验VertexData格式是否匹配VertexShader
+    
 	uint32 hash0 = inputDeclareInfo.GetHash();
 	uint32 hash1 = inputBindingInfo.GetHash();
 
@@ -126,7 +146,7 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 			vertexInputAttributs[i].format   = inVertexDescInfos[i].format;
 			vertexInputAttributs[i].offset   = inVertexDescInfos[i].offset;
 		}
-
+        
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
 		vertexInputState.vertexBindingDescriptionCount   = vertexInputBindings.size();
@@ -153,11 +173,13 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(vulkanRHI->GetDevice()->GetInstanceHandle(), vulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &pipeline));
 		pipelineResult = pipeline;
 		G_PipelineCache.insert(std::make_pair(hash, pipeline));
+        
+        MLOG("Add GraphicsPipelines[%ud] to cache.", hash);
 	}
 	else 
 	{
 		pipelineResult = it->second;
 	}
-
+    
 	return pipelineResult;
 }

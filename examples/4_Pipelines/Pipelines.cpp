@@ -74,6 +74,9 @@ public:
         m_IndexBuffer  = nullptr;
         m_VertexBuffer = nullptr;
         m_Shader       = nullptr;
+        m_Material     = nullptr;
+        
+        Material::DestroyCache();
     }
     
     virtual void Loop() override
