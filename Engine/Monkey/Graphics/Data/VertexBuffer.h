@@ -264,17 +264,17 @@ public:
 
 	FORCEINLINE void Invalid()
 	{
-		m_Valid = false;
 		DestroyBuffer();
+        m_Invalid = true;
 	}
-
-	FORCEINLINE bool Valid()
+    
+	FORCEINLINE bool IsValid()
 	{
-		if (!m_Valid)
+		if (m_Invalid)
 		{
 			CreateBuffer();
 		}
-		return m_Valid;
+		return !m_Invalid;
 	}
 	
     const VertexInputDeclareInfo& GetVertexInputStateInfo();
@@ -298,7 +298,7 @@ protected:
 	uint32							m_DataSize;
 	uint32							m_CurrentChannels;
 
-	bool							m_Valid;
+	bool							m_Invalid;
     bool							m_InputStateDirty;
 	VertexInputDeclareInfo			m_VertexInputStateInfo;
 };

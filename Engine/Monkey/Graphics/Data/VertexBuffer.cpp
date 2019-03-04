@@ -10,7 +10,7 @@ VertexBuffer::VertexBuffer()
     : m_VertexCount(0)
     , m_DataSize(0)
     , m_CurrentChannels(0)
-	, m_Valid(false)
+	, m_Invalid(true)
     , m_InputStateDirty(false)
 {
     
@@ -22,11 +22,12 @@ VertexBuffer::~VertexBuffer()
 	{
 		delete[] m_Datas[i];
 	}
+    
+    DestroyBuffer();
+    
 	m_Datas.clear();
-	m_Channels.clear();
 	m_Streams.clear();
-
-	DestroyBuffer();
+    m_Channels.clear();
 }
 
 const VertexInputDeclareInfo& VertexBuffer::GetVertexInputStateInfo()
@@ -100,8 +101,8 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 		newChannelMask = (1 << channels[i].attribute) | newChannelMask;
 		m_Channels.push_back(channels[i]);
 	}
-
-	m_Valid = false;
+    
+	m_Invalid = true;
 	m_InputStateDirty = true;
 	m_DataSize += streamInfo.size;
 	m_VertexCount = streamInfo.size / stride;
@@ -112,11 +113,11 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 
 void VertexBuffer::DestroyBuffer()
 {
-	if (!m_Valid)
+	if (m_Invalid)
 	{
 		return;
 	}
-
+    
 	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 
 	for (int32 i = 0; i < m_Streams.size(); ++i)
@@ -126,20 +127,20 @@ void VertexBuffer::DestroyBuffer()
 		m_Memories[i] = VK_NULL_HANDLE;
 		m_Buffers[i] = VK_NULL_HANDLE;
 	}
-
-	m_Valid = false;
+    
+	m_Invalid = true;
 	m_Buffers.clear();
 	m_Memories.clear();
 }
 
 void VertexBuffer::CreateBuffer()
 {
-	if (m_Valid)
+	if (!m_Invalid)
 	{
 		return;
 	}
-	m_Valid = true;
-
+	m_Invalid = false;
+    
 	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
 	std::shared_ptr<VulkanDevice> vulkanDevice = vulkanRHI->GetDevice();
 	VkDevice device = vulkanDevice->GetInstanceHandle();

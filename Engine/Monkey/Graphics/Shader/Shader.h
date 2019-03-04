@@ -67,6 +67,7 @@ public:
 			}
 		}
 
+        MLOGE("Can't found location, Attribute : %d", attribute);
 		return -1;
 	}
 

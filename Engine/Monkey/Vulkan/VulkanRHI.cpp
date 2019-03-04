@@ -65,7 +65,7 @@ void VulkanRHI::Shutdown()
 #if MONKEY_DEBUG
     RemoveDebugLayerCallback();
 #endif
-
+    
     vkDestroyInstance(m_Instance, VULKAN_CPU_ALLOCATOR);
 }
 

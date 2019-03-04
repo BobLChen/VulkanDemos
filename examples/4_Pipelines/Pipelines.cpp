@@ -98,7 +98,6 @@ private:
         UpdateUniformBuffers();
         
 		std::shared_ptr<VulkanRHI> vulkanRHI         = GetVulkanRHI();
-		VkDevice device	                             = vulkanRHI->GetDevice()->GetInstanceHandle();
 		VkPipelineStageFlags waitStageMask           = vulkanRHI->GetStageMask();
 		std::shared_ptr<VulkanQueue> gfxQueue        = vulkanRHI->GetDevice()->GetGraphicsQueue();
 		std::shared_ptr<VulkanQueue> presentQueue    = vulkanRHI->GetDevice()->GetPresentQueue();
@@ -128,8 +127,7 @@ private:
     void SetupCommandBuffers()
     {
 		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
-		VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
-
+        
         VkCommandBufferBeginInfo cmdBeginInfo;
         ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
         
@@ -173,12 +171,12 @@ private:
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
 
-			if (!m_IndexBuffer->Valid())
+			if (!m_IndexBuffer->IsValid())
 			{
 				continue;
 			}
 
-			if (!m_VertexBuffer->Valid())
+			if (!m_VertexBuffer->IsValid())
 			{
 				continue;
 			}
@@ -254,16 +252,16 @@ private:
         uint8* vertStreamData = new uint8[vertices.size() * sizeof(float)];
         std::memcpy(vertStreamData, vertices.data(), vertices.size() * sizeof(float));
         
-        VertexStreamInfo streamInfo;
+        VertexStreamInfo       streamInfo;
         streamInfo.size        = vertices.size() * sizeof(float);
-        streamInfo.channelMask = 1 << (int32)VertexAttribute::VA_Position | 1 << (int32)VertexAttribute::VA_Color;
+        streamInfo.channelMask = 1 << (int32)VertexAttribute::VA_Position | 1 << (int32)VertexAttribute::VA_Normal;
         
         std::vector<VertexChannelInfo> channels(2);
         channels[0].attribute = VertexAttribute::VA_Position;
         channels[0].format    = VertexElementType::VET_Float3;
         channels[0].stream    = 0;
         channels[0].offset    = 0;
-        channels[1].attribute = VertexAttribute::VA_Color;
+        channels[1].attribute = VertexAttribute::VA_Normal;
         channels[1].format    = VertexElementType::VET_Float3;
         channels[1].stream    = 0;
         channels[1].offset    = 12;

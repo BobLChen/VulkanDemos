@@ -75,7 +75,7 @@ public:
 		DestroyDescriptorPool();
 		DestroyPipelines();
 		DestroyUniformBuffers();
-
+        
 		m_IndexBuffer  = nullptr;
 		m_VertexBuffer = nullptr;
 	}
@@ -186,11 +186,12 @@ private:
 			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
 
-			if (!m_IndexBuffer->Valid())
+			if (!m_IndexBuffer->IsValid())
 			{
 				continue;
 			}
-			if (!m_VertexBuffer->Valid())
+            
+			if (!m_VertexBuffer->IsValid())
 			{
 				continue;
 			}

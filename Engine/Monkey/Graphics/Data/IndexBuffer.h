@@ -69,16 +69,16 @@ public:
 	FORCEINLINE void Invalid()
 	{
 		DestroyBuffer();
-		m_Valid = false;
+		m_Invalid = true;
 	}
-
-	FORCEINLINE bool Valid()
+    
+	FORCEINLINE bool IsValid()
 	{
-		if (!m_Valid)
+		if (m_Invalid)
 		{
 			CreateBuffer();
 		}
-		return m_Valid;
+		return !m_Invalid;
 	}
 	
 protected:
@@ -88,19 +88,18 @@ protected:
 	void DestroyBuffer();
 
 protected:
-
-	VkIndexType m_IndexType;
-	PrimitiveType m_PrimitiveType;
-
-	uint8* m_Data;
-	uint32 m_DataSize;
-	uint32 m_IndexCount;
-	uint32 m_TriangleCount;
-	VkBuffer m_Buffer;
-	VkDeviceMemory m_Memory;
-
-	bool m_Valid;
-
-	uint32 m_AllocationSize;
-	uint32 m_Alignment;
+	VkIndexType         m_IndexType;
+	PrimitiveType       m_PrimitiveType;
+    
+	uint8*              m_Data;
+	uint32              m_DataSize;
+	uint32              m_IndexCount;
+	uint32              m_TriangleCount;
+    
+	VkBuffer            m_Buffer;
+	VkDeviceMemory      m_Memory;
+    
+	bool                m_Invalid;
+	uint32              m_AllocationSize;
+	uint32              m_Alignment;
 };

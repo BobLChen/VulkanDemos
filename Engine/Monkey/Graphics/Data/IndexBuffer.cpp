@@ -13,37 +13,37 @@ IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiv
 	, m_TriangleCount(0)
 	, m_Buffer(VK_NULL_HANDLE)
 	, m_Memory(VK_NULL_HANDLE)
-	, m_Valid(false)
+	, m_Invalid(true)
 	, m_AllocationSize(0)
 	, m_Alignment(0)
 {
-	m_IndexCount = dataSize / IndexTypeToSize(indexType);
+	m_IndexCount    = dataSize / IndexTypeToSize(indexType);
 	m_TriangleCount = m_IndexCount / PrimitiveTypeToSize(primitiveType);
 }
 
 IndexBuffer::~IndexBuffer()
 {
-	DestroyBuffer();
-	
 	if (m_Data) {
 		delete[] m_Data;
 		m_Data = nullptr;
 	}
+    DestroyBuffer();
 }
 
 void IndexBuffer::CreateBuffer()
 {
-	if (m_Valid)
+	if (!m_Invalid)
 	{
 		return;
 	}
+    m_Invalid = false;
 
-	VkBuffer hostBuffer = VK_NULL_HANDLE;
-	VkDeviceMemory hostMemory = VK_NULL_HANDLE;
-	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
-	std::shared_ptr<VulkanDevice> vulkanDevice = Engine::Get()->GetVulkanRHI()->GetDevice();
-	VkDevice device = vulkanDevice->GetInstanceHandle();
-
+	VkBuffer hostBuffer                         = VK_NULL_HANDLE;
+	VkDeviceMemory hostMemory                   = VK_NULL_HANDLE;
+	std::shared_ptr<VulkanRHI> vulkanRHI        = Engine::Get()->GetVulkanRHI();
+	std::shared_ptr<VulkanDevice> vulkanDevice  = Engine::Get()->GetVulkanRHI()->GetDevice();
+	VkDevice device                             = vulkanDevice->GetInstanceHandle();
+    
 	// Host端创建Buffer
 	VkBufferCreateInfo bufferCreateInfo;
 	ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
@@ -84,9 +84,9 @@ void IndexBuffer::CreateBuffer()
 	memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 
 	// 记录本次的Alignment以及AllocationSize
-	m_Alignment = memReqInfo.alignment;
+	m_Alignment      = memReqInfo.alignment;
 	m_AllocationSize = memReqInfo.size;
-
+    
 	// 分配内存并且与Buffer绑定
 	VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_Memory));
 	VERIFYVULKANRESULT(vkBindBufferMemory(device, m_Buffer, m_Memory, 0));
@@ -96,11 +96,11 @@ void IndexBuffer::CreateBuffer()
 	VkCommandBuffer xferCmdBuffer;
 	VkCommandBufferAllocateInfo xferCmdBufferInfo;
 	ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-	xferCmdBufferInfo.commandPool = vulkanRHI->GetCommandPool();
-	xferCmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	xferCmdBufferInfo.commandPool        = vulkanRHI->GetCommandPool();
+	xferCmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	xferCmdBufferInfo.commandBufferCount = 1;
 	VERIFYVULKANRESULT(vkAllocateCommandBuffers(device, &xferCmdBufferInfo, &xferCmdBuffer));
-
+    
 	// 开始录制命令
 	VkCommandBufferBeginInfo cmdBufferBeginInfo;
 	ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -118,13 +118,13 @@ void IndexBuffer::CreateBuffer()
 	VkSubmitInfo submitInfo;
 	ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &xferCmdBuffer;
-
+	submitInfo.pCommandBuffers    = &xferCmdBuffer;
+    
 	// 准备同步对象
 	VkFenceCreateInfo fenceInfo;
 	ZeroVulkanStruct(fenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 	fenceInfo.flags = 0;
-
+    
 	// 创建Fence同步对象
 	VkFence fence;
 	VERIFYVULKANRESULT(vkCreateFence(device, &fenceInfo, VULKAN_CPU_ALLOCATOR, &fence));
@@ -139,23 +139,21 @@ void IndexBuffer::CreateBuffer()
 	vkFreeCommandBuffers(device, vulkanRHI->GetCommandPool(), 1, &xferCmdBuffer);
 	vkDestroyBuffer(device, hostBuffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(device, hostMemory, VULKAN_CPU_ALLOCATOR);
-
-	m_Valid = true;
 }
 
 void IndexBuffer::DestroyBuffer()
 {
-	if (!m_Valid)
-	{
-		return;
-	}
-
+    if (m_Invalid)
+    {
+        return;
+    }
+    
 	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 
 	vkDestroyBuffer(device, m_Buffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(device, m_Memory, VULKAN_CPU_ALLOCATOR);
 
-	m_Memory = VK_NULL_HANDLE;
-	m_Memory = VK_NULL_HANDLE;
-	m_Valid  = false;
+	m_Memory  = VK_NULL_HANDLE;
+	m_Memory  = VK_NULL_HANDLE;
+	m_Invalid = true;
 }
