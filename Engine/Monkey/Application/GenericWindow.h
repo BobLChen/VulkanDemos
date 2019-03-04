@@ -125,11 +125,12 @@ public:
     {
         return m_Height;
     }
+	
 protected:
-	int m_X;
-	int m_Y;
-    int32 m_Width;
-    int32 m_Height;
+	int 	m_X;
+	int 	m_Y;
+    int32 	m_Width;
+    int32 	m_Height;
 };
 
 

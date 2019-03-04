@@ -6,20 +6,28 @@
 
 VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevice> device, PixelFormat& outPixelFormat, uint32 width, uint32 height,
 	uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync)
-	: m_SwapChain(VK_NULL_HANDLE)
+	: m_Instance(instance)
+	, m_SwapChain(VK_NULL_HANDLE)
     , m_Surface(VK_NULL_HANDLE)
 	, m_Device(device)
 	, m_CurrentImageIndex(-1)
 	, m_SemaphoreIndex(0)
 	, m_NumPresentCalls(0)
 	, m_NumAcquireCalls(0)
-	, m_Instance(instance)
 	, m_LockToVsync(lockToVsync)
+	, m_PresentID(0)
 {
+
+	// 创建Surface
 	VulkanPlatform::CreateSurface(instance, &m_Surface);
-	
+
+	// 设置Present Queue
+	m_Device->SetupPresentQueue(m_Surface);
+
+	// 遍历format找出合适的Format
 	uint32 numFormats;
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceFormatsKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFormats, nullptr));
+
 	std::vector<VkSurfaceFormatKHR> formats(numFormats);
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceFormatsKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFormats, formats.data()));
 	
@@ -34,8 +42,8 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 			{
 				if (formats[index].format == requested)
 				{
+					bFound     = true;
 					currFormat = formats[index];
-					bFound = true;
 					break;
 				}
 			}
@@ -62,7 +70,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 				if (formats[index].format == G_PixelFormats[pfIndex].platformFormat)
 				{
 					outPixelFormat = (PixelFormat)pfIndex;
-					currFormat = formats[index];
+					currFormat     = formats[index];
 					MLOG("No swapchain format requested, picking up VulkanFormat %d", (uint32)currFormat.format);
 					break;
 				}
@@ -84,22 +92,22 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 		{
 			if (formats[index].format == platformFormat)
 			{
-				supported = true;
+				supported  = true;
 				currFormat = formats[index];
 			}
 		}
 	}
 	
-	m_Device->SetupPresentQueue(m_Surface);
-    
+	// 检测Present Model
     uint32 numFoundPresentModes = 0;
     VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, nullptr));
-    std::vector< VkPresentModeKHR> foundPresentModes(numFoundPresentModes);
+   
+	std::vector< VkPresentModeKHR> foundPresentModes(numFoundPresentModes);
     VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(m_Device->GetPhysicalHandle(), m_Surface, &numFoundPresentModes, foundPresentModes.data()));
     
-    bool foundPresentModeMailbox = false;
+    bool foundPresentModeMailbox   = false;
     bool foundPresentModeImmediate = false;
-    bool foundPresentModeFIFO = false;
+    bool foundPresentModeFIFO      = false;
     
     MLOG("Found %d present mode.", numFoundPresentModes);
     for (int32 index = 0; index < numFoundPresentModes; ++index)
@@ -168,22 +176,22 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	uint32 sizeY = surfProperties.currentExtent.height == 0xFFFFFFFF ? height : surfProperties.currentExtent.height;
 	
 	ZeroVulkanStruct(m_SwapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
-	m_SwapChainInfo.surface = m_Surface;
-	m_SwapChainInfo.minImageCount = desiredNumBuffers;
-	m_SwapChainInfo.imageFormat = currFormat.format;
-	m_SwapChainInfo.imageColorSpace = currFormat.colorSpace;
-	m_SwapChainInfo.imageExtent.width = sizeX;
-	m_SwapChainInfo.imageExtent.height = sizeY;
-	m_SwapChainInfo.imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	m_SwapChainInfo.preTransform = preTransform;
-	m_SwapChainInfo.imageArrayLayers = 1;
-	m_SwapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	m_SwapChainInfo.presentMode = presentMode;
-	m_SwapChainInfo.oldSwapchain = VK_NULL_HANDLE;
-	m_SwapChainInfo.clipped = VK_TRUE;
-	m_SwapChainInfo.compositeAlpha = compositeAlpha;
+	m_SwapChainInfo.surface				= m_Surface;
+	m_SwapChainInfo.minImageCount		= desiredNumBuffers;
+	m_SwapChainInfo.imageFormat			= currFormat.format;
+	m_SwapChainInfo.imageColorSpace		= currFormat.colorSpace;
+	m_SwapChainInfo.imageExtent.width	= sizeX;
+	m_SwapChainInfo.imageExtent.height	= sizeY;
+	m_SwapChainInfo.imageUsage			= VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	m_SwapChainInfo.preTransform		= preTransform;
+	m_SwapChainInfo.imageArrayLayers	= 1;
+	m_SwapChainInfo.imageSharingMode	= VK_SHARING_MODE_EXCLUSIVE;
+	m_SwapChainInfo.presentMode			= presentMode;
+	m_SwapChainInfo.oldSwapchain		= VK_NULL_HANDLE;
+	m_SwapChainInfo.clipped				= VK_TRUE;
+	m_SwapChainInfo.compositeAlpha		= compositeAlpha;
 	
-	*outDesiredNumBackBuffers = desiredNumBuffers;
+	*outDesiredNumBackBuffers			= desiredNumBuffers;
 
 	if (m_SwapChainInfo.imageExtent.width == 0)
 	{
@@ -194,6 +202,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 		m_SwapChainInfo.imageExtent.height = height;
 	}
 
+	// 检测是否支持present
 	VkBool32 supportsPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
     if (!supportsPresent)
@@ -201,13 +210,17 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
         MLOGE("Present queue not support.")
     }
 
+	// 创建SwapChain
 	VERIFYVULKANRESULT(vkCreateSwapchainKHR(m_Device->GetInstanceHandle(), &m_SwapChainInfo, VULKAN_CPU_ALLOCATOR, &m_SwapChain));
 
+	// 获取Backbuffer数量
 	uint32 numSwapChainImages;
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
+	
 	outImages.resize(numSwapChainImages);
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
     
+	// 创建Fence
 	m_ImageAcquiredSemaphore.resize(numSwapChainImages);
 	for (int32 index = 0; index < numSwapChainImages; ++index)
 	{
@@ -220,78 +233,71 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
     MLOGE("SwapChain: Backbuffer:%d Format:%d ColorSpace:%d Size:%dx%d Present:%d", m_SwapChainInfo.minImageCount, m_SwapChainInfo.imageFormat, m_SwapChainInfo.imageColorSpace, m_SwapChainInfo.imageExtent.width, m_SwapChainInfo.imageExtent.height, m_SwapChainInfo.presentMode);
 }
 
-void VulkanSwapChain::Destroy()
+VulkanSwapChain::~VulkanSwapChain()
 {
-	vkDestroySwapchainKHR(m_Device->GetInstanceHandle(), m_SwapChain, VULKAN_CPU_ALLOCATOR);
-	m_SwapChain = VK_NULL_HANDLE;
-    
+	VkDevice device = m_Device->GetInstanceHandle();
+
 	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index)
 	{
 		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_ImageAcquiredSemaphore[index], VULKAN_CPU_ALLOCATOR);
-		m_ImageAcquiredSemaphore[index] = VK_NULL_HANDLE;
 	}
 
 	vkDestroySurfaceKHR(m_Instance, m_Surface, VULKAN_CPU_ALLOCATOR);
-	m_Surface = VK_NULL_HANDLE;
+	vkDestroySwapchainKHR(device, m_SwapChain, VULKAN_CPU_ALLOCATOR);
 }
 
 int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 {
 	uint32 imageIndex = 0;
-	const int32 prevSemaphoreIndex = m_SemaphoreIndex;
-	m_SemaphoreIndex = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
-	
-	VkResult result = vkAcquireNextImageKHR(
-		m_Device->GetInstanceHandle(),
-		m_SwapChain, 
-		MAX_int64, 
-		m_ImageAcquiredSemaphore[m_SemaphoreIndex], 
-		VK_NULL_HANDLE,
-		&imageIndex
-	);
+	VkDevice device   = m_Device->GetInstanceHandle();
+	const int32 prev  = m_SemaphoreIndex;
+
+	m_SemaphoreIndex  = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
+	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, MAX_int64, m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		m_SemaphoreIndex = prevSemaphoreIndex;
+		m_SemaphoreIndex = prev;
 		return (int32)Status::OutOfDate;
 	}
 
 	if (result == VK_ERROR_SURFACE_LOST_KHR)
 	{
-		m_SemaphoreIndex = prevSemaphoreIndex;
+		m_SemaphoreIndex = prev;
 		return (int32)Status::SurfaceLost;
 	}
 
-	++m_NumAcquireCalls;
-	*outSemaphore = m_ImageAcquiredSemaphore[m_SemaphoreIndex];
+	m_NumAcquireCalls   += 1;
+	*outSemaphore       = m_ImageAcquiredSemaphore[m_SemaphoreIndex];
 	m_CurrentImageIndex = (int32)imageIndex;
-    
+
 	return m_CurrentImageIndex;
 }
 
-VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* backBufferRenderingDoneSemaphore)
+VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* doneSemaphore)
 {
 	if (m_CurrentImageIndex == -1)
 	{
 		return Status::Healthy;
 	}
 
+	m_PresentID += 1;
+
 	VkPresentInfoKHR createInfo;
 	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-	VkSemaphore Semaphore = VK_NULL_HANDLE;
-	if (backBufferRenderingDoneSemaphore)
+
+	VkSemaphore semaphore = VK_NULL_HANDLE;
+	if (doneSemaphore)
 	{
+		semaphore = *doneSemaphore;
 		createInfo.waitSemaphoreCount = 1;
-		Semaphore = *backBufferRenderingDoneSemaphore;
-		createInfo.pWaitSemaphores = &Semaphore;
+		createInfo.pWaitSemaphores    = &semaphore;
 	}
 
 	createInfo.swapchainCount = 1;
-	createInfo.pSwapchains = &m_SwapChain;
-	createInfo.pImageIndices = (uint32*)&m_CurrentImageIndex;
+	createInfo.pSwapchains    = &m_SwapChain;
+	createInfo.pImageIndices  = (uint32*)&m_CurrentImageIndex;
     
-	m_PresentID++;
-
 	VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &createInfo);
 
 	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
@@ -309,42 +315,41 @@ VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gf
 		VERIFYVULKANRESULT(presentResult);
 	}
 
-	++m_NumPresentCalls;
+	m_NumPresentCalls += 1;
 
 	return Status::Healthy;
 }
 
-
 void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)
 {
-	if (!m_PresentQueue)
+	if (m_PresentQueue)
 	{
-		const auto SupportsPresent = [surface](VkPhysicalDevice physicalDevice, std::shared_ptr<VulkanQueue> queue)
-		{
-			VkBool32 supportsPresent = VK_FALSE;
-			const uint32 familyIndex = queue->GetFamilyIndex();
-			VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, familyIndex, surface, &supportsPresent));
-			if (supportsPresent)
-			{
-				MLOG("Queue Family %d: Supports Present", familyIndex);
-			}
-			return (supportsPresent == VK_TRUE);
-		};
+		return;
+	}
 
-		// bool gfx = SupportsPresent(m_PhysicalDevice, m_GfxQueue);
-		bool compute = SupportsPresent(m_PhysicalDevice, m_ComputeQueue);
-		if (m_TransferQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && m_TransferQueue->GetFamilyIndex() != m_ComputeQueue->GetFamilyIndex())
+	const auto SupportsPresent = [surface](VkPhysicalDevice physicalDevice, std::shared_ptr<VulkanQueue> queue)
+	{
+		VkBool32 supportsPresent = VK_FALSE;
+		const uint32 familyIndex = queue->GetFamilyIndex();
+		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, familyIndex, surface, &supportsPresent));
+		if (supportsPresent)
 		{
-			SupportsPresent(m_PhysicalDevice, m_TransferQueue);
+			MLOG("Queue Family %d: Supports Present", familyIndex);
 		}
+		return (supportsPresent == VK_TRUE);
+	};
 
-		if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && compute)
-		{
-			m_PresentQueue = m_ComputeQueue;
-		}
-		else
-		{
-			m_PresentQueue = m_GfxQueue;
-		}
+	bool compute = SupportsPresent(m_PhysicalDevice, m_ComputeQueue);
+	if (m_TransferQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && m_TransferQueue->GetFamilyIndex() != m_ComputeQueue->GetFamilyIndex())
+	{
+		SupportsPresent(m_PhysicalDevice, m_TransferQueue);
+	}
+	if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && compute)
+	{
+		m_PresentQueue = m_ComputeQueue;
+	}
+	else
+	{
+		m_PresentQueue = m_GfxQueue;
 	}
 }

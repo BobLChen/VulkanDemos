@@ -1,4 +1,5 @@
 #include "VulkanRHI.h"
+#include "VulkanPlatform.h"
 
 #define VK_DESTORY_DEBUG_REPORT_CALLBACK_EXT_NAME "vkDestroyDebugReportCallbackEXT"
 #define VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME  "vkCreateDebugReportCallbackEXT"
@@ -47,12 +48,11 @@ void VulkanRHI::SetupDebugLayerCallback()
 {
     VkDebugReportCallbackCreateInfoEXT debugInfo;
     ZeroVulkanStruct(debugInfo, VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT);
-    debugInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+    debugInfo.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
     debugInfo.pfnCallback = VulkanDebugCallBack;
-    debugInfo.pUserData = this;
+    debugInfo.pUserData   = this;
     
-    auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_Instance, VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME);
-    
+    auto func    = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_Instance, VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME);
     bool success = true;
     if (func != nullptr)
     {

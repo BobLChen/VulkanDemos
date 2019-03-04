@@ -118,7 +118,9 @@ public:
 private:
 	SlateApplication();
 	
-	float m_DeltaTime;
+private:
+	float 	m_DeltaTime;
 	Engine* m_Engine;
+
 	static std::shared_ptr<SlateApplication> m_CurrentApplication;
 };

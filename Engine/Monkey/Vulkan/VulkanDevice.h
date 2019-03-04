@@ -109,26 +109,25 @@ private:
     void SetupFormats();
     
 private:
-    
-	VulkanFenceManager m_FenceManager;
-
-    VkDevice m_Device;
-    VkPhysicalDevice m_PhysicalDevice;
-    VkPhysicalDeviceProperties m_PhysicalDeviceProperties;
-    VkPhysicalDeviceFeatures m_PhysicalDeviceFeatures;
-    std::vector<VkQueueFamilyProperties> m_QueueFamilyProps;
-    
-    VkFormatProperties m_FormatProperties[VK_FORMAT_RANGE_SIZE];
-    std::map<VkFormat, VkFormatProperties> m_ExtensionFormatProperties;
-	VkComponentMapping m_PixelFormatComponentMapping[PF_MAX];
-
-    std::shared_ptr<VulkanQueue> m_GfxQueue;
-    std::shared_ptr<VulkanQueue> m_ComputeQueue;
-    std::shared_ptr<VulkanQueue> m_TransferQueue;
-    std::shared_ptr<VulkanQueue> m_PresentQueue;
-
-    VulkanDeviceMemoryManager m_MemoryManager;
-    VulkanResourceHeapManager m_ResourceHeapManager;
-    
     friend class VulkanRHI;
+
+private:
+    VkDevice                                m_Device;
+    VkPhysicalDevice                        m_PhysicalDevice;
+    VkPhysicalDeviceProperties              m_PhysicalDeviceProperties;
+    VkPhysicalDeviceFeatures                m_PhysicalDeviceFeatures;
+    std::vector<VkQueueFamilyProperties>    m_QueueFamilyProps;
+    
+    VkFormatProperties                      m_FormatProperties[VK_FORMAT_RANGE_SIZE];
+    std::map<VkFormat, VkFormatProperties>  m_ExtensionFormatProperties;
+	VkComponentMapping                      m_PixelFormatComponentMapping[PF_MAX];
+
+    std::shared_ptr<VulkanQueue>            m_GfxQueue;
+    std::shared_ptr<VulkanQueue>            m_ComputeQueue;
+    std::shared_ptr<VulkanQueue>            m_TransferQueue;
+    std::shared_ptr<VulkanQueue>            m_PresentQueue;
+
+    VulkanFenceManager                      m_FenceManager;
+    VulkanDeviceMemoryManager               m_MemoryManager;
+    VulkanResourceHeapManager               m_ResourceHeapManager;
 };

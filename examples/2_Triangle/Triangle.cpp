@@ -18,6 +18,16 @@ public:
 	TriangleMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
+		, m_PresentComplete(VK_NULL_HANDLE)
+		, m_RenderComplete(VK_NULL_HANDLE)
+		, m_VulkanRHI(nullptr)
+		, m_Device(VK_NULL_HANDLE)
+		, m_DescriptorSetLayout(VK_NULL_HANDLE)
+		, m_DescriptorSet(VK_NULL_HANDLE)
+		, m_PipelineLayout(VK_NULL_HANDLE)
+		, m_Pipeline(VK_NULL_HANDLE)
+		, m_DescriptorPool(VK_NULL_HANDLE)
+		, m_IndicesCount(0)
 		, m_CurrentBackBuffer(0)
 	{
 
@@ -78,13 +88,20 @@ private:
 
 	struct GPUBuffer
 	{
-		VkDeviceMemory memory;
-		VkBuffer buffer;
-	};
+		VkDeviceMemory 	memory;
+		VkBuffer 		buffer;
 
-	typedef GPUBuffer IndexBuffer;
-	typedef GPUBuffer VertexBuffer;
-	typedef GPUBuffer UBOBuffer;
+		GPUBuffer()
+			: memory(VK_NULL_HANDLE)
+			, buffer(VK_NULL_HANDLE)
+		{
+
+		}
+	};
+	
+	typedef GPUBuffer 	IndexBuffer;
+	typedef GPUBuffer 	VertexBuffer;
+	typedef GPUBuffer 	UBOBuffer;
 
 	struct Vertex
 	{
@@ -101,14 +118,14 @@ private:
 
 	VkShaderModule LoadSPIPVShader(const std::string& filepath)
 	{
-		uint8* dataPtr = nullptr;
+		uint8* dataPtr  = nullptr;
 		uint32 dataSize = 0;
 		FileManager::ReadFile(filepath, dataPtr, dataSize);
 
 		VkShaderModuleCreateInfo moduleCreateInfo;
 		ZeroVulkanStruct(moduleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
 		moduleCreateInfo.codeSize = dataSize;
-		moduleCreateInfo.pCode = (uint32_t*)dataPtr;
+		moduleCreateInfo.pCode    = (uint32_t*)dataPtr;
 
 		VkShaderModule shaderModule;
 		VERIFYVULKANRESULT(vkCreateShaderModule(m_Device, &moduleCreateInfo, VULKAN_CPU_ALLOCATOR, &shaderModule));
@@ -132,24 +149,24 @@ private:
 		VERIFYVULKANRESULT(vkResetFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer]));
 		
 		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask = &waitStageMask;									
-		submitInfo.pWaitSemaphores = &m_PresentComplete;
-		submitInfo.waitSemaphoreCount = 1;																														
-		submitInfo.pSignalSemaphores = &m_RenderComplete;
+		submitInfo.sType 				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask 	= &waitStageMask;									
+		submitInfo.pWaitSemaphores 		= &m_PresentComplete;
+		submitInfo.waitSemaphoreCount 	= 1;																														
+		submitInfo.pSignalSemaphores 	= &m_RenderComplete;
 		submitInfo.signalSemaphoreCount = 1;											
-		submitInfo.pCommandBuffers = &drawCmdBuffers[m_CurrentBackBuffer];
-		submitInfo.commandBufferCount = 1;												
+		submitInfo.pCommandBuffers 		= &drawCmdBuffers[m_CurrentBackBuffer];
+		submitInfo.commandBufferCount 	= 1;												
 		
 		// 提交绘制命令
 		VERIFYVULKANRESULT(vkQueueSubmit(m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
 
 		VkPresentInfoKHR presentInfo = {};
 		ZeroVulkanStruct(presentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-		presentInfo.swapchainCount = 1;
-		presentInfo.pSwapchains = &swapchain;
-		presentInfo.pImageIndices = &m_CurrentBackBuffer;
-		presentInfo.pWaitSemaphores = &m_RenderComplete;
+		presentInfo.swapchainCount 	   = 1;
+		presentInfo.pSwapchains 	   = &swapchain;
+		presentInfo.pImageIndices 	   = &m_CurrentBackBuffer;
+		presentInfo.pWaitSemaphores    = &m_RenderComplete;
 		presentInfo.waitSemaphoreCount = 1;
 
 		// 提交Present命令
@@ -162,36 +179,36 @@ private:
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
 		VkClearValue clearValues[2];
-		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
+		clearValues[0].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.renderPass = m_VulkanRHI->GetRenderPass();
+		renderPassBeginInfo.renderPass      = m_VulkanRHI->GetRenderPass();
+		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
         renderPassBeginInfo.renderArea.extent.width  = m_VulkanRHI->GetSwapChain()->GetWidth();
         renderPassBeginInfo.renderArea.extent.height = m_VulkanRHI->GetSwapChain()->GetHeight();
-		renderPassBeginInfo.clearValueCount = 2;
-		renderPassBeginInfo.pClearValues = clearValues;
         
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
-		std::vector<VkFramebuffer> frameBuffers = m_VulkanRHI->GetFrameBuffers();
+		std::vector<VkFramebuffer> frameBuffers      = m_VulkanRHI->GetFrameBuffers();
 		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
 
 			VkViewport viewport = {};
-            viewport.width  = (float)renderPassBeginInfo.renderArea.extent.width;
-            viewport.height = (float)renderPassBeginInfo.renderArea.extent.height;
+            viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
+            viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
             
 			VkRect2D scissor = {};
             scissor.extent.width  = (uint32)viewport.width;
             scissor.extent.height = (uint32)viewport.height;
-			scissor.offset.x = 0;
-			scissor.offset.y = 0;
+			scissor.offset.x      = 0;
+			scissor.offset.y      = 0;
 
 			VkDeviceSize offsets[1] = { 0 };
             
@@ -213,33 +230,32 @@ private:
 	{
 		VkDescriptorSetAllocateInfo allocInfo;
 		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-		allocInfo.descriptorPool = m_DescriptorPool;
+		allocInfo.descriptorPool     = m_DescriptorPool;
 		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &m_DescriptorSetLayout;
+		allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_DescriptorSet));
 
 		VkWriteDescriptorSet writeDescriptorSet;
 		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-		writeDescriptorSet.dstSet = m_DescriptorSet;
+		writeDescriptorSet.dstSet          = m_DescriptorSet;
 		writeDescriptorSet.descriptorCount = 1;
-		writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSet.pBufferInfo = &m_MVPDescriptor;
-		writeDescriptorSet.dstBinding = 0;
+		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSet.pBufferInfo     = &m_MVPDescriptor;
+		writeDescriptorSet.dstBinding      = 0;
 		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
 	void CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize = {};
-		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSize.descriptorCount = 1;
 
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
 		descriptorPoolInfo.poolSizeCount = 1;
-		descriptorPoolInfo.pPoolSizes = &poolSize;
-		descriptorPoolInfo.maxSets = 1;
-
+		descriptorPoolInfo.pPoolSizes    = &poolSize;
+		descriptorPoolInfo.maxSets       = 1;
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
 	}
 
@@ -256,13 +272,13 @@ private:
 		
 		VkPipelineRasterizationStateCreateInfo rasterizationState;
 		ZeroVulkanStruct(rasterizationState, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
-		rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizationState.depthClampEnable = VK_FALSE;
+		rasterizationState.polygonMode 			   = VK_POLYGON_MODE_FILL;
+		rasterizationState.cullMode                = VK_CULL_MODE_NONE;
+		rasterizationState.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizationState.depthClampEnable        = VK_FALSE;
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
-		rasterizationState.depthBiasEnable = VK_FALSE;
-		rasterizationState.lineWidth = 1.0f;
+		rasterizationState.depthBiasEnable         = VK_FALSE;
+		rasterizationState.lineWidth 			   = 1.0f;
         
 		VkPipelineColorBlendAttachmentState blendAttachmentState[1] = {};
         blendAttachmentState[0].colorWriteMask = (
@@ -276,7 +292,7 @@ private:
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
 		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
 		colorBlendState.attachmentCount = 1;
-		colorBlendState.pAttachments = blendAttachmentState;
+		colorBlendState.pAttachments    = blendAttachmentState;
         
 		VkPipelineViewportStateCreateInfo viewportState;
 		ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
@@ -293,20 +309,20 @@ private:
         
 		VkPipelineDepthStencilStateCreateInfo depthStencilState;
 		ZeroVulkanStruct(depthStencilState, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-		depthStencilState.depthTestEnable = VK_TRUE;
-		depthStencilState.depthWriteEnable = VK_TRUE;
-		depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		depthStencilState.depthTestEnable 		= VK_TRUE;
+		depthStencilState.depthWriteEnable 		= VK_TRUE;
+		depthStencilState.depthCompareOp		= VK_COMPARE_OP_LESS_OR_EQUAL;
 		depthStencilState.depthBoundsTestEnable = VK_FALSE;
-		depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
-		depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
-		depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
-		depthStencilState.stencilTestEnable = VK_FALSE;
-		depthStencilState.front = depthStencilState.back;
+		depthStencilState.back.failOp 			= VK_STENCIL_OP_KEEP;
+		depthStencilState.back.passOp 			= VK_STENCIL_OP_KEEP;
+		depthStencilState.back.compareOp 		= VK_COMPARE_OP_ALWAYS;
+		depthStencilState.stencilTestEnable 	= VK_FALSE;
+		depthStencilState.front 				= depthStencilState.back;
 
 		VkPipelineMultisampleStateCreateInfo multisampleState;
 		ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
 		multisampleState.rasterizationSamples = m_VulkanRHI->GetSampleCount();
-		multisampleState.pSampleMask = nullptr;
+		multisampleState.pSampleMask 		  = nullptr;
 		
 		// (triangle.vert):
 		// layout (location = 0) in vec3 inPos;
@@ -315,53 +331,53 @@ private:
 		// Attribute location 1: Color
 		// vertex input bindding
 		VkVertexInputBindingDescription vertexInputBinding = {};
-		vertexInputBinding.binding = 0; // Vertex Buffer 0
-		vertexInputBinding.stride = sizeof(Vertex); // Position + Color
+		vertexInputBinding.binding   = 0; // Vertex Buffer 0
+		vertexInputBinding.stride    = sizeof(Vertex); // Position + Color
 		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
 		// position
-		vertexInputAttributs[0].binding = 0;
+		vertexInputAttributs[0].binding  = 0;
         vertexInputAttributs[0].location = 0; // triangle.vert : layout (location = 0)
-		vertexInputAttributs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		vertexInputAttributs[0].offset = offsetof(Vertex, position);
+		vertexInputAttributs[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributs[0].offset   = offsetof(Vertex, position);
 		// color
-		vertexInputAttributs[1].binding = 0;
+		vertexInputAttributs[1].binding  = 0;
 		vertexInputAttributs[1].location = 1; // triangle.vert : layout (location = 1)
-		vertexInputAttributs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		vertexInputAttributs[1].offset = offsetof(Vertex, color);
+		vertexInputAttributs[1].format   = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributs[1].offset   = offsetof(Vertex, color);
 		
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-		vertexInputState.vertexBindingDescriptionCount = 1;
-		vertexInputState.pVertexBindingDescriptions = &vertexInputBinding;
+		vertexInputState.vertexBindingDescriptionCount   = 1;
+		vertexInputState.pVertexBindingDescriptions      = &vertexInputBinding;
 		vertexInputState.vertexAttributeDescriptionCount = 2;
-		vertexInputState.pVertexAttributeDescriptions = vertexInputAttributs.data();
+		vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributs.data();
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
 		ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-		shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
 		shaderStages[0].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.vert.spv");
-		shaderStages[0].pName = "main";
-		shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		shaderStages[0].pName  = "main";
+		shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
 		shaderStages[1].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.frag.spv");
-		shaderStages[1].pName = "main";
+		shaderStages[1].pName  = "main";
         
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-		pipelineCreateInfo.layout = m_PipelineLayout;
-		pipelineCreateInfo.renderPass = m_VulkanRHI->GetRenderPass();
-		pipelineCreateInfo.stageCount = (uint32_t)shaderStages.size();
-		pipelineCreateInfo.pStages = shaderStages.data();
-		pipelineCreateInfo.pVertexInputState = &vertexInputState;
-		pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
-		pipelineCreateInfo.pRasterizationState = &rasterizationState;
-		pipelineCreateInfo.pColorBlendState = &colorBlendState;
-		pipelineCreateInfo.pMultisampleState = &multisampleState;
-		pipelineCreateInfo.pViewportState = &viewportState;
-		pipelineCreateInfo.pDepthStencilState = &depthStencilState;
-		pipelineCreateInfo.pDynamicState = &dynamicState;
+		pipelineCreateInfo.layout 				= m_PipelineLayout;
+		pipelineCreateInfo.renderPass 			= m_VulkanRHI->GetRenderPass();
+		pipelineCreateInfo.stageCount 			= (uint32_t)shaderStages.size();
+		pipelineCreateInfo.pStages 				= shaderStages.data();
+		pipelineCreateInfo.pVertexInputState 	= &vertexInputState;
+		pipelineCreateInfo.pInputAssemblyState 	= &inputAssemblyState;
+		pipelineCreateInfo.pRasterizationState 	= &rasterizationState;
+		pipelineCreateInfo.pColorBlendState 	= &colorBlendState;
+		pipelineCreateInfo.pMultisampleState 	= &multisampleState;
+		pipelineCreateInfo.pViewportState 		= &viewportState;
+		pipelineCreateInfo.pDepthStencilState 	= &depthStencilState;
+		pipelineCreateInfo.pDynamicState 		= &dynamicState;
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
 		
 		vkDestroyShaderModule(m_Device, shaderStages[0].module, VULKAN_CPU_ALLOCATOR);
@@ -376,22 +392,22 @@ private:
 	void CreateDescriptorSetLayout()
 	{
 		VkDescriptorSetLayoutBinding layoutBinding;
-		layoutBinding.binding = 0;
-		layoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBinding.descriptorCount = 1;
-		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBinding.binding 			 = 0;
+		layoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBinding.descriptorCount    = 1;
+		layoutBinding.stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBinding.pImmutableSamplers = nullptr;
 
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
 		descSetLayoutInfo.bindingCount = 1;
-		descSetLayoutInfo.pBindings = &layoutBinding;
+		descSetLayoutInfo.pBindings    = &layoutBinding;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
 
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
 		ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 		pipeLayoutInfo.setLayoutCount = 1;
-		pipeLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+		pipeLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 	}
 
@@ -415,7 +431,7 @@ private:
 	{
 		VkBufferCreateInfo bufferInfo;
 		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-		bufferInfo.size = sizeof(UBOData);
+		bufferInfo.size  = sizeof(UBOData);
 		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 		VERIFYVULKANRESULT(vkCreateBuffer(m_Device, &bufferInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.buffer));
 
@@ -472,7 +488,7 @@ private:
 		// 5、删除主基端(Host)的Buffer
 		// 6、使用GPU端(Local Device)的Buffer进行渲染
 		VertexBuffer tempVertexBuffer;
-		IndexBuffer tempIndexBuffer;
+		IndexBuffer  tempIndexBuffer;
 
 		void* dataPtr = nullptr;
 		VkMemoryRequirements memReqInfo;
@@ -541,8 +557,8 @@ private:
 		// gfx queue自带transfer功能，为了优化需要使用转悠的xfer queue。这里为了简单，先将就用。
 		VkCommandBufferAllocateInfo xferCmdBufferInfo;
 		ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-		xferCmdBufferInfo.commandPool = m_VulkanRHI->GetCommandPool();
-		xferCmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		xferCmdBufferInfo.commandPool        = m_VulkanRHI->GetCommandPool();
+		xferCmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		xferCmdBufferInfo.commandBufferCount = 1;
 		VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, &xferCmdBufferInfo, &xferCmdBuffer));
 
@@ -565,13 +581,13 @@ private:
 		VkSubmitInfo submitInfo;
 		ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &xferCmdBuffer;
+		submitInfo.pCommandBuffers    = &xferCmdBuffer;
 
 		VkFenceCreateInfo fenceInfo;
 		ZeroVulkanStruct(fenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceInfo.flags = 0;
 
-		VkFence fence;
+		VkFence fence = VK_NULL_HANDLE;
 		VERIFYVULKANRESULT(vkCreateFence(m_Device, &fenceInfo, VULKAN_CPU_ALLOCATOR, &fence));
 		VERIFYVULKANRESULT(vkQueueSubmit(m_VulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence));
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &fence, VK_TRUE, MAX_int64));
@@ -627,30 +643,31 @@ private:
 		}
 	}
 
-	bool m_Ready;
+private:
+	bool 						m_Ready;
 
-	std::vector<VkFence> m_Fences;
-	VkSemaphore m_PresentComplete;
-	VkSemaphore m_RenderComplete;
+	std::vector<VkFence> 		m_Fences;
+	VkSemaphore 				m_PresentComplete;
+	VkSemaphore 				m_RenderComplete;
 
-	std::shared_ptr<VulkanRHI> m_VulkanRHI;
+	std::shared_ptr<VulkanRHI> 	m_VulkanRHI;
 
-	VkDevice m_Device;
+	VkDevice 					m_Device;
 
-	VertexBuffer m_VertexBuffer;
-	IndexBuffer m_IndicesBuffer;
-	UBOBuffer m_MVPBuffer;
-	UBOData m_MVPData;
+	VertexBuffer 				m_VertexBuffer;
+	IndexBuffer 				m_IndicesBuffer;
+	UBOBuffer 					m_MVPBuffer;
+	UBOData 					m_MVPData;
 
-	VkDescriptorBufferInfo m_MVPDescriptor;
-	VkDescriptorSetLayout m_DescriptorSetLayout;
-	VkDescriptorSet m_DescriptorSet;
-	VkPipelineLayout m_PipelineLayout;
-	VkPipeline m_Pipeline;
-	VkDescriptorPool m_DescriptorPool;
+	VkDescriptorBufferInfo 		m_MVPDescriptor;
+	VkDescriptorSetLayout 		m_DescriptorSetLayout;
+	VkDescriptorSet 			m_DescriptorSet;
+	VkPipelineLayout 			m_PipelineLayout;
+	VkPipeline 					m_Pipeline;
+	VkDescriptorPool 			m_DescriptorPool;
 
-	uint32 m_IndicesCount;
-	uint32 m_CurrentBackBuffer;
+	uint32 						m_IndicesCount;
+	uint32 						m_CurrentBackBuffer;
 };
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)

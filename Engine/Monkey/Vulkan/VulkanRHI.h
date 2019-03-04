@@ -129,6 +129,7 @@ public:
 	}
 
 protected:
+
 	void CreateInstance();
 
 	void SelectAndInitDevice();
@@ -136,8 +137,6 @@ protected:
 	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers, bool& outDebugUtils);
 
 #if MONKEY_DEBUG
-    VkDebugReportCallbackEXT m_MsgCallback = VK_NULL_HANDLE;
-
     void SetupDebugLayerCallback();
 
     void RemoveDebugLayerCallback();
@@ -174,34 +173,37 @@ protected:
 	void DestroyFrameBuffer();
     
 protected:
+
+#if MONKEY_DEBUG
+	VkDebugReportCallbackEXT			m_MsgCallback = VK_NULL_HANDLE;
+#endif
     
-	VkInstance m_Instance;
-    std::vector<const char*> m_InstanceLayers;
-    std::vector<const char*> m_InstanceExtensions;
+	VkInstance							m_Instance;
+    std::vector<const char*>			m_InstanceLayers;
+    std::vector<const char*>			m_InstanceExtensions;
     
-    VkCommandPool m_CommandPool;
-    std::vector<VkCommandBuffer> m_CommandBuffers;
+    std::shared_ptr<VulkanDevice>		m_Device;
+    std::shared_ptr<VulkanSwapChain>	m_SwapChain;
+
+    std::vector<VkImage>				m_FrameImages;
+    std::vector<VkImageView>			m_FrameImageViews;
+	std::vector<VkFramebuffer>			m_FrameBuffers;
     
-	VkPipelineStageFlags m_SubmitPipelineStages;
-    
-    std::shared_ptr<VulkanDevice> m_Device;
-    std::vector<std::shared_ptr<VulkanDevice>> m_Devices;
-    
-    std::shared_ptr<VulkanSwapChain> m_SwapChain;
-    std::vector<VkImage> m_FrameImages;
-    std::vector<VkImageView> m_FrameImageViews;
-	std::vector<VkFramebuffer> m_FrameBuffers;
-    
-    VkImage m_DepthStencilImage;
-    VkImageView m_DepthStencilView;
-    VkDeviceMemory m_DepthStencilMemory;
-    PixelFormat m_PixelFormat;
-    PixelFormat m_DepthFormat;
-    VkRenderPass m_RenderPass;
-    VkPipelineCache m_PipelineCache;
-    VkSampleCountFlagBits m_SampleCount;
-    
-	bool m_SupportsDebugUtilsExt;
+    VkImage								m_DepthStencilImage;
+    VkImageView							m_DepthStencilView;
+    VkDeviceMemory						m_DepthStencilMemory;
+
+	VkRenderPass						m_RenderPass;
+	VkPipelineCache						m_PipelineCache;
+	VkSampleCountFlagBits				m_SampleCount;
+	VkCommandPool						m_CommandPool;
+	std::vector<VkCommandBuffer>		m_CommandBuffers;
+	VkPipelineStageFlags				m_SubmitPipelineStages;
+
+    PixelFormat							m_PixelFormat;
+    PixelFormat							m_DepthFormat;
+
+	bool								m_SupportsDebugUtilsExt;
 };
 
 

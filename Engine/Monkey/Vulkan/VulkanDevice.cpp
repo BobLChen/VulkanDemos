@@ -12,7 +12,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_PresentQueue(nullptr)
     , m_ResourceHeapManager(this)
 {
-    
+	
 }
 
 VulkanDevice::~VulkanDevice()
@@ -33,17 +33,18 @@ void VulkanDevice::CreateDevice()
 
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-	deviceInfo.enabledExtensionCount = deviceExtensions.size();
+	deviceInfo.enabledExtensionCount   = deviceExtensions.size();
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
-	deviceInfo.enabledLayerCount = validationLayers.size();
-	deviceInfo.ppEnabledLayerNames = validationLayers.data();
+	deviceInfo.enabledLayerCount       = validationLayers.size();
+	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
 
     MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
     
 	std::vector<VkDeviceQueueCreateInfo> queueFamilyInfos;
-	uint32 numPriorities = 0;
-	int32 gfxQueueFamilyIndex = -1;
-	int32 computeQueueFamilyIndex = -1;
+	
+	uint32 numPriorities 		   = 0;
+	int32 gfxQueueFamilyIndex 	   = -1;
+	int32 computeQueueFamilyIndex  = -1;
 	int32 transferQueueFamilyIndex = -1;
 	
 	for (int32 familyIndex = 0; familyIndex < m_QueueFamilyProps.size(); ++familyIndex)
@@ -108,8 +109,8 @@ void VulkanDevice::CreateDevice()
 		VkDeviceQueueCreateInfo currQueue;
         ZeroVulkanStruct(currQueue, VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO);
 		currQueue.queueFamilyIndex = familyIndex;
-		currQueue.queueCount = currProps.queueCount;
-		numPriorities += currProps.queueCount;
+		currQueue.queueCount       = currProps.queueCount;
+		numPriorities             += currProps.queueCount;
 		queueFamilyInfos.push_back(currQueue);
         
 		MLOG("Initializing Queue Family %d: %d queues%s", familyIndex,  currProps.queueCount, GetQueueInfoString(currProps).c_str());
@@ -129,8 +130,8 @@ void VulkanDevice::CreateDevice()
 	}
 
 	deviceInfo.queueCreateInfoCount = queueFamilyInfos.size();
-	deviceInfo.pQueueCreateInfos = queueFamilyInfos.data();
-	deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
+	deviceInfo.pQueueCreateInfos    = queueFamilyInfos.data();
+	deviceInfo.pEnabledFeatures     = &m_PhysicalDeviceFeatures;
 
 	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
@@ -319,8 +320,8 @@ void VulkanDevice::SetupFormats()
 void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat)
 {
 	PixelFormatInfo& formatInfo = G_PixelFormats[format];
-	formatInfo.platformFormat = vkFormat;
-	formatInfo.supported = IsFormatSupported(vkFormat);
+	formatInfo.platformFormat   = vkFormat;
+	formatInfo.supported        = IsFormatSupported(vkFormat);
 
 	if (!formatInfo.supported)
 	{
@@ -394,8 +395,10 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
 {
 	vkGetPhysicalDeviceFeatures(m_PhysicalDevice, &m_PhysicalDeviceFeatures);
 	MLOG("Using Device %d: Geometry %d Tessellation %d", deviceIndex, m_PhysicalDeviceFeatures.geometryShader, m_PhysicalDeviceFeatures.tessellationShader);
+
 	CreateDevice();
 	SetupFormats();
+
     m_MemoryManager.Init(this);
     m_ResourceHeapManager.Init();
 	m_FenceManager.Init(this);
@@ -433,6 +436,7 @@ bool VulkanDevice::IsFormatSupported(VkFormat format)
     
 	VkFormatProperties newProperties;
 	memset(&newProperties, 0, sizeof(VkFormatProperties));
+	
 	vkGetPhysicalDeviceFormatProperties(m_PhysicalDevice, format, &newProperties);
     m_ExtensionFormatProperties.insert(std::pair<VkFormat, VkFormatProperties>(format, newProperties));
     

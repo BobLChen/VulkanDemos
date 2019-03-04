@@ -12,19 +12,21 @@
 
 VulkanRHI::VulkanRHI()
 	: m_Instance(VK_NULL_HANDLE)
+	, m_Device(nullptr)
+	, m_SwapChain(nullptr)
+	, m_DepthStencilImage(VK_NULL_HANDLE)
+	, m_DepthStencilView(VK_NULL_HANDLE)
+	, m_DepthStencilMemory(VK_NULL_HANDLE)
+	, m_RenderPass(VK_NULL_HANDLE)
+	, m_PipelineCache(VK_NULL_HANDLE)
+	, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
 	, m_CommandPool(VK_NULL_HANDLE)
 	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-    , m_Device(nullptr)
-    , m_SwapChain(nullptr)
-    , m_DepthStencilImage(VK_NULL_HANDLE)
-    , m_DepthStencilView(VK_NULL_HANDLE)
-    , m_DepthStencilMemory(VK_NULL_HANDLE)
     , m_PixelFormat(PF_B8G8R8A8)
     , m_DepthFormat(PF_D24)
-    , m_RenderPass(VK_NULL_HANDLE)
-    , m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
+	, m_SupportsDebugUtilsExt(false)
 {
-    
+								;
 }
 
 VulkanRHI::~VulkanRHI()
@@ -63,15 +65,18 @@ void VulkanRHI::Shutdown()
 #if MONKEY_DEBUG
     RemoveDebugLayerCallback();
 #endif
+
     vkDestroyInstance(m_Instance, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::InitInstance()
 {
 	CreateInstance();
+
 #if MONKEY_DEBUG
     SetupDebugLayerCallback();
 #endif
+
     SelectAndInitDevice();
     RecreateSwapChain();
     CreateCommandPool();
@@ -92,12 +97,12 @@ void VulkanRHI::CreateFrameBuffer()
 
 	VkFramebufferCreateInfo frameBufferCreateInfo;
 	ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-	frameBufferCreateInfo.renderPass = m_RenderPass;
+	frameBufferCreateInfo.renderPass      = m_RenderPass;
 	frameBufferCreateInfo.attachmentCount = 2;
-	frameBufferCreateInfo.pAttachments = attachments;
-	frameBufferCreateInfo.width  = width;
-	frameBufferCreateInfo.height = height;
-	frameBufferCreateInfo.layers = 1;
+	frameBufferCreateInfo.pAttachments    = attachments;
+	frameBufferCreateInfo.width			  = width;
+	frameBufferCreateInfo.height		  = height;
+	frameBufferCreateInfo.layers		  = 1;
 
 	m_FrameBuffers.resize(m_FrameImageViews.size());
 	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i)
@@ -130,69 +135,68 @@ void VulkanRHI::CreateRenderPass()
 {
     std::vector<VkAttachmentDescription> attachments(2);
     // color attachment
-    attachments[0].format = PixelFormatToVkFormat(m_PixelFormat, false);
-    attachments[0].samples = m_SampleCount;
-    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].format		  = PixelFormatToVkFormat(m_PixelFormat, false);
+    attachments[0].samples		  = m_SampleCount;
+    attachments[0].loadOp		  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
     // depth stencil attachment
-    attachments[1].format = PixelFormatToVkFormat(m_DepthFormat, false);
-    attachments[1].samples = m_SampleCount;
-    attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].format         = PixelFormatToVkFormat(m_DepthFormat, false);
+    attachments[1].samples        = m_SampleCount;
+    attachments[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout	  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     VkAttachmentReference colorReference = { };
     colorReference.attachment = 0;
-    colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     
     VkAttachmentReference depthReference = { };
     depthReference.attachment = 1;
-    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     
     VkSubpassDescription subpassDescription = { };
-    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = 1;
-    subpassDescription.pColorAttachments = &colorReference;
+    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount    = 1;
+    subpassDescription.pColorAttachments       = &colorReference;
     subpassDescription.pDepthStencilAttachment = &depthReference;
-    subpassDescription.pResolveAttachments = nullptr;
-    subpassDescription.inputAttachmentCount = 0;
-    subpassDescription.pInputAttachments = nullptr;
+    subpassDescription.pResolveAttachments     = nullptr;
+    subpassDescription.inputAttachmentCount    = 0;
+    subpassDescription.pInputAttachments       = nullptr;
     subpassDescription.preserveAttachmentCount = 0;
-    subpassDescription.pPreserveAttachments = nullptr;
+    subpassDescription.pPreserveAttachments    = nullptr;
     
     std::vector<VkSubpassDependency> dependencies(2);
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     
-    dependencies[1].srcSubpass = 0;
-    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].srcSubpass      = 0;
+    dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
     
     VkRenderPassCreateInfo renderPassInfo;
     ZeroVulkanStruct(renderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
-    renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpassDescription;
+    renderPassInfo.pAttachments    = attachments.data();
+    renderPassInfo.subpassCount    = 1;
+    renderPassInfo.pSubpasses      = &subpassDescription;
     renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
-    renderPassInfo.pDependencies = dependencies.data();
-    
+    renderPassInfo.pDependencies   = dependencies.data();
     VERIFYVULKANRESULT(vkCreateRenderPass(m_Device->GetInstanceHandle(), &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
 }
 
@@ -220,23 +224,22 @@ void VulkanRHI::RecreateSwapChain()
     uint32 desiredNumBackBuffers = 3;
     int32 width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
     int32 height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
-    
-    m_SwapChain = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
+    m_SwapChain  = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
     
     m_FrameImageViews.resize(m_FrameImages.size());
     for (int32 i = 0; i < m_FrameImages.size(); ++i)
     {
         VkImageViewCreateInfo createInfo;
         ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        createInfo.format = PixelFormatToVkFormat(m_PixelFormat, false);
+        createInfo.format     = PixelFormatToVkFormat(m_PixelFormat, false);
         createInfo.components = m_Device->GetFormatComponentMapping(m_PixelFormat);
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
+        createInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+        createInfo.image      = m_FrameImages[i];
+        createInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        createInfo.subresourceRange.baseMipLevel   = 0;
+        createInfo.subresourceRange.levelCount     = 1;
         createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.image = m_FrameImages[i];
+        createInfo.subresourceRange.layerCount     = 1;
         VERIFYVULKANRESULT(vkCreateImageView(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &(m_FrameImageViews[i])));
     }
 }
@@ -247,19 +250,18 @@ void VulkanRHI::DestorySwapChain()
     {
         vkDestroyImageView(m_Device->GetInstanceHandle(), m_FrameImageViews[i], VULKAN_CPU_ALLOCATOR);
     }
-    m_SwapChain->Destroy();
     m_SwapChain = nullptr;
 }
 
 void VulkanRHI::CreateCommandBuffers()
 {
     m_CommandBuffers.resize(m_FrameImageViews.size());
+
     VkCommandBufferAllocateInfo allocateInfo;
     ZeroVulkanStruct(allocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    allocateInfo.commandPool = m_CommandPool;
-    allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocateInfo.commandPool        = m_CommandPool;
     allocateInfo.commandBufferCount = m_FrameImageViews.size();
-    
     VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device->GetInstanceHandle(), &allocateInfo, m_CommandBuffers.data()));
 }
 
@@ -275,32 +277,31 @@ void VulkanRHI::CreateDepthStencil()
     
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format = PixelFormatToVkFormat(m_DepthFormat, false);
-    imageCreateInfo.extent = { (uint32)width, (uint32)height, 1 };
-    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.imageType   = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.format      = PixelFormatToVkFormat(m_DepthFormat, false);
+    imageCreateInfo.extent      = { (uint32)width, (uint32)height, 1 };
+    imageCreateInfo.mipLevels   = 1;
     imageCreateInfo.arrayLayers = 1;
-    imageCreateInfo.samples = m_SampleCount;
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    imageCreateInfo.flags = 0;
+    imageCreateInfo.samples     = m_SampleCount;
+    imageCreateInfo.tiling      = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    imageCreateInfo.flags       = 0;
     VERIFYVULKANRESULT(vkCreateImage(m_Device->GetInstanceHandle(), &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilImage));
     
     VkImageViewCreateInfo imageViewCreateInfo;
     ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    imageViewCreateInfo.format = PixelFormatToVkFormat(m_DepthFormat, false);
-    imageViewCreateInfo.flags = 0;
-    imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-    imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    imageViewCreateInfo.subresourceRange.levelCount = 1;
+    imageViewCreateInfo.format   = PixelFormatToVkFormat(m_DepthFormat, false);
+    imageViewCreateInfo.flags    = 0;
+    imageViewCreateInfo.image    = m_DepthStencilImage;
+    imageViewCreateInfo.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    imageViewCreateInfo.subresourceRange.baseMipLevel   = 0;
+    imageViewCreateInfo.subresourceRange.levelCount     = 1;
     imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    imageViewCreateInfo.subresourceRange.layerCount = 1;
-    imageViewCreateInfo.image = m_DepthStencilImage;
+    imageViewCreateInfo.subresourceRange.layerCount     = 1;
     
     VkMemoryRequirements memRequire;
     vkGetImageMemoryRequirements(m_Device->GetInstanceHandle(), imageViewCreateInfo.image, &memRequire);
-    
     uint32 memoryTypeIndex = 0;
     VERIFYVULKANRESULT(m_Device->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex));
     
@@ -327,22 +328,21 @@ void VulkanRHI::CreateInstance()
 
 	VkApplicationInfo appInfo;
 	ZeroVulkanStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
-	appInfo.pApplicationName = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle();
+	appInfo.pApplicationName   = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle();
 	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
-	appInfo.pEngineName = ENGINE_NAME;
-	appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
-	appInfo.apiVersion = VK_API_VERSION_1_1;
+	appInfo.pEngineName        = ENGINE_NAME;
+	appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 0);
+	appInfo.apiVersion         = VK_API_VERSION_1_1;
 
 	VkInstanceCreateInfo instanceCreateInfo;
 	ZeroVulkanStruct(instanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
-	instanceCreateInfo.pApplicationInfo = &appInfo;
-	instanceCreateInfo.enabledExtensionCount = m_InstanceExtensions.size();
+	instanceCreateInfo.pApplicationInfo        = &appInfo;
+	instanceCreateInfo.enabledExtensionCount   = m_InstanceExtensions.size();
 	instanceCreateInfo.ppEnabledExtensionNames = m_InstanceExtensions.size() > 0 ? m_InstanceExtensions.data() : nullptr;
-	instanceCreateInfo.enabledLayerCount = m_InstanceLayers.size();
-	instanceCreateInfo.ppEnabledLayerNames = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
+	instanceCreateInfo.enabledLayerCount       = m_InstanceLayers.size();
+	instanceCreateInfo.ppEnabledLayerNames     = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
 
 	VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);
-    
 	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
 	{
 		MLOG("%s", "Cannot find a compatible Vulkan driver (ICD).");
@@ -350,7 +350,6 @@ void VulkanRHI::CreateInstance()
 	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
 	{
 		std::string missingExtensions;
-
 		uint32 propertyCount = 0;
 		vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, nullptr);
 		std::vector<VkExtensionProperties> properties(propertyCount);
@@ -426,8 +425,6 @@ void VulkanRHI::SelectAndInitDevice()
 	for (uint32 index = 0; index < gpuCount; ++index)
 	{
 		std::shared_ptr<VulkanDevice> newDevice = std::make_shared<VulkanDevice>(physicalDevices[index]);
-		m_Devices.push_back(newDevice);
-
 		bool isDiscrete = newDevice->QueryGPU(index);
         if (isDiscrete) {
             discreteDevices.push_back({newDevice, index});

@@ -2,10 +2,12 @@
 #include "Common/Log.h"
 
 GenericWindow::GenericWindow(int32 width, int32 height)
-    : m_Width(width)
+	: m_X(0)
+	, m_Y(0)
+    , m_Width(width)
     , m_Height(height)
 {
-
+	
 }
 
 GenericWindow::~GenericWindow()

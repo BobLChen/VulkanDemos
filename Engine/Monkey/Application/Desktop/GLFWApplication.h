@@ -36,5 +36,4 @@ protected:
 
 private:
 	std::shared_ptr<GLFWWindow> m_Window;
-	
 };

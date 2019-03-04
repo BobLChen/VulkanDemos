@@ -1,10 +1,14 @@
 #include "Configuration/Platform.h"
+
 #include "Common/Common.h"
 #include "Common/Log.h"
+
 #include "Core/PixelFormat.h"
+
 #include "Application/AppModeBase.h"
 #include "Application/SlateApplication.h"
 #include "Engine.h"
+
 #include <string>
 #include <vector>
 
@@ -17,7 +21,7 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
 	AppMode->PreInit();
 
-	int32 width = AppMode->GetWidth();
+	int32 width  = AppMode->GetWidth();
 	int32 height = AppMode->GetHeight();
 	const char* title = AppMode->GetTitle().c_str();
 	

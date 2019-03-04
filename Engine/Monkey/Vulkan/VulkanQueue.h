@@ -24,8 +24,8 @@ public:
     }
     
 private:
-    VkQueue m_Queue;
-    uint32 m_FamilyIndex;
+    VkQueue       m_Queue;
+    uint32        m_FamilyIndex;
 	VulkanDevice* m_Device;
 };
 

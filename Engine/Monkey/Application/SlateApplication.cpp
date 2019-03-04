@@ -8,13 +8,14 @@ std::shared_ptr<GenericApplication> G_PlatformApplication = nullptr;
 SlateApplication::SlateApplication()
 	: GenericApplicationMessageHandler()
 	, m_DeltaTime(0.16f)
+	, m_Engine(nullptr)
 {
 
 }
 
 SlateApplication::~SlateApplication()
 {
-
+	
 }
 
 void SlateApplication::SetUpEngine(Engine *engine)

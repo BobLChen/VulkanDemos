@@ -89,13 +89,13 @@ private:
 	GLFWWindow(int32 width, int32 height, const char* title);
 	
 private:
-	std::string m_Title;
-	GLFWwindow* m_Window;
-	WindowMode::Type m_WindowMode;
-	GLFWApplication* m_Application;
-	bool m_Visible;
-	float m_AspectRatio;
-	float m_DPIScaleFactor;
-	bool m_Minimized;
-	bool m_Maximized;
+	std::string 		m_Title;
+	GLFWwindow* 		m_Window;
+	WindowMode::Type 	m_WindowMode;
+	GLFWApplication* 	m_Application;
+	bool 				m_Visible;
+	float 				m_AspectRatio;
+	float 				m_DPIScaleFactor;
+	bool 				m_Minimized;
+	bool 				m_Maximized;
 };

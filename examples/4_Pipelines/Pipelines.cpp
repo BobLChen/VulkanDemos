@@ -24,8 +24,13 @@ public:
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
 		, m_CurrentBackBuffer(0)
+        , m_VertexBuffer(nullptr)
+        , m_IndexBuffer(nullptr)
+        , m_Shader(nullptr)
+        , m_Material(nullptr)
+        , m_RenderComplete(VK_NULL_HANDLE)
     {
-        
+
     }
     
     virtual ~Pipelines()
@@ -92,17 +97,16 @@ private:
     {
         UpdateUniformBuffers();
         
-		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
-		VkDevice device	= vulkanRHI->GetDevice()->GetInstanceHandle();
-		VkPipelineStageFlags waitStageMask = vulkanRHI->GetStageMask();
-		std::shared_ptr<VulkanQueue> gfxQueue = vulkanRHI->GetDevice()->GetGraphicsQueue();
-		std::shared_ptr<VulkanQueue> presentQueue = vulkanRHI->GetDevice()->GetPresentQueue();
-		std::shared_ptr<VulkanSwapChain> swapChain = vulkanRHI->GetSwapChain();
+		std::shared_ptr<VulkanRHI> vulkanRHI         = GetVulkanRHI();
+		VkDevice device	                             = vulkanRHI->GetDevice()->GetInstanceHandle();
+		VkPipelineStageFlags waitStageMask           = vulkanRHI->GetStageMask();
+		std::shared_ptr<VulkanQueue> gfxQueue        = vulkanRHI->GetDevice()->GetGraphicsQueue();
+		std::shared_ptr<VulkanQueue> presentQueue    = vulkanRHI->GetDevice()->GetPresentQueue();
+		std::shared_ptr<VulkanSwapChain> swapChain   = vulkanRHI->GetSwapChain();
 		std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
-		VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
-        VkSemaphore waitSemaphore = VK_NULL_HANDLE;
-
-        m_CurrentBackBuffer = swapChain->AcquireImageIndex(&waitSemaphore);
+		VulkanFenceManager& fenceMgr                 = GetVulkanRHI()->GetDevice()->GetFenceManager();
+        VkSemaphore waitSemaphore                    = VK_NULL_HANDLE;
+        m_CurrentBackBuffer                          = swapChain->AcquireImageIndex(&waitSemaphore);
 
         fenceMgr.WaitForFence(m_Fences[m_CurrentBackBuffer], MAX_uint64);
         fenceMgr.ResetFence(m_Fences[m_CurrentBackBuffer]);
@@ -135,32 +139,32 @@ private:
         
         VkRenderPassBeginInfo renderPassBeginInfo;
         ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-        renderPassBeginInfo.renderPass = vulkanRHI->GetRenderPass();
+        renderPassBeginInfo.renderPass      = vulkanRHI->GetRenderPass();
+        renderPassBeginInfo.clearValueCount = 2;
+        renderPassBeginInfo.pClearValues    = clearValues;
         renderPassBeginInfo.renderArea.offset.x = 0;
         renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width = vulkanRHI->GetSwapChain()->GetWidth();
+        renderPassBeginInfo.renderArea.extent.width  = vulkanRHI->GetSwapChain()->GetWidth();
         renderPassBeginInfo.renderArea.extent.height = vulkanRHI->GetSwapChain()->GetHeight();
-        renderPassBeginInfo.clearValueCount = 2;
-        renderPassBeginInfo.pClearValues = clearValues;
         
         std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
         std::vector<VkFramebuffer>& frameBuffers     = vulkanRHI->GetFrameBuffers();
-
+        
         for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
         {
             renderPassBeginInfo.framebuffer = frameBuffers[i];
             
             VkViewport viewport = {};
-            viewport.width  = (float)renderPassBeginInfo.renderArea.extent.width;
-            viewport.height = (float)renderPassBeginInfo.renderArea.extent.height;
+            viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
+            viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
             
             VkRect2D scissor = {};
             scissor.extent.width  = (uint32)viewport.width;
             scissor.extent.height = (uint32)viewport.height;
-            scissor.offset.x = 0;
-            scissor.offset.y = 0;
+            scissor.offset.x      = 0;
+            scissor.offset.y      = 0;
             
             VkDeviceSize offsets[1] = { 0 };
             
@@ -205,14 +209,14 @@ private:
     
     void LoadOBJ()
     {
-        tinyobj::attrib_t attrib;
-        std::vector<tinyobj::shape_t> shapes;
+        tinyobj::attrib_t                attrib;
+        std::vector<tinyobj::shape_t>    shapes;
         std::vector<tinyobj::material_t> materials;
-        std::string warn;
-        std::string err;
+        std::string                      warn;
+        std::string                      err;
         tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, FileManager::GetFilePath("assets/models/suzanne.obj").c_str());
         
-        std::vector<float> vertices;
+        std::vector<float>  vertices;
         std::vector<uint16> indices;
         
         for (size_t s = 0; s < shapes.size(); ++s)
@@ -251,18 +255,18 @@ private:
         std::memcpy(vertStreamData, vertices.data(), vertices.size() * sizeof(float));
         
         VertexStreamInfo streamInfo;
-        streamInfo.size = vertices.size() * sizeof(float);
+        streamInfo.size        = vertices.size() * sizeof(float);
         streamInfo.channelMask = 1 << (int32)VertexAttribute::VA_Position | 1 << (int32)VertexAttribute::VA_Color;
         
         std::vector<VertexChannelInfo> channels(2);
         channels[0].attribute = VertexAttribute::VA_Position;
-        channels[0].format = VertexElementType::VET_Float3;
-        channels[0].stream = 0;
-        channels[0].offset = 0;
+        channels[0].format    = VertexElementType::VET_Float3;
+        channels[0].stream    = 0;
+        channels[0].offset    = 0;
         channels[1].attribute = VertexAttribute::VA_Color;
-        channels[1].format = VertexElementType::VET_Float3;
-        channels[1].stream = 0;
-        channels[1].offset = 12;
+        channels[1].format    = VertexElementType::VET_Float3;
+        channels[1].stream    = 0;
+        channels[1].offset    = 12;
         
 		m_VertexBuffer = std::make_shared<VertexBuffer>();
         m_VertexBuffer->AddStream(streamInfo, channels, vertStreamData);
@@ -286,7 +290,7 @@ private:
         {
             m_Fences[index] = fenceMgr.CreateFence(true);
         }
-
+        
 		VkSemaphoreCreateInfo createInfo;
 		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 		vkCreateSemaphore(device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
@@ -308,19 +312,17 @@ private:
     }
 
 private:
-    UBOData m_MVPData;
+    UBOData                       m_MVPData;
+    bool                          m_Ready;
+    uint32                        m_CurrentBackBuffer;
 
 	std::shared_ptr<VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<IndexBuffer> m_IndexBuffer;
-
-    std::shared_ptr<Shader> m_Shader;
-	std::shared_ptr<Material> m_Material;
+	std::shared_ptr<IndexBuffer>  m_IndexBuffer;
+    std::shared_ptr<Shader>       m_Shader;
+	std::shared_ptr<Material>     m_Material;
     
-    VkSemaphore m_RenderComplete;
-    std::vector<VulkanFence*> m_Fences;
-    
-	bool m_Ready;
-    uint32 m_CurrentBackBuffer;
+    VkSemaphore                   m_RenderComplete;
+    std::vector<VulkanFence*>     m_Fences;
 };
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)

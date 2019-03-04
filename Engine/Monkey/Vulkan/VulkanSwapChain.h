@@ -11,20 +11,21 @@ class VulkanDevice;
 class VulkanSwapChain
 {
 public:
+
 	enum class Status
 	{
-		Healthy = 0,
-		OutOfDate = -1,
+		Healthy     = 0,
+		OutOfDate   = -1,
 		SurfaceLost = -2,
 	};
 
 	VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevice> device, PixelFormat& outPixelFormat, uint32 width, uint32 height, uint32* outDesiredNumBackBuffers, std::vector<VkImage>& outImages, int8 lockToVsync);
 
-	void Destroy();
+	virtual ~VulkanSwapChain();
 
-	Status Present(std::shared_ptr<VulkanQueue> GfxQueue, std::shared_ptr<VulkanQueue> PresentQueue, VkSemaphore* BackBufferRenderingDoneSemaphore);
+	Status Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* complete);
 
-	int32 AcquireImageIndex(VkSemaphore* OutSemaphore);
+	int32 AcquireImageIndex(VkSemaphore* outSemaphore);
 
 	FORCEINLINE int8 DoesLockToVsync() 
 	{ 
@@ -55,22 +56,23 @@ public:
     {
         return m_SwapChainInfo;
     }
-    
+
 protected:
-	VkSwapchainKHR m_SwapChain;
-	VkSurfaceKHR m_Surface;
-	std::shared_ptr<VulkanDevice> m_Device;
-
-	int32 m_CurrentImageIndex;
-	int32 m_SemaphoreIndex;
-	uint32 m_NumPresentCalls;
-	uint32 m_NumAcquireCalls;
-	VkInstance m_Instance;
-	std::vector<VkSemaphore> m_ImageAcquiredSemaphore;
-	int8 m_LockToVsync;
-	uint32 m_PresentID;
-    VkSwapchainCreateInfoKHR m_SwapChainInfo;
-
 	friend class VulkanViewport;
 	friend class VulkanQueue;
+    
+protected:
+	VkInstance						m_Instance;
+	VkSwapchainKHR					m_SwapChain;
+	VkSurfaceKHR					m_Surface;
+	VkSwapchainCreateInfoKHR		m_SwapChainInfo;
+	std::shared_ptr<VulkanDevice>	m_Device;
+	std::vector<VkSemaphore>		m_ImageAcquiredSemaphore;
+
+	int32							m_CurrentImageIndex;
+	int32							m_SemaphoreIndex;
+	uint32							m_NumPresentCalls;
+	uint32							m_NumAcquireCalls;
+	int8							m_LockToVsync;
+	uint32							m_PresentID;
 };

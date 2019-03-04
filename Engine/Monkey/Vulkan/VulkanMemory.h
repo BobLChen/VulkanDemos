@@ -151,17 +151,17 @@ public:
 protected:
 	virtual ~VulkanDeviceMemoryAllocation();
 
-	friend class VulkanDeviceMemoryManager;
-
-	VkDeviceSize m_Size;
-	VkDevice m_Device;
-	VkDeviceMemory m_Handle;
-	void* m_MappedPointer;
-	uint32 m_MemoryTypeIndex;
-	bool m_CanBeMapped;
-	bool m_IsCoherent;
-	bool m_IsCached;
-	bool m_FreedBySystem;
+    friend class VulkanDeviceMemoryManager;
+protected:
+	VkDeviceSize    m_Size;
+	VkDevice        m_Device;
+	VkDeviceMemory  m_Handle;
+	void*           m_MappedPointer;
+	uint32          m_MemoryTypeIndex;
+	bool            m_CanBeMapped;
+	bool            m_IsCoherent;
+	bool            m_IsCached;
+	bool            m_FreedBySystem;
 };
 
 class VulkanDeviceMemoryManager
@@ -265,13 +265,14 @@ protected:
     void SetupAndPrintMemInfo();
     
 protected:
+
     VkPhysicalDeviceMemoryProperties m_MemoryProperties;
-    VulkanDevice* m_Device;
-    VkDevice m_DeviceHandle;
-    bool m_HasUnifiedMemory;
-    uint32 m_NumAllocations;
-    uint32 m_PeakNumAllocations;
-    std::vector<HeapInfo> m_HeapInfos;
+    VulkanDevice*                    m_Device;
+    VkDevice                         m_DeviceHandle;
+    bool                             m_HasUnifiedMemory;
+    uint32                           m_NumAllocations;
+    uint32                           m_PeakNumAllocations;
+    std::vector<HeapInfo>            m_HeapInfos;
 };
 
 class VulkanFence
@@ -304,8 +305,8 @@ protected:
 	virtual ~VulkanFence();
 	friend class VulkanFenceManager;
 
-	VkFence m_VkFence;
-	State m_State;
+	VkFence             m_VkFence;
+	State               m_State;
 	VulkanFenceManager* m_Owner;
 };
 
@@ -344,7 +345,8 @@ protected:
 
 	void DestoryFence(VulkanFence* fence);
 
-	VulkanDevice* m_Device;
+protected:
+	VulkanDevice*             m_Device;
 	std::vector<VulkanFence*> m_FreeFences;
 	std::vector<VulkanFence*> m_UsedFences;
 };
@@ -362,8 +364,8 @@ public:
 	}
 
 protected:
-	VkSemaphore m_VkSemaphore;
-	VulkanDevice* m_Device;
+	VkSemaphore     m_VkSemaphore;
+	VulkanDevice*   m_Device;
 };
 
 class VulkanResourceAllocation : public RefCount
@@ -416,16 +418,17 @@ public:
     {
         m_DeviceMemoryAllocation->InvalidateMappedMemory(m_AllocationOffset, m_AllocationSize);
     }
+
+private:
+    friend class VulkanResourceHeapPage;
     
 private:
-    VulkanResourceHeapPage* m_Owner;
-    uint32 m_AllocationSize;
-    uint32 m_AllocationOffset;
-    uint32 m_RequestedSize;
-    uint32 m_AlignedOffset;
-    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
-    
-    friend class VulkanResourceHeapPage;
+    VulkanResourceHeapPage*         m_Owner;
+    uint32                          m_AllocationSize;
+    uint32                          m_AllocationOffset;
+    uint32                          m_RequestedSize;
+    uint32                          m_AlignedOffset;
+    VulkanDeviceMemoryAllocation*   m_DeviceMemoryAllocation;
 };
 
 class VulkanResourceHeapPage
@@ -458,19 +461,19 @@ public:
 protected:
     bool JoinFreeBlocks();
     
-protected:
-    VulkanResourceHeap* m_Owner;
-    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
-    std::vector<VulkanResourceAllocation*> m_ResourceAllocations;
-    std::vector<VulkanRange> m_FreeList;
-    
-    uint32 m_MaxSize;
-    uint32 m_UsedSize;
-    int32 m_PeakNumAllocations;
-    uint32 m_FrameFreed;
-    uint32 m_ID;
-    
     friend class VulkanResourceHeap;
+protected:
+
+    VulkanResourceHeap*                     m_Owner;
+    VulkanDeviceMemoryAllocation*           m_DeviceMemoryAllocation;
+    std::vector<VulkanResourceAllocation*>  m_ResourceAllocations;
+    std::vector<VulkanRange>                m_FreeList;
+    
+    uint32                                  m_MaxSize;
+    uint32                                  m_UsedSize;
+    int32                                   m_PeakNumAllocations;
+    uint32                                  m_FrameFreed;
+    uint32                                  m_ID;
 };
 
 class VulkanResourceSubAllocation : public RefCount
@@ -519,8 +522,9 @@ public:
 protected:
     friend class VulkanSubBufferAllocator;
     
-    VulkanSubBufferAllocator* m_Owner;
-    VkBuffer m_Handle;
+protected:
+    VulkanSubBufferAllocator*   m_Owner;
+    VkBuffer                    m_Handle;
 };
 
 class VulkanSubResourceAllocator
@@ -555,16 +559,16 @@ protected:
     bool JoinFreeBlocks();
     
 protected:
-    VulkanResourceHeapManager* m_Owner;
-    uint32 m_MemoryTypeIndex;
-    VkMemoryPropertyFlags m_MemoryPropertyFlags;
-    VulkanDeviceMemoryAllocation* m_DeviceMemoryAllocation;
-    uint32 m_MaxSize;
-    uint32 m_Alignment;
-    uint32 m_FrameFreed;
-    int64 m_UsedSize;
-    std::vector<VulkanRange> m_FreeList;
-    std::vector<VulkanResourceSubAllocation*> m_SubAllocations;
+    VulkanResourceHeapManager*                  m_Owner;
+    uint32                                      m_MemoryTypeIndex;
+    VkMemoryPropertyFlags                       m_MemoryPropertyFlags;
+    VulkanDeviceMemoryAllocation*               m_DeviceMemoryAllocation;
+    uint32                                      m_MaxSize;
+    uint32                                      m_Alignment;
+    uint32                                      m_FrameFreed;
+    int64                                       m_UsedSize;
+    std::vector<VulkanRange>                    m_FreeList;
+    std::vector<VulkanResourceSubAllocation*>   m_SubAllocations;
 };
 
 class VulkanSubBufferAllocator : public VulkanSubResourceAllocator
@@ -587,10 +591,11 @@ public:
     
 protected:
     friend class VulkanResourceHeapManager;
-    
-    VkBufferUsageFlags m_BufferUsageFlags;
-    VkBuffer m_Buffer;
-    int32 m_PoolSizeIndex;
+
+protected:
+    VkBufferUsageFlags  m_BufferUsageFlags;
+    VkBuffer            m_Buffer;
+    int32               m_PoolSizeIndex;
 };
 
 class VulkanResourceHeap
@@ -640,17 +645,17 @@ protected:
     friend class VulkanResourceHeapManager;
     
 protected:
-    VulkanResourceHeapManager* m_Owner;
-    uint32 m_MemoryTypeIndex;
-    bool m_IsHostCachedSupported;
-    bool m_IsLazilyAllocatedSupported;
-    uint32 m_DefaultPageSize;
-    uint32 m_PeakPageSize;
-    uint64 m_UsedMemory;
-    uint32 m_PageIDCounter;
-    std::vector<VulkanResourceHeapPage*> m_UsedBufferPages;
-    std::vector<VulkanResourceHeapPage*> m_UsedImagePages;
-    std::vector<VulkanResourceHeapPage*> m_FreePages;
+    VulkanResourceHeapManager*              m_Owner;
+    uint32                                  m_MemoryTypeIndex;
+    bool                                    m_IsHostCachedSupported;
+    bool                                    m_IsLazilyAllocatedSupported;
+    uint32                                  m_DefaultPageSize;
+    uint32                                  m_PeakPageSize;
+    uint64                                  m_UsedMemory;
+    uint32                                  m_PageIDCounter;
+    std::vector<VulkanResourceHeapPage*>    m_UsedBufferPages;
+    std::vector<VulkanResourceHeapPage*>    m_UsedImagePages;
+    std::vector<VulkanResourceHeapPage*>    m_FreePages;
 };
 
 class VulkanResourceHeapManager : public VulkanDeviceChild
@@ -687,7 +692,7 @@ protected:
     
     enum
     {
-        BufferAllocationSize = 1 * 1024 * 1024,
+        BufferAllocationSize        = 1 * 1024 * 1024,
         UniformBufferAllocationSize = 2 * 1024 * 1024,
     };
     
@@ -746,8 +751,8 @@ protected:
         return poolSize;
     }
     
-    VulkanDeviceMemoryManager* m_DeviceMemoryManager;
-    std::vector<VulkanResourceHeap*> m_ResourceTypeHeaps;
-    std::vector<VulkanSubBufferAllocator*> m_UsedBufferAllocations[(int32)PoolSizes::SizesCount + 1];
-    std::vector<VulkanSubBufferAllocator*> m_FreeBufferAllocations[(int32)PoolSizes::SizesCount + 1];
+    VulkanDeviceMemoryManager*              m_DeviceMemoryManager;
+    std::vector<VulkanResourceHeap*>        m_ResourceTypeHeaps;
+    std::vector<VulkanSubBufferAllocator*>  m_UsedBufferAllocations[(int32)PoolSizes::SizesCount + 1];
+    std::vector<VulkanSubBufferAllocator*>  m_FreeBufferAllocations[(int32)PoolSizes::SizesCount + 1];
 };

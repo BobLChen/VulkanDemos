@@ -86,7 +86,7 @@ void GLFWWindow::Initialize(GLFWApplication* const application)
 		return;
 	}
 
-	int32 frameWidth = -1;
+	int32 frameWidth  = -1;
 	int32 frameHeight = -1;
 	glfwGetFramebufferSize(m_Window, &frameWidth, &frameHeight);
 	glfwGetWindowPos(m_Window, &m_X, &m_Y);

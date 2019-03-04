@@ -94,7 +94,7 @@ struct MD5Hash
 	}
 
 private:
-	bool m_IsValid;
+	bool  m_IsValid;
 	uint8 m_Bytes[16];
 };
 

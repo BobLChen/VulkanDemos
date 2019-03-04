@@ -1,5 +1,5 @@
 #pragma once
 
-// 保证GLFW能够支持Vulkan，头文件不再导入glfw3.h，改为导入GLFWWrapper.h
+// 淇濊瘉GLFW鑳藉鏀寔Vulkan锛屽ご鏂囦欢涓嶅啀瀵煎叆glfw3.h锛屾敼涓哄鍏LFWWrapper.h
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

@@ -2,7 +2,7 @@
 
 PixelFormatInfo	G_PixelFormats[PF_MAX] =
 {
-	// Name						BlockSizeX	BlockSizeY	BlockSizeZ	BlockBytes	NumComponents	PlatformFormat	Supported	
+	// Name					BlockSizeX	BlockSizeY	BlockSizeZ	BlockBytes	NumComponents	PlatformFormat	Supported		Format	
 	{ ("unknown"),			0,			0,			0,			0,			0,				0,				0,				PF_Unknown			},
 	{ ("A32B32G32R32F"),	1,			1,			1,			16,			4,				0,				1,				PF_A32B32G32R32F	},
 	{ ("B8G8R8A8"),			1,			1,			1,			4,			4,				0,				1,				PF_B8G8R8A8			},

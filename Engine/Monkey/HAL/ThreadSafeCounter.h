@@ -65,5 +65,7 @@ protected:
 
 	}
 
+protected:
+
 	volatile int32 m_Counter;
 };

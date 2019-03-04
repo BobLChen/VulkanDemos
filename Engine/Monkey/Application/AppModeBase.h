@@ -15,6 +15,10 @@ public:
 		: m_Width(width)
 		, m_Height(height)
 		, m_Title(title)
+		, m_Engine(nullptr)
+		, m_VulkanRHI(nullptr)
+		, m_Application(nullptr)
+		, m_Window(nullptr)
 	{
 		
 	}
@@ -61,9 +65,9 @@ public:
 
 	void Setup(Engine* engine, std::shared_ptr<VulkanRHI> vulkanRHI, std::shared_ptr<GenericApplication> application, std::shared_ptr<GenericWindow> window)
 	{
-		m_Engine = engine;
-		m_Window = window;
-		m_VulkanRHI = vulkanRHI;
+		m_Engine      = engine;
+		m_Window      = window;
+		m_VulkanRHI   = vulkanRHI;
 		m_Application = application;
 	}
 	
@@ -76,11 +80,12 @@ public:
 	virtual void Exist() = 0;
 	
 private:
-	int32 m_Width;
-	int32 m_Height;
-	std::string m_Title;
-	Engine* m_Engine;
-	std::shared_ptr<VulkanRHI> m_VulkanRHI;
+
+	int32 								m_Width;
+	int32 								m_Height;
+	std::string 						m_Title;
+	Engine* 							m_Engine;
+	std::shared_ptr<VulkanRHI> 			m_VulkanRHI;
 	std::shared_ptr<GenericApplication> m_Application;
-	std::shared_ptr<GenericWindow> m_Window;
+	std::shared_ptr<GenericWindow> 		m_Window;
 };
