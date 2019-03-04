@@ -26,8 +26,14 @@ public:
 		, m_CurrentBackBuffer(0)
         , m_VertexBuffer(nullptr)
         , m_IndexBuffer(nullptr)
-        , m_Shader(nullptr)
-        , m_Material(nullptr)
+        , m_Shader0(nullptr)
+        , m_Material0(nullptr)
+        , m_Shader1(nullptr)
+        , m_Material1(nullptr)
+        , m_Shader2(nullptr)
+        , m_Material2(nullptr)
+        , m_Shader3(nullptr)
+        , m_Material3(nullptr)
         , m_RenderComplete(VK_NULL_HANDLE)
     {
 
@@ -52,9 +58,20 @@ public:
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 
 		// 加载Shader以及Material
-		m_Shader   = Shader::Create("assets/shaders/4_Pipelines/pipelines.vert.spv", "assets/shaders/4_Pipelines/pipelines.frag.spv");
-		m_Material = std::make_shared<Material>(m_Shader);
-
+		m_Shader0   = Shader::Create("assets/shaders/4_Pipelines/phong.vert.spv", "assets/shaders/4_Pipelines/phong.frag.spv");
+		m_Material0 = std::make_shared<Material>(m_Shader0);
+        
+        m_Shader1   = Shader::Create("assets/shaders/4_Pipelines/pipelines.vert.spv", "assets/shaders/4_Pipelines/pipelines.frag.spv");
+        m_Material1 = std::make_shared<Material>(m_Shader1);
+        
+        m_Shader2   = Shader::Create("assets/shaders/4_Pipelines/solid.vert.spv", "assets/shaders/4_Pipelines/solid.frag.spv");
+        m_Material2 = std::make_shared<Material>(m_Shader2);
+        m_Material2->SetCullMode(VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT);
+        
+        m_Shader3   = Shader::Create("assets/shaders/4_Pipelines/solid.vert.spv", "assets/shaders/4_Pipelines/solid.frag.spv");
+        m_Material3 = std::make_shared<Material>(m_Shader3);
+        m_Material3->SetpolygonMode(VkPolygonMode::VK_POLYGON_MODE_LINE);
+        
 		// 加载Mesh
         LoadOBJ();
 
@@ -73,8 +90,14 @@ public:
 
         m_IndexBuffer  = nullptr;
         m_VertexBuffer = nullptr;
-        m_Shader       = nullptr;
-        m_Material     = nullptr;
+        m_Shader0      = nullptr;
+        m_Material0    = nullptr;
+        m_Shader1      = nullptr;
+        m_Material1    = nullptr;
+        m_Shader2      = nullptr;
+        m_Material2    = nullptr;
+        m_Shader3      = nullptr;
+        m_Material3    = nullptr;
         
         Material::DestroyCache();
     }
@@ -83,6 +106,7 @@ public:
     {
         if (m_Ready)
         {
+            UpdateUniformBuffers();
 			Draw();
         }
     }
@@ -98,8 +122,6 @@ private:
     
     void Draw()
     {
-        UpdateUniformBuffers();
-        
 		std::shared_ptr<VulkanRHI> vulkanRHI         = GetVulkanRHI();
 		VkPipelineStageFlags waitStageMask           = vulkanRHI->GetStageMask();
 		std::shared_ptr<VulkanQueue> gfxQueue        = vulkanRHI->GetDevice()->GetGraphicsQueue();
@@ -155,9 +177,16 @@ private:
         {
             renderPassBeginInfo.framebuffer = frameBuffers[i];
             
+            VkDeviceSize offsets[1] = { 0 };
+            
+            VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
+            vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            
             VkViewport viewport = {};
             viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
             viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
+            viewport.x        = 0.0f;
+            viewport.y        = 0.0f;
             viewport.minDepth = 0.0f;
             viewport.maxDepth = 1.0f;
             
@@ -167,29 +196,46 @@ private:
             scissor.offset.x      = 0;
             scissor.offset.y      = 0;
             
-            VkDeviceSize offsets[1] = { 0 };
-            
-            VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
-            vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+            viewport.width  = viewport.width  * 0.5f;
+            viewport.height = viewport.height * 0.5f;
             vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-
-			if (!m_IndexBuffer->IsValid())
-			{
-				continue;
-			}
-
-			if (!m_VertexBuffer->IsValid())
-			{
-				continue;
-			}
-
-			VkPipeline pipeline = m_Material->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader->GetVertexInputBindingInfo());
-
-            vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_Shader->GetDescriptorSet()), 0, nullptr);
-			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+            
+            m_IndexBuffer->IsValid();
+            m_VertexBuffer->IsValid();
+            
+            // step0
+            viewport.x = 0;
+            viewport.y = 0;
+            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+            VkPipeline pipeline0 = m_Material0->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader0->GetVertexInputBindingInfo());
+            vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader0->GetPipelineLayout(), 0, 1, &(m_Shader0->GetDescriptorSet()), 0, nullptr);
+			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline0);
 			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
             vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            // step1
+            viewport.x = viewport.width;
+            viewport.y = 0.0f;
+            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+            VkPipeline pipeline1 = m_Material1->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader1->GetVertexInputBindingInfo());
+            vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1);
+            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            // step2
+            viewport.x = 0;
+            viewport.y = viewport.height;
+            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+            VkPipeline pipeline2 = m_Material2->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader2->GetVertexInputBindingInfo());
+            vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline2);
+            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            // step3
+            viewport.x = viewport.width;
+            viewport.y = viewport.height;
+            vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+            VkPipeline pipeline3 = m_Material3->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader3->GetVertexInputBindingInfo());
+            vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline3);
             vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
             
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
@@ -202,10 +248,11 @@ private:
 		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
         m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector4(0, 0, 30.0f));
+        m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 30.0f));
+        m_MVPData.view.AppendRotation(15.0f, Vector3::RightVector);
         m_MVPData.view.SetInverse();
         
-        m_Shader->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
+        m_Shader0->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
     }
     
     void LoadOBJ()
@@ -319,8 +366,18 @@ private:
 
 	std::shared_ptr<VertexBuffer> m_VertexBuffer;
 	std::shared_ptr<IndexBuffer>  m_IndexBuffer;
-    std::shared_ptr<Shader>       m_Shader;
-	std::shared_ptr<Material>     m_Material;
+    
+    std::shared_ptr<Shader>       m_Shader0;
+	std::shared_ptr<Material>     m_Material0;
+    
+    std::shared_ptr<Shader>       m_Shader1;
+    std::shared_ptr<Material>     m_Material1;
+    
+    std::shared_ptr<Shader>       m_Shader2;
+    std::shared_ptr<Material>     m_Material2;
+    
+    std::shared_ptr<Shader>       m_Shader3;
+    std::shared_ptr<Material>     m_Material3;
     
     VkSemaphore                   m_RenderComplete;
     std::vector<VulkanFence*>     m_Fences;
