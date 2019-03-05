@@ -20,8 +20,11 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ## 配置
 我只说Windows的搭建，因为MacOS搭建过程跟Windows一样，Ubuntu装好VSCode就已经算搭建好了。
 
+**第零步**
+下载安装Vulkan SDK，无脑下一步即可。如果不安装则不能用Vulkan的校验功能。
+
 **第一步**
-随便找个地方，右键Git Bash(没有安装Git的去安装Git，没有Git你跑这儿来干嘛)
+随便找个地方，右键Git Bash
 
 ![Step0](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/0.png)
 
