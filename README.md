@@ -5,6 +5,7 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ### Windows
 - CMake 3.13.0：下载安装最新版本即可。
 - Visual Studio 2017 (64位)：比它高的应该也没问题。
+- VulkanSDK：https://www.lunarg.com/vulkan-sdk/
 
 ### MacOS
 - CMake 3.13.0：下载安装最新版本即可。
@@ -19,8 +20,11 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ## 配置
 我只说Windows的搭建，因为MacOS搭建过程跟Windows一样，Ubuntu装好VSCode就已经算搭建好了。
 
+**第零步**
+下载安装Vulkan SDK，无脑下一步即可。如果不安装则不能用Vulkan的校验功能。
+
 **第一步**
-随便找个地方，右键Git Bash(没有安装Git的去安装Git，没有Git你跑这儿来干嘛)
+随便找个地方，右键Git Bash
 
 ![Step0](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/0.png)
 
@@ -48,6 +52,7 @@ Vulkan Examples
 ### Windows
 - CMake 3.13.0
 - virtual studio 2017
+- VulkanSDK：https://www.lunarg.com/vulkan-sdk/
 
 ### MacOS
 - XCode 10
