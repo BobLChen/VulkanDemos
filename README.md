@@ -5,6 +5,7 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ### Windows
 - CMake 3.13.0：下载安装最新版本即可。
 - Visual Studio 2017 (64位)：比它高的应该也没问题。
+- VulkanSDK：https://www.lunarg.com/vulkan-sdk/
 
 ### MacOS
 - CMake 3.13.0：下载安装最新版本即可。
@@ -48,6 +49,7 @@ Vulkan Examples
 ### Windows
 - CMake 3.13.0
 - virtual studio 2017
+- VulkanSDK：https://www.lunarg.com/vulkan-sdk/
 
 ### MacOS
 - XCode 10
