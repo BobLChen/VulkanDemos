@@ -245,7 +245,7 @@ private:
     
     void UpdateUniformBuffers()
     {
-		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
         m_MVPData.view.SetIdentity();
         m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 30.0f));
@@ -385,5 +385,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-    return new Pipelines(800, 600, "Pipelines", cmdLine);
+    return new Pipelines(1120, 840, "Pipelines", cmdLine);
 }
