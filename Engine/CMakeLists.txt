@@ -84,9 +84,11 @@ set(Monkey_File_HDRS
 
 set(Monkey_Core_HDRS
 	Monkey/Core/PixelFormat.h
+	Monkey/Core/MObject.h
 )
 set(Monkey_Core_SRCS
 	Monkey/Core/PixelFormat.cpp
+	Monkey/Core/MObject.cpp
 )
 
 set(Monkey_Application_Desktop_HDRS
@@ -142,6 +144,15 @@ set(Monkey_Graphics_Material_HDRS
 )
 set(Monkey_Graphics_Material_SRCS
 	Monkey/Graphics/Material/Material.cpp
+)
+
+set(Monkey_Graphics_Renderer_HDRS
+	Monkey/Graphics/Renderer/Renderable.h
+	Monkey/Graphics/Renderer/Mesh.h
+)
+set(Monkey_Graphics_Renderer_SRCS
+	Monkey/Graphics/Renderer/Renderable.cpp
+	Monkey/Graphics/Renderer/Mesh.cpp
 )
 
 set(Monkey_Loader_HDRS
@@ -303,6 +314,8 @@ add_library(Monkey STATIC
 	${Monkey_Graphics_Shader_SRCS}
 	${Monkey_Graphics_Material_SRCS}
 	${Monkey_Graphics_Material_HDRS}
+	${Monkey_Graphics_Renderer_HDRS}
+	${Monkey_Graphics_Renderer_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -339,3 +352,4 @@ source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
 source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})
 source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})
 source_group(Monkey\\Graphics\\Material FILES ${Monkey_Graphics_Material_SRCS} ${Monkey_Graphics_Material_HDRS})
+source_group(Monkey\\Graphics\\Renderer FILES ${Monkey_Graphics_Renderer_HDRS} ${Monkey_Graphics_Renderer_SRCS})

@@ -20,10 +20,11 @@ public:
 		: m_ShaderModule(shaderModule)
         , m_Data(dataPtr)
         , m_DataSize(dataSize)
+        , m_Hash(0)
 	{
-        
+        m_Hash = Crc::MemCrc32(dataPtr, dataSize);
 	}
-
+    
 	const VkShaderModule& GetHandle() const
 	{
 		return m_ShaderModule;
@@ -38,13 +39,19 @@ public:
     {
         return m_DataSize;
     }
+    
+    const uint32 GetHash() const
+    {
+        return m_Hash;
+    }
 
 	virtual ~ShaderModule();
-
+    
 protected:
 	VkShaderModule m_ShaderModule;
     uint32*        m_Data;
     uint32         m_DataSize;
+    uint32         m_Hash;
 };
 
 class VertexInputBindingInfo
@@ -212,6 +219,10 @@ public:
         return m_TeseShaderModule;
     }
     
+    FORCEINLINE const uint32 GetHash() const
+    {
+        return m_Hash;
+    }
 protected:
     
     void UpdateVertPipelineLayout();
@@ -240,13 +251,15 @@ private:
 	VkDescriptorSetLayout	m_DescriptorSetLayout;
 	VkDescriptorSet			m_DescriptorSet;
 	VertexInputBindingInfo	m_VertexInputBindingInfo;
+    
+    uint32                  m_Hash;
 
 	std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
     std::vector<VkDescriptorSetLayoutBinding>	 m_SetLayoutBindings;
     std::vector<VkDescriptorPoolSize>			 m_PoolSizes;
     std::vector<UniformBuffer>					 m_UniformBuffers;
     std::unordered_map<std::string, int32>		 m_Variables;
-
+    
 protected:
 
 	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;

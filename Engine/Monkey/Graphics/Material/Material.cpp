@@ -89,6 +89,7 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
               (int32)inputDeclareInfo.GetAttributes().size(),
               (int32)inputBindingInfo.GetAttributes().size()
         );
+        return pipelineResult;
     }
     // TODO:快速校验VertexData格式是否匹配VertexShader
     
@@ -100,14 +101,14 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 	{
 		m_InvalidPipeline = false;
 		m_MultisampleState.rasterizationSamples = vulkanRHI->GetSampleCount();
-		m_Hash = Crc::StrCrc32((const char*)&m_InputAssemblyState, sizeof(VkPipelineInputAssemblyStateCreateInfo), 0);
+		m_Hash = Crc::StrCrc32((const char*)&m_InputAssemblyState, sizeof(VkPipelineInputAssemblyStateCreateInfo), m_Shader->GetHash());
 		m_Hash = Crc::StrCrc32((const char*)&m_RasterizationState, sizeof(VkPipelineRasterizationStateCreateInfo), m_Hash);
 		m_Hash = Crc::StrCrc32((const char*)&m_ColorBlendAttachmentState, sizeof(VkPipelineColorBlendAttachmentState), m_Hash);
 		m_Hash = Crc::StrCrc32((const char*)&m_ViewportState, sizeof(VkPipelineViewportStateCreateInfo), m_Hash);
 		m_Hash = Crc::StrCrc32((const char*)&m_DepthStencilState, sizeof(VkPipelineDepthStencilStateCreateInfo), m_Hash);
 		m_Hash = Crc::StrCrc32((const char*)&m_MultisampleState, sizeof(VkPipelineMultisampleStateCreateInfo), m_Hash);
 	}
-
+    
 	uint32 hash = Crc::MakeHashCode(hash0, hash1, m_Hash);
 	auto it = G_PipelineCache.find(hash);
 

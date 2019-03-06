@@ -56,6 +56,7 @@ Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule>
 	, m_DescriptorPool(VK_NULL_HANDLE)
 	, m_DescriptorSetLayout(VK_NULL_HANDLE)
 	, m_DescriptorSet(VK_NULL_HANDLE)
+    , m_Hash(0)
 	, m_VertShaderModule(vert)
 	, m_FragShaderModule(frag)
 	, m_GeomShaderModule(geom)
@@ -63,7 +64,17 @@ Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule>
 	, m_TescShaderModule(tesc)
 	, m_TeseShaderModule(tese)
 {
-
+    uint32 hash0 = Crc::MakeHashCode(
+        vert != nullptr ? vert->GetHash() : 0,
+        frag != nullptr ? frag->GetHash() : 0,
+        geom != nullptr ? geom->GetHash() : 0
+    );
+    uint32 hash1 = Crc::MakeHashCode(
+        comp != nullptr ? comp->GetHash() : 0,
+        tesc != nullptr ? tesc->GetHash() : 0,
+        tese != nullptr ? tese->GetHash() : 0
+    );
+    m_Hash = Crc::MakeHashCode(hash0, hash1);
 }
 
 Shader::~Shader()
@@ -327,7 +338,7 @@ void Shader::UpdatePipelineLayout()
         bufferInfos[i].range  = m_UniformBuffers[i].size;
     }
     
-	// 
+	// 更新Descriptor Set
     std::vector<VkWriteDescriptorSet> descriptorWrites(m_UniformBuffers.size());
     for (int32 i = 0; i < descriptorWrites.size(); ++i)
     {
