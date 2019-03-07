@@ -157,9 +157,10 @@ set(Monkey_Graphics_Renderer_SRCS
 
 set(Monkey_Loader_HDRS
 	Monkey/Loader/tiny_obj_loader.h
+	Monkey/Loader/OBJMeshParser.h
 )
 set(Monkey_Loader_SRCS
-
+	Monkey/Loader/OBJMeshParser.cpp
 )
 
 set(Monkey_HAL_HDRS

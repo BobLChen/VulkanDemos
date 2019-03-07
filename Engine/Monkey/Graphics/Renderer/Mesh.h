@@ -54,7 +54,7 @@ public:
         return m_Renderables;
     }
     
-    FORCEINLINE const MaterialsArray& Getmaterials() const
+    FORCEINLINE const MaterialsArray& GetMaterials() const
     {
         return m_Materials;
     }
