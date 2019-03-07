@@ -37,13 +37,7 @@ set(ALL_LIBS
 	${Vulkan_LIBRARY}
 	glfw
 	imgui
-	spirv-cross-glsl 
-	spirv-cross-hlsl 
-	spirv-cross-cpp 
-	spirv-cross-reflect 
-	spirv-cross-msl 
-	spirv-cross-util 
-	spirv-cross-core
+	SPIRV_Cross
 	Monkey
 )
 
