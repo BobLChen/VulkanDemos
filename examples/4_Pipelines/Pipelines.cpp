@@ -14,6 +14,8 @@
 #include "Graphics/Data/IndexBuffer.h"
 #include "Graphics/Shader/Shader.h"
 #include "Graphics/Material/Material.h"
+#include "Graphics/Renderer/Mesh.h"
+#include "Graphics/Renderer/Renderable.h"
 #include "File/FileManager.h"
 #include <vector>
 
@@ -24,8 +26,7 @@ public:
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
 		, m_CurrentBackBuffer(0)
-        , m_VertexBuffer(nullptr)
-        , m_IndexBuffer(nullptr)
+        , m_Renderable(nullptr)
         , m_Shader0(nullptr)
         , m_Material0(nullptr)
         , m_Shader1(nullptr)
@@ -66,7 +67,6 @@ public:
         
         m_Shader2   = Shader::Create("assets/shaders/4_Pipelines/solid.vert.spv", "assets/shaders/4_Pipelines/solid.frag.spv");
         m_Material2 = std::make_shared<Material>(m_Shader2);
-        m_Material2->SetCullMode(VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT);
         
         m_Shader3   = Shader::Create("assets/shaders/4_Pipelines/solid.vert.spv", "assets/shaders/4_Pipelines/solid.frag.spv");
         m_Material3 = std::make_shared<Material>(m_Shader3);
@@ -88,8 +88,7 @@ public:
     {
         DestroySynchronousObject();
 
-        m_IndexBuffer  = nullptr;
-        m_VertexBuffer = nullptr;
+        m_Renderable   = nullptr;
         m_Shader0      = nullptr;
         m_Material0    = nullptr;
         m_Shader1      = nullptr;
@@ -177,8 +176,6 @@ private:
         {
             renderPassBeginInfo.framebuffer = frameBuffers[i];
             
-            VkDeviceSize offsets[1] = { 0 };
-            
             VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
             vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             
@@ -200,43 +197,50 @@ private:
             viewport.height = viewport.height * 0.5f;
             vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
             
-            m_IndexBuffer->IsValid();
-            m_VertexBuffer->IsValid();
+            if (!m_Renderable->IsValid())
+            {
+                MLOGE("Renderable invalid.");
+            }
+            
+            const VertexInputDeclareInfo& vertInfo = m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo();
             
             // step0
             viewport.x = 0;
             viewport.y = 0;
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-            VkPipeline pipeline0 = m_Material0->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader0->GetVertexInputBindingInfo());
+            VkPipeline pipeline0 = m_Material0->GetPipeline(vertInfo, m_Shader0->GetVertexInputBindingInfo());
             vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader0->GetPipelineLayout(), 0, 1, &(m_Shader0->GetDescriptorSet()), 0, nullptr);
 			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline0);
-			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
-            vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+			
+            m_Renderable->BindBufferToCommand(drawCmdBuffers[i]);
+            m_Renderable->BindDrawToCommand(drawCmdBuffers[i]);
             
             // step1
             viewport.x = viewport.width;
             viewport.y = 0.0f;
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-            VkPipeline pipeline1 = m_Material1->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader1->GetVertexInputBindingInfo());
+            VkPipeline pipeline1 = m_Material1->GetPipeline(vertInfo, m_Shader1->GetVertexInputBindingInfo());
             vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline1);
-            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            m_Renderable->BindDrawToCommand(drawCmdBuffers[i]);
             
             // step2
             viewport.x = 0;
             viewport.y = viewport.height;
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-            VkPipeline pipeline2 = m_Material2->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader2->GetVertexInputBindingInfo());
+            VkPipeline pipeline2 = m_Material2->GetPipeline(vertInfo, m_Shader2->GetVertexInputBindingInfo());
             vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline2);
-            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            m_Renderable->BindDrawToCommand(drawCmdBuffers[i]);
             
             // step3
             viewport.x = viewport.width;
             viewport.y = viewport.height;
             vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-            VkPipeline pipeline3 = m_Material3->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo(), m_Shader3->GetVertexInputBindingInfo());
+            VkPipeline pipeline3 = m_Material3->GetPipeline(vertInfo, m_Shader3->GetVertexInputBindingInfo());
             vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline3);
-            vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+            
+            m_Renderable->BindDrawToCommand(drawCmdBuffers[i]);
             
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
             VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
@@ -245,7 +249,7 @@ private:
     
     void UpdateUniformBuffers()
     {
-		// m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
         m_MVPData.view.SetIdentity();
         m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 30.0f));
@@ -316,15 +320,17 @@ private:
         channels[1].stream    = 0;
         channels[1].offset    = 12;
         
-		m_VertexBuffer = std::make_shared<VertexBuffer>();
-        m_VertexBuffer->AddStream(streamInfo, channels, vertStreamData);
+        std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>();
+        vertexBuffer->AddStream(streamInfo, channels, vertStreamData);
         
         // 索引数据
         uint32 indexStreamSize = indices.size() * sizeof(uint16);
         uint8* indexStreamData = new uint8[indexStreamSize];
         std::memcpy(indexStreamData, indices.data(), indexStreamSize);
         
-		m_IndexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
+        std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
+        
+        m_Renderable = std::make_shared<Renderable>(vertexBuffer, indexBuffer);
     }
     
     void CreateSynchronousObject()
@@ -363,9 +369,8 @@ private:
     UBOData                       m_MVPData;
     bool                          m_Ready;
     uint32                        m_CurrentBackBuffer;
-
-	std::shared_ptr<VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<IndexBuffer>  m_IndexBuffer;
+    
+    std::shared_ptr<Renderable>   m_Renderable;
     
     std::shared_ptr<Shader>       m_Shader0;
 	std::shared_ptr<Material>     m_Material0;
