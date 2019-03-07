@@ -1,9 +1,0 @@
-[submodule "external/glfw"]
-	path = external/glfw
-	url = https://github.com/BobLChen/glfw.git
-[submodule "external/SPIRV-Cross"]
-	path = external/SPIRV-Cross
-	url = https://github.com/BobLChen/SPIRV-Cross.git
-[submodule "external/glslang"]
-	path = external/glslang
-	url = https://github.com/BobLChen/glslang.git

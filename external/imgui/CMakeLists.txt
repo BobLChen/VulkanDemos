@@ -1,3 +1,6 @@
+cmake_minimum_required(VERSION 2.8)
+project(imgui)
+
 set(IMGUI_HDRS
 	imconfig.h
 	imgui.h
@@ -23,4 +26,4 @@ add_library(imgui STATIC
 	${IMGUI_SRCS}
 )
 
-source_group(src\\imgui FILES ${IMGUI_HDRS} ${IMGUI_SRCS})
+source_group(src\\ FILES ${IMGUI_HDRS} ${IMGUI_SRCS})
