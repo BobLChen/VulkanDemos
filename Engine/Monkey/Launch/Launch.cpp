@@ -50,6 +50,7 @@ void EngineExit()
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
+
 	AppMode = CreateAppMode(cmdLine);
 	if (AppMode == nullptr)
 	{

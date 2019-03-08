@@ -87,8 +87,10 @@ SETUP_SAMPLE_START(OBJLoader)
 SETUP_SAMPLE_END(OBJLoader)
 
 SETUP_SAMPLE_START(Pipelines)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+	
 	SET(SOURCE_FILES
-		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchWindows.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
 	)
 	
@@ -99,5 +101,6 @@ SETUP_SAMPLE_START(Pipelines)
 			${file}
 		)
 	endforeach()
+
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(Pipelines)
