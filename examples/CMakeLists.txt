@@ -42,13 +42,7 @@ elseif (UNIX AND NOT APPLE)
 	)
 endif ()
 
-SETUP_SAMPLE_START(HelloIMGUI)
-	SET(SOURCE_FILES
-		1_HelloIMGUI/main.cpp
-	)
-SETUP_SAMPLE_END(HelloIMGUI)
-
-SETUP_SAMPLE_START(Triangle)
+SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/2_Triangle/Triangle.cpp
@@ -62,9 +56,9 @@ SETUP_SAMPLE_START(Triangle)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(Triangle)
+SETUP_SAMPLE_END(2_Triangle)
 
-SETUP_SAMPLE_START(OBJLoader)
+SETUP_SAMPLE_START(3_OBJLoader)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
@@ -78,9 +72,9 @@ SETUP_SAMPLE_START(OBJLoader)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(OBJLoader)
+SETUP_SAMPLE_END(3_OBJLoader)
 
-SETUP_SAMPLE_START(Pipelines)
+SETUP_SAMPLE_START(4_Pipelines)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
@@ -96,4 +90,4 @@ SETUP_SAMPLE_START(Pipelines)
 	endforeach()
 
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(Pipelines)
+SETUP_SAMPLE_END(4_Pipelines)
