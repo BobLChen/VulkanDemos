@@ -1,9 +1,6 @@
 #pragma once
 
-#define VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2      0
-#define VULKAN_SUPPORTS_DEDICATED_ALLOCATION        0
-#define VULKAN_SUPPORTS_AMD_BUFFER_MARKER           0
-#define VULKAN_SUPPORTS_NV_DIAGNOSTIC_CHECKPOINT    0
+#define VK_USE_PLATFORM_XCB_KHR          1
 
 #include <vector>
 #include <vulkan/vulkan.h>

@@ -1,10 +1,6 @@
 #pragma once
 
 #define VK_USE_PLATFORM_MACOS_MVK                   1
-#define VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2      1
-#define VULKAN_SUPPORTS_DEDICATED_ALLOCATION        0
-#define VULKAN_SUPPORTS_AMD_BUFFER_MARKER           1
-#define VULKAN_SUPPORTS_NV_DIAGNOSTIC_CHECKPOINT    1
 
 #include <vector>
 #include <vulkan/vulkan.h>

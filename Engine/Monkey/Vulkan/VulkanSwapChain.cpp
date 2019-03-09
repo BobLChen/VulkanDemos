@@ -258,13 +258,13 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		m_SemaphoreIndex = prev;
-		return (int32)Status::OutOfDate;
+		return (int32)SwapStatus::OutOfDate;
 	}
 
 	if (result == VK_ERROR_SURFACE_LOST_KHR)
 	{
 		m_SemaphoreIndex = prev;
-		return (int32)Status::SurfaceLost;
+		return (int32)SwapStatus::SurfaceLost;
 	}
 
 	m_NumAcquireCalls   += 1;
@@ -274,11 +274,11 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	return m_CurrentImageIndex;
 }
 
-VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* doneSemaphore)
+VulkanSwapChain::SwapStatus VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* doneSemaphore)
 {
 	if (m_CurrentImageIndex == -1)
 	{
-		return Status::Healthy;
+		return SwapStatus::Healthy;
 	}
 
 	m_PresentID += 1;
@@ -302,12 +302,12 @@ VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gf
 
 	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
 	{
-		return Status::OutOfDate;
+		return SwapStatus::OutOfDate;
 	}
 
 	if (presentResult == VK_ERROR_SURFACE_LOST_KHR)
 	{
-		return Status::SurfaceLost;
+		return SwapStatus::SurfaceLost;
 	}
 
 	if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR)
@@ -317,7 +317,7 @@ VulkanSwapChain::Status VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gf
 
 	m_NumPresentCalls += 1;
 
-	return Status::Healthy;
+	return SwapStatus::Healthy;
 }
 
 void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)

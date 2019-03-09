@@ -315,7 +315,7 @@ FORCEINLINE void Rotator::SetComponentForAxis(Axis::Type axis, float component)
 {
 	switch (axis)
 	{
-    case Axis::None:
+    case Axis::Axis_None:
         break;
     case Axis::X:
 		roll = component;

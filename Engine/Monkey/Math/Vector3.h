@@ -933,7 +933,7 @@ FORCEINLINE void Vector3::SetComponentForAxis(Axis::Type axis, float component)
 	case Axis::Z:
 		z = component;
 		break;
-    case Axis::None:
+    case Axis::Axis_None:
         
         break;
 	}

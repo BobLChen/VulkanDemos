@@ -4,7 +4,7 @@ namespace Axis
 {
 	enum Type
 	{
-		None,
+		Axis_None,
 		X,
 		Y,
 		Z,
@@ -15,7 +15,7 @@ namespace AxisList
 {
 	enum Type
 	{
-		None = 0,
+		Axis_None = 0,
 		X = 1,
 		Y = 2,
 		Z = 4,

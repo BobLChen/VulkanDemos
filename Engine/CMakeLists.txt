@@ -91,16 +91,6 @@ set(Monkey_Core_SRCS
 	Monkey/Core/MObject.cpp
 )
 
-# set(Monkey_Application_Desktop_HDRS
-# 	Monkey/Application/Desktop/GLFWWrapper.h
-# 	Monkey/Application/Desktop/GLFWWindow.h
-# 	Monkey/Application/Desktop/GLFWApplication.h
-# )
-# set(Monkey_Application_Desktop_SRCS
-# 	Monkey/Application/Desktop/GLFWWindow.cpp
-# 	Monkey/Application/Desktop/GLFWApplication.cpp
-# )
-
 set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanRHI.cpp
 	Monkey/Vulkan/VulkanLayers.cpp
@@ -231,6 +221,15 @@ elseif (APPLE)
 
 	)
 elseif (UNIX AND NOT APPLE)
+	set(Monkey_Application_Linux_HDRS
+		Monkey/Application/Linux/LinuxWindow.h
+		Monkey/Application/Linux/LinuxApplication.h
+	)
+	set(Monkey_Application_Linux_SRCS
+		Monkey/Application/Linux/LinuxWindow.cpp
+		Monkey/Application/Linux/LinuxApplication.cpp
+	)
+
 	set(Monkey_Math_Linux_HDRS
 		Monkey/Math/Linux/LinuxPlatformMath.h
 	)
@@ -276,11 +275,10 @@ add_library(Monkey STATIC
 
 	${Monkey_Application_SRCS}
 	${Monkey_Application_HDRS}
-
-	${Monkey_Application_Desktop_HDRS}
-	${Monkey_Application_Desktop_SRCS}
 	${Monkey_Application_Windows_HDRS}
 	${Monkey_Application_Windows_SRCS}
+	${Monkey_Application_Linux_HDRS}
+	${Monkey_Application_Linux_SRCS}
 
 	${Monkey_Math_HDRS}
 	${Monkey_Math_SRCS}
@@ -355,6 +353,7 @@ source_group(Monkey\\Launch\\ FILES ${Monkey_Launch_HDRS} ${Monkey_Launch_SRCS})
 source_group(Monkey\\Application\\ FILES ${Monkey_Application_HDRS} ${Monkey_Application_SRCS})
 source_group(Monkey\\Application\\Desktop FILES ${Monkey_Application_Desktop_HDRS} ${Monkey_Application_Desktop_SRCS})
 source_group(Monkey\\Application\\Windows FILES ${Monkey_Application_Windows_HDRS} ${Monkey_Application_Windows_SRCS})
+source_group(Monkey\\Application\\Linux FILES ${Monkey_Application_Linux_HDRS} ${Monkey_Application_Linux_SRCS})
 
 source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
 source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})

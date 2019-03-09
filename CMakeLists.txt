@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.12.0)
 
-project(VulkanTutorials)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
+project(VulkanTutorials)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DNOMINMAX=1 -DMONKEY_DEBUG=1")
@@ -27,9 +28,15 @@ elseif (APPLE)
 	)
 elseif (UNIX AND NOT APPLE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPLATFORM_LINUX=1")
+	# vulkan lib
 	find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${CMAKE_SOURCE_DIR}/external/vulkan/linux/lib" REQUIRED)
 	include_directories(
 		external/vulkan/linux/include/
+	)
+	# xcb
+	find_package(XCB REQUIRED)
+	include_directories(
+		${XCB_INCLUDE_DIRS}
 	)
 endif ()
 
@@ -40,6 +47,13 @@ set(ALL_LIBS
 	SPIRV_Cross
 	Monkey
 )
+
+if (UNIX AND NOT APPLE)
+	set(ALL_LIBS
+		${ALL_LIBS}
+		${XCB_LIBRARIES}
+	)
+endif ()
 
 include_directories(
 	Engine/Monkey/

@@ -31,32 +31,26 @@ endif()
 	TARGET_LINK_LIBRARIES(${EXE_NAME} ${EXTRA_LINKED_LIBRARIES})
 ENDMACRO(SETUP_SAMPLE_END)
 
+if (WIN32)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
+	SET(MainLaunch
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchWindows.cpp
+	)
+elseif (UNIX AND NOT APPLE)
+	SET(MainLaunch
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchLinux.cpp
+	)
+endif ()
+
 SETUP_SAMPLE_START(HelloIMGUI)
 	SET(SOURCE_FILES
 		1_HelloIMGUI/main.cpp
 	)
 SETUP_SAMPLE_END(HelloIMGUI)
 
-# SETUP_SAMPLE_START(HelloVulkan)
-# 	SET(SOURCE_FILES
-# 		3_HelloVulkan/main.cpp
-# 	)
-# 	SET(RESOURCE_FILES
-# 		shader.vert
-# 		shader.frag
-# 		vert.spv
-# 		frag.spv
-# 	)
-
-# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.vert DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/shader.frag DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/vert.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/3_HelloVulkan/frag.spv DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-# SETUP_SAMPLE_END(HelloVulkan)
-
 SETUP_SAMPLE_START(Triangle)
 	SET(SOURCE_FILES
-		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
+		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/2_Triangle/Triangle.cpp
 	)
 	
@@ -72,7 +66,7 @@ SETUP_SAMPLE_END(Triangle)
 
 SETUP_SAMPLE_START(OBJLoader)
 	SET(SOURCE_FILES
-		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/main.cpp
+		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
 	)
 	
@@ -87,14 +81,13 @@ SETUP_SAMPLE_START(OBJLoader)
 SETUP_SAMPLE_END(OBJLoader)
 
 SETUP_SAMPLE_START(Pipelines)
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
-	
 	SET(SOURCE_FILES
-		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchWindows.cpp
+		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
 	)
-	
+
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/4_Pipelines/*.*")
+
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}

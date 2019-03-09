@@ -12,7 +12,7 @@ class VulkanSwapChain
 {
 public:
 
-	enum class Status
+	enum class SwapStatus
 	{
 		Healthy     = 0,
 		OutOfDate   = -1,
@@ -23,7 +23,7 @@ public:
 
 	virtual ~VulkanSwapChain();
 
-	Status Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* complete);
+	SwapStatus Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* complete);
 
 	int32 AcquireImageIndex(VkSemaphore* outSemaphore);
 
