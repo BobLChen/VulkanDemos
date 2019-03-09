@@ -73,7 +73,12 @@ void Engine::Exist()
 
 void Engine::Tick()
 {
-	SlateApplication::Get().Tick(0.0069444444444444f);
+	SlateApplication::Get().Tick(0.016f);
+}
+
+void Engine::PumpMessage()
+{
+	SlateApplication::Get().PumpMessages();
 }
 
 bool Engine::IsRequestingExit()

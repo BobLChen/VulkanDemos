@@ -20,6 +20,8 @@ public:
 
 	void Tick();
 
+	void PumpMessage();
+
 	bool IsRequestingExit();
 
 	void RequestExit(bool request);

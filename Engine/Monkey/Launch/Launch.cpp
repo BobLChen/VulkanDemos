@@ -38,6 +38,11 @@ int32 EngineInit()
 
 void EngineLoop()
 {
+	GameEngine.PumpMessage();
+	if (GameEngine.IsRequestingExit())
+	{
+		return;
+	}
 	GameEngine.Tick();
 	AppMode->Loop();
 }

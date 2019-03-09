@@ -1,5 +1,6 @@
 #include "WinApplication.h"
 #include "Common/Log.h"
+#include "Engine.h"
 
 #include <memory>
 #include <map>
@@ -72,10 +73,16 @@ void WinApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationM
 
 void WinApplication::PumpMessages(const float deltaTime)
 {
-	MSG Message;
-	PeekMessage(&Message, NULL, 0, 0, PM_REMOVE);
-	TranslateMessage(&Message);
-	DispatchMessage(&Message);
+	MSG msg = {};
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+	if (msg.message == WM_QUIT)
+	{
+		Engine::Get()->RequestExit(true);
+	}
 }
 
 void WinApplication::Tick(const float deltaTime)
