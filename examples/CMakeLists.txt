@@ -18,6 +18,7 @@ MACRO(SETUP_SAMPLE_END EXE_NAME)
 if (APPLE)
 	SET(MACOS_ENVIRONMENT "VK_LAYER_PATH=${CMAKE_SOURCE_DIR}/external/vulkan/macos/etc/vulkan/explicit_layer.d;VK_ICD_FILENAMES=${CMAKE_SOURCE_DIR}/external/vulkan/macos/etc/vulkan/icd.d/MoltenVK_icd.json")
 	SET_TARGET_PROPERTIES(${EXE_NAME} PROPERTIES XCODE_SCHEME_ENVIRONMENT "${MACOS_ENVIRONMENT}")
+	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -framework Cocoa -framework QuartzCore")
 elseif(WIN32)
 	SET_TARGET_PROPERTIES(${EXE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Debug")
 	SET_TARGET_PROPERTIES(${EXE_NAME} PROPERTIES VS_RELEASE_WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/Debug")
@@ -39,6 +40,15 @@ if (WIN32)
 elseif (UNIX AND NOT APPLE)
 	SET(MainLaunch
 		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchLinux.cpp
+	)
+elseif (APPLE)
+	SET(MainLaunch
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchMac.cpp
+	)
+	set_source_files_properties(
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchMac.cpp
+		PROPERTIES 
+        COMPILE_FLAGS "-x objective-c++"
 	)
 endif ()
 

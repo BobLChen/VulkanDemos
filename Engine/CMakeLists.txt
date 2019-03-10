@@ -163,7 +163,6 @@ set(Monkey_HAL_SRCS
 )
 
 if (WIN32)
-
 	set(Monkey_Application_Windows_HDRS
 		Monkey/Application/Windows/WinWindow.h
 		Monkey/Application/Windows/WinApplication.h
@@ -195,6 +194,17 @@ if (WIN32)
 
 	)
 elseif (APPLE)
+	set(Monkey_Application_Mac_HDRS
+		Monkey/Application/Mac/MacWindow.h
+		Monkey/Application/Mac/MacApplication.h
+		Monkey/Application/Mac/CocoaWindow.h
+	)
+	set(Monkey_Application_Mac_SRCS
+		Monkey/Application/Mac/MacWindow.cpp
+		Monkey/Application/Mac/MacApplication.cpp
+		Monkey/Application/Mac/CocoaWindow.cpp
+	)
+
 	set(Monkey_Math_Mac_HDRS
 		Monkey/Math/Mac/MacPlatformMath.h
 	)
@@ -229,7 +239,7 @@ elseif (UNIX AND NOT APPLE)
 		Monkey/Application/Linux/LinuxWindow.cpp
 		Monkey/Application/Linux/LinuxApplication.cpp
 	)
-
+							
 	set(Monkey_Math_Linux_HDRS
 		Monkey/Math/Linux/LinuxPlatformMath.h
 	)
@@ -279,6 +289,8 @@ add_library(Monkey STATIC
 	${Monkey_Application_Windows_SRCS}
 	${Monkey_Application_Linux_HDRS}
 	${Monkey_Application_Linux_SRCS}
+	${Monkey_Application_Mac_HDRS}
+	${Monkey_Application_Mac_SRCS}
 
 	${Monkey_Math_HDRS}
 	${Monkey_Math_SRCS}
@@ -354,6 +366,7 @@ source_group(Monkey\\Application\\ FILES ${Monkey_Application_HDRS} ${Monkey_App
 source_group(Monkey\\Application\\Desktop FILES ${Monkey_Application_Desktop_HDRS} ${Monkey_Application_Desktop_SRCS})
 source_group(Monkey\\Application\\Windows FILES ${Monkey_Application_Windows_HDRS} ${Monkey_Application_Windows_SRCS})
 source_group(Monkey\\Application\\Linux FILES ${Monkey_Application_Linux_HDRS} ${Monkey_Application_Linux_SRCS})
+source_group(Monkey\\Application\\Mac FILES ${Monkey_Application_Mac_HDRS} ${Monkey_Application_Mac_SRCS})
 
 source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
 source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})
