@@ -3,6 +3,7 @@
 
 #include "MacWindow.h"
 #include "MacApplication.h"
+#include "CocoaWindow.h"
 
 #include <math.h>
 #include <algorithm>
@@ -18,6 +19,8 @@ MacWindow::MacWindow(int32 width, int32 height, const char* title)
 	: GenericWindow(width, height)
 	, m_Title(title)
 	, m_WindowMode(WindowMode::Windowed)
+    , m_Window(nullptr)
+    , m_View(nullptr)
 	, m_Application(nullptr)
 	, m_Visible(false)
 	, m_AspectRatio(width * 1.0f / height)
@@ -25,7 +28,7 @@ MacWindow::MacWindow(int32 width, int32 height, const char* title)
 	, m_Minimized(false)
 	, m_Maximized(false)
 {
-
+    
 }
 
 MacWindow::~MacWindow()
@@ -40,7 +43,10 @@ float MacWindow::GetDPIScaleFactorAtPoint(float X, float Y)
 
 void MacWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-	
+    VkMacOSSurfaceCreateInfoMVK createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK);
+    createInfo.pView = m_View;
+    VERIFYVULKANRESULT(vkCreateMacOSSurfaceMVK(instance, &createInfo, VULKAN_CPU_ALLOCATOR, outSurface));
 }
 
 const char** MacWindow::GetRequiredInstanceExtensions(uint32_t* count)
@@ -78,6 +84,23 @@ void MacWindow::Initialize(MacApplication* const application)
 {
     m_Application = application;
     
+    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
+    NSRect windowRect = NSMakeRect(0, 0, m_Width, m_Height);
+    
+    VulkanView* view = [[VulkanView alloc] initWithFrame:windowRect];
+    view.wantsLayer = YES;
+    m_View = view;
+    
+    VulkanWindow* window = [[VulkanWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
+    window.contentView = view;
+    (void)window.orderFrontRegardless;
+    (void)window.makeMainWindow;
+    (void)window.makeKeyWindow;
+    m_Window = window;
+    
+    // CVDisplayLinkCreateWithActiveCGDisplays(&m_DisplayLink);
+    // CVDisplayLinkSetOutputCallback(m_DisplayLink, &DisplayLinkCallback, nil);
+    // CVDisplayLinkStart(m_DisplayLink);
 }
 
 void MacWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)

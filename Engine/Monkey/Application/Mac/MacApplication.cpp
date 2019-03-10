@@ -34,7 +34,7 @@ void MacApplication::PumpMessages(const float deltaTime)
 
 void MacApplication::Tick(const float deltaTime)
 {
-
+    
 }
 
 std::shared_ptr<GenericWindow> MacApplication::MakeWindow(int32 width, int32 height, const char* title)
