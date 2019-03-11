@@ -9,7 +9,6 @@ set(IMGUI_HDRS
 	imstb_textedit.h
 	imstb_truetype.h
 	imgui_impl_vulkan.h
-	imgui_impl_glfw.h
 )
 
 set(IMGUI_SRCS
@@ -18,7 +17,6 @@ set(IMGUI_SRCS
 	imgui_draw.cpp
 	imgui_widgets.cpp
 	imgui_impl_vulkan.cpp
-	imgui_impl_glfw.cpp
 )
 
 add_library(imgui STATIC

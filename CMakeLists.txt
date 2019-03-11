@@ -42,7 +42,6 @@ endif ()
 
 set(ALL_LIBS
 	${Vulkan_LIBRARY}
-	glfw
 	imgui
 	SPIRV_Cross
 	Monkey
@@ -57,7 +56,6 @@ endif ()
 
 include_directories(
 	Engine/Monkey/
-	external/glfw/include/
 	external/glm/include/
 	external/imgui/
 	external/SPIRV-Cross/
@@ -65,6 +63,5 @@ include_directories(
 
 add_subdirectory(Engine)
 add_subdirectory(external/imgui)
-add_subdirectory(external/glfw)
 add_subdirectory(external/SPIRV-Cross)
 add_subdirectory(examples)
