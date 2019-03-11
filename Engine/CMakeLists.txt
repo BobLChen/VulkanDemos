@@ -204,10 +204,13 @@ elseif (APPLE)
 		Monkey/Application/Mac/MacApplication.cpp
 		Monkey/Application/Mac/CocoaWindow.cpp
 	)
+	set(Mac_Objective_CPP
+		${Monkey_Application_Mac_HDRS}
+		${Monkey_Application_Mac_SRCS}
+	)
 
 	set_source_files_properties(
-		Monkey/Application/Mac/CocoaWindow.h
-		Monkey/Application/Mac/CocoaWindow.cpp
+		${Mac_Objective_CPP}
 		PROPERTIES 
         COMPILE_FLAGS "-x objective-c++"
 	)

@@ -84,23 +84,26 @@ void MacWindow::Initialize(MacApplication* const application)
 {
     m_Application = application;
     
-    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable;
+    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable ;
     NSRect windowRect = NSMakeRect(0, 0, m_Width, m_Height);
     
     VulkanView* view = [[VulkanView alloc] initWithFrame:windowRect];
-    view.wantsLayer = YES;
-    m_View = view;
+    [view setWantsLayer:YES];
+    [view setWantsBestResolutionOpenGLSurface:YES];
     
     VulkanWindow* window = [[VulkanWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
-    window.contentView = view;
-    (void)window.orderFrontRegardless;
-    (void)window.makeMainWindow;
-    (void)window.makeKeyWindow;
-    m_Window = window;
+    [window setContentView:view];
+    [window center];
+    [window makeFirstResponder:view];
+    [window setTitle:[NSString stringWithUTF8String:m_Title.c_str()]];
+    [window setAcceptsMouseMovedEvents:YES];
+    [window setRestorable:NO];
     
-    // CVDisplayLinkCreateWithActiveCGDisplays(&m_DisplayLink);
-    // CVDisplayLinkSetOutputCallback(m_DisplayLink, &DisplayLinkCallback, nil);
-    // CVDisplayLinkStart(m_DisplayLink);
+    const NSWindowCollectionBehavior behavior = NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorManaged;
+    [window setCollectionBehavior:behavior];
+    
+    m_View = view;
+    m_Window = window;
 }
 
 void MacWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)
@@ -154,6 +157,9 @@ void MacWindow::Show()
 		return;
 	}
 	m_Visible = true;
+    
+    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
+    (void)window.orderFrontRegardless;
 }
 
 void MacWindow::Hide()
@@ -162,6 +168,9 @@ void MacWindow::Hide()
 		return;
 	}
 	m_Visible = false;
+    
+    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
+    [window orderOut:nil];
 }
 
 void MacWindow::SetWindowMode(WindowMode::Type newWindowMode)

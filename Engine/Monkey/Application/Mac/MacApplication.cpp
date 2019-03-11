@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 
+#include <Cocoa/Cocoa.h>
+
 std::shared_ptr<MacApplication> G_CurrentPlatformApplication = nullptr;
 
 MacApplication::MacApplication()
@@ -29,7 +31,19 @@ void MacApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationM
 
 void MacApplication::PumpMessages(const float deltaTime)
 {
-	
+    while (true)
+    {
+        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
+                                            untilDate:[NSDate distantPast]
+                                               inMode:NSDefaultRunLoopMode
+                                              dequeue:YES];
+        if (event == nil)
+        {
+            break;
+        }
+        
+        [NSApp sendEvent:event];
+    }
 }
 
 void MacApplication::Tick(const float deltaTime)
