@@ -14,4 +14,8 @@
 	#include "Vulkan/Linux/VulkanPlatformDefines.h"
 #endif
 
+#if PLATFORM_ANDROID
+	#include "Vulkan/Android/AndroidPlatformDefines.h"
+#endif
+
 #include "Vulkan/VulkanGlobals.h"

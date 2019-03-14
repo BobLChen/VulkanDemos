@@ -9,4 +9,6 @@
     #include "Math/Mac/MacPlatformMath.h"
 #elif PLATFORM_LINUX
     #include "Math/Linux/LinuxPlatformMath.h"
+#elif PLATFORM_ANDROID
+    #include "Math/Android/AndroidPlatformMath.h"
 #endif

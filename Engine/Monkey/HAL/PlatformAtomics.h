@@ -9,5 +9,7 @@
 	#include "HAL/Mac/MacPlatformAtomics.h"
 #elif PLATFORM_LINUX
 	#include "HAL/Linux/LinuxPlatformAtomics.h"
+#elif PLATFORM_ANDROID
+	#include "HAL/Android/AndroidPlatformAtomics.h"
 #endif
 

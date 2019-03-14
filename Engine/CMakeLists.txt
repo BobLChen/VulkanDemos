@@ -275,6 +275,37 @@ elseif (UNIX AND NOT APPLE)
 	set(Monkey_HAL_Linux_SRCS
 
 	)
+elseif (ANDROID)
+	set(Monkey_Application_Android_HDRS
+		Monkey/Application/Android/AndroidWindow.h
+		Monkey/Application/Android/AndroidApplication.h
+	)
+	set(Monkey_Application_Android_SRCS
+		Monkey/Application/Android/AndroidWindow.cpp
+		Monkey/Application/Android/AndroidApplication.cpp
+	)
+							
+	set(Monkey_Math_Android_HDRS
+		Monkey/Math/Android/AndroidPlatformMath.h
+	)
+	set(Monkey_Math_Android_SRCS
+
+	)
+
+	set(Monkey_Vulkan_Android_HDRS
+		Monkey/Vulkan/Android/VulkanPlatformDefines.h
+		Monkey/Vulkan/Android/VulkanAndroidPlatform.h
+	)
+	set(Monkey_Vulkan_Android_SRCS
+		Monkey/Vulkan/Android/VulkanAndroidPlatform.cpp
+	)
+
+	set(Monkey_HAL_Android_HDRS
+		Monkey/HAL/Android/AndroidPlatformAtomics.h
+	)
+	set(Monkey_HAL_Android_SRCS
+
+	)
 endif ()
 
 add_library(Monkey STATIC
@@ -301,6 +332,8 @@ add_library(Monkey STATIC
 	${Monkey_Application_Linux_SRCS}
 	${Monkey_Application_Mac_HDRS}
 	${Monkey_Application_Mac_SRCS}
+	${Monkey_Application_Android_HDRS}
+	${Monkey_Application_Android_SRCS}
 
 	${Monkey_Math_HDRS}
 	${Monkey_Math_SRCS}
@@ -310,6 +343,8 @@ add_library(Monkey STATIC
 	${Monkey_Math_Mac_SRCS}
 	${Monkey_Math_Linux_HDRS}
 	${Monkey_Math_Linux_SRCS}
+	${Monkey_Math_Android_HDRS}
+	${Monkey_Math_Android_SRCS}
 
 	${Monkey_Utils_HDRS}
 	${Monkey_Utils_SRCS}
@@ -327,6 +362,8 @@ add_library(Monkey STATIC
 	${Monkey_Vulkan_Mac_HDRS}
 	${Monkey_Vulkan_Linux_HDRS}
 	${Monkey_Vulkan_Linux_SRCS}
+	${Monkey_Vulkan_Android_HDRS}
+	${Monkey_Vulkan_Android_SRCS}
 
 	${Monkey_HAL_HDRS}
 	${Monkey_HAL_SRCS}
@@ -336,6 +373,8 @@ add_library(Monkey STATIC
 	${Monkey_HAL_Mac_SRCS}
 	${Monkey_HAL_Linux_HDRS}
 	${Monkey_HAL_Linux_SRCS}
+	${Monkey_HAL_Android_HDRS}
+	${Monkey_HAL_Android_SRCS}
 
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
@@ -358,6 +397,7 @@ source_group(Monkey\\Vulkan FILES ${Monkey_Vulkan_HDRS} ${Monkey_Vulkan_SRCS})
 source_group(Monkey\\Vulkan\\Windows FILES ${Monkey_Vulkan_Windows_SRCS} ${Monkey_Vulkan_Windows_HDRS})
 source_group(Monkey\\Vulkan\\Mac FILES ${Monkey_Vulkan_Mac_SRCS} ${Monkey_Vulkan_Mac_HDRS})
 source_group(Monkey\\Vulkan\\Linux FILES ${Monkey_Vulkan_Linux_SRCS} ${Monkey_Vulkan_Linux_HDRS})
+source_group(Monkey\\Vulkan\\Android FILES ${Monkey_Vulkan_Android_SRCS} ${Monkey_Vulkan_Android_HDRS})
 
 source_group(Monkey\\Utils FILES ${Monkey_Utils_HDRS} ${Monkey_Utils_SRCS})
 source_group(Monkey\\File FILES ${Monkey_File_HDRS} ${Monkey_File_SRCS})
@@ -366,6 +406,7 @@ source_group(Monkey\\Math FILES ${Monkey_Math_HDRS} ${Monkey_Math_SRCS})
 source_group(Monkey\\Math\\Windows FILES ${Monkey_Math_Windows_HDRS} ${Monkey_Math_Windows_SRCS})
 source_group(Monkey\\Math\\Mac FILES ${Monkey_Math_Mac_HDRS} ${Monkey_Math_Mac_SRCS})
 source_group(Monkey\\Math\\Linux FILES ${Monkey_Math_Linux_HDRS} ${Monkey_Math_Linux_SRCS})
+source_group(Monkey\\Math\\Android FILES ${Monkey_Math_Android_HDRS} ${Monkey_Math_Android_SRCS})
 
 source_group(Monkey\\Common FILES ${Monkey_Common_HDRS} ${Monkey_Common_SRCS})
 source_group(Monkey\\Platform\\glfw FILES ${Monkey_Platform_GLFW_HDRS} ${Monkey_Platform_GLFW_SRCS})
@@ -377,11 +418,13 @@ source_group(Monkey\\Application\\Desktop FILES ${Monkey_Application_Desktop_HDR
 source_group(Monkey\\Application\\Windows FILES ${Monkey_Application_Windows_HDRS} ${Monkey_Application_Windows_SRCS})
 source_group(Monkey\\Application\\Linux FILES ${Monkey_Application_Linux_HDRS} ${Monkey_Application_Linux_SRCS})
 source_group(Monkey\\Application\\Mac FILES ${Monkey_Application_Mac_HDRS} ${Monkey_Application_Mac_SRCS})
+source_group(Monkey\\Application\\Android FILES ${Monkey_Application_Android_HDRS} ${Monkey_Application_Android_SRCS})
 
 source_group(Monkey\\HAL FILES ${Monkey_HAL_HDRS} ${Monkey_HAL_SRCS})
 source_group(Monkey\\HAL\\Windows FILES ${Monkey_HAL_Windows_HDRS} ${Monkey_HAL_Windows_SRCS})
 source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS})
 source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linux_HDRS})
+source_group(Monkey\\HAL\\Android FILES ${Monkey_HAL_Android_SRCS} ${Monkey_HAL_Android_HDRS})
 
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
 
