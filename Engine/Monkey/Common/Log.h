@@ -10,7 +10,7 @@
 #define MLOG(...)   { char __str__buf__[512]; sprintf_s(__str__buf__, "%-6s", "LOG:");   OutputDebugString(__str__buf__); sprintf_s(__str__buf__, "%-40s:%-5d", __func__, __LINE__); OutputDebugString(__str__buf__); sprintf_s(__str__buf__, __VA_ARGS__); OutputDebugString(__str__buf__); sprintf_s(__str__buf__, "\n"); OutputDebugString(__str__buf__); }
 #define MLOGE(...)  { char __str__buf__[512]; sprintf_s(__str__buf__, "%-6s", "ERROR:"); OutputDebugString(__str__buf__); sprintf_s(__str__buf__, "%-40s:%-5d", __func__, __LINE__); OutputDebugString(__str__buf__); sprintf_s(__str__buf__, __VA_ARGS__); OutputDebugString(__str__buf__); sprintf_s(__str__buf__, "\n"); OutputDebugString(__str__buf__); }
 
-#elif PLATFORM_MAC || PLATFORM_LINUX
+#elif PLATFORM_MAC || PLATFORM_LINUX || PLATFORM_IOS
 
 #define MLOG(...)   { fprintf(stdout, "%-6s", "LOG:");    fprintf(stdout, "%-40s:%-5d", __func__, __LINE__); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }
 #define MLOGE(...)  { fprintf(stdout, "%-6s", "ERROR:");  fprintf(stdout, "%-40s:%-5d", __func__, __LINE__); fprintf(stdout, __VA_ARGS__); fprintf(stdout, "\n"); }

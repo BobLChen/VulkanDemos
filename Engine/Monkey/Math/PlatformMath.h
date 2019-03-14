@@ -7,6 +7,8 @@
     #include "Math/Windows/WindowsPlatformMath.h"
 #elif PLATFORM_MAC
     #include "Math/Mac/MacPlatformMath.h"
+#elif PLATFORM_IOS
+    #include "Math/IOS/IOSPlatformMath.h"
 #elif PLATFORM_LINUX
     #include "Math/Linux/LinuxPlatformMath.h"
 #elif PLATFORM_ANDROID

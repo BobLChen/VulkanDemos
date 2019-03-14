@@ -4,17 +4,13 @@
 
 #if PLATFORM_WINDOWS
 	#include "Vulkan/Windows/VulkanPlatformDefines.h"
-#endif
-
-#if PLATFORM_MAC
+#elif PLATFORM_IOS
+	#include "Vulkan/IOS/IOSPlatformDefines.h"
+#elif PLATFORM_MAC
 	#include "Vulkan/Mac/VulkanPlatformDefines.h"
-#endif
-
-#if PLATFORM_LINUX
+#elif PLATFORM_LINUX
 	#include "Vulkan/Linux/VulkanPlatformDefines.h"
-#endif
-
-#if PLATFORM_ANDROID
+#elif PLATFORM_ANDROID
 	#include "Vulkan/Android/AndroidPlatformDefines.h"
 #endif
 

@@ -50,6 +50,15 @@ elseif (APPLE)
 		PROPERTIES 
         COMPILE_FLAGS "-x objective-c++"
 	)
+elseif (IOS)
+	SET(MainLaunch
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchIOS.cpp
+	)
+	set_source_files_properties(
+		${CMAKE_CURRENT_SOURCE_DIR}/../Engine/Monkey/Launch/LaunchIOS.cpp
+		PROPERTIES 
+        COMPILE_FLAGS "-x objective-c++"
+	)
 endif ()
 
 SETUP_SAMPLE_START(2_Triangle)
