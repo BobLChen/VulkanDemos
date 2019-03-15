@@ -387,7 +387,6 @@ void VulkanRHI::CreateInstance()
     {
         SlateApplication::Get().OnRequestingExit();
     }
-
 }
 
 void VulkanRHI::SelectAndInitDevice()

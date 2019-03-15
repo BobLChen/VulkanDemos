@@ -1,6 +1,8 @@
 #include "VulkanRHI.h"
 #include "VulkanPlatform.h"
 
+#if MONKEY_DEBUG
+
 #define VK_DESTORY_DEBUG_REPORT_CALLBACK_EXT_NAME "vkDestroyDebugReportCallbackEXT"
 #define VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME  "vkCreateDebugReportCallbackEXT"
 
@@ -81,3 +83,5 @@ void VulkanRHI::RemoveDebugLayerCallback()
         destroyMsgCallback(m_Instance, m_MsgCallback, nullptr);
     }
 }
+
+#endif

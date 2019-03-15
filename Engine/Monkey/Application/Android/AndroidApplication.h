@@ -29,9 +29,6 @@ public:
 
 	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately) override;
 
-protected:
-	
-
 private:
 	std::shared_ptr<AndroidWindow> m_Window;
 };

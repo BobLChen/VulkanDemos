@@ -1,8 +1,4 @@
 #include "Configuration/Platform.h"
-
-#include "Common/Common.h"
-#include "Common/Log.h"
-
 #include "Core/PixelFormat.h"
 
 #include "Application/AppModeBase.h"

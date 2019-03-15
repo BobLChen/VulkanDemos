@@ -6,7 +6,13 @@
 
 #include <string>
 
+#include <android/native_activity.h>
+#include <android_native_app_glue.h>
+#include <sys/system_properties.h>
+
 class AndroidApplication;
+
+extern android_app* g_AndroidApp;
 
 class AndroidWindow : public GenericWindow
 {
@@ -80,30 +86,16 @@ public:
 	{
 		return m_WindowMode;
 	}
-
-	FORCEINLINE xcb_connection_t* GetConnection() const
-	{
-		return m_Connection;
-	}
-
-	FORCEINLINE xcb_intern_atom_reply_t* GetAtomWmDeleteWindow() const
-	{
-		return m_AtomWmDeleteWindow;
-	}
 	
 private:
 	AndroidWindow(int32 width, int32 height, const char* title);
 
 	float GetDPIScaleFactorAtPoint(float X, float Y);
-
+	
 private:
 	std::string 				m_Title;
-	xcb_window_t				m_Window;
-	xcb_screen_t*				m_Screen;
-	xcb_connection_t*			m_Connection;
-	xcb_intern_atom_reply_t* 	m_AtomWmDeleteWindow;
 	WindowMode::Type 			m_WindowMode;
-	AndroidApplication* 			m_Application;
+	AndroidApplication* 		m_Application;
 	bool 						m_Visible;
 	float 						m_AspectRatio;
 	float 						m_DPIScaleFactor;

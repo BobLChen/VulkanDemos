@@ -143,7 +143,7 @@ private:
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
         
 		// 请求一个空闲的Backbuffer，这里会一直同步直到Present引擎交出一个。
-		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, m_PresentComplete, nullptr, &m_CurrentBackBuffer));
+		VERIFYVULKANRESULT(vkAcquireNextImageKHR(m_Device, swapchain, UINT64_MAX, m_PresentComplete, (VkFence)nullptr, &m_CurrentBackBuffer));
 		// 继续同步等待，所有提交的指令执行完毕。
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer], VK_TRUE, UINT64_MAX));
 		VERIFYVULKANRESULT(vkResetFences(m_Device, 1, &m_Fences[m_CurrentBackBuffer]));

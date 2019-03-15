@@ -7,19 +7,18 @@
 #include <math.h>
 #include <algorithm>
 
+android_app* g_AndroidApp = nullptr;
+
 static const char* G_ValidationLayersInstance[] =
 {
 	VK_KHR_SURFACE_EXTENSION_NAME,
+	VK_KHR_ANDROID_SURFACE_EXTENSION_NAME,
 	nullptr
 };
 
 AndroidWindow::AndroidWindow(int32 width, int32 height, const char* title)
 	: GenericWindow(width, height)
 	, m_Title(title)
-	, m_Window(0)
-	, m_Screen(nullptr)
-	, m_Connection(nullptr)
-	, m_AtomWmDeleteWindow(nullptr)
 	, m_WindowMode(WindowMode::Windowed)
 	, m_Application(nullptr)
 	, m_Visible(false)
@@ -43,7 +42,25 @@ float AndroidWindow::GetDPIScaleFactorAtPoint(float X, float Y)
 
 void AndroidWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-	
+	// // don't use cached window handle coming from VulkanViewport, as it could be gone by now
+	// WindowHandle = FAndroidWindow::GetHardwareWindow();
+	// if (WindowHandle == NULL)
+	// {
+	// 	// Sleep if the hardware window isn't currently available.
+	// 	// The Window may not exist if the activity is pausing/resuming, in which case we make this thread wait
+	// 	FPlatformMisc::LowLevelOutputDebugString(TEXT("Waiting for Native window in FVulkanAndroidPlatform::CreateSurface"));
+	// 	while (WindowHandle == NULL)
+	// 	{
+	// 		FPlatformProcess::Sleep(0.001f);
+	// 		WindowHandle = FAndroidWindow::GetHardwareWindow();
+	// 	}
+	// }
+
+	// VkAndroidSurfaceCreateInfoKHR SurfaceCreateInfo;
+	// ZeroVulkanStruct(SurfaceCreateInfo, VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR);
+	// SurfaceCreateInfo.window = (ANativeWindow*)WindowHandle;
+
+	// VERIFYVULKANRESULT(VulkanDynamicAPI::vkCreateAndroidSurfaceKHR(Instance, &SurfaceCreateInfo, VULKAN_CPU_ALLOCATOR, OutSurface));
 }
 
 const char** AndroidWindow::GetRequiredInstanceExtensions(uint32_t* count)
@@ -54,7 +71,7 @@ const char** AndroidWindow::GetRequiredInstanceExtensions(uint32_t* count)
 
 void* AndroidWindow::GetOSWindowHandle() const
 {
-	return m_Connection;
+	return nullptr;
 }
 
 float AndroidWindow::GetAspectRatio() const
@@ -76,6 +93,7 @@ std::shared_ptr<AndroidWindow> AndroidWindow::Make(int32 width, int32 height, co
 {
 	return std::shared_ptr<AndroidWindow>(new AndroidWindow(width, height, title));
 }
+
 
 void AndroidWindow::Initialize(AndroidApplication* const application)
 {

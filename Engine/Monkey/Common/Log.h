@@ -18,6 +18,7 @@
 #elif PLATFORM_ANDROID
 
 	#include <android/log.h>
+	
 	#define MLOG(FORMAT,...)    { __android_log_print(ANDROID_LOG_DEBUG, "t", FORMAT, ##__VA_ARGS__); }
     #define MLOGE(FORMAT,...)   { __android_log_print(ANDROID_LOG_DEBUG, "t", FORMAT, ##__VA_ARGS__); }
 
