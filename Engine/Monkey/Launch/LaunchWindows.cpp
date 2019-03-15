@@ -1,5 +1,7 @@
 ﻿#include "Common/Common.h"
 #include "Common/Log.h"
+#include "Launch/Launch.h"
+
 #include "Application/Windows/WinWindow.h"
 
 #include <stdio.h>
@@ -10,8 +12,6 @@
 
 #include <windows.h>
 #include <io.h>
-
-extern int32 GuardedMain(const std::vector<std::string>& cmdLine);
 
 std::vector<std::string> g_CmdLine;
 

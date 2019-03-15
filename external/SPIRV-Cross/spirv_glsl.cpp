@@ -169,14 +169,15 @@ void CompilerGLSL::init()
 	// tricky.
 #ifdef _WIN32
 	// On Windows, localeconv uses thread-local storage, so it should be fine.
-	const struct lconv *conv = localeconv();
-	if (conv && conv->decimal_point)
-		current_locale_radix_character = *conv->decimal_point;
+	// const struct lconv *conv = localeconv();
+	// if (conv && conv->decimal_point)
+	//	current_locale_radix_character = *conv->decimal_point;
 #else
 	// localeconv, the portable function is not MT safe ...
-	const char *decimal_point = nl_langinfo(RADIXCHAR);
-	if (decimal_point && *decimal_point != '\0')
-		current_locale_radix_character = *decimal_point;
+	// const char *decimal_point = nl_langinfo(RADIXCHAR);
+    // const char *decimal_point = nullptr;
+	// if (decimal_point && *decimal_point != '\0')
+	//	current_locale_radix_character = *decimal_point;
 #endif
 }
 

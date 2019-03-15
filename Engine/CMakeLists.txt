@@ -22,7 +22,7 @@ set(Monkey_App_SRCS
 )
 
 set(Monkey_Launch_HDRS
-	
+	Monkey/Launch/Launch.h
 )
 set(Monkey_Launch_SRCS
 	Monkey/Launch/Launch.cpp
@@ -193,6 +193,49 @@ if (WIN32)
 	set(Monkey_HAL_Windows_SRCS
 
 	)
+elseif (IOS)
+	set(Monkey_Application_IOS_HDRS
+		Monkey/Application/IOS/IOSWindow.h
+		Monkey/Application/IOS/IOSApplication.h
+		Monkey/Application/IOS/CocoaWindow.h
+	)
+	set(Monkey_Application_IOS_SRCS
+		Monkey/Application/IOS/IOSWindow.cpp
+		Monkey/Application/IOS/IOSApplication.cpp
+		Monkey/Application/IOS/CocoaWindow.cpp
+	)
+	set(IOS_Objective_CPP
+		${Monkey_Application_IOS_HDRS}
+		${Monkey_Application_IOS_SRCS}
+	)
+
+	set_source_files_properties(
+		${IOS_Objective_CPP}
+		PROPERTIES 
+		COMPILE_FLAGS "-x objective-c++"
+	)
+
+	set(Monkey_Math_IOS_HDRS
+		Monkey/Math/IOS/IOSPlatformMath.h
+	)
+	set(Monkey_Math_IOS_SRCS
+
+	)
+
+	set(Monkey_Vulkan_IOS_HDRS
+		Monkey/Vulkan/IOS/VulkanPlatformDefines.h
+		Monkey/Vulkan/IOS/VulkanIOSPlatform.h
+	)
+	set(Monkey_Vulkan_IOS_SRCS
+		Monkey/Vulkan/IOS/VulkanIOSPlatform.cpp
+	)
+
+	set(Monkey_HAL_IOS_HDRS
+		Monkey/HAL/IOS/IOSPlatformAtomics.h
+	)
+	set(Monkey_HAL_IOS_SRCS
+
+	)
 elseif (APPLE)
 	set(Monkey_Application_Mac_HDRS
 		Monkey/Application/Mac/MacWindow.h
@@ -240,50 +283,38 @@ elseif (APPLE)
 	set(Monkey_HAL_Mac_SRCS
 
 	)
-elseif (IOS)
-	set(Monkey_Application_IOS_HDRS
-		Monkey/Application/IOS/IOSWindow.h
-		Monkey/Application/IOS/IOSApplication.h
-		Monkey/Application/IOS/CocoaWindow.h
+elseif (ANDROID)
+	set(Monkey_Application_Android_HDRS
+		Monkey/Application/Android/AndroidWindow.h
+		Monkey/Application/Android/AndroidApplication.h
 	)
-	set(Monkey_Application_IOS_SRCS
-		Monkey/Application/IOS/IOSWindow.cpp
-		Monkey/Application/IOS/IOSApplication.cpp
-		Monkey/Application/IOS/CocoaWindow.cpp
+	set(Monkey_Application_Android_SRCS
+		Monkey/Application/Android/AndroidWindow.cpp
+		Monkey/Application/Android/AndroidApplication.cpp
 	)
-	set(IOS_Objective_CPP
-		${Monkey_Application_IOS_HDRS}
-		${Monkey_Application_IOS_SRCS}
+							
+	set(Monkey_Math_Android_HDRS
+		Monkey/Math/Android/AndroidPlatformMath.h
 	)
-
-	set_source_files_properties(
-		${IOS_Objective_CPP}
-		PROPERTIES 
-		COMPILE_FLAGS "-x objective-c++"
-	)
-
-	set(Monkey_Math_IOS_HDRS
-		Monkey/Math/IOS/IOSPlatformMath.h
-	)
-	set(Monkey_Math_IOS_SRCS
+	set(Monkey_Math_Android_SRCS
 
 	)
 
-	set(Monkey_Vulkan_IOS_HDRS
-		Monkey/Vulkan/IOS/VulkanPlatformDefines.h
-		Monkey/Vulkan/IOS/VulkanIOSPlatform.h
+	set(Monkey_Vulkan_Android_HDRS
+		Monkey/Vulkan/Android/VulkanPlatformDefines.h
+		Monkey/Vulkan/Android/VulkanAndroidPlatform.h
 	)
-	set(Monkey_Vulkan_IOS_SRCS
-		Monkey/Vulkan/IOS/VulkanIOSPlatform.cpp
+	set(Monkey_Vulkan_Android_SRCS
+		Monkey/Vulkan/Android/VulkanAndroidPlatform.cpp
 	)
 
-	set(Monkey_HAL_IOS_HDRS
-		Monkey/HAL/IOS/IOSPlatformAtomics.h
+	set(Monkey_HAL_Android_HDRS
+		Monkey/HAL/Android/AndroidPlatformAtomics.h
 	)
-	set(Monkey_HAL_IOS_SRCS
+	set(Monkey_HAL_Android_SRCS
 
 	)
-elseif (UNIX AND NOT APPLE)
+elseif (UNIX)
 	set(Monkey_Application_Linux_HDRS
 		Monkey/Application/Linux/LinuxWindow.h
 		Monkey/Application/Linux/LinuxApplication.h
@@ -316,37 +347,6 @@ elseif (UNIX AND NOT APPLE)
 		Monkey/HAL/Linux/LinuxPlatformAtomics.h
 	)
 	set(Monkey_HAL_Linux_SRCS
-
-	)
-elseif (ANDROID)
-	set(Monkey_Application_Android_HDRS
-		Monkey/Application/Android/AndroidWindow.h
-		Monkey/Application/Android/AndroidApplication.h
-	)
-	set(Monkey_Application_Android_SRCS
-		Monkey/Application/Android/AndroidWindow.cpp
-		Monkey/Application/Android/AndroidApplication.cpp
-	)
-							
-	set(Monkey_Math_Android_HDRS
-		Monkey/Math/Android/AndroidPlatformMath.h
-	)
-	set(Monkey_Math_Android_SRCS
-
-	)
-
-	set(Monkey_Vulkan_Android_HDRS
-		Monkey/Vulkan/Android/VulkanPlatformDefines.h
-		Monkey/Vulkan/Android/VulkanAndroidPlatform.h
-	)
-	set(Monkey_Vulkan_Android_SRCS
-		Monkey/Vulkan/Android/VulkanAndroidPlatform.cpp
-	)
-
-	set(Monkey_HAL_Android_HDRS
-		Monkey/HAL/Android/AndroidPlatformAtomics.h
-	)
-	set(Monkey_HAL_Android_SRCS
 
 	)
 endif ()
