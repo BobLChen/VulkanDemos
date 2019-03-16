@@ -1,10 +1,11 @@
-#import <UIKit/UIKit.h>
+#include "Common/Common.h"
+#include "Common/Log.h"
+#include "Application/IOS/IOSAppDelegate.h"
+#include <UIKit/UIKit.h>
 #include <stdio.h>
 
 int main(int argc, char * argv[]) {
-    printf("argv:%s\n", argv[0]);
     @autoreleasepool {
-        return UIApplicationMain(argc, argv, nil, @"AppDelegate");
+        return UIApplicationMain(argc, argv, nil, NSStringFromClass([IOSAppDelegate class]));
     }
 }
-

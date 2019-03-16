@@ -8,6 +8,9 @@
 
 class IOSApplication;
 
+extern void* g_IOSView;
+extern void* g_IOSViewController;
+
 class IOSWindow : public GenericWindow
 {
 public:
@@ -89,8 +92,6 @@ private:
 private:
 	std::string 				m_Title;
 	WindowMode::Type 			m_WindowMode;
-    void*                       m_Window;
-    void*                       m_View;
 	IOSApplication* 			m_Application;
 	bool 						m_Visible;
 	float 						m_AspectRatio;

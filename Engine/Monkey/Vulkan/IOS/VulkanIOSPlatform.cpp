@@ -1,5 +1,5 @@
 #include "Configuration/Platform.h"
-#include "Vulkan/Mac/VulkanPlatformDefines.h"
+#include "Vulkan/IOS/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
 #include "Application/SlateApplication.h"

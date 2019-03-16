@@ -174,8 +174,8 @@ void VertexBuffer::CreateBuffer()
 		memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 
 		// 记录分配信息
-		m_Streams[i].alignment = memReqInfo.alignment;
-		m_Streams[i].allocationSize = memReqInfo.size;
+		m_Streams[i].alignment = uint32(memReqInfo.alignment);
+		m_Streams[i].allocationSize = uint32(memReqInfo.size);
 		
 		// 创建分配内存并绑定
 		VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &hostMemories[i]));

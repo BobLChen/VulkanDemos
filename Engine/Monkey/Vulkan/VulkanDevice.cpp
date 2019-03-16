@@ -33,9 +33,9 @@ void VulkanDevice::CreateDevice()
 
     VkDeviceCreateInfo deviceInfo;
     ZeroVulkanStruct(deviceInfo, VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-	deviceInfo.enabledExtensionCount   = deviceExtensions.size();
+	deviceInfo.enabledExtensionCount   = uint32_t(deviceExtensions.size());
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
-	deviceInfo.enabledLayerCount       = validationLayers.size();
+	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
 
     MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
@@ -129,7 +129,7 @@ void VulkanDevice::CreateDevice()
 		}
 	}
 
-	deviceInfo.queueCreateInfoCount = queueFamilyInfos.size();
+	deviceInfo.queueCreateInfoCount = uint32_t(queueFamilyInfos.size());
 	deviceInfo.pQueueCreateInfos    = queueFamilyInfos.data();
 	deviceInfo.pEnabledFeatures     = &m_PhysicalDeviceFeatures;
 
@@ -191,8 +191,8 @@ void VulkanDevice::SetupFormats()
 
 	MapFormatSupport(PF_FloatRGBA, VK_FORMAT_R16G16B16A16_SFLOAT, 8);
 	SetComponentMapping(PF_FloatRGBA, VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A);
-
-	MapFormatSupport(PF_DepthStencil, VK_FORMAT_D24_UNORM_S8_UINT);
+    
+    MapFormatSupport(PF_DepthStencil, VK_FORMAT_D32_SFLOAT_S8_UINT);
     if (!G_PixelFormats[PF_DepthStencil].supported)
     {
         MapFormatSupport(PF_DepthStencil, VK_FORMAT_D24_UNORM_S8_UINT);
@@ -201,7 +201,7 @@ void VulkanDevice::SetupFormats()
             MapFormatSupport(PF_DepthStencil, VK_FORMAT_D16_UNORM_S8_UINT);
             if (!G_PixelFormats[PF_DepthStencil].supported)
             {
-                MLOG("%s", "No stencil texture format supported!");
+                MLOG("No stencil texture format supported!");
             }
         }
     }
@@ -253,6 +253,10 @@ void VulkanDevice::SetupFormats()
 				if (!G_PixelFormats[PF_D24].supported)
 				{
 					MapFormatSupport(PF_D24, VK_FORMAT_D16_UNORM);
+                    if (!G_PixelFormats[PF_D24].supported)
+                    {
+                        MLOG("%s", "No Depth texture format supported!");
+                    }
 				}
 			}
 		}

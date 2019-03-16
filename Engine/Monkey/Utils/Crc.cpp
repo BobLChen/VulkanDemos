@@ -160,7 +160,7 @@ uint32 Crc::MemCrc32(const void* dataPtr, int32 length, uint32 crc)
 
 	const uint8* data = (uint8*)dataPtr;
 
-	int32 initBytes = Align(data, 4) - data;
+	int32 initBytes = int32(Align(data, 4) - data);
 
 	if (length > initBytes)
 	{

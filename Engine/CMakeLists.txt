@@ -197,12 +197,14 @@ elseif (IOS)
 	set(Monkey_Application_IOS_HDRS
 		Monkey/Application/IOS/IOSWindow.h
 		Monkey/Application/IOS/IOSApplication.h
-		Monkey/Application/IOS/CocoaWindow.h
+		Monkey/Application/IOS/IOSViewController.h
+		Monkey/Application/IOS/IOSAppDelegate.h
 	)
 	set(Monkey_Application_IOS_SRCS
 		Monkey/Application/IOS/IOSWindow.cpp
 		Monkey/Application/IOS/IOSApplication.cpp
-		Monkey/Application/IOS/CocoaWindow.cpp
+		Monkey/Application/IOS/IOSViewController.cpp
+		Monkey/Application/IOS/IOSAppDelegate.cpp
 	)
 	set(IOS_Objective_CPP
 		${Monkey_Application_IOS_HDRS}

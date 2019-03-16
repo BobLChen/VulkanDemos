@@ -84,8 +84,8 @@ void IndexBuffer::CreateBuffer()
 	memAllocInfo.memoryTypeIndex = memoryTypeIndex;
 
 	// 记录本次的Alignment以及AllocationSize
-	m_Alignment      = memReqInfo.alignment;
-	m_AllocationSize = memReqInfo.size;
+	m_Alignment      = (uint32)memReqInfo.alignment;
+	m_AllocationSize = (uint32)memReqInfo.size;
     
 	// 分配内存并且与Buffer绑定
 	VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_Memory));

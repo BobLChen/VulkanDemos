@@ -2,6 +2,7 @@
 .DS_Store
 # build folder
 build/
+build_ios/
 .externalNativeBuild/
 .gradle/
 .idea/

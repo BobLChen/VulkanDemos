@@ -24,7 +24,7 @@ public:
 		uint8 digest[16];
 
 		MD5 md5Gen;
-		md5Gen.Update((unsigned char*)(chars), std::strlen(chars));
+		md5Gen.Update((unsigned char*)(chars), int32(std::strlen(chars)));
 		md5Gen.Final(digest);
 
 		std::string md5;

@@ -1,6 +1,6 @@
 #pragma once
 
-#define VK_USE_PLATFORM_ANDROID_KHR                   1
+#define VK_USE_PLATFORM_IOS_MVK                   1
 
 #include <vector>
 #include <vulkan/vulkan.h>

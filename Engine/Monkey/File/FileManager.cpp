@@ -3,7 +3,13 @@
 
 std::string FileManager::GetFilePath(const std::string& filepath)
 {
-	return Engine::Get()->GetAssetsPath() + "../../../examples/" + filepath;
+#if PLATFORM_IOS
+    return Engine::Get()->GetAssetsPath() + filepath;
+#elif PLATFORM_ANDROID
+    
+#else
+    return Engine::Get()->GetAssetsPath() + "../../../examples/" + filepath;
+#endif
 }
 
 bool FileManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize)
@@ -18,7 +24,7 @@ bool FileManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32&
 	}
 
 	fseek(file, 0, SEEK_END);
-	dataSize = ftell(file);
+	dataSize = (uint32)ftell(file);
 	fseek(file, 0, SEEK_SET);
 
 	if (dataSize <= 0)

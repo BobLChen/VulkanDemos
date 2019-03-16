@@ -155,7 +155,7 @@ void Shader::CreateUniformBuffer(UniformBuffer& uniformBuffer, uint32 dataSize, 
 	// 记录分配信息
 	uniformBuffer.size = dataSize;
 	uniformBuffer.offset = 0;
-    uniformBuffer.allocationSize = memReqs.size;
+    uniformBuffer.allocationSize = uint32(memReqs.size);
 }
 
 void Shader::UpdateFragPipelineLayout()
@@ -270,8 +270,8 @@ void Shader::UpdateVertPipelineLayout()
         m_PoolSizes.push_back(poolSize);
         
         UniformBuffer uniformBuffer;
-        CreateUniformBuffer(uniformBuffer, compiler.get_declared_struct_size(base_type), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
+        CreateUniformBuffer(uniformBuffer, uint32(compiler.get_declared_struct_size(base_type)), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+        
 		m_Variables.insert(std::make_pair(varName, m_UniformBuffers.size()));
         m_UniformBuffers.push_back(uniformBuffer);
     }
@@ -309,7 +309,7 @@ void Shader::UpdatePipelineLayout()
     // 创建SetLayout
     VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo;
     ZeroVulkanStruct(setLayoutCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-    setLayoutCreateInfo.bindingCount = m_SetLayoutBindings.size();
+    setLayoutCreateInfo.bindingCount = uint32_t(m_SetLayoutBindings.size());
     setLayoutCreateInfo.pBindings    = m_SetLayoutBindings.data();
     VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(device, &setLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
     
@@ -317,7 +317,7 @@ void Shader::UpdatePipelineLayout()
     VkDescriptorPoolCreateInfo poolCreateInfo;
     ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
 	poolCreateInfo.maxSets       = 1;
-    poolCreateInfo.poolSizeCount = m_PoolSizes.size();
+    poolCreateInfo.poolSizeCount = uint32_t(m_PoolSizes.size());
     poolCreateInfo.pPoolSizes    = m_PoolSizes.data();
     VERIFYVULKANRESULT(vkCreateDescriptorPool(device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR,  &m_DescriptorPool));
     

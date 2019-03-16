@@ -261,13 +261,13 @@ void VulkanRHI::CreateCommandBuffers()
     ZeroVulkanStruct(allocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     allocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocateInfo.commandPool        = m_CommandPool;
-    allocateInfo.commandBufferCount = m_FrameImageViews.size();
+    allocateInfo.commandBufferCount = uint32_t(m_FrameImageViews.size());
     VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device->GetInstanceHandle(), &allocateInfo, m_CommandBuffers.data()));
 }
 
 void VulkanRHI::DestoryCommandBuffers()
 {
-    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, m_FrameImageViews.size(), m_CommandBuffers.data());
+    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, uint32_t(m_FrameImageViews.size()), m_CommandBuffers.data());
 }
 
 void VulkanRHI::CreateDepthStencil()
@@ -332,14 +332,20 @@ void VulkanRHI::CreateInstance()
 	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
 	appInfo.pEngineName        = ENGINE_NAME;
 	appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 0);
-	appInfo.apiVersion         = VK_API_VERSION_1_1;
-
+    
+#if PLATFORM_IOS
+    appInfo.apiVersion         = VK_API_VERSION_1_0;
+#else
+    appInfo.apiVersion         = VK_API_VERSION_1_1;
+#endif
+	
+    
 	VkInstanceCreateInfo instanceCreateInfo;
 	ZeroVulkanStruct(instanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
 	instanceCreateInfo.pApplicationInfo        = &appInfo;
-	instanceCreateInfo.enabledExtensionCount   = m_InstanceExtensions.size();
+	instanceCreateInfo.enabledExtensionCount   = uint32_t(m_InstanceExtensions.size());
 	instanceCreateInfo.ppEnabledExtensionNames = m_InstanceExtensions.size() > 0 ? m_InstanceExtensions.data() : nullptr;
-	instanceCreateInfo.enabledLayerCount       = m_InstanceLayers.size();
+	instanceCreateInfo.enabledLayerCount       = uint32_t(m_InstanceLayers.size());
 	instanceCreateInfo.ppEnabledLayerNames     = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
 
 	VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);

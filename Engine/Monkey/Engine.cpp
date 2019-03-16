@@ -27,29 +27,33 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
 	m_VulkanRHI->Init();
-
-	std::string exePath = cmdLine[0];
-	int32 length = 0;
-
-	for (size_t i = 0; i < exePath.size(); ++i)
-	{
-		if (exePath[i] == '\\')
-		{
-			exePath[i] = '/';
-		}
-	}
-
-	for (size_t i = exePath.size() - 1; i >= 0; --i)
-	{
-		if (exePath[i] == '/')
-		{
-			break;
-		}
-		length += 1;
-	}
-
-	m_AssetsPath = exePath.substr(0, exePath.size() - length);
+    
+    if (cmdLine.size() > 0)
+    {
+        std::string exePath = cmdLine[0];
+        int32 length = 0;
+        
+        for (size_t i = 0; i < exePath.size(); ++i)
+        {
+            if (exePath[i] == '\\')
+            {
+                exePath[i] = '/';
+            }
+        }
+        
+        for (size_t i = exePath.size() - 1; i >= 0; --i)
+        {
+            if (exePath[i] == '/')
+            {
+                break;
+            }
+            length += 1;
+        }
+        
+        m_AssetsPath = exePath.substr(0, exePath.size() - length);
+    }
 	
+    MLOG("AssetsPath:%s", m_AssetsPath.c_str());
 	return 0;
 }
 

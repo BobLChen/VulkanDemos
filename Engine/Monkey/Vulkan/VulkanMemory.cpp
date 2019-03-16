@@ -38,7 +38,7 @@ void VulkanRange::JoinConsecutiveRanges(std::vector<VulkanRange>& ranges)
         }
     });
     
-    for (int32 index = ranges.size() - 1; index > 0; --index)
+    for (int32 index = (int32)ranges.size() - 1; index > 0; --index)
     {
         VulkanRange& current = ranges[index + 0];
         VulkanRange& prev    = ranges[index - 1];
@@ -679,7 +679,7 @@ VulkanResourceHeap::~VulkanResourceHeap()
     auto DeletePages = [&](std::vector<VulkanResourceHeapPage*>& usedPages, const char* name)
     {
         bool leak = false;
-        for (int32 index = usedPages.size() - 1; index >= 0; --index)
+        for (int32 index = (int32)usedPages.size() - 1; index >= 0; --index)
         {
             VulkanResourceHeapPage* page = usedPages[index];
             if (!page->JoinFreeBlocks())
@@ -1038,7 +1038,7 @@ void VulkanResourceHeapManager::Init()
             typeBits >>= 1;
         }
         
-        for (int32 index = outTypeIndices.size() - 1; index >= 1; --index)
+        for (int32 index = (int32)outTypeIndices.size() - 1; index >= 1; --index)
         {
             if (memoryProperties.memoryTypes[index].propertyFlags != memoryProperties.memoryTypes[0].propertyFlags)
             {
@@ -1057,7 +1057,7 @@ void VulkanResourceHeapManager::Init()
             int32 heapIndex = memoryProperties.memoryTypes[typeIndices[index]].heapIndex;
             VkDeviceSize heapSize = memoryProperties.memoryHeaps[heapIndex].size;
             VkDeviceSize pageSize = MMath::Min<VkDeviceSize>(heapSize / 8, GPU_ONLY_HEAP_PAGE_SIZE);
-            m_ResourceTypeHeaps[typeIndices[index]] = new VulkanResourceHeap(this, typeIndices[index], pageSize);
+            m_ResourceTypeHeaps[typeIndices[index]] = new VulkanResourceHeap(this, typeIndices[index], uint32(pageSize));
             m_ResourceTypeHeaps[typeIndices[index]]->m_IsHostCachedSupported      = ((memoryProperties.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) == VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
             m_ResourceTypeHeaps[typeIndices[index]]->m_IsLazilyAllocatedSupported = ((memoryProperties.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) == VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
         }
@@ -1133,7 +1133,7 @@ VulkanResourceAllocation* VulkanResourceHeapManager::AllocateBufferMemory(const 
         MLOG("Missing memory type index %d (originally requested %d), MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, originalTypeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
     }
     
-    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, uint32(memoryReqs.size), uint32(memoryReqs.alignment), canMapped, file, line);
     
     if (!allocation)
     {
@@ -1143,7 +1143,7 @@ VulkanResourceAllocation* VulkanResourceHeapManager::AllocateBufferMemory(const 
         {
             MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
         }
-        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Buffer, uint32(memoryReqs.size), uint32(memoryReqs.alignment), canMapped, file, line);
     }
 
     return allocation;
@@ -1161,13 +1161,13 @@ VulkanResourceAllocation* VulkanResourceHeapManager::AllocateImageMemory(const V
         MLOG("Missing memory type index %d, MemSize %d, MemPropTypeBits %u, MemPropertyFlags %u, %s(%d)", typeIndex, (uint32)memoryReqs.size, (uint32)memoryReqs.memoryTypeBits, (uint32)memoryPropertyFlags, file, line);
     }
     
-    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+    VulkanResourceAllocation* allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, uint32(memoryReqs.size), uint32(memoryReqs.alignment), canMapped, file, line);
     
     if (!allocation)
     {
         VERIFYVULKANRESULT(m_DeviceMemoryManager->GetMemoryTypeFromPropertiesExcluding(memoryReqs.memoryTypeBits, memoryPropertyFlags, typeIndex, &typeIndex));
         canMapped  = (memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, memoryReqs.size, memoryReqs.alignment, canMapped, file, line);
+        allocation = m_ResourceTypeHeaps[typeIndex]->AllocateResource(VulkanResourceHeap::Type::Image, uint32(memoryReqs.size), uint32(memoryReqs.alignment), canMapped, file, line);
     }
     
     return allocation;
@@ -1249,7 +1249,7 @@ VulkanBufferSubAllocation* VulkanResourceHeapManager::AllocateBuffer(uint32 size
         deviceMemoryAllocation->Map(bufferSize, 0);
     }
     
-    VulkanSubBufferAllocator* bufferAllocation = new VulkanSubBufferAllocator(this, deviceMemoryAllocation, memoryTypeIndex, memoryPropertyFlags, memReqs.alignment, buffer, bufferUsageFlags, poolSize);
+    VulkanSubBufferAllocator* bufferAllocation = new VulkanSubBufferAllocator(this, deviceMemoryAllocation, memoryTypeIndex, memoryPropertyFlags, uint32(memReqs.alignment), buffer, bufferUsageFlags, poolSize);
     m_UsedBufferAllocations[poolSize].push_back(bufferAllocation);
     
     return (VulkanBufferSubAllocation*)bufferAllocation->TryAllocateNoLocking(size, alignment, file, line);
@@ -1382,7 +1382,7 @@ void VulkanResourceHeapManager::DestroyResourceAllocations()
     ReleaseFreedResources(true);
     for (auto& usedAllocations : m_UsedBufferAllocations)
     {
-        for (int32 index = usedAllocations.size() - 1; index >= 0; --index)
+        for (int32 index = (int32)usedAllocations.size() - 1; index >= 0; --index)
         {
             VulkanSubBufferAllocator* bufferAllocation = usedAllocations[index];
             if (!bufferAllocation->JoinFreeBlocks())

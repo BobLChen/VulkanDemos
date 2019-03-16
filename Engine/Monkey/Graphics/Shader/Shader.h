@@ -92,7 +92,7 @@ public:
     
     FORCEINLINE int32 GetInputCount() const
     {
-        return m_Attributes.size();
+        return int32(m_Attributes.size());
     }
     
 	FORCEINLINE void Clear()
@@ -107,8 +107,8 @@ public:
 	{
 		if (!m_Valid)
 		{
-			m_Hash  = Crc::MemCrc32(m_Attributes.data(), m_Attributes.size() * sizeof(int32), 0);
-			m_Hash  = Crc::MemCrc32(m_Locations.data(), m_Locations.size() * sizeof(int32), m_Hash);
+			m_Hash  = Crc::MemCrc32(m_Attributes.data(), int32(m_Attributes.size() * sizeof(int32)), 0);
+			m_Hash  = Crc::MemCrc32(m_Locations.data(), int32(m_Locations.size() * sizeof(int32)), m_Hash);
 			m_Valid = true;
 		}
 	}

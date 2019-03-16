@@ -6,8 +6,6 @@
 #include <map>
 #include <string>
 
-#include <Cocoa/Cocoa.h>
-
 std::shared_ptr<IOSApplication> G_CurrentPlatformApplication = nullptr;
 
 IOSApplication::IOSApplication()
@@ -31,19 +29,7 @@ void IOSApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationM
 
 void IOSApplication::PumpMessages(const float deltaTime)
 {
-    while (true)
-    {
-        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                            untilDate:[NSDate distantPast]
-                                               inMode:NSDefaultRunLoopMode
-                                              dequeue:YES];
-        if (event == nil)
-        {
-            break;
-        }
-        
-        [NSApp sendEvent:event];
-    }
+    
 }
 
 void IOSApplication::Tick(const float deltaTime)

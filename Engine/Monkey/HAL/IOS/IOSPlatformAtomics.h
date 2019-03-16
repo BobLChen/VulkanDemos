@@ -1,8 +1,8 @@
 #pragma once
 
-#include "HAL/GenericPlatformAtomics.h"
+#include "HAL/ClangPlatformAtomics.h"
 
-struct IOSPlatformAtomics : public GenericPlatformAtomics
+struct IOSPlatformAtomics : public ClangPlatformAtomics
 {
     
 };

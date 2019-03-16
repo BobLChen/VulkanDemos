@@ -139,8 +139,8 @@ public:
 		if (!m_Valid)
 		{
 			m_hash  = 0;
-			m_hash  = Crc::MemCrc32(m_Bindings.data(), m_Bindings.size() * sizeof(BindingDescription));
-			m_hash  = Crc::MemCrc32(m_InputAttributes.data(), m_InputAttributes.size() * sizeof(AttributeDescription), m_hash);
+			m_hash  = Crc::MemCrc32(m_Bindings.data(), int32(m_Bindings.size() * sizeof(BindingDescription)));
+			m_hash  = Crc::MemCrc32(m_InputAttributes.data(), int32(m_InputAttributes.size() * sizeof(AttributeDescription)), m_hash);
 			m_Valid = true;
 		}
 	}
@@ -165,7 +165,7 @@ public:
 
 	FORCEINLINE int32 GetStreamCount() const
     {
-        return m_Streams.size();
+        return int32(m_Streams.size());
     }
 
 	FORCEINLINE int32 GetStreamIndex(VertexAttribute attribute) const

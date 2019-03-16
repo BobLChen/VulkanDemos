@@ -126,7 +126,7 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 
 		VkPipelineDynamicStateCreateInfo dynamicState = {};
 		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-		dynamicState.dynamicStateCount = dynamicStateEnables.size();
+		dynamicState.dynamicStateCount = uint32_t(dynamicStateEnables.size());
 		dynamicState.pDynamicStates    = dynamicStateEnables.data();
 		
 		const std::vector<VertexInputDeclareInfo::BindingDescription>& inVertexBindings = inputDeclareInfo.GetBindings();
@@ -150,16 +150,16 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
         
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-		vertexInputState.vertexBindingDescriptionCount   = vertexInputBindings.size();
+		vertexInputState.vertexBindingDescriptionCount   = uint32_t(vertexInputBindings.size());
 		vertexInputState.pVertexBindingDescriptions      = vertexInputBindings.data();
-		vertexInputState.vertexAttributeDescriptionCount = vertexInputAttributs.size();
+		vertexInputState.vertexAttributeDescriptionCount = uint32_t(vertexInputAttributs.size());
 		vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributs.data();
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout              = m_Shader->GetPipelineLayout();
 		pipelineCreateInfo.renderPass          = vulkanRHI->GetRenderPass();
-		pipelineCreateInfo.stageCount          = m_Shader->GetShaderStages().size();
+		pipelineCreateInfo.stageCount          = uint32_t(m_Shader->GetShaderStages().size());
 		pipelineCreateInfo.pStages             = m_Shader->GetShaderStages().data();
 		pipelineCreateInfo.pVertexInputState   = &vertexInputState;
 		pipelineCreateInfo.pInputAssemblyState = &m_InputAssemblyState;

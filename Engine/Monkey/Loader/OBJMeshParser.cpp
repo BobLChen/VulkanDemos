@@ -24,13 +24,13 @@ std::vector<std::shared_ptr<Renderable>> OBJMeshParser::LoadFromFile(const std::
 
 		for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); ++f)
 		{
-			// 不支持Quad
+			// 涓嶆敮鎸丵uad
 			int fv = shapes[s].mesh.num_face_vertices[f];
 			if (fv >= 4)
 			{
 				continue;
 			}
-			// 遍历数据
+			// 閬嶅巻鏁版嵁
 			for (size_t v = 0; v < fv; v++)
 			{
 				tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
@@ -106,20 +106,20 @@ std::vector<std::shared_ptr<Renderable>> OBJMeshParser::LoadFromFile(const std::
 			offset += 12;
 		}
 
-		// 顶点数据
+		// 椤剁偣鏁版嵁
 		uint8* vertStreamData = new uint8[vertices.size() * sizeof(float)];
 		std::memcpy(vertStreamData, vertices.data(), vertices.size() * sizeof(float));
 		VertexStreamInfo streamInfo;
 		streamInfo.channelMask = channelMask;
-		streamInfo.size = vertices.size() * sizeof(float);
+		streamInfo.size = uint32(vertices.size() * sizeof(float));
 		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>();
 		vertexBuffer->AddStream(streamInfo, channels, vertStreamData);
-		// 索引数据
-		uint32 indexStreamSize = indices.size() * sizeof(uint16);
+		// 绱㈠紩鏁版嵁
+		uint32 indexStreamSize = uint32(indices.size() * sizeof(uint16));
 		uint8* indexStreamData = new uint8[indexStreamSize];
 		std::memcpy(indexStreamData, indices.data(), indexStreamSize);
 		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
-		// 创建Renderable
+		// 鍒涘缓Renderable
 		renderables.push_back(std::make_shared<Renderable>(vertexBuffer, indexBuffer));
 	}
 

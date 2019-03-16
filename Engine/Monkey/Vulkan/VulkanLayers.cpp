@@ -27,7 +27,7 @@ static const char* G_ValidationLayersInstance[] =
     "VK_LAYER_LUNARG_parameter_validation",
     "VK_LAYER_LUNARG_object_tracker",
 #elif PLATFORM_IOS
-
+    "MoltenVK",
 #elif PLATFORM_ANDROID
 	"VK_LAYER_GOOGLE_threading",
 	"VK_LAYER_LUNARG_parameter_validation",
@@ -51,7 +51,7 @@ static const char* G_ValidationLayersDevice[] =
 #if PLATFORM_WINDOWS
 	"VK_LAYER_LUNARG_standard_validation",
 #elif PLATFORM_IOS
-
+    "MoltenVK",
 #elif PLATFORM_MAC
     "VK_LAYER_LUNARG_standard_validation",
     "VK_LAYER_GOOGLE_unique_objects",
@@ -171,7 +171,7 @@ static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtensi
 
 static inline void TrimDuplicates(std::vector<const char*>& arr)
 {
-	for (int32 i = arr.size() - 1; i >= 0; --i)
+	for (int32 i = (int32)arr.size() - 1; i >= 0; --i)
 	{
 		bool found = false;
 		for (int32 j = i - 1; j >= 0; --j)

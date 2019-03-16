@@ -1,17 +1,14 @@
 #include "Configuration/Platform.h"
 #include "Core/PixelFormat.h"
 
-#include "Application/AppModeBase.h"
-#include "Application/SlateApplication.h"
 #include "Engine.h"
+#include "Launch.h"
 
 #include <string>
 #include <vector>
 
-Engine GameEngine;
-AppModeBase* AppMode;
-
-extern AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine);
+Engine* GameEngine = nullptr;
+AppModeBase* AppMode = nullptr;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
@@ -21,37 +18,38 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 	int32 height = AppMode->GetHeight();
 	const char* title = AppMode->GetTitle().c_str();
 	
-	return GameEngine.PreInit(cmdLine, width, height, title);
+	return GameEngine->PreInit(cmdLine, width, height, title);
 }
 
 int32 EngineInit()
 {
-	AppMode->Setup(&GameEngine, GameEngine.GetVulkanRHI(), SlateApplication::Get().GetPlatformApplication(), SlateApplication::Get().GetPlatformApplication()->GetWindow());
+	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), SlateApplication::Get().GetPlatformApplication(), SlateApplication::Get().GetPlatformApplication()->GetWindow());
 	AppMode->Init();
 
-	return GameEngine.Init();
+	return GameEngine->Init();
 }
 
 void EngineLoop()
 {
-	GameEngine.PumpMessage();
-	if (GameEngine.IsRequestingExit())
+	GameEngine->PumpMessage();
+	if (GameEngine->IsRequestingExit())
 	{
 		return;
 	}
-	GameEngine.Tick();
+	GameEngine->Tick();
 	AppMode->Loop();
 }
 
 void EngineExit()
 {
 	AppMode->Exist();
-	GameEngine.Exist();
+	GameEngine->Exist();
 }
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-
+    GameEngine = new Engine();
+    
 	AppMode = CreateAppMode(cmdLine);
 	if (AppMode == nullptr)
 	{
@@ -66,7 +64,7 @@ int32 GuardedMain(const std::vector<std::string>& cmdLine)
 
 	errorLevel = EngineInit();
 
-	while (!GameEngine.IsRequestingExit()) 
+	while (!GameEngine->IsRequestingExit())
 	{
 		EngineLoop();
 	}

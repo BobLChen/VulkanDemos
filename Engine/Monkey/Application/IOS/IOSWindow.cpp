@@ -3,15 +3,17 @@
 
 #include "IOSWindow.h"
 #include "IOSApplication.h"
-#include "CocoaWindow.h"
 
 #include <math.h>
 #include <algorithm>
 
+void* g_IOSView = nullptr;
+void* g_IOSViewController = nullptr;
+
 static const char* G_ValidationLayersInstance[] =
 {
 	VK_KHR_SURFACE_EXTENSION_NAME,
-    VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+    VK_MVK_IOS_SURFACE_EXTENSION_NAME,
 	nullptr
 };
 
@@ -19,8 +21,6 @@ IOSWindow::IOSWindow(int32 width, int32 height, const char* title)
 	: GenericWindow(width, height)
 	, m_Title(title)
 	, m_WindowMode(WindowMode::Windowed)
-    , m_Window(nullptr)
-    , m_View(nullptr)
 	, m_Application(nullptr)
 	, m_Visible(false)
 	, m_AspectRatio(width * 1.0f / height)
@@ -43,10 +43,10 @@ float IOSWindow::GetDPIScaleFactorAtPoint(float X, float Y)
 
 void IOSWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-    VkMacOSSurfaceCreateInfoMVK createInfo;
-    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK);
-    createInfo.pView = m_View;
-    VERIFYVULKANRESULT(vkCreateMacOSSurfaceMVK(instance, &createInfo, VULKAN_CPU_ALLOCATOR, outSurface));
+    VkIOSSurfaceCreateInfoMVK createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK);
+    createInfo.pView = g_IOSView;
+    VERIFYVULKANRESULT(vkCreateIOSSurfaceMVK(instance, &createInfo, VULKAN_CPU_ALLOCATOR, outSurface));
 }
 
 const char** IOSWindow::GetRequiredInstanceExtensions(uint32_t* count)
@@ -83,27 +83,6 @@ std::shared_ptr<IOSWindow> IOSWindow::Make(int32 width, int32 height, const char
 void IOSWindow::Initialize(IOSApplication* const application)
 {
     m_Application = application;
-    
-    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable ;
-    NSRect windowRect = NSMakeRect(0, 0, m_Width, m_Height);
-    
-    VulkanView* view = [[VulkanView alloc] initWithFrame:windowRect];
-    [view setWantsLayer:YES];
-    [view setWantsBestResolutionOpenGLSurface:YES];
-    
-    VulkanWindow* window = [[VulkanWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
-    [window setContentView:view];
-    [window center];
-    [window makeFirstResponder:view];
-    [window setTitle:[NSString stringWithUTF8String:m_Title.c_str()]];
-    [window setAcceptsMouseMovedEvents:YES];
-    [window setRestorable:NO];
-    
-    const NSWindowCollectionBehavior behavior = NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorManaged;
-    [window setCollectionBehavior:behavior];
-    
-    m_View = view;
-    m_Window = window;
 }
 
 void IOSWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)
@@ -157,9 +136,6 @@ void IOSWindow::Show()
 		return;
 	}
 	m_Visible = true;
-    
-    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
-    (void)window.orderFrontRegardless;
 }
 
 void IOSWindow::Hide()
@@ -168,9 +144,6 @@ void IOSWindow::Hide()
 		return;
 	}
 	m_Visible = false;
-    
-    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
-    [window orderOut:nil];
 }
 
 void IOSWindow::SetWindowMode(WindowMode::Type newWindowMode)
