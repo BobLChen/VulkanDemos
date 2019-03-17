@@ -17,6 +17,9 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 - Ubuntu 18.04：目前我使用的是Ubuntu 18.04系统，其它版本的没有尝试，用到了GLFW库，因此需要安装GLFW的一些依赖。详情参考GLFW:https://www.glfw.org/docs/latest/vulkan_guide.html
 - VSCode：Ubuntu下我使用了VSCode作为开发环境，VSCode下Configure(Task)，Build(Task)，Debug我都配置好了，但是需要安装VSCode C++插件，插件名称：C/C++。
 
+## IOS环境搭建
+- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_IOS.md
+
 ## 配置
 我只说Windows的搭建，因为MacOS搭建过程跟Windows一样，Ubuntu装好VSCode就已经算搭建好了。
 
