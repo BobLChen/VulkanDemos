@@ -155,6 +155,12 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 
 	VkSurfaceCapabilitiesKHR surfProperties;
 	VERIFYVULKANRESULT_EXPANDED(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_Device->GetPhysicalHandle(), m_Surface, &surfProperties));
+    
+    MLOG("Surface minSize:%dx%d maxSize:%dx%d",
+         (int32)surfProperties.minImageExtent.width, (int32)surfProperties.minImageExtent.height,
+         (int32)surfProperties.maxImageExtent.width, (int32)surfProperties.maxImageExtent.height
+    );
+    
 	VkSurfaceTransformFlagBitsKHR preTransform;
 	if (surfProperties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
 	{

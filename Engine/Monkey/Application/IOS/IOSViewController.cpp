@@ -36,6 +36,7 @@
     
     g_IOSView = (__bridge void*)vulkanView;
     
+    CGRect rect = [UIScreen mainScreen].bounds;
     [self.view addSubview:vulkanView];
     self.view.contentScaleFactor = [[UIScreen mainScreen] scale];
     
@@ -44,6 +45,9 @@
     
     GameEngine = new Engine();
     AppMode    = CreateAppMode(cmdLines);
+    AppMode->SetWidth((int32)rect.size.width);
+    AppMode->SetHeight((int32)rect.size.height);
+    
     if (AppMode == nullptr)
     {
         MLOGE("Failed create app.")

@@ -52,12 +52,22 @@ public:
 	{
 		return m_Width;
 	}
-
+    
+    void SetWidth(int32 width)
+    {
+        m_Width = width;
+    }
+    
 	int32 GetHeight() const
 	{
 		return m_Height;
 	}
-
+    
+    void SetHeight(int32 height)
+    {
+        m_Height = height;
+    }
+    
 	const std::string& GetTitle()
 	{
 		return m_Title;
