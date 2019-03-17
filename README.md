@@ -26,6 +26,8 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ## Ubuntu环境搭建
 - 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Ubuntu.md
 
+## MacOS环境搭建
+- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_MacOS.md
 ## Introduction
 Vulkan Examples 
 
