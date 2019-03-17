@@ -3,6 +3,7 @@
 - 安装最新版本的CMake
 - 安装最新版本的VSCode
 - 安装XCB库
+- Ubuntu 18.04
 
 0、打开Terminal,定位到根目录,执行以下命令安装xcb库.
 
