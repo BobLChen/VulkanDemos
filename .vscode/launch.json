@@ -5,38 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug HelloIMGUI",
+            "name": "Debug 2_Triangle",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/HelloIMGUI",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/bin"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
-        {
-            "name": "Debug Triangle",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/Triangle",
+            "program": "${workspaceFolder}/build/Debug/examples/2_Triangle",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -61,10 +33,10 @@
             ],
         },
         {
-            "name": "Debug OBJLoader",
+            "name": "Debug 3_OBJLoader",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/OBJLoader",
+            "program": "${workspaceFolder}/build/Debug/examples/3_OBJLoader",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -89,10 +61,10 @@
             ],
         },
         {
-            "name": "Debug Pipelines",
+            "name": "Debug 4_Pipelines",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/Pipelines",
+            "program": "${workspaceFolder}/build/Debug/examples/4_Pipelines",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
