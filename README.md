@@ -20,33 +20,8 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 ## IOS环境搭建
 - 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_IOS.md
 
-## 配置
-我只说Windows的搭建，因为MacOS搭建过程跟Windows一样，Ubuntu装好VSCode就已经算搭建好了。
-
-**第零步**
-下载安装Vulkan SDK，无脑下一步即可。如果不安装则不能用Vulkan的校验功能。
-
-**第一步**
-随便找个地方，右键Git Bash
-
-![Step0](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/0.png)
-
-**第二步**
-在那个黑框中输入```git clone --recursive https://github.com/BobLChen/VulkanTutorials.git```
-![Step1](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/2.png)
-
-**第三步**
-下载好了代码工程之后，打开CMake，填入工程地址。
-![Step2](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/3.png)
-
-**第四步**
-填好之后，点击```Configure```按钮，然后在弹出框选择VS2017 Win64，其它默认，点击Finish即可。
-![Step3](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/4.png)
-![Step4](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/5.png)
-
-**第五步**
-最后点击```Generate```生成VS2017工程。生成好之后，点击```Open Project```，打开之后选中任意examples目录下的项目```右键设置为启动项```即可。
-![Step5](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/assets/6.png)
+## Window环境搭建
+- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Windows.md
 
 ## Introduction
 Vulkan Examples 
