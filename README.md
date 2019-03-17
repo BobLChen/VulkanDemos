@@ -24,7 +24,7 @@ Vulkan的一些案例，建议初学者从我第一次Commit开始跟，一般�
 - 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Windows.md
 
 ## Ubuntu环境搭建
-- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Ubuntu%2018.04
+- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Ubuntu.md
 
 ## Introduction
 Vulkan Examples 
