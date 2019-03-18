@@ -42,25 +42,10 @@ float AndroidWindow::GetDPIScaleFactorAtPoint(float X, float Y)
 
 void AndroidWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-	// // don't use cached window handle coming from VulkanViewport, as it could be gone by now
-	// WindowHandle = FAndroidWindow::GetHardwareWindow();
-	// if (WindowHandle == NULL)
-	// {
-	// 	// Sleep if the hardware window isn't currently available.
-	// 	// The Window may not exist if the activity is pausing/resuming, in which case we make this thread wait
-	// 	FPlatformMisc::LowLevelOutputDebugString(TEXT("Waiting for Native window in FVulkanAndroidPlatform::CreateSurface"));
-	// 	while (WindowHandle == NULL)
-	// 	{
-	// 		FPlatformProcess::Sleep(0.001f);
-	// 		WindowHandle = FAndroidWindow::GetHardwareWindow();
-	// 	}
-	// }
-
-	// VkAndroidSurfaceCreateInfoKHR SurfaceCreateInfo;
-	// ZeroVulkanStruct(SurfaceCreateInfo, VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR);
-	// SurfaceCreateInfo.window = (ANativeWindow*)WindowHandle;
-
-	// VERIFYVULKANRESULT(VulkanDynamicAPI::vkCreateAndroidSurfaceKHR(Instance, &SurfaceCreateInfo, VULKAN_CPU_ALLOCATOR, OutSurface));
+	VkAndroidSurfaceCreateInfoKHR createInfo;
+	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR);
+	createInfo.window = g_AndroidApp->window;
+	VERIFYVULKANRESULT(vkCreateAndroidSurfaceKHR(instance, &createInfo, VULKAN_CPU_ALLOCATOR, outSurface));
 }
 
 const char** AndroidWindow::GetRequiredInstanceExtensions(uint32_t* count)

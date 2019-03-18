@@ -1,6 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Launch/Launch.h"
+#include "Engine.h"
 #include "Application/Android/AndroidWindow.h"
 
 #include <stdio.h>
@@ -18,6 +19,31 @@ std::vector<std::string> g_CmdLine;
 static bool initialized = false;
 static bool active      = false;
 
+static void InitAppEngine()
+{
+    GameEngine = new Engine();
+    AppMode    = CreateAppMode(g_CmdLine);
+    AppMode->SetWidth((int32)400);
+    AppMode->SetHeight((int32)300);
+
+    if (AppMode == nullptr)
+    {
+        MLOGE("Failed create app.")
+    }
+    
+    int32 errorLevel = EnginePreInit(g_CmdLine);
+    if (errorLevel != 0)
+    {
+        MLOGE("Failed init engine.");
+    }
+    
+    errorLevel = EngineInit();
+    if (errorLevel != 0)
+    {
+        MLOGE("Failed init engine.");
+    }
+}
+
 static void ProcessCommand(struct android_app *app, int32_t cmd) 
 {
     switch (cmd) {
@@ -25,6 +51,7 @@ static void ProcessCommand(struct android_app *app, int32_t cmd)
         {
             if (app->window) 
             {
+                InitAppEngine();
                 initialized = true;
             }
             MLOG("APP_CMD_INIT_WINDOW");
@@ -69,12 +96,11 @@ void android_main(android_app* app)
             }
         }
 
-        if (initialized && active) 
+        if (initialized && active && !GameEngine->IsRequestingExit()) 
         {
-            break;
+            EngineLoop();
         }
     }
-
+    
     MLOG("................................ Android Window inited ................................");
-    GuardedMain(g_CmdLine);
 }

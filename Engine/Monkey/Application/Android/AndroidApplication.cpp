@@ -35,31 +35,7 @@ void AndroidApplication::SetMessageHandler(const std::shared_ptr<GenericApplicat
 
 void AndroidApplication::PumpMessages(const float deltaTime)
 {
-	struct android_poll_source* source = nullptr;
-	int events   = 0;
-	bool destroy = false;
-	bool focused = true;
-	int ident    = 0;
-
-	while ((ident = ALooper_pollAll(focused ? 0 : -1, NULL, &events, (void**)&source)) >= 0)
-	{
-		if (source != NULL)
-		{
-			source->process(g_AndroidApp, source);
-		}
-
-		if (g_AndroidApp->destroyRequested != 0)
-		{
-			MLOGE("Android app destroy requested");
-			destroy = true;
-			break;
-		}
-	}
-
-	if (destroy)
-	{
-		ANativeActivity_finish(g_AndroidApp->activity);
-	}
+	
 }
 
 void AndroidApplication::Tick(const float deltaTime)
