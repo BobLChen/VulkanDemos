@@ -113,3 +113,18 @@ SETUP_SAMPLE_START(4_Pipelines)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(4_Pipelines)
+
+SETUP_SAMPLE_START(5_DescriptorSets)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/5_DescriptorSets/DescriptorSets.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/5_DescriptorSets/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(5_DescriptorSets)
