@@ -212,7 +212,7 @@ private:
 		m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 30.0f));
+		m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 15.0f));
 		m_MVPData.view.AppendRotation(15.0f, Vector3::RightVector);
 		m_MVPData.view.SetInverse();
 
@@ -233,7 +233,7 @@ private:
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
 		
 		// º”‘ÿƒ£–Õ
-		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/5_DescriptorSets/fireplace.obj");
+		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/5_DescriptorSets/GameObject.obj");
 
 		MeshPtr mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)

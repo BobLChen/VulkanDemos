@@ -7,7 +7,7 @@ layout (location = 0) out vec4 outFragColor;
 
 void main() 
 {
-	vec3 lightDir = vec3(0, -1, 0);
+	vec3 lightDir = vec3(0, 1, 1);
     float diffuse = dot(normalize(inNormal), lightDir);
 	outFragColor.rgb = vec3(diffuse, diffuse, diffuse);
 }
