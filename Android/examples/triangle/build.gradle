@@ -15,7 +15,7 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            abiFilters "x86"
+            abiFilters "armeabi-v7a"
         }
         externalNativeBuild {
             cmake {

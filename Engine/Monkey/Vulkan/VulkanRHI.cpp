@@ -333,7 +333,7 @@ void VulkanRHI::CreateInstance()
 	appInfo.pEngineName        = ENGINE_NAME;
 	appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 0);
     
-#if PLATFORM_IOS
+#if PLATFORM_IOS || PLATFORM_ANDROID
     appInfo.apiVersion         = VK_API_VERSION_1_0;
 #else
     appInfo.apiVersion         = VK_API_VERSION_1_1;
