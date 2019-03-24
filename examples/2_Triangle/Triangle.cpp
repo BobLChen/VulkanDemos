@@ -182,6 +182,9 @@ private:
 		clearValues[0].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
+		uint32 width = m_VulkanRHI->GetSwapChain()->GetWidth();
+		uint32 height = m_VulkanRHI->GetSwapChain()->GetHeight();
+
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 		renderPassBeginInfo.renderPass      = m_VulkanRHI->GetRenderPass();
@@ -189,8 +192,8 @@ private:
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width  = m_VulkanRHI->GetSwapChain()->GetWidth();
-        renderPassBeginInfo.renderArea.extent.height = m_VulkanRHI->GetSwapChain()->GetHeight();
+        renderPassBeginInfo.renderArea.extent.width  = width;
+        renderPassBeginInfo.renderArea.extent.height = height;
         
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer> frameBuffers      = m_VulkanRHI->GetFrameBuffers();
@@ -199,14 +202,16 @@ private:
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
 
 			VkViewport viewport = {};
-            viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
-            viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
+			viewport.x        = 0;
+			viewport.y        = height;
+            viewport.width    = (float)width;
+            viewport.height   = -(float)height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
             
 			VkRect2D scissor = {};
-            scissor.extent.width  = (uint32)viewport.width;
-            scissor.extent.height = (uint32)viewport.height;
+            scissor.extent.width  = width;
+            scissor.extent.height = height;
 			scissor.offset.x      = 0;
 			scissor.offset.y      = 0;
 
@@ -452,12 +457,14 @@ private:
 		m_MVPDescriptor.range  = sizeof(UBOData);
 
 		m_MVPData.model.SetIdentity();
+		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
+		m_MVPData.view.SetOrigin(Vector4(0, 0, -20.5f));
+		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 	}
 	
 	void DestroyUniformBuffers()

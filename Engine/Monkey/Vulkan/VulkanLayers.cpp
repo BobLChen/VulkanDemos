@@ -98,6 +98,7 @@ static const char* G_DeviceExtensions[] =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
+	"VK_KHR_maintenance1",
 
 #if PLATFORM_WINDOWS
 
