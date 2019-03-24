@@ -151,6 +151,9 @@ private:
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
+		int32 width = m_VulkanRHI->GetSwapChain()->GetWidth();
+		int32 height = m_VulkanRHI->GetSwapChain()->GetHeight();
+
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 		renderPassBeginInfo.renderPass      = m_VulkanRHI->GetRenderPass();
@@ -158,8 +161,8 @@ private:
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width  = m_VulkanRHI->GetSwapChain()->GetWidth();
-		renderPassBeginInfo.renderArea.extent.height = m_VulkanRHI->GetSwapChain()->GetHeight();
+		renderPassBeginInfo.renderArea.extent.width  = width;
+		renderPassBeginInfo.renderArea.extent.height = height;
 		
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer> frameBuffers      = m_VulkanRHI->GetFrameBuffers();
@@ -168,14 +171,16 @@ private:
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
 
 			VkViewport viewport = {};
-			viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
-			viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
+			viewport.x = 0;
+			viewport.y = height;
+			viewport.width  = (float)width;
+			viewport.height = -(float)height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
 
 			VkRect2D scissor = {};
-			scissor.extent.width  = (uint32)viewport.width;
-			scissor.extent.height = (uint32)viewport.height;
+			scissor.extent.width  = (uint32)width;
+			scissor.extent.height = (uint32)height;
 			scissor.offset.x      = 0;
 			scissor.offset.y      = 0;
 
@@ -400,12 +405,8 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-        m_MVPData.model.AppendRotation(1.0f, Vector3::UpVector);
+        m_MVPData.model.AppendRotation(0.10f, Vector3::UpVector);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, 30.0f));
-        m_MVPData.view.SetInverse();
-        
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
 		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
@@ -437,8 +438,12 @@ private:
 		m_MVPDescriptor.range  = sizeof(UBOData);
         
         m_MVPData.model.SetIdentity();
-        m_MVPData.view.SetIdentity();
-        m_MVPData.projection.SetIdentity();
+
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector4(0, 0, -30.0f));
+		m_MVPData.view.SetInverse();
+
+		m_MVPData.projection.SetIdentity();
         m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
         
 		UpdateUniformBuffers();
@@ -481,11 +486,11 @@ private:
 					//tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 					vertices.push_back(vx);
-					vertices.push_back(-vy);
+					vertices.push_back(vy);
 					vertices.push_back(vz);
 
 					vertices.push_back(nx);
-					vertices.push_back(-ny);
+					vertices.push_back(ny);
 					vertices.push_back(nz);
 
 					indices.push_back(indices.size());

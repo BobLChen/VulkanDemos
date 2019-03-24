@@ -460,7 +460,7 @@ private:
 		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -20.5f));
+		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
