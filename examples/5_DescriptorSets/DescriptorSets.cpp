@@ -49,7 +49,11 @@ public:
 	{
 		// 准备MVP数据
 		m_MVPData.model.SetIdentity();
+
 		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector3(0, 0, -15));
+		m_MVPData.view.SetInverse();
+
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 
@@ -158,8 +162,8 @@ private:
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
-		uint32 width = vulkanRHI->GetSwapChain()->GetWidth();
-		uint32 height = vulkanRHI->GetSwapChain()->GetHeight();
+		int32 width  = vulkanRHI->GetSwapChain()->GetWidth();
+		int32 height = vulkanRHI->GetSwapChain()->GetHeight();
 
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
@@ -172,19 +176,19 @@ private:
 		renderPassBeginInfo.renderArea.extent.height = height;
 
 		VkViewport viewport = {};
-		viewport.width = width;
-		viewport.height = height;
+		viewport.x = 0;
+		viewport.y = height;
+		viewport.width  = width;
+		viewport.height = -height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		viewport.x = 0;
-		viewport.y = 0;
-
+		
 		VkRect2D scissor = {};
-		scissor.extent.width = viewport.width;
-		scissor.extent.height = viewport.height;
-		scissor.offset.x = viewport.x;
-		scissor.offset.y = viewport.y;
-
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width  = width;
+		scissor.extent.height = height;
+		
 		std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer>& frameBuffers = vulkanRHI->GetFrameBuffers();
 
@@ -211,11 +215,6 @@ private:
 	{
 		m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 15.0f));
-		m_MVPData.view.AppendRotation(15.0f, Vector3::RightVector);
-		m_MVPData.view.SetInverse();
-
 		for (int32 i = 0; i < m_Meshes.size(); ++i)
 		{
 			const std::vector<MaterialPtr>& materials = m_Meshes[i]->GetMaterials();
@@ -233,7 +232,7 @@ private:
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
 		
 		// 加载模型
-		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/5_DescriptorSets/GameObject.obj");
+		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/GameObject.obj");
 
 		MeshPtr mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
