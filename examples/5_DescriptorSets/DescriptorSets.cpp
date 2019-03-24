@@ -16,6 +16,7 @@
 #include "Graphics/Material/Material.h"
 #include "Graphics/Renderer/Mesh.h"
 #include "Graphics/Renderer/Renderable.h"
+#include "Graphics/Texture/Texture2D.h"
 #include "File/FileManager.h"
 #include <vector>
 
@@ -47,7 +48,7 @@ public:
 
 	virtual void Init() override
 	{
-		// 准备MVP数据
+		// 鍑嗗MVP鏁版嵁
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
@@ -57,13 +58,13 @@ public:
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 
-		// 加载Mesh
+		// 鍔犺浇Mesh
 		LoadAssets();
 
-		// 创建同步对象
+		// 鍒涘缓鍚屾瀵硅薄
 		CreateSynchronousObject();
 
-		// 录制Command命令
+		// 褰曞埗Command鍛戒护
 		SetupCommandBuffers();
 
 		m_Ready = true;
@@ -213,7 +214,7 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
+		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
 		for (int32 i = 0; i < m_Meshes.size(); ++i)
 		{
@@ -227,13 +228,18 @@ private:
 
 	void LoadAssets()
 	{
-		// 加载Shader以及Material
+		// 鍔犺浇Shader浠ュ強Material
 		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_DescriptorSets/solid.vert.spv", "assets/shaders/5_DescriptorSets/solid.frag.spv");
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
 		
-		// 加载模型
+		// 鍔犺浇妯″瀷
 		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/GameObject.obj");
-
+        
+        Texture2D* texture0 = new Texture2D();
+        texture0->LoadFromFile("assets/textures/diffuse.png");
+        Texture2D* texture1 = new Texture2D();
+        texture1->LoadFromFile("assets/textures/specular.png");
+        
 		MeshPtr mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
 		{
