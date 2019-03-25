@@ -171,6 +171,34 @@ void Shader::UpdateFragPipelineLayout()
 	stageInfo.module = m_FragShaderModule->GetHandle();
 	stageInfo.pName  = "main";
 	m_ShaderStages.push_back(stageInfo);
+
+	// 反编译Shader获取相关信息
+	spirv_cross::Compiler compiler(m_FragShaderModule->GetData(), m_FragShaderModule->GetDataSize() / sizeof(uint32));
+	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+	// 获取Uniform Buffer信息
+	for (int32 i = 0; i < resources.sampled_images.size(); ++i)
+	{
+		spirv_cross::Resource& res = resources.sampled_images[i];
+		spirv_cross::SPIRType type = compiler.get_type(res.type_id);
+		spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+		const std::string &varName = compiler.get_name(res.id);
+
+		VkDescriptorSetLayoutBinding imageBinding = {};
+		imageBinding.binding			= compiler.get_decoration(res.id, spv::DecorationBinding);
+		imageBinding.descriptorType		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imageBinding.descriptorCount	= 1;
+		imageBinding.stageFlags			= VK_SHADER_STAGE_FRAGMENT_BIT;
+		imageBinding.pImmutableSamplers = nullptr;
+		m_SetLayoutBindings.push_back(imageBinding);
+
+		VkDescriptorPoolSize poolSize;
+		poolSize.type			 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSize.descriptorCount = 1;
+		m_PoolSizes.push_back(poolSize);
+
+		m_FragTextures.push_back(0);
+	}
 }
 
 void Shader::UpdateCompPipelineLayout()

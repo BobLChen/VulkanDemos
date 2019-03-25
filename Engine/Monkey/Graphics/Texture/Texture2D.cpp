@@ -41,7 +41,10 @@ void Texture2D::LoadFromFile(const std::string& filename)
         return;
     }
     
-    m_MipLevels = 1;
+	m_Width       = width;
+	m_Height      = height;
+    m_MipLevels	  = 1;
+	m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     
     std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
     VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
@@ -142,6 +145,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     imageMemoryBarrier.subresourceRange = subresourceRange;
     imageMemoryBarrier.srcAccessMask    = 0;
     imageMemoryBarrier.dstAccessMask    = VK_ACCESS_TRANSFER_WRITE_BIT;
+
     vkCmdPipelineBarrier(copyCommand, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
     vkCmdCopyBufferToImage(copyCommand, stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32)bufferCopyRegions.size(), bufferCopyRegions.data());
     
@@ -182,5 +186,38 @@ void Texture2D::LoadFromFile(const std::string& filename)
     vkFreeMemory(device, stagingMemory, VULKAN_CPU_ALLOCATOR);
     vkDestroyBuffer(device, stagingBuffer, VULKAN_CPU_ALLOCATOR);
     
+	// 创建Sampler
+	VkSamplerCreateInfo samplerCreateInfo;
+	ZeroVulkanStruct(samplerCreateInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+	samplerCreateInfo.magFilter			= VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter			= VK_FILTER_LINEAR;
+	samplerCreateInfo.mipmapMode		= VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.addressModeU		= VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeV		= VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.addressModeW		= VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerCreateInfo.mipLodBias		= 0.0f;
+	samplerCreateInfo.compareOp			= VK_COMPARE_OP_NEVER;
+	samplerCreateInfo.minLod			= 0.0f;
+	samplerCreateInfo.maxLod			= m_MipLevels;
+	samplerCreateInfo.maxAnisotropy		= 1.0f;
+	samplerCreateInfo.anisotropyEnable	= VK_FALSE;
+	samplerCreateInfo.borderColor		= VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	VERIFYVULKANRESULT(vkCreateSampler(device, &samplerCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ImageSampler));
+
+	// 创建ImageView
+	VkImageViewCreateInfo imageViewCreateInfo;
+	ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+	imageViewCreateInfo.image		= m_Image;
+	imageViewCreateInfo.viewType	= VK_IMAGE_VIEW_TYPE_2D;
+	imageViewCreateInfo.format		= VK_FORMAT_R8G8B8A8_UNORM;
+	imageViewCreateInfo.components	= { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	imageViewCreateInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	imageViewCreateInfo.subresourceRange.levelCount = m_MipLevels;
+	VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ImageView));
+	
+	m_DescriptorInfo.sampler	 = m_ImageSampler;
+	m_DescriptorInfo.imageView	 = m_ImageView;
+	m_DescriptorInfo.imageLayout = m_ImageLayout;
+
     MLOG("Image create success. size=%dx%d", width, height);
 }

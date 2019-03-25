@@ -214,7 +214,9 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model.AppendRotation(90.0f, Vector3::UpVector);
 
 		for (int32 i = 0; i < m_Meshes.size(); ++i)
 		{
@@ -235,10 +237,10 @@ private:
 		// 加载模型
 		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/GameObject.obj");
         
-        Texture2D* texture0 = new Texture2D();
-        texture0->LoadFromFile("assets/textures/diffuse.png");
-        Texture2D* texture1 = new Texture2D();
-        texture1->LoadFromFile("assets/textures/specular.png");
+		m_Diffuse = std::make_shared<Texture2D>();
+		m_Diffuse->LoadFromFile("assets/textures/diffuse.png");
+		m_Specular = std::make_shared<Texture2D>();
+		m_Specular->LoadFromFile("assets/textures/specular.png");
         
 		MeshPtr mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
@@ -285,6 +287,8 @@ private:
 	bool                          m_Ready;
 	uint32                        m_CurrentBackBuffer;
 	std::vector<MeshPtr>		  m_Meshes;
+	std::shared_ptr<Texture2D>	  m_Diffuse;
+	std::shared_ptr<Texture2D>    m_Specular;
 	VkSemaphore                   m_RenderComplete;
 	std::vector<VulkanFence*>     m_Fences;
 };

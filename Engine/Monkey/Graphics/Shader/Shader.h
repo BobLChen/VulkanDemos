@@ -258,6 +258,7 @@ private:
     std::vector<VkDescriptorSetLayoutBinding>	 m_SetLayoutBindings;
     std::vector<VkDescriptorPoolSize>			 m_PoolSizes;
     std::vector<UniformBuffer>					 m_UniformBuffers;
+	std::vector<int32>							 m_FragTextures;
     std::unordered_map<std::string, int32>		 m_Variables;
     
 protected:
