@@ -32,7 +32,7 @@ public:
 		, m_CurrentBackBuffer(0)
         , m_RenderComplete(VK_NULL_HANDLE)
     {
-
+        
     }
     
     virtual ~Pipelines()
@@ -129,8 +129,8 @@ private:
 		for (int32 i = 0; i < renderables.size(); ++i)
 		{
 			std::shared_ptr<Renderable> renderable = renderables[i];
-			std::shared_ptr<Material> material = materials[i];
-			std::shared_ptr<Shader> shader = material->GetShader();
+			std::shared_ptr<Material> material     = materials[i];
+			std::shared_ptr<Shader> shader         = material->GetShader();
 
 			if (!renderable->IsValid())
 			{

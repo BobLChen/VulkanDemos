@@ -15,7 +15,12 @@ public:
 	bool IsValid() const {
 		return !m_Invalid;
 	}
-
+    
+    const VkDescriptorImageInfo& GetImageInfo() const
+    {
+        return m_DescriptorInfo;
+    }
+    
 protected:
 	friend class Texture2D;
 

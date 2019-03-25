@@ -72,8 +72,8 @@ public:
 
 	virtual void Exist() override
 	{
+        m_Mesh = nullptr;
 		DestroySynchronousObject();
-		m_Meshes.clear();
 		Material::DestroyCache();
 	}
 
@@ -192,21 +192,15 @@ private:
 		
 		std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer>& frameBuffers = vulkanRHI->GetFrameBuffers();
-
+        
 		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
-
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
 			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-
-			for (int32 j = 0; j < m_Meshes.size(); ++j)
-			{
-				BindMeshCommand(m_Meshes[j], drawCmdBuffers[i]);
-			}
-
+			BindMeshCommand(m_Mesh, drawCmdBuffers[i]);
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
@@ -218,36 +212,34 @@ private:
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.AppendRotation(90.0f, Vector3::UpVector);
 
-		for (int32 i = 0; i < m_Meshes.size(); ++i)
-		{
-			const std::vector<MaterialPtr>& materials = m_Meshes[i]->GetMaterials();
-			for (int32 j = 0; j < materials.size(); ++j)
-			{
-				materials[j]->GetShader()->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
-			}
-		}
+        const std::vector<MaterialPtr>& materials = m_Mesh->GetMaterials();
+        for (int32 j = 0; j < materials.size(); ++j)
+        {
+            materials[j]->GetShader()->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
+			
+        }
 	}
 
 	void LoadAssets()
 	{
+		m_Diffuse = std::make_shared<Texture2D>();
+		m_Diffuse->LoadFromFile("assets/textures/diffuse.png");
+
+		m_Specular = std::make_shared<Texture2D>();
+		m_Specular->LoadFromFile("assets/textures/specular.png");
+
 		// 加载Shader以及Material
 		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_DescriptorSets/solid.vert.spv", "assets/shaders/5_DescriptorSets/solid.frag.spv");
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
-		
+		shader0->SetTextureData("samplerColorMap", m_Diffuse);
+
 		// 加载模型
 		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/GameObject.obj");
-        
-		m_Diffuse = std::make_shared<Texture2D>();
-		m_Diffuse->LoadFromFile("assets/textures/diffuse.png");
-		m_Specular = std::make_shared<Texture2D>();
-		m_Specular->LoadFromFile("assets/textures/specular.png");
-        
-		MeshPtr mesh = std::make_shared<Mesh>();
+		m_Mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
 		{
-			mesh->AddSubMesh(renderables[j], material0);
+			m_Mesh->AddSubMesh(renderables[j], material0);
 		}
-		m_Meshes.push_back(mesh);
 	}
 
 	void CreateSynchronousObject()
@@ -286,7 +278,7 @@ private:
 	UBOData                       m_MVPData;
 	bool                          m_Ready;
 	uint32                        m_CurrentBackBuffer;
-	std::vector<MeshPtr>		  m_Meshes;
+	std::shared_ptr<Mesh>		  m_Mesh;
 	std::shared_ptr<Texture2D>	  m_Diffuse;
 	std::shared_ptr<Texture2D>    m_Specular;
 	VkSemaphore                   m_RenderComplete;

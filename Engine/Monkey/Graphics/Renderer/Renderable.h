@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -18,12 +18,12 @@ public:
     
     FORCEINLINE void BindDrawToCommand(VkCommandBuffer command) const
     {
-        vkCmdDrawIndexed(command, m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+        vkCmdDrawIndexed(command, m_IndexBuffer->GetIndexCount(), 1, 0, 0, 0);
     }
     
     FORCEINLINE void BindBufferToCommand(VkCommandBuffer command) const
     {
-        vkCmdBindVertexBuffers(command, 0, 1, m_VertexBuffer->GetVKBuffers().data(), &m_VertexOffset);
+        vkCmdBindVertexBuffers(command, 0, (uint32_t)m_VertexBuffer->GetVKBuffers().size(), m_VertexBuffer->GetVKBuffers().data(), &m_VertexOffset);
         vkCmdBindIndexBuffer(command, m_IndexBuffer->GetBuffer(), 0, m_IndexBuffer->GetIndexType());
     }
     

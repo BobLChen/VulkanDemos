@@ -205,7 +205,7 @@ private:
 			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
 			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 1);
+			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 0);
 			
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
@@ -482,8 +482,6 @@ private:
 					tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
 					tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
 					tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
-					//tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-					//tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
 
 					vertices.push_back(vx);
 					vertices.push_back(vy);
@@ -552,10 +550,8 @@ private:
 		VkSemaphoreCreateInfo createInfo;
 		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 		vkCreateSemaphore(m_Device, &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
-        
-        GetVulkanRHI()->GetDevice()->GetFenceManager();
 	}
-
+    
 	void DestorySemaphores()
 	{
 		vkDestroySemaphore(m_Device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
