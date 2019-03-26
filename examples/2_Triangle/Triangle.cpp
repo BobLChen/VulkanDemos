@@ -30,9 +30,9 @@ public:
 		, m_IndicesCount(0)
 		, m_CurrentBackBuffer(0)
 	{
-
+        
 	}
-
+    
 	virtual ~TriangleMode()
 	{
 
@@ -182,6 +182,9 @@ private:
 		clearValues[0].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
+		int32 width = m_VulkanRHI->GetSwapChain()->GetWidth();
+		int32 height = m_VulkanRHI->GetSwapChain()->GetHeight();
+
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 		renderPassBeginInfo.renderPass      = m_VulkanRHI->GetRenderPass();
@@ -189,8 +192,8 @@ private:
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-        renderPassBeginInfo.renderArea.extent.width  = m_VulkanRHI->GetSwapChain()->GetWidth();
-        renderPassBeginInfo.renderArea.extent.height = m_VulkanRHI->GetSwapChain()->GetHeight();
+        renderPassBeginInfo.renderArea.extent.width  = width;
+        renderPassBeginInfo.renderArea.extent.height = height;
         
 		std::vector<VkCommandBuffer>& drawCmdBuffers = m_VulkanRHI->GetCommandBuffers();
 		std::vector<VkFramebuffer> frameBuffers      = m_VulkanRHI->GetFrameBuffers();
@@ -199,14 +202,16 @@ private:
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
 
 			VkViewport viewport = {};
-            viewport.width    = (float)renderPassBeginInfo.renderArea.extent.width;
-            viewport.height   = (float)renderPassBeginInfo.renderArea.extent.height;
+			viewport.x        = 0;
+			viewport.y        = height;
+            viewport.width    = (float)width;
+            viewport.height   = -(float)height;
 			viewport.minDepth = 0.0f;
 			viewport.maxDepth = 1.0f;
             
 			VkRect2D scissor = {};
-            scissor.extent.width  = (uint32)viewport.width;
-            scissor.extent.height = (uint32)viewport.height;
+            scissor.extent.width  = width;
+            scissor.extent.height = height;
 			scissor.offset.x      = 0;
 			scissor.offset.y      = 0;
 
@@ -234,7 +239,7 @@ private:
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_DescriptorSet));
-
+        
 		VkWriteDescriptorSet writeDescriptorSet;
 		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
 		writeDescriptorSet.dstSet          = m_DescriptorSet;
@@ -258,7 +263,7 @@ private:
 		descriptorPoolInfo.maxSets       = 1;
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
 	}
-
+    
 	void DestroyDescriptorPool()
 	{
 		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
@@ -397,7 +402,7 @@ private:
 		layoutBinding.descriptorCount    = 1;
 		layoutBinding.stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBinding.pImmutableSamplers = nullptr;
-
+        
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
 		descSetLayoutInfo.bindingCount = 1;
@@ -410,7 +415,7 @@ private:
 		pipeLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 	}
-
+    
 	void DestroyDescriptorSetLayout()
 	{
 		vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
@@ -445,19 +450,21 @@ private:
 		allocInfo.allocationSize  = memReqInfo.size;
 		allocInfo.memoryTypeIndex = memoryTypeIndex;
 		VERIFYVULKANRESULT(vkAllocateMemory(m_Device, &allocInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.memory));
-
 		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_MVPBuffer.buffer, m_MVPBuffer.memory, 0));
+        
 		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
 		m_MVPDescriptor.offset = 0;
 		m_MVPDescriptor.range  = sizeof(UBOData);
-
+        
 		m_MVPData.model.SetIdentity();
+		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
 
 		m_MVPData.view.SetIdentity();
 		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
-
+		m_MVPData.view.SetInverse();
+        
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(60.0f * 0.01745329251994329576923690768489f, (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 	}
 	
 	void DestroyUniformBuffers()
@@ -554,14 +561,14 @@ private:
 		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_IndicesBuffer.buffer, m_IndicesBuffer.memory, 0));
 
 		VkCommandBuffer xferCmdBuffer;
-		// gfx queue自带transfer功能，为了优化需要使用转悠的xfer queue。这里为了简单，先将就用。
+		// gfx queue自带transfer功能，为了优化需要使用专有的xfer queue。这里为了简单，先将就用。
 		VkCommandBufferAllocateInfo xferCmdBufferInfo;
 		ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
 		xferCmdBufferInfo.commandPool        = m_VulkanRHI->GetCommandPool();
 		xferCmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		xferCmdBufferInfo.commandBufferCount = 1;
 		VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, &xferCmdBufferInfo, &xferCmdBuffer));
-
+        
 		// 开始录制命令
 		VkCommandBufferBeginInfo cmdBufferBeginInfo;
 		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);

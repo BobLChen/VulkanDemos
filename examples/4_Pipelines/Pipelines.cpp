@@ -32,7 +32,7 @@ public:
 		, m_CurrentBackBuffer(0)
         , m_RenderComplete(VK_NULL_HANDLE)
     {
-
+        
     }
     
     virtual ~Pipelines()
@@ -49,7 +49,9 @@ public:
     {
 		// 准备MVP数据
 		m_MVPData.model.SetIdentity();
+
 		m_MVPData.view.SetIdentity();
+
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 
@@ -127,8 +129,8 @@ private:
 		for (int32 i = 0; i < renderables.size(); ++i)
 		{
 			std::shared_ptr<Renderable> renderable = renderables[i];
-			std::shared_ptr<Material> material = materials[i];
-			std::shared_ptr<Shader> shader = material->GetShader();
+			std::shared_ptr<Material> material     = materials[i];
+			std::shared_ptr<Shader> shader         = material->GetShader();
 
 			if (!renderable->IsValid())
 			{
@@ -183,19 +185,24 @@ private:
             
 			for (int32 j = 0; j < m_Meshes.size(); ++j)
 			{
+				int32 ww = 0.5f * width;
+				int32 hh = 0.5f * height;
+				int32 tx = (j % 2) * ww;
+				int32 ty = (j / 2) * hh;
+
 				VkViewport viewport = {};
-				viewport.width  = 0.5f * width;
-				viewport.height = 0.5f * height;
+				viewport.width  = ww;
+				viewport.height = -hh;
 				viewport.minDepth = 0.0f;
 				viewport.maxDepth = 1.0f;
-				viewport.x = (j % 2) * viewport.width;
-				viewport.y = (j / 2) * viewport.height;
+				viewport.x = tx;
+				viewport.y = ty + hh;
 
 				VkRect2D scissor = {};
-				scissor.extent.width  = viewport.width;
-				scissor.extent.height = viewport.height;
-				scissor.offset.x = viewport.x;
-				scissor.offset.y = viewport.y;
+				scissor.extent.width  = width;
+				scissor.extent.height = height;
+				scissor.offset.x = tx;
+				scissor.offset.y = ty;
 
 				vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 				vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
@@ -213,7 +220,8 @@ private:
 		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
 
         m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector4(0, -2.5f, 30.0f));
+        m_MVPData.view.SetOrigin(Vector4(0, -2.5f, -30.0f));
+
         m_MVPData.view.AppendRotation(15.0f, Vector3::RightVector);
         m_MVPData.view.SetInverse();
         

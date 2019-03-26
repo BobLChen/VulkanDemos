@@ -23,8 +23,12 @@ elif "darwin" in sys.platform:
 	pass
 
 shaders = [
-	"examples/assets/shaders/5_DescriptorSets/solid.vert",
-	"examples/assets/shaders/5_DescriptorSets/solid.frag"
+	"examples/assets/shaders/4_Pipelines/phong.vert",
+	"examples/assets/shaders/4_Pipelines/phong.frag",
+	"examples/assets/shaders/4_Pipelines/pipelines.vert",
+	"examples/assets/shaders/4_Pipelines/pipelines.frag",
+	"examples/assets/shaders/4_Pipelines/solid.vert",
+	"examples/assets/shaders/4_Pipelines/solid.frag",
 ]
 
 for shader in shaders:

@@ -1,4 +1,4 @@
-#include "Shader.h"
+﻿#include "Shader.h"
 #include "Engine.h"
 #include "spirv_cross.hpp"
 
@@ -52,6 +52,7 @@ std::shared_ptr<ShaderModule> Shader::LoadSPIPVShader(const std::string& filenam
 
 Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule> frag, std::shared_ptr<ShaderModule> geom, std::shared_ptr<ShaderModule> comp, std::shared_ptr<ShaderModule> tesc, std::shared_ptr<ShaderModule> tese)
 	: m_InvalidLayout(true)
+    , m_InvalidDescSet(true)
 	, m_PipelineLayout(VK_NULL_HANDLE)
 	, m_DescriptorPool(VK_NULL_HANDLE)
 	, m_DescriptorSetLayout(VK_NULL_HANDLE)
@@ -105,28 +106,31 @@ void Shader::DestroyPipelineLayout()
 	{
 		return;
 	}
-	m_InvalidLayout = true;
-
+	m_InvalidLayout  = true;
+    m_InvalidDescSet = true;
+    
     VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
     
     vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
     vkDestroyDescriptorPool(device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
     vkDestroyPipelineLayout(device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
     
-    for (int32 i = 0; i < m_UniformBuffers.size(); ++i)
-    {
-        vkFreeMemory(device, m_UniformBuffers[i].memory, VULKAN_CPU_ALLOCATOR);
-        vkDestroyBuffer(device, m_UniformBuffers[i].buffer, VULKAN_CPU_ALLOCATOR);
-    }
+	for (auto it = m_UBInfos.begin(); it != m_UBInfos.end(); ++it)
+	{
+		const UBInfo& ubInfo = it->second;
+		vkFreeMemory(device, ubInfo.memory, VULKAN_CPU_ALLOCATOR);
+		vkDestroyBuffer(device, ubInfo.buffer, VULKAN_CPU_ALLOCATOR);
+	}
     
 	m_PoolSizes.clear();
-	m_Variables.clear();
-    m_UniformBuffers.clear();
+    m_UBInfos.clear();
+	m_ImageInfos.clear();
+    m_ShaderStages.clear();
     m_SetLayoutBindings.clear();
 	m_VertexInputBindingInfo.Clear();
 }
 
-void Shader::CreateUniformBuffer(UniformBuffer& uniformBuffer, uint32 dataSize, VkBufferUsageFlags usage)
+void Shader::CreateUniformBuffer(UBInfo& uniformBuffer, uint32 dataSize, VkBufferUsageFlags usage)
 {
     VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
     
@@ -171,6 +175,36 @@ void Shader::UpdateFragPipelineLayout()
 	stageInfo.module = m_FragShaderModule->GetHandle();
 	stageInfo.pName  = "main";
 	m_ShaderStages.push_back(stageInfo);
+
+	// 反编译Shader获取相关信息
+	spirv_cross::Compiler compiler(m_FragShaderModule->GetData(), m_FragShaderModule->GetDataSize() / sizeof(uint32));
+	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+	// 获取Texture
+	for (int32 i = 0; i < resources.sampled_images.size(); ++i)
+	{
+		spirv_cross::Resource& res = resources.sampled_images[i];
+		spirv_cross::SPIRType type = compiler.get_type(res.type_id);
+		spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+		const std::string &varName = compiler.get_name(res.id);
+
+		VkDescriptorSetLayoutBinding imageBinding = {};
+		imageBinding.binding			= compiler.get_decoration(res.id, spv::DecorationBinding);
+		imageBinding.descriptorType		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		imageBinding.descriptorCount	= 1;
+		imageBinding.stageFlags			= VK_SHADER_STAGE_FRAGMENT_BIT;
+		imageBinding.pImmutableSamplers = nullptr;
+		m_SetLayoutBindings.push_back(imageBinding);
+
+		VkDescriptorPoolSize poolSize;
+		poolSize.type			 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSize.descriptorCount = 1;
+		m_PoolSizes.push_back(poolSize);
+
+		ImageInfo imageInfo   = {};
+		imageInfo.binding	  = m_SetLayoutBindings.size() - 1;
+		m_ImageInfos[varName] = imageInfo;
+	}
 }
 
 void Shader::UpdateCompPipelineLayout()
@@ -243,7 +277,7 @@ void Shader::UpdateVertPipelineLayout()
 	stageInfo.module = m_VertShaderModule->GetHandle();
 	stageInfo.pName  = "main";
 	m_ShaderStages.push_back(stageInfo);
-
+    
 	// 反编译Shader获取相关信息
     spirv_cross::Compiler compiler(m_VertShaderModule->GetData(), m_VertShaderModule->GetDataSize() / sizeof(uint32));
     spirv_cross::ShaderResources resources = compiler.get_shader_resources();
@@ -269,11 +303,13 @@ void Shader::UpdateVertPipelineLayout()
         poolSize.descriptorCount = 1;
         m_PoolSizes.push_back(poolSize);
         
-        UniformBuffer uniformBuffer;
-        CreateUniformBuffer(uniformBuffer, uint32(compiler.get_declared_struct_size(base_type)), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-        
-		m_Variables.insert(std::make_pair(varName, m_UniformBuffers.size()));
-        m_UniformBuffers.push_back(uniformBuffer);
+        UBInfo ubInfo;
+        CreateUniformBuffer(ubInfo, uint32(compiler.get_declared_struct_size(base_type)), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+		ubInfo.binding = m_SetLayoutBindings.size() - 1;
+		ubInfo.bufferInfo.buffer = ubInfo.buffer;
+		ubInfo.bufferInfo.offset = 0;
+		ubInfo.bufferInfo.range  = ubInfo.size;
+		m_UBInfos[varName] = ubInfo;
     }
     
 	// 获取Input Location信息
@@ -321,7 +357,7 @@ void Shader::UpdatePipelineLayout()
     poolCreateInfo.pPoolSizes    = m_PoolSizes.data();
     VERIFYVULKANRESULT(vkCreateDescriptorPool(device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR,  &m_DescriptorPool));
     
-    // 分配真正的Set
+    // 分配Set
     VkDescriptorSetAllocateInfo setAllococateInfo;
     ZeroVulkanStruct(setAllococateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
     setAllococateInfo.descriptorPool     = m_DescriptorPool;
@@ -329,59 +365,84 @@ void Shader::UpdatePipelineLayout()
     setAllococateInfo.pSetLayouts        = &m_DescriptorSetLayout;
     VERIFYVULKANRESULT(vkAllocateDescriptorSets(device, &setAllococateInfo, &m_DescriptorSet));
     
-	// 创建Uniform Buffer Info
-    std::vector<VkDescriptorBufferInfo> bufferInfos(m_UniformBuffers.size());
-    for (int32 i = 0; i < m_UniformBuffers.size(); ++i)
-    {
-        bufferInfos[i].buffer = m_UniformBuffers[i].buffer;
-        bufferInfos[i].offset = 0;
-        bufferInfos[i].range  = m_UniformBuffers[i].size;
-    }
-    
-	// 更新Descriptor Set
-    std::vector<VkWriteDescriptorSet> descriptorWrites(m_UniformBuffers.size());
-    for (int32 i = 0; i < descriptorWrites.size(); ++i)
-    {
-        ZeroVulkanStruct(descriptorWrites[i], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-        descriptorWrites[i].dstSet          = m_DescriptorSet;
-        descriptorWrites[i].dstBinding      = m_SetLayoutBindings[i].binding;
-        descriptorWrites[i].dstArrayElement = 0;
-        descriptorWrites[i].descriptorType  = m_SetLayoutBindings[i].descriptorType;
-        descriptorWrites[i].descriptorCount = 1;
-        descriptorWrites[i].pBufferInfo     = &bufferInfos[i];
-    }
-    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, VULKAN_CPU_ALLOCATOR);
-    
+	// 创建PipelineLayout
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     ZeroVulkanStruct(pipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
     pipelineLayoutCreateInfo.setLayoutCount = 1;
     pipelineLayoutCreateInfo.pSetLayouts    = &m_DescriptorSetLayout;
     VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
-	m_InvalidLayout = false;
+	m_InvalidLayout  = false;
+    m_InvalidDescSet = true;
+}
+
+void Shader::UpdateDescriptorSet()
+{
+	if (!m_InvalidDescSet) {
+		return;
+	}
+	m_InvalidDescSet = false;
+
+	// 更新Descriptor Set
+	std::vector<VkWriteDescriptorSet> descriptorWrites(m_SetLayoutBindings.size());
+	int32 index = 0;
+
+	for (auto it = m_UBInfos.begin(); it != m_UBInfos.end(); ++it)
+	{
+		const UBInfo& ubInfo = it->second;
+		ZeroVulkanStruct(descriptorWrites[index], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		descriptorWrites[index].dstSet			= m_DescriptorSet;
+		descriptorWrites[index].dstBinding		= m_SetLayoutBindings[ubInfo.binding].binding;
+		descriptorWrites[index].dstArrayElement = 0;
+		descriptorWrites[index].descriptorType	= m_SetLayoutBindings[ubInfo.binding].descriptorType;
+		descriptorWrites[index].descriptorCount = 1;
+		descriptorWrites[index].pBufferInfo		= &(ubInfo.bufferInfo);
+		index += 1;
+	}
+    
+    // ImageInfo
+	for (auto it = m_ImageInfos.begin(); it != m_ImageInfos.end(); ++it)
+	{
+		std::shared_ptr<TextureBase> texture    = m_Texturess[it->first];
+		const ImageInfo& imageInfo = it->second;
+		ZeroVulkanStruct(descriptorWrites[index], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		descriptorWrites[index].dstSet			= m_DescriptorSet;
+		descriptorWrites[index].dstBinding		= m_SetLayoutBindings[imageInfo.binding].binding;
+		descriptorWrites[index].dstArrayElement = 0;
+		descriptorWrites[index].descriptorType	= m_SetLayoutBindings[imageInfo.binding].descriptorType;
+		descriptorWrites[index].descriptorCount = 1;
+		descriptorWrites[index].pImageInfo		= &(texture->GetImageInfo());
+		index += 1;
+	}
+	
+    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, VULKAN_CPU_ALLOCATOR);
+}
+
+void Shader::SetTextureData(const std::string& name, std::shared_ptr<TextureBase> texture)
+{
+    m_Texturess[name] = texture;
+    m_InvalidDescSet  = true;
 }
 
 void Shader::SetUniformData(const std::string& name, uint8* dataPtr, uint32 dataSize)
 {
-    auto it = m_Variables.find(name);
-    if (it == m_Variables.end())
-    {
-        return;
-    }
-    
-    int32 index = it->second;
-    if (index < 0 || index >= m_UniformBuffers.size())
-    {
-        return;
-    }
-    
+	UBDataInfo ubDataInfo = {};
+	ubDataInfo.dataPtr    = dataPtr;
+	ubDataInfo.dataSize   = dataSize;
+
+	m_UBDatas[name] = ubDataInfo;
+	
+	auto it = m_UBInfos.find(name);
+	if (it == m_UBInfos.end()) 
+	{
+		return;	
+	}
+	
     VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    UniformBuffer& uniformBuffer = m_UniformBuffers[index];
-
-	// TODO:只Map一次，销毁时Unmap
-    uint8_t *pData = nullptr;
-    VERIFYVULKANRESULT(vkMapMemory(device, uniformBuffer.memory, 0, dataSize, 0, (void**)&pData));
+    UBInfo& ubInfo  = it->second;
+    uint8_t *pData  = nullptr;
+    VERIFYVULKANRESULT(vkMapMemory(device, ubInfo.memory, 0, dataSize, 0, (void**)&pData));
     std::memcpy(pData, dataPtr, dataSize);
-    vkUnmapMemory(device, uniformBuffer.memory);
+    vkUnmapMemory(device, ubInfo.memory);
 }
-

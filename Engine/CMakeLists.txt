@@ -145,12 +145,23 @@ set(Monkey_Graphics_Renderer_SRCS
 	Monkey/Graphics/Renderer/Mesh.cpp
 )
 
+set(Monkey_Graphics_Texture_HDRS
+	Monkey/Graphics/Texture/TextureBase.h
+	Monkey/Graphics/Texture/Texture2D.h
+)
+set(Monkey_Graphics_Texture_SRCS
+	Monkey/Graphics/Texture/TextureBase.cpp
+	Monkey/Graphics/Texture/Texture2D.cpp
+)
+
 set(Monkey_Loader_HDRS
 	Monkey/Loader/tiny_obj_loader.h
 	Monkey/Loader/OBJMeshParser.h
+	Monkey/Loader/lodepng.h
 )
 set(Monkey_Loader_SRCS
 	Monkey/Loader/OBJMeshParser.cpp
+	Monkey/Loader/lodepng.cpp
 )
 
 set(Monkey_HAL_HDRS
@@ -432,9 +443,11 @@ add_library(Monkey STATIC
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
 
+
 	${Monkey_Graphics_Data_HDRS}
 	${Monkey_Graphics_Data_SRCS}
-
+	${Monkey_Graphics_Texture_HDRS}
+	${Monkey_Graphics_Texture_SRCS}
 	${Monkey_Graphics_Shader_HDRS}
 	${Monkey_Graphics_Shader_SRCS}
 	${Monkey_Graphics_Material_SRCS}
@@ -489,3 +502,4 @@ source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_
 source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})
 source_group(Monkey\\Graphics\\Material FILES ${Monkey_Graphics_Material_SRCS} ${Monkey_Graphics_Material_HDRS})
 source_group(Monkey\\Graphics\\Renderer FILES ${Monkey_Graphics_Renderer_HDRS} ${Monkey_Graphics_Renderer_SRCS})
+source_group(Monkey\\Graphics\\Texture FILES ${Monkey_Graphics_Texture_HDRS} ${Monkey_Graphics_Texture_SRCS})

@@ -42,7 +42,7 @@ std::vector<std::shared_ptr<Renderable>> OBJMeshParser::LoadFromFile(const std::
 					tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
 					tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
 					vertices.push_back(vx);
-					vertices.push_back(-vy);
+					vertices.push_back(vy);
 					vertices.push_back(vz);
 				}
 				// uv
@@ -62,7 +62,7 @@ std::vector<std::shared_ptr<Renderable>> OBJMeshParser::LoadFromFile(const std::
 					tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
 					tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
 					vertices.push_back(nx);
-					vertices.push_back(-ny);
+					vertices.push_back(ny);
 					vertices.push_back(nz);
 				}
 				indices.push_back(indices.size());
