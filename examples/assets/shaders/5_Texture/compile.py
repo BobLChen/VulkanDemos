@@ -12,19 +12,19 @@ path = path + "/VulkanTutorials/"
 
 exepath = path
 
-if "win" in sys.platform:
+if "win" == sys.platform:
 	exepath = exepath + "external/vulkan/windows/bin/x86/glslangvalidator.exe"
 	pass
-elif "linux" in sys.platform:
-	exepath = exepath + "external/linux/bin/glslangValidator"
+elif "linux" == sys.platform:
+	exepath = exepath + "external/vulkan/linux/bin/glslangValidator"
 	pass
-elif "darwin" in sys.platform:
-	exepath = exepath + "external/macos/bin/glslangvalidator"
+elif "darwin" == sys.platform:
+	exepath = exepath + "external/vulkan/macos/bin/glslangValidator"
 	pass
 
 shaders = [
-	"examples/assets/shaders/5_DescriptorSets/solid.vert",
-	"examples/assets/shaders/5_DescriptorSets/solid.frag"
+	"examples/assets/shaders/5_Texture/solid.vert",
+	"examples/assets/shaders/5_Texture/solid.frag"
 ]
 
 for shader in shaders:

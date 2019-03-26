@@ -11,5 +11,5 @@ void main()
 {
 	vec3 lightDir = vec3(0, -1, 0);
     float diffuse = dot(normalize(inNormal), lightDir);
-	outFragColor.rgb = texture(samplerColorMap, inUV0).rgb * diffuse;
+	outFragColor.rgb = texture(samplerColorMap, inUV0).rgb * 1.0;
 }

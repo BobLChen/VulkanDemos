@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
 #include "Application/AppModeBase.h"
@@ -52,7 +52,7 @@ public:
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 0, -15));
+		m_MVPData.view.SetOrigin(Vector3(0, 0, -20));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
@@ -97,30 +97,32 @@ private:
 
 	void Draw()
 	{
-		std::shared_ptr<VulkanRHI> vulkanRHI = GetVulkanRHI();
-		VkPipelineStageFlags waitStageMask = vulkanRHI->GetStageMask();
-		std::shared_ptr<VulkanQueue> gfxQueue = vulkanRHI->GetDevice()->GetGraphicsQueue();
-		std::shared_ptr<VulkanQueue> presentQueue = vulkanRHI->GetDevice()->GetPresentQueue();
-		std::shared_ptr<VulkanSwapChain> swapChain = vulkanRHI->GetSwapChain();
+		std::shared_ptr<VulkanRHI> vulkanRHI         = GetVulkanRHI();
+		VkPipelineStageFlags waitStageMask           = vulkanRHI->GetStageMask();
+		std::shared_ptr<VulkanQueue> gfxQueue        = vulkanRHI->GetDevice()->GetGraphicsQueue();
+		std::shared_ptr<VulkanQueue> presentQueue    = vulkanRHI->GetDevice()->GetPresentQueue();
+		std::shared_ptr<VulkanSwapChain> swapChain   = vulkanRHI->GetSwapChain();
 		std::vector<VkCommandBuffer>& drawCmdBuffers = vulkanRHI->GetCommandBuffers();
+        
 		VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
-		VkSemaphore waitSemaphore = VK_NULL_HANDLE;
-		m_CurrentBackBuffer = swapChain->AcquireImageIndex(&waitSemaphore);
+		VkSemaphore waitSemaphore    = VK_NULL_HANDLE;
+		m_CurrentBackBuffer          = swapChain->AcquireImageIndex(&waitSemaphore);
 
 		fenceMgr.WaitForFence(m_Fences[m_CurrentBackBuffer], MAX_uint64);
 		fenceMgr.ResetFence(m_Fences[m_CurrentBackBuffer]);
 
 		VkSubmitInfo submitInfo = {};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask = &waitStageMask;
-		submitInfo.pWaitSemaphores = &waitSemaphore;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &m_RenderComplete;
+		submitInfo.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask    = &waitStageMask;
+		submitInfo.pWaitSemaphores      = &waitSemaphore;
+		submitInfo.waitSemaphoreCount   = 1;
+		submitInfo.pSignalSemaphores    = &m_RenderComplete;
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pCommandBuffers = &drawCmdBuffers[m_CurrentBackBuffer];
-		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers      = &drawCmdBuffers[m_CurrentBackBuffer];
+		submitInfo.commandBufferCount   = 1;
 
 		VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]->GetHandle()));
+        
 		swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
 	}
 
@@ -142,10 +144,10 @@ private:
 
 			const VertexInputDeclareInfo& vertInfo = renderable->GetVertexBuffer()->GetVertexInputStateInfo();
 			VkPipeline pipeline = material->GetPipeline(vertInfo, shader->GetVertexInputBindingInfo());
-
+            
+            vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 			vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &(shader->GetDescriptorSet()), 0, nullptr);
-			vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
+            
 			renderable->BindBufferToCommand(command);
 			renderable->BindDrawToCommand(command);
 		}
@@ -208,15 +210,14 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		// m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.AppendRotation(90.0f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(1.0f, Vector3::UpVector);
+		// m_MVPData.model.SetIdentity();
+		// m_MVPData.model.AppendRotation(90.0f, Vector3::UpVector);
 
         const std::vector<MaterialPtr>& materials = m_Mesh->GetMaterials();
         for (int32 j = 0; j < materials.size(); ++j)
         {
             materials[j]->GetShader()->SetUniformData("uboMVP", (uint8*)&m_MVPData, sizeof(UBOData));
-			
         }
 	}
 
@@ -229,12 +230,12 @@ private:
 		m_Specular->LoadFromFile("assets/textures/specular.png");
 
 		// 加载Shader以及Material
-		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_DescriptorSets/solid.vert.spv", "assets/shaders/5_DescriptorSets/solid.frag.spv");
+		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_Texture/solid.vert.spv", "assets/shaders/5_Texture/solid.frag.spv");
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
 		shader0->SetTextureData("samplerColorMap", m_Diffuse);
 
 		// 加载模型
-		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/GameObject.obj");
+		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/plane_z.obj");
 		m_Mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
 		{
