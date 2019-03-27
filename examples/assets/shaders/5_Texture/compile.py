@@ -3,8 +3,6 @@
 import os
 import sys
 
-# os.system("../glslangvalidator.exe")
-
 path = os.getcwd()
 path = path.replace("\\", "/")
 path = path[0:path.find("VulkanTutorials")]
@@ -12,7 +10,7 @@ path = path + "/VulkanTutorials/"
 
 exepath = path
 
-if "win" == sys.platform:
+if "win32" == sys.platform:
 	exepath = exepath + "external/vulkan/windows/bin/x86/glslangvalidator.exe"
 	pass
 elif "linux" == sys.platform:
@@ -22,11 +20,24 @@ elif "darwin" == sys.platform:
 	exepath = exepath + "external/vulkan/macos/bin/glslangValidator"
 	pass
 
-shaders = [
-	"examples/assets/shaders/5_Texture/solid.vert",
-	"examples/assets/shaders/5_Texture/solid.frag"
-]
+files = []
 
-for shader in shaders:
-	os.system(exepath + " -V " + (path + shader) + " -o " + (path + shader + ".spv"))
+for parentDir, _, fileNames in os.walk(os.getcwd()):
+	for fileName in fileNames:
+		filepath = os.path.join(parentDir, fileName)
+		files.append(filepath)
+pass
+
+shaders = [".vert", ".frag", ".comp", ".tess", ".tesc"]
+shaderFiles = []
+
+for file in files:
+	_, ext = os.path.splitext(file)
+	ext = ext.lower()
+	if ext in shaders:
+		shaderFiles.append(file.replace("\\", "/"))
+	pass
+
+for shader in shaderFiles:
+	os.system(exepath + " -V " + shader + " -o " + shader + ".spv")
 	pass

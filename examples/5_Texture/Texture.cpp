@@ -210,9 +210,9 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		// m_MVPData.model.AppendRotation(1.0f, Vector3::UpVector);
+		m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
 		// m_MVPData.model.SetIdentity();
-		// m_MVPData.model.AppendRotation(90.0f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(180.0f, Vector3::UpVector);
 
         const std::vector<MaterialPtr>& materials = m_Mesh->GetMaterials();
         for (int32 j = 0; j < materials.size(); ++j)
@@ -224,10 +224,13 @@ private:
 	void LoadAssets()
 	{
 		m_Diffuse = std::make_shared<Texture2D>();
-		m_Diffuse->LoadFromFile("assets/textures/diffuse.png");
+		m_Diffuse->LoadFromFile("assets/textures/head_diffuse.png");
+
+		m_Normal = std::make_shared<Texture2D>();
+		m_Normal->LoadFromFile("assets/textures/head_normal.png");
 
 		m_Specular = std::make_shared<Texture2D>();
-		m_Specular->LoadFromFile("assets/textures/specular.png");
+		m_Specular->LoadFromFile("assets/textures/head_specular.png");
 
 		// 加载Shader以及Material
 		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_Texture/solid.vert.spv", "assets/shaders/5_Texture/solid.frag.spv");
@@ -235,7 +238,7 @@ private:
 		shader0->SetTextureData("samplerColorMap", m_Diffuse);
 
 		// 加载模型
-		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/plane_z.obj");
+		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/head.obj");
 		m_Mesh = std::make_shared<Mesh>();
 		for (int32 j = 0; j < renderables.size(); ++j)
 		{
@@ -281,6 +284,7 @@ private:
 	uint32                        m_CurrentBackBuffer;
 	std::shared_ptr<Mesh>		  m_Mesh;
 	std::shared_ptr<Texture2D>	  m_Diffuse;
+	std::shared_ptr<Texture2D>    m_Normal;
 	std::shared_ptr<Texture2D>    m_Specular;
 	VkSemaphore                   m_RenderComplete;
 	std::vector<VulkanFence*>     m_Fences;
