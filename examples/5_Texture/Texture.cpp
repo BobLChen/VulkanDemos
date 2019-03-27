@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
 #include "Application/AppModeBase.h"
@@ -52,7 +52,7 @@ public:
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 0, -20));
+		m_MVPData.view.SetOrigin(Vector3(0, 0, -10));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
@@ -210,9 +210,9 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
-		// m_MVPData.model.SetIdentity();
-		// m_MVPData.model.AppendRotation(180.0f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model.AppendRotation(180.0f, Vector3::UpVector);
 
         const std::vector<MaterialPtr>& materials = m_Mesh->GetMaterials();
         for (int32 j = 0; j < materials.size(); ++j)
@@ -227,15 +227,17 @@ private:
 		m_Diffuse->LoadFromFile("assets/textures/head_diffuse.png");
 
 		m_Normal = std::make_shared<Texture2D>();
-		m_Normal->LoadFromFile("assets/textures/head_normal.png");
+		m_Normal->LoadFromFile("assets/textures/head_normals.png");
 
 		m_Specular = std::make_shared<Texture2D>();
 		m_Specular->LoadFromFile("assets/textures/head_specular.png");
 
 		// 加载Shader以及Material
-		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_Texture/solid.vert.spv", "assets/shaders/5_Texture/solid.frag.spv");
+		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_Texture/diffuse.vert.spv", "assets/shaders/5_Texture/diffuse.frag.spv");
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
-		shader0->SetTextureData("samplerColorMap", m_Diffuse);
+		shader0->SetTextureData("samplerColorMap",      m_Diffuse);
+        shader0->SetTextureData("samplerNormalMap",     m_Normal);
+        shader0->SetTextureData("samplerSpecularMap",   m_Specular);
 
 		// 加载模型
 		std::vector<std::shared_ptr<Renderable>> renderables = OBJMeshParser::LoadFromFile("assets/models/head.obj");

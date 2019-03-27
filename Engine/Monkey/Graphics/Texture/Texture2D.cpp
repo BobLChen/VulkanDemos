@@ -2,12 +2,14 @@
 #include "Common/Log.h"
 #include "Engine.h"
 #include "Texture2D.h"
-#include "Loader/lodepng.h"
 #include "Math/Math.h"
 #include "File/FileManager.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanMemory.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "Loader/stb_image.h"
 
 Texture2D::Texture2D()
 {
@@ -30,14 +32,14 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	}
     
     // png解析
-    uint8* rgbaData = nullptr;
-    uint32 width  = -1;
-    uint32 height = -1;
-    uint32 error = lodepng_decode32(&rgbaData, &width, &height, dataPtr, dataSize);
+    int32 width  = -1;
+    int32 height = -1;
+    int32 comp   = 0;
+    uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
     
-    if (error)
+    if (rgbaData == nullptr)
     {
-        MLOGE("decode png error : ", lodepng_error_text(error));
+        MLOGE("Failed load image : %s", filename.c_str());
         return;
     }
     
@@ -104,7 +106,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageCreateInfo.extent          = { width, height, 1 };
+    imageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
     imageCreateInfo.usage           = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
     VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Image));
     // bind image buffer
