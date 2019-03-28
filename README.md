@@ -77,5 +77,5 @@ Vulkan Examples
 ![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/4_Pipelines/pipelines.png)
 
 ### Texture
-![Mac](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/5_Texture/mac.jpg) ![Win](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/5_Texture/win.jpg)
+<img src="https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/5_Texture/mac.jpg" width="300" height="200" /><img src="https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/5_Texture/win.jpg" width="300" height="200" />
 
