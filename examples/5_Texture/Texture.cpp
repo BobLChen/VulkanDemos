@@ -210,7 +210,7 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-		// m_MVPData.model.AppendRotation(0.01f, Vector3::UpVector);
+		// m_MVPData.model.AppendRotation(1.0f, Vector3::UpVector);
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.AppendRotation(180.0f, Vector3::UpVector);
 
@@ -224,19 +224,14 @@ private:
 	void LoadAssets()
 	{
 		m_Diffuse = std::make_shared<Texture2D>();
-		m_Diffuse->LoadFromFile("assets/textures/head_diffuse.png");
-
-		m_Normal = std::make_shared<Texture2D>();
-		m_Normal->LoadFromFile("assets/textures/head_normals.png");
-
+		m_Diffuse->LoadFromFile("assets/textures/head_diffuse.jpg");
 		m_Specular = std::make_shared<Texture2D>();
-		m_Specular->LoadFromFile("assets/textures/head_specular.png");
+		m_Specular->LoadFromFile("assets/textures/head_specular.jpg");
 
 		// 加载Shader以及Material
 		ShaderPtr   shader0 = Shader::Create("assets/shaders/5_Texture/diffuse.vert.spv", "assets/shaders/5_Texture/diffuse.frag.spv");
 		MaterialPtr material0 = std::make_shared<Material>(shader0);
 		shader0->SetTextureData("samplerColorMap",      m_Diffuse);
-        shader0->SetTextureData("samplerNormalMap",     m_Normal);
         shader0->SetTextureData("samplerSpecularMap",   m_Specular);
 
 		// 加载模型
@@ -286,7 +281,6 @@ private:
 	uint32                        m_CurrentBackBuffer;
 	std::shared_ptr<Mesh>		  m_Mesh;
 	std::shared_ptr<Texture2D>	  m_Diffuse;
-	std::shared_ptr<Texture2D>    m_Normal;
 	std::shared_ptr<Texture2D>    m_Specular;
 	VkSemaphore                   m_RenderComplete;
 	std::vector<VulkanFence*>     m_Fences;
