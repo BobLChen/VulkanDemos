@@ -157,11 +157,10 @@ set(Monkey_Graphics_Texture_SRCS
 set(Monkey_Loader_HDRS
 	Monkey/Loader/tiny_obj_loader.h
 	Monkey/Loader/OBJMeshParser.h
-	Monkey/Loader/lodepng.h
+	Monkey/Loader/stb_image.h
 )
 set(Monkey_Loader_SRCS
 	Monkey/Loader/OBJMeshParser.cpp
-	Monkey/Loader/lodepng.cpp
 )
 
 set(Monkey_HAL_HDRS
@@ -442,7 +441,6 @@ add_library(Monkey STATIC
 
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
-
 
 	${Monkey_Graphics_Data_HDRS}
 	${Monkey_Graphics_Data_SRCS}
