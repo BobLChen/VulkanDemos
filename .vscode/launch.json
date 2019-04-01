@@ -87,6 +87,34 @@
                     "ignoreFailures": true
                 }
             ],
+        },
+        {
+            "name": "Debug 5_Texture",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/5_Texture",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
         }
     ]
 }
