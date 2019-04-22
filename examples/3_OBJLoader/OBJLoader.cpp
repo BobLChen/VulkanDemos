@@ -190,23 +190,11 @@ private:
 			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
 			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-
-			if (!m_IndexBuffer->IsValid())
-			{
-				continue;
-			}
-            
-			if (!m_VertexBuffer->IsValid())
-			{
-				continue;
-			}
-			
 			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
 			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
 			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 0);
-			
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
@@ -405,14 +393,15 @@ private:
 
 	void UpdateUniformBuffers()
 	{
-        m_MVPData.model.AppendRotation(0.10f, Vector3::UpVector);
+        float deltaTime = Engine::Get()->GetDeltaTime();
+        m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
 
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
 		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
 		vkUnmapMemory(m_Device, m_MVPBuffer.memory);
 	}
-
+    
 	void CreateUniformBuffers()
 	{
 		VkBufferCreateInfo bufferInfo;
@@ -523,6 +512,9 @@ private:
 		std::memcpy(indexStreamData, indices.data(), indexStreamSize);
 
 		m_IndexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
+        
+        m_VertexBuffer->Upload();
+        m_IndexBuffer->Upload();
 	}
 
     void CreateFences()

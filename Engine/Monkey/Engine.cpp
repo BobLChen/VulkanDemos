@@ -6,6 +6,7 @@ Engine* Engine::g_Instance = nullptr;
 Engine::Engine()
     : m_VulkanRHI(nullptr)
 	, m_IsRequestingExit(false)
+    , m_DeltaTime(0.0f)
 {
 	Engine::g_Instance = this;
 }
