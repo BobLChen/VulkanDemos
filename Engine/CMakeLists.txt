@@ -68,6 +68,7 @@ set(Monkey_Utils_SRCS
 	Monkey/Utils/Alignment.h
 	Monkey/Utils/SecureHash.h
 	Monkey/Utils/Crc.h
+	Monkey/Utils/VulkanUtils.h
 )
 set(Monkey_Utils_HDRS
 	Monkey/Utils/SecureHash.cpp

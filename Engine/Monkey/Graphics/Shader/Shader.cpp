@@ -411,7 +411,7 @@ void Shader::UpdateDescriptorSet()
 		descriptorWrites[index].dstArrayElement = 0;
 		descriptorWrites[index].descriptorType	= m_SetLayoutBindings[imageInfo.binding].descriptorType;
 		descriptorWrites[index].descriptorCount = 1;
-		descriptorWrites[index].pImageInfo		= &(texture->GetImageInfo());
+		descriptorWrites[index].pImageInfo		= &(texture->GetDescriptorImageInfo());
 		index += 1;
 	}
 	
