@@ -12,6 +12,7 @@
 #include "Loader/tiny_obj_loader.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
+#include "Graphics/Data/VulkanBuffer.h"
 #include "Graphics/Shader/Shader.h"
 #include "File/FileManager.h"
 #include <vector>
@@ -89,22 +90,7 @@ public:
 	}
 
 private:
-
-	struct GPUBuffer
-	{
-		VkDeviceMemory 	memory;
-		VkBuffer 		buffer;
-
-		GPUBuffer()
-			: memory(VK_NULL_HANDLE)
-			, buffer(VK_NULL_HANDLE)
-		{
-
-		}
-	};
-
-	typedef GPUBuffer UBOBuffer;
-
+    
 	struct UBOData
 	{
 		Matrix4x4 model;
@@ -214,11 +200,11 @@ private:
 		writeDescriptorSet.dstSet 		   = m_DescriptorSet;
 		writeDescriptorSet.descriptorCount = 1;
 		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSet.pBufferInfo     = &m_MVPDescriptor;
+		writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[m_CurrentBackBuffer]->GetDescriptorBufferInfo());
 		writeDescriptorSet.dstBinding      = 0;
 		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
-
+    
 	void CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize = {};
@@ -395,36 +381,18 @@ private:
 	{
         float deltaTime = Engine::Get()->GetDeltaTime();
         m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
-
-		uint8_t *pData = nullptr;
-		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
-		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
-		vkUnmapMemory(m_Device, m_MVPBuffer.memory);
+        
+        m_MVPBuffers[0]->Map(sizeof(m_MVPData), 0);
+        m_MVPBuffers[0]->CopyTo(&m_MVPData, sizeof(m_MVPData));
+        m_MVPBuffers[0]->Unmap();
 	}
     
 	void CreateUniformBuffers()
 	{
-		VkBufferCreateInfo bufferInfo;
-		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-		bufferInfo.size  = sizeof(UBOData);
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		VERIFYVULKANRESULT(vkCreateBuffer(m_Device, &bufferInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.buffer));
-
-		VkMemoryRequirements memReqInfo;
-		vkGetBufferMemoryRequirements(m_Device, m_MVPBuffer.buffer, &memReqInfo);
-		uint32 memoryTypeIndex = 0;
-		GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
-
-		VkMemoryAllocateInfo allocInfo;
-		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-		allocInfo.allocationSize  = memReqInfo.size;
-		allocInfo.memoryTypeIndex = memoryTypeIndex;
-		VERIFYVULKANRESULT(vkAllocateMemory(m_Device, &allocInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.memory));
-
-		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_MVPBuffer.buffer, m_MVPBuffer.memory, 0));
-		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
-		m_MVPDescriptor.offset = 0;
-		m_MVPDescriptor.range  = sizeof(UBOData);
+        m_MVPBuffers.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
+        for (int i = 0; i < m_MVPBuffers.size(); ++i) {
+            m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
+        }
         
         m_MVPData.model.SetIdentity();
 
@@ -440,10 +408,14 @@ private:
 
 	void DestroyUniformBuffers()
 	{
-		vkDestroyBuffer(m_Device, m_MVPBuffer.buffer, VULKAN_CPU_ALLOCATOR);
-		vkFreeMemory(m_Device, m_MVPBuffer.memory, VULKAN_CPU_ALLOCATOR);
+        for (int i = 0; i < m_MVPBuffers.size(); ++i)
+        {
+            m_MVPBuffers[i]->Destroy();
+            delete m_MVPBuffers[i];
+        }
+        m_MVPBuffers.clear();
 	}
-
+    
 	void LoadOBJ()
 	{
 		tinyobj::attrib_t 				 attrib;
@@ -557,14 +529,13 @@ private:
 
 	std::shared_ptr<VertexBuffer> 	m_VertexBuffer;
 	std::shared_ptr<IndexBuffer> 	m_IndexBuffer;
-
-	UBOBuffer 						m_MVPBuffer;
+    
 	UBOData 						m_MVPData;
-
+    std::vector<VulkanBuffer*>      m_MVPBuffers;
+    
 	VkSemaphore 					m_RenderComplete;
     std::vector<VulkanFence*> 		m_Fences;
-
-	VkDescriptorBufferInfo 			m_MVPDescriptor;
+    
 	VkDescriptorSetLayout 			m_DescriptorSetLayout;
 	VkDescriptorSet 				m_DescriptorSet;
 	VkPipelineLayout 				m_PipelineLayout;
