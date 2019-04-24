@@ -1,4 +1,4 @@
-﻿#include "Shader.h"
+#include "Shader.h"
 #include "Engine.h"
 #include "spirv_cross.hpp"
 
@@ -51,9 +51,9 @@ std::shared_ptr<ShaderModule> Shader::LoadSPIPVShader(const std::string& filenam
 }
 
 Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule> frag, std::shared_ptr<ShaderModule> geom, std::shared_ptr<ShaderModule> comp, std::shared_ptr<ShaderModule> tesc, std::shared_ptr<ShaderModule> tese)
-	: m_InvalidLayout(true)
+	: m_Hash(0)
+    , m_InvalidLayout(true)
 	, m_PipelineLayout(VK_NULL_HANDLE)
-    , m_Hash(0)
 	, m_VertShaderModule(vert)
 	, m_FragShaderModule(frag)
 	, m_GeomShaderModule(geom)
@@ -108,9 +108,9 @@ void Shader::DestroyPipelineLayout()
     
     VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
     
+    vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
     vkDestroyPipelineLayout(device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
-	vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
-    
+	
 	m_PoolSizes.clear();
     m_ShaderStages.clear();
     m_SetLayoutBindings.clear();
@@ -142,17 +142,38 @@ void Shader::UpdateFragPipelineLayout()
 		spirv_cross::SPIRType type = compiler.get_type(res.type_id);
 		spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 		const std::string &varName = compiler.get_name(res.id);
-
-		VkDescriptorSetLayoutBinding imageBinding = {};
-		imageBinding.binding			= compiler.get_decoration(res.id, spv::DecorationBinding);
-		imageBinding.descriptorType		= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		imageBinding.descriptorCount	= 1;
-		imageBinding.stageFlags			= VK_SHADER_STAGE_FRAGMENT_BIT;
-		imageBinding.pImmutableSamplers = nullptr;
-		m_SetLayoutBindings.push_back(imageBinding);
-
+        int32 bindingSet = compiler.get_decoration(res.id, spv::DecorationBinding);
+        int32 bindingIdx = -1;
+        
+        for (int32 j = 0; j < m_SetLayoutBindings.size(); ++j)
+        {
+            if (m_SetLayoutBindings[j].binding == bindingSet &&
+                m_SetLayoutBindings[j].descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER &&
+                m_SetLayoutBindings[j].stageFlags == VK_SHADER_STAGE_FRAGMENT_BIT)
+            {
+                bindingIdx = j;
+                break;
+            }
+        }
+        
+        if (bindingIdx != -1)
+        {
+            m_SetLayoutBindings[bindingIdx].descriptorCount += 1;
+        }
+        else
+        {
+            VkDescriptorSetLayoutBinding bindingInfo = {};
+            bindingInfo.binding            = bindingSet;
+            bindingInfo.descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            bindingInfo.descriptorCount    = 1;
+            bindingInfo.stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+            bindingInfo.pImmutableSamplers = nullptr;
+            m_SetLayoutBindings.push_back(bindingInfo);
+        }
+		
 		m_DescriptorTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] += 1;
 	}
+    
 }
 
 void Shader::UpdateCompPipelineLayout()
@@ -237,14 +258,34 @@ void Shader::UpdateVertPipelineLayout()
         spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
         spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
         const std::string &varName      = compiler.get_name(res.id);
+        int32 bindingSet = compiler.get_decoration(res.id, spv::DecorationBinding);
+        int32 bindingIdx = -1;
         
-        VkDescriptorSetLayoutBinding uboBinding = {};
-        uboBinding.binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-        uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboBinding.descriptorCount = 1;
-        uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        uboBinding.pImmutableSamplers = nullptr;
-        m_SetLayoutBindings.push_back(uboBinding);
+        for (int32 j = 0; j < m_SetLayoutBindings.size(); ++j)
+        {
+            if (m_SetLayoutBindings[j].binding == bindingSet &&
+                m_SetLayoutBindings[j].descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
+                m_SetLayoutBindings[j].stageFlags == VK_SHADER_STAGE_VERTEX_BIT)
+            {
+                bindingIdx = j;
+                break;
+            }
+        }
+        
+        if (bindingIdx != -1)
+        {
+            m_SetLayoutBindings[bindingIdx].descriptorCount += 1;
+        }
+        else
+        {
+            VkDescriptorSetLayoutBinding bindingIndo = {};
+            bindingIndo.binding = bindingSet;
+            bindingIndo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            bindingIndo.descriptorCount = 1;
+            bindingIndo.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            bindingIndo.pImmutableSamplers = nullptr;
+            m_SetLayoutBindings.push_back(bindingIndo);
+        }
         
 		m_DescriptorTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER] += 1;
     }
@@ -292,7 +333,7 @@ void Shader::UpdatePipelineLayout()
     pipelineLayoutCreateInfo.setLayoutCount = 1;
     pipelineLayoutCreateInfo.pSetLayouts    = &m_DescriptorSetLayout;
     VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
-
+    
 	// PoolSize
 	for (int32 i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
 	{

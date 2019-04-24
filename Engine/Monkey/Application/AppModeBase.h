@@ -3,6 +3,8 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Vulkan/VulkanRHI.h"
+#include "Vulkan/VulkanSwapChain.h"
+#include "Vulkan/VulkanDevice.h"
 #include "GenericWindow.h"
 #include "GenericApplication.h"
 #include "Engine.h"
@@ -28,52 +30,72 @@ public:
 
 	}
 
-	const Engine& GetEngine()
+	FORCEINLINE const Engine& GetEngine() const
 	{
 		return *m_Engine;
 	}
 
-	std::shared_ptr<VulkanRHI> GetVulkanRHI() const
+	FORCEINLINE std::shared_ptr<VulkanRHI> GetVulkanRHI() const
 	{
 		return m_VulkanRHI;
 	}
 
-	std::shared_ptr<GenericApplication> GetApplication() const
+	FORCEINLINE std::shared_ptr<GenericApplication> GetApplication() const
 	{
 		return m_Application;
 	}
 
-	std::shared_ptr<GenericWindow> GetWindow() const
+	FORCEINLINE std::shared_ptr<GenericWindow> GetWindow() const
 	{
 		return m_Window;
 	}
-
-	int32 GetWidth() const
+    
+    FORCEINLINE VkDevice GetDevice()
+    {
+        return m_VulkanRHI->GetDevice()->GetInstanceHandle();
+    }
+    
+    FORCEINLINE int32 GetRealWidth() const
+    {
+        return m_VulkanRHI->GetSwapChain()->GetWidth();
+    }
+    
+    FORCEINLINE int32 GetRealHeight() const
+    {
+        return m_VulkanRHI->GetSwapChain()->GetHeight();
+    }
+    
+	FORCEINLINE int32 GetWidth() const
 	{
 		return m_Width;
 	}
     
-    void SetWidth(int32 width)
+    FORCEINLINE void SetWidth(int32 width)
     {
         m_Width = width;
     }
     
-	int32 GetHeight() const
+	FORCEINLINE int32 GetHeight() const
 	{
 		return m_Height;
 	}
     
-    void SetHeight(int32 height)
+    FORCEINLINE void SetHeight(int32 height)
     {
         m_Height = height;
     }
     
-	const std::string& GetTitle()
+    FORCEINLINE int32 GetBufferCount()
+    {
+        return GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
+    }
+    
+	FORCEINLINE const std::string& GetTitle()
 	{
 		return m_Title;
 	}
 
-	void Setup(Engine* engine, std::shared_ptr<VulkanRHI> vulkanRHI, std::shared_ptr<GenericApplication> application, std::shared_ptr<GenericWindow> window)
+	FORCEINLINE void Setup(Engine* engine, std::shared_ptr<VulkanRHI> vulkanRHI, std::shared_ptr<GenericApplication> application, std::shared_ptr<GenericWindow> window)
 	{
 		m_Engine      = engine;
 		m_Window      = window;

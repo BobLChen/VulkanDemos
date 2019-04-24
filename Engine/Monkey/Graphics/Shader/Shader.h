@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -26,22 +26,22 @@ public:
         m_Hash = Crc::MemCrc32(dataPtr, dataSize);
 	}
     
-	const VkShaderModule& GetHandle() const
+	FORCEINLINE const VkShaderModule& GetHandle() const
 	{
 		return m_ShaderModule;
 	}
     
-    const uint32* GetData() const
+    FORCEINLINE const uint32* GetData() const
     {
         return m_Data;
     }
     
-    const uint32 GetDataSize() const
+    FORCEINLINE const uint32 GetDataSize() const
     {
         return m_DataSize;
     }
     
-    const uint32 GetHash() const
+    FORCEINLINE const uint32 GetHash() const
     {
         return m_Hash;
     }
@@ -64,7 +64,7 @@ public:
 	{
 
 	}
-
+    
 	FORCEINLINE int32 GetLocation(VertexAttribute attribute) const
 	{
 		for (int32 i = 0; i < m_Attributes.size(); ++i)
@@ -138,44 +138,32 @@ public:
 	static std::shared_ptr<Shader> Create(const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
 
 	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const std::string& filename);
-
-	FORCEINLINE VkDescriptorSetLayout GetDescriptorSetLayout()
+    
+    FORCEINLINE void Upload()
+    {
+        if (m_InvalidLayout)
+        {
+            UpdatePipelineLayout();
+        }
+    }
+    
+	FORCEINLINE const VkDescriptorSetLayout& GetDescriptorSetLayout() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_DescriptorSetLayout;
 	}
-
-	FORCEINLINE VkPipelineLayout GetPipelineLayout()
+    
+	FORCEINLINE const VkPipelineLayout& GetPipelineLayout() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_PipelineLayout;
 	}
 
-	FORCEINLINE const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderStages()
+	FORCEINLINE const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderStages() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_ShaderStages;
 	}
     
-	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo()
+	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_VertexInputBindingInfo;
 	}
 
