@@ -17,7 +17,7 @@ public:
     
     static void DestroyCache();
 
-	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo, const VertexInputBindingInfo& inputBindingInfo);
+	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo);
 
 	FORCEINLINE void SetShader(std::shared_ptr<Shader> shader)
 	{

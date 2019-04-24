@@ -128,30 +128,7 @@ protected:
 
 class Shader
 {
-private:
 
-    struct UBInfo
-    {
-        VkBuffer				buffer;
-        VkDeviceMemory			memory;
-        uint32					offset;
-        uint32					size;
-        uint32					allocationSize;
-		uint32					binding;
-		VkDescriptorBufferInfo	bufferInfo;
-    };
-    
-	struct UBDataInfo
-	{
-		uint8*	dataPtr;
-		uint32  dataSize;
-	};
-
-	struct ImageInfo
-	{
-		uint32 binding;
-	};
-	
 public:
 
 	Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule> frag, std::shared_ptr<ShaderModule> geom = nullptr, std::shared_ptr<ShaderModule> comp = nullptr, std::shared_ptr<ShaderModule> tesc = nullptr, std::shared_ptr<ShaderModule> tese = nullptr);
@@ -162,10 +139,16 @@ public:
 
 	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const std::string& filename);
 
-    void SetUniformData(const std::string& name, uint8* dataPtr, uint32 dataSize);
-    
-    void SetTextureData(const std::string& name, std::shared_ptr<TextureBase> texture);
-    
+	FORCEINLINE VkDescriptorSetLayout GetDescriptorSetLayout()
+	{
+		if (m_InvalidLayout)
+		{
+			UpdatePipelineLayout();
+		}
+
+		return m_DescriptorSetLayout;
+	}
+
 	FORCEINLINE VkPipelineLayout GetPipelineLayout()
 	{
 		if (m_InvalidLayout)
@@ -195,21 +178,6 @@ public:
 
 		return m_VertexInputBindingInfo;
 	}
-
-    FORCEINLINE const VkDescriptorSet& GetDescriptorSet()
-    {
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-        
-        if (m_InvalidDescSet)
-        {
-            UpdateDescriptorSet();
-        }
-
-        return m_DescriptorSet;
-    }
 
     FORCEINLINE const std::shared_ptr<ShaderModule> GetVertModule() const
     {
@@ -245,6 +213,12 @@ public:
     {
         return m_Hash;
     }
+
+	FORCEINLINE const std::vector<VkDescriptorPoolSize>& GetPoolSizes() const
+	{
+		return m_PoolSizes;
+	}
+
 protected:
     
     void UpdateVertPipelineLayout();
@@ -263,32 +237,21 @@ protected:
     
     void DestroyPipelineLayout();
     
-    void UpdateDescriptorSet();
-	
-    void CreateUniformBuffer(UBInfo& uniformBuffer, uint32 dataSize, VkBufferUsageFlags usage);
-    
 private:
     
-	bool					m_InvalidLayout;
-    bool                    m_InvalidDescSet;
-	VkPipelineLayout		m_PipelineLayout;
-	VkDescriptorPool		m_DescriptorPool;
-	VkDescriptorSetLayout	m_DescriptorSetLayout;
-	VkDescriptorSet			m_DescriptorSet;
-	VertexInputBindingInfo	m_VertexInputBindingInfo;
+	uint32												m_Hash;
+
+	bool												m_InvalidLayout;
+	VkDescriptorSetLayout								m_DescriptorSetLayout;
+	VkPipelineLayout									m_PipelineLayout;
+	VertexInputBindingInfo								m_VertexInputBindingInfo;
     
-    uint32                  m_Hash;
-
-	typedef std::shared_ptr<TextureBase>				TexturePtr;
-
 	std::vector<VkPipelineShaderStageCreateInfo>		m_ShaderStages;
     std::vector<VkDescriptorSetLayoutBinding>			m_SetLayoutBindings;
-    std::vector<VkDescriptorPoolSize>					m_PoolSizes;
-	std::unordered_map<std::string, UBInfo>				m_UBInfos;
-    std::unordered_map<std::string, ImageInfo>			m_ImageInfos;
-	std::unordered_map<std::string, TexturePtr>			m_Texturess;
-	std::unordered_map<std::string, UBDataInfo>			m_UBDatas;
     
+	int32												m_DescriptorTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+	std::vector<VkDescriptorPoolSize>					m_PoolSizes;
+
 protected:
 
 	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;

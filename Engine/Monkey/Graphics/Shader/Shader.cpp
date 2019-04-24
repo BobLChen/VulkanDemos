@@ -52,11 +52,7 @@ std::shared_ptr<ShaderModule> Shader::LoadSPIPVShader(const std::string& filenam
 
 Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule> frag, std::shared_ptr<ShaderModule> geom, std::shared_ptr<ShaderModule> comp, std::shared_ptr<ShaderModule> tesc, std::shared_ptr<ShaderModule> tese)
 	: m_InvalidLayout(true)
-    , m_InvalidDescSet(true)
 	, m_PipelineLayout(VK_NULL_HANDLE)
-	, m_DescriptorPool(VK_NULL_HANDLE)
-	, m_DescriptorSetLayout(VK_NULL_HANDLE)
-	, m_DescriptorSet(VK_NULL_HANDLE)
     , m_Hash(0)
 	, m_VertShaderModule(vert)
 	, m_FragShaderModule(frag)
@@ -76,6 +72,8 @@ Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule>
         tese != nullptr ? tese->GetHash() : 0
     );
     m_Hash = Crc::MakeHashCode(hash0, hash1);
+
+	std::memset(m_DescriptorTypes, 0, sizeof(m_DescriptorTypes));
 }
 
 Shader::~Shader()
@@ -107,59 +105,16 @@ void Shader::DestroyPipelineLayout()
 		return;
 	}
 	m_InvalidLayout  = true;
-    m_InvalidDescSet = true;
     
     VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
     
-    vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
-    vkDestroyDescriptorPool(device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
     vkDestroyPipelineLayout(device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
-    
-	for (auto it = m_UBInfos.begin(); it != m_UBInfos.end(); ++it)
-	{
-		const UBInfo& ubInfo = it->second;
-		vkFreeMemory(device, ubInfo.memory, VULKAN_CPU_ALLOCATOR);
-		vkDestroyBuffer(device, ubInfo.buffer, VULKAN_CPU_ALLOCATOR);
-	}
+	vkDestroyDescriptorSetLayout(device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
     
 	m_PoolSizes.clear();
-    m_UBInfos.clear();
-	m_ImageInfos.clear();
     m_ShaderStages.clear();
     m_SetLayoutBindings.clear();
 	m_VertexInputBindingInfo.Clear();
-}
-
-void Shader::CreateUniformBuffer(UBInfo& uniformBuffer, uint32 dataSize, VkBufferUsageFlags usage)
-{
-    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    
-	// 创建Buffer
-    VkBufferCreateInfo bufferCreateInfo;
-    ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-    bufferCreateInfo.size  = dataSize;
-    bufferCreateInfo.usage = usage;
-    VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &uniformBuffer.buffer));
-    
-	// 获取内存分配信息
-    VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements(device, uniformBuffer.buffer, &memReqs);
-    uint32 memoryTypeIndex = 0;
-    Engine::Get()->GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
-    
-    VkMemoryAllocateInfo allocInfo = {};
-    ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-    allocInfo.allocationSize  = memReqs.size;
-    allocInfo.memoryTypeIndex = memoryTypeIndex;
-
-	// 分配内存并绑定
-    VERIFYVULKANRESULT(vkAllocateMemory(device, &allocInfo, VULKAN_CPU_ALLOCATOR, &uniformBuffer.memory));
-    VERIFYVULKANRESULT(vkBindBufferMemory(device, uniformBuffer.buffer, uniformBuffer.memory, 0));
-    
-	// 记录分配信息
-	uniformBuffer.size = dataSize;
-	uniformBuffer.offset = 0;
-    uniformBuffer.allocationSize = uint32(memReqs.size);
 }
 
 void Shader::UpdateFragPipelineLayout()
@@ -196,14 +151,7 @@ void Shader::UpdateFragPipelineLayout()
 		imageBinding.pImmutableSamplers = nullptr;
 		m_SetLayoutBindings.push_back(imageBinding);
 
-		VkDescriptorPoolSize poolSize;
-		poolSize.type			 = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 1;
-		m_PoolSizes.push_back(poolSize);
-
-		ImageInfo imageInfo   = {};
-		imageInfo.binding	  = m_SetLayoutBindings.size() - 1;
-		m_ImageInfos[varName] = imageInfo;
+		m_DescriptorTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] += 1;
 	}
 }
 
@@ -298,18 +246,7 @@ void Shader::UpdateVertPipelineLayout()
         uboBinding.pImmutableSamplers = nullptr;
         m_SetLayoutBindings.push_back(uboBinding);
         
-        VkDescriptorPoolSize poolSize;
-        poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        poolSize.descriptorCount = 1;
-        m_PoolSizes.push_back(poolSize);
-        
-        UBInfo ubInfo;
-        CreateUniformBuffer(ubInfo, uint32(compiler.get_declared_struct_size(base_type)), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-		ubInfo.binding = m_SetLayoutBindings.size() - 1;
-		ubInfo.bufferInfo.buffer = ubInfo.buffer;
-		ubInfo.bufferInfo.offset = 0;
-		ubInfo.bufferInfo.range  = ubInfo.size;
-		m_UBInfos[varName] = ubInfo;
+		m_DescriptorTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER] += 1;
     }
     
 	// 获取Input Location信息
@@ -349,22 +286,6 @@ void Shader::UpdatePipelineLayout()
     setLayoutCreateInfo.pBindings    = m_SetLayoutBindings.data();
     VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(device, &setLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
     
-    // 创建Pool
-    VkDescriptorPoolCreateInfo poolCreateInfo;
-    ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-	poolCreateInfo.maxSets       = 1;
-    poolCreateInfo.poolSizeCount = uint32_t(m_PoolSizes.size());
-    poolCreateInfo.pPoolSizes    = m_PoolSizes.data();
-    VERIFYVULKANRESULT(vkCreateDescriptorPool(device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR,  &m_DescriptorPool));
-    
-    // 分配Set
-    VkDescriptorSetAllocateInfo setAllococateInfo;
-    ZeroVulkanStruct(setAllococateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-    setAllococateInfo.descriptorPool     = m_DescriptorPool;
-    setAllococateInfo.descriptorSetCount = 1;
-    setAllococateInfo.pSetLayouts        = &m_DescriptorSetLayout;
-    VERIFYVULKANRESULT(vkAllocateDescriptorSets(device, &setAllococateInfo, &m_DescriptorSet));
-    
 	// 创建PipelineLayout
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo;
     ZeroVulkanStruct(pipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
@@ -372,77 +293,17 @@ void Shader::UpdatePipelineLayout()
     pipelineLayoutCreateInfo.pSetLayouts    = &m_DescriptorSetLayout;
     VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
+	// PoolSize
+	for (int32 i = 0; i < VK_DESCRIPTOR_TYPE_RANGE_SIZE; ++i)
+	{
+		if (m_DescriptorTypes[i] > 0)
+		{
+			VkDescriptorPoolSize poolSize = {};
+			poolSize.descriptorCount = m_DescriptorTypes[i];
+			poolSize.type = (VkDescriptorType)i;
+			m_PoolSizes.push_back(poolSize);
+		}
+	}
+
 	m_InvalidLayout  = false;
-    m_InvalidDescSet = true;
-}
-
-void Shader::UpdateDescriptorSet()
-{
-	if (!m_InvalidDescSet) {
-		return;
-	}
-	m_InvalidDescSet = false;
-
-	// 更新Descriptor Set
-	std::vector<VkWriteDescriptorSet> descriptorWrites(m_SetLayoutBindings.size());
-	int32 index = 0;
-
-	for (auto it = m_UBInfos.begin(); it != m_UBInfos.end(); ++it)
-	{
-		const UBInfo& ubInfo = it->second;
-		ZeroVulkanStruct(descriptorWrites[index], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-		descriptorWrites[index].dstSet			= m_DescriptorSet;
-		descriptorWrites[index].dstBinding		= m_SetLayoutBindings[ubInfo.binding].binding;
-		descriptorWrites[index].dstArrayElement = 0;
-		descriptorWrites[index].descriptorType	= m_SetLayoutBindings[ubInfo.binding].descriptorType;
-		descriptorWrites[index].descriptorCount = 1;
-		descriptorWrites[index].pBufferInfo		= &(ubInfo.bufferInfo);
-		index += 1;
-	}
-    
-    // ImageInfo
-	for (auto it = m_ImageInfos.begin(); it != m_ImageInfos.end(); ++it)
-	{
-		std::shared_ptr<TextureBase> texture    = m_Texturess[it->first];
-		const ImageInfo& imageInfo = it->second;
-		ZeroVulkanStruct(descriptorWrites[index], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-		descriptorWrites[index].dstSet			= m_DescriptorSet;
-		descriptorWrites[index].dstBinding		= m_SetLayoutBindings[imageInfo.binding].binding;
-		descriptorWrites[index].dstArrayElement = 0;
-		descriptorWrites[index].descriptorType	= m_SetLayoutBindings[imageInfo.binding].descriptorType;
-		descriptorWrites[index].descriptorCount = 1;
-		descriptorWrites[index].pImageInfo		= &(texture->GetDescriptorImageInfo());
-		index += 1;
-	}
-	
-    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, VULKAN_CPU_ALLOCATOR);
-}
-
-void Shader::SetTextureData(const std::string& name, std::shared_ptr<TextureBase> texture)
-{
-    m_Texturess[name] = texture;
-    m_InvalidDescSet  = true;
-}
-
-void Shader::SetUniformData(const std::string& name, uint8* dataPtr, uint32 dataSize)
-{
-	UBDataInfo ubDataInfo = {};
-	ubDataInfo.dataPtr    = dataPtr;
-	ubDataInfo.dataSize   = dataSize;
-
-	m_UBDatas[name] = ubDataInfo;
-	
-	auto it = m_UBInfos.find(name);
-	if (it == m_UBInfos.end()) 
-	{
-		return;	
-	}
-	
-    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    UBInfo& ubInfo  = it->second;
-    uint8_t *pData  = nullptr;
-    VERIFYVULKANRESULT(vkMapMemory(device, ubInfo.memory, 0, dataSize, 0, (void**)&pData));
-    std::memcpy(pData, dataPtr, dataSize);
-    vkUnmapMemory(device, ubInfo.memory);
 }
