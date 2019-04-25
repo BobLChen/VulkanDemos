@@ -424,7 +424,8 @@ private:
 	
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		float deltaTime = Engine::Get()->GetDeltaTime();
+		m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
 
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));

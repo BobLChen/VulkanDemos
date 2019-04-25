@@ -797,7 +797,7 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 #include "Vulkan/VulkanMemory.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
-#include "Loader/OBJMeshParser.h"
+#include "Loader/MeshLoader.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
 #include "Graphics/Shader/Shader.h"

@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-class OBJMeshParser
+class MeshLoader
 {
 public:
 

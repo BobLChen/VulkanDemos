@@ -9,13 +9,15 @@
 #include "Vulkan/VulkanMemory.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
-#include "Loader/tiny_obj_loader.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
 #include "Graphics/Data/VulkanBuffer.h"
 #include "Graphics/Shader/Shader.h"
 #include "Graphics/Material/Material.h"
+#include "Graphics/Renderer/Renderable.h"
 #include "File/FileManager.h"
+#include "Loader/MeshLoader.h"
+
 #include <vector>
 #include <fstream>
 #include <istream>
@@ -26,8 +28,6 @@ public:
 	OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
-		, m_VertexBuffer(nullptr)
-		, m_IndexBuffer(nullptr)
 		, m_RenderComplete(VK_NULL_HANDLE)
 		, m_DescriptorPool(VK_NULL_HANDLE)
 		, m_CurrentBackBuffer(0)
@@ -157,7 +157,7 @@ private:
 			scissor.offset.y      = 0;
 
 			VkDeviceSize offsets[1] = { 0 };
-            VkPipeline pipeline = m_Material->GetPipeline(m_VertexBuffer->GetVertexInputStateInfo());
+            VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
             
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
 			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -165,9 +165,9 @@ private:
 			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
 			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
 			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_VertexBuffer->GetVKBuffers().data(), offsets);
-			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_IndexBuffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
-			vkCmdDrawIndexed(drawCmdBuffers[i], m_IndexBuffer->GetIndexCount(), 1, 0, 0, 0);
+			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
+			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, VK_INDEX_TYPE_UINT16);
+			vkCmdDrawIndexed(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
 			vkCmdEndRenderPass(drawCmdBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
 		}
@@ -255,86 +255,16 @@ private:
     
     void DestroyAssets()
     {
-        m_IndexBuffer  = nullptr;
-        m_VertexBuffer = nullptr;
         m_Shader       = nullptr;
         m_Material     = nullptr;
-        
+        m_Renderable   = nullptr;
+
         Material::DestroyCache();
     }
     
 	void LoadAssets()
 	{
-		tinyobj::attrib_t 				 attrib;
-		std::vector<tinyobj::shape_t> 	 shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string 					 warn;
-		std::string 					 err;
-		tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, FileManager::GetFilePath("assets/models/suzanne.obj").c_str());
-
-		std::vector<float>  vertices;
-		std::vector<uint16> indices;
-
-		for (size_t s = 0; s < shapes.size(); ++s) 
-		{
-			size_t index_offset = 0;
-			for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); ++f) 
-			{
-				int fv = shapes[s].mesh.num_face_vertices[f];
-				for (size_t v = 0; v < fv; v++) 
-				{
-					tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-					tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-					tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-					tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-					tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-					tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-					tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
-
-					vertices.push_back(vx);
-					vertices.push_back(vy);
-					vertices.push_back(vz);
-
-					vertices.push_back(nx);
-					vertices.push_back(ny);
-					vertices.push_back(nz);
-
-					indices.push_back(indices.size());
-				}
-				index_offset += fv;
-			}
-		}
-		
-		uint8* vertStreamData = new uint8[vertices.size() * sizeof(float)];
-		std::memcpy(vertStreamData, vertices.data(), vertices.size() * sizeof(float));
-
-		VertexStreamInfo streamInfo;
-		streamInfo.size 	   = vertices.size() * sizeof(float);
-		streamInfo.channelMask = 1 << (int32)VertexAttribute::VA_Position | 1 << (int32)VertexAttribute::VA_Normal;
-
-		std::vector<VertexChannelInfo> channels(2);
-		channels[0].attribute = VertexAttribute::VA_Position;
-		channels[0].format    = VertexElementType::VET_Float3;
-		channels[0].stream    = 0;
-		channels[0].offset    = 0;
-		channels[1].attribute = VertexAttribute::VA_Normal;
-		channels[1].format    = VertexElementType::VET_Float3;
-		channels[1].stream    = 0;
-		channels[1].offset    = 12;
-
-		m_VertexBuffer = std::make_shared<VertexBuffer>();
-		m_VertexBuffer->AddStream(streamInfo, channels, vertStreamData);
-
-		// 索引数据
-		uint32 indexStreamSize = indices.size() * sizeof(uint16);
-		uint8* indexStreamData = new uint8[indexStreamSize];
-		std::memcpy(indexStreamData, indices.data(), indexStreamSize);
-
-		m_IndexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
-        
-        m_VertexBuffer->Upload();
-        m_IndexBuffer->Upload();
-        
+        m_Renderable = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
         m_Shader = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
         m_Shader->Upload();
         m_Material = std::make_shared<Material>(m_Shader);
@@ -373,13 +303,13 @@ private:
 	}
 
 private:
+	
 	bool 							m_Ready;
     
     std::shared_ptr<Shader>         m_Shader;
 	std::shared_ptr<Material>		m_Material;
-	std::shared_ptr<VertexBuffer> 	m_VertexBuffer;
-	std::shared_ptr<IndexBuffer> 	m_IndexBuffer;
-    
+	std::shared_ptr<Renderable>     m_Renderable;
+
 	UBOData 						m_MVPData;
     std::vector<VulkanBuffer*>      m_MVPBuffers;
     
