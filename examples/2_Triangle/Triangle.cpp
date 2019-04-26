@@ -46,7 +46,7 @@ public:
 	virtual void Init() override
 	{
 		m_VulkanRHI = GetVulkanRHI();
-		m_Device    = m_VulkanRHI->GetDevice()->GetInstanceHandle();
+		m_Device    = GetDevice();
 
 		CreateSemaphores();
 		CreateFences();
@@ -633,7 +633,7 @@ private:
 
 	void CreateFences()
 	{
-		m_Fences.resize(m_VulkanRHI->GetSwapChain()->GetBackBufferCount());
+		m_Fences.resize(GetBufferCount());
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;

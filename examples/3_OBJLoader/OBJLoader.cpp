@@ -47,8 +47,8 @@ public:
 
 	virtual void Init() override
 	{
+		Prepare();
 		LoadAssets();
-        CreateFences();
 		CreateSemaphores();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
@@ -60,8 +60,10 @@ public:
 
 	virtual void Exist() override
 	{
+		WaitFences(m_CurrentBackBuffer);
+
+		Release();
         DestroyAssets();
-        DestroyFences();
 		DestorySemaphores();
 		DestroyUniformBuffers();
         DestroyDescriptorPool();
@@ -97,8 +99,7 @@ private:
 		m_CurrentBackBuffer 						 = swapChain->AcquireImageIndex(&presentCompleteSemaphore);
         VulkanFenceManager& fenceMgr 				 = GetVulkanRHI()->GetDevice()->GetFenceManager();
 
-        fenceMgr.WaitForFence(m_Fences[m_CurrentBackBuffer], MAX_uint64);
-        fenceMgr.ResetFence(m_Fences[m_CurrentBackBuffer]);
+		WaitFences(m_CurrentBackBuffer);
         
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType 				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -110,7 +111,7 @@ private:
 		submitInfo.pCommandBuffers 		= &drawCmdBuffers[m_CurrentBackBuffer];
 		submitInfo.commandBufferCount 	= 1;
         
-		VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]->GetHandle()));
+		VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
 		swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
 	}
 	
@@ -265,31 +266,10 @@ private:
 	void LoadAssets()
 	{
         m_Renderable = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
-        m_Shader = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
-        m_Shader->Upload();
-        m_Material = std::make_shared<Material>(m_Shader);
+        m_Shader     = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
+        m_Material   = std::make_shared<Material>(m_Shader);
 	}
     
-    void CreateFences()
-    {
-        m_Fences.resize(GetBufferCount());
-        VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
-        for (int32 index = 0; index < m_Fences.size(); ++index)
-        {
-            m_Fences[index] = fenceMgr.CreateFence(true);
-        }
-    }
-    
-    void DestroyFences()
-    {
-        VulkanFenceManager& fenceMgr = GetVulkanRHI()->GetDevice()->GetFenceManager();
-        for (int32 index = 0; index < m_Fences.size(); ++index)
-        {
-            fenceMgr.WaitAndReleaseFence(m_Fences[index], MAX_int64);
-        }
-        m_Fences.clear();
-    }
-
 	void CreateSemaphores()
 	{
 		VkSemaphoreCreateInfo createInfo;
@@ -314,7 +294,6 @@ private:
     std::vector<VulkanBuffer*>      m_MVPBuffers;
     
 	VkSemaphore 					m_RenderComplete;
-    std::vector<VulkanFence*> 		m_Fences;
     
 	std::vector<VkDescriptorSet> 	m_DescriptorSets;
 	VkDescriptorPool 				m_DescriptorPool;

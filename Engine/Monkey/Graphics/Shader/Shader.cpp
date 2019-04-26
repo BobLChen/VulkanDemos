@@ -95,7 +95,9 @@ std::shared_ptr<Shader> Shader::Create(const char* vert, const char* frag, const
 	std::shared_ptr<ShaderModule> geomModule = geom ? LoadSPIPVShader(geom) : nullptr;
 	std::shared_ptr<ShaderModule> tescModule = tesc ? LoadSPIPVShader(tesc) : nullptr;
 	std::shared_ptr<ShaderModule> teseModule = tese ? LoadSPIPVShader(tese) : nullptr;
-	return std::make_shared<Shader>(vertModule, fragModule, geomModule, tescModule, teseModule);
+	std::shared_ptr<Shader> shader = std::make_shared<Shader>(vertModule, fragModule, geomModule, tescModule, teseModule);
+	shader->Upload();
+	return shader;
 }
 
 void Shader::DestroyPipelineLayout()

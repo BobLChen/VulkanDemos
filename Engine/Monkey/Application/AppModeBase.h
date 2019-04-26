@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -103,6 +103,37 @@ public:
 		m_Application = application;
 	}
 	
+	FORCEINLINE void WaitFences(int index)
+	{
+		VERIFYVULKANRESULT(vkWaitForFences(GetDevice(), 1, &(m_Fences[index]), VK_TRUE, MAX_uint64));
+		VERIFYVULKANRESULT(vkResetFences(GetDevice(), 1, &(m_Fences[index])));
+	}
+
+	virtual void Prepare()
+	{
+		m_Fences.resize(GetBufferCount());
+
+		// 创建fence
+		VkFenceCreateInfo fenceCreateInfo;
+		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		for (int32 i = 0; i < m_Fences.size(); ++i)
+		{
+			VERIFYVULKANRESULT(vkCreateFence(GetDevice(), &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Fences[i]));
+		}
+
+	}
+
+	virtual void Release()
+	{
+		// 销毁fence
+		for (int32 i = 0; i < m_Fences.size(); ++i)
+		{
+			vkDestroyFence(GetDevice(), m_Fences[i], VULKAN_CPU_ALLOCATOR);
+		}
+	}
+
 	virtual void PreInit() = 0;
 	
 	virtual void Init() = 0;
@@ -110,6 +141,9 @@ public:
 	virtual void Loop() = 0;
 
 	virtual void Exist() = 0;
+
+protected:
+	std::vector<VkFence>				m_Fences;
 	
 private:
 
@@ -120,4 +154,5 @@ private:
 	std::shared_ptr<VulkanRHI> 			m_VulkanRHI;
 	std::shared_ptr<GenericApplication> m_Application;
 	std::shared_ptr<GenericWindow> 		m_Window;
+
 };
