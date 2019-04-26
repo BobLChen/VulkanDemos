@@ -39,13 +39,13 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			{
 				channelMask = channelMask | (1 << VertexAttribute::VA_UV0);
 				vertices.push_back(mesh->mTextureCoords[0][j].x);
-				vertices.push_back(mesh->mTextureCoords[0][j].y);
+				vertices.push_back(1.0f - mesh->mTextureCoords[0][j].y);
 			}
 			if (mesh->HasTextureCoords(1))
 			{
 				channelMask = channelMask | (1 << VertexAttribute::VA_UV1);
 				vertices.push_back(mesh->mTextureCoords[1][j].x);
-				vertices.push_back(mesh->mTextureCoords[1][j].y);
+				vertices.push_back(1.0f - mesh->mTextureCoords[1][j].y);
 			}
 			if (mesh->HasVertexColors(0))
 			{

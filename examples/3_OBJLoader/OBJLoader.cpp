@@ -112,27 +112,27 @@ private:
 		
 		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
 		std::vector<VkFramebuffer>& frameBuffers     = GetVulkanRHI()->GetFrameBuffers();
+
+		VkViewport viewport = {};
+		viewport.x = 0;
+		viewport.y = height;
+		viewport.width  = (float)width;
+		viewport.height = -(float)height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.extent.width  = (uint32)width;
+		scissor.extent.height = (uint32)height;
+		scissor.offset.x      = 0;
+		scissor.offset.y      = 0;
+
+		VkDeviceSize offsets[1] = { 0 };
+        VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
+
 		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
-
-			VkViewport viewport = {};
-			viewport.x = 0;
-			viewport.y = height;
-			viewport.width  = (float)width;
-			viewport.height = -(float)height;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-
-			VkRect2D scissor = {};
-			scissor.extent.width  = (uint32)width;
-			scissor.extent.height = (uint32)height;
-			scissor.offset.x      = 0;
-			scissor.offset.y      = 0;
-
-			VkDeviceSize offsets[1] = { 0 };
-            VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
-            
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
 			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
