@@ -28,9 +28,8 @@ public:
 	OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
-		, m_RenderComplete(VK_NULL_HANDLE)
 		, m_DescriptorPool(VK_NULL_HANDLE)
-		, m_CurrentBackBuffer(0)
+		, m_ImageIndex(0)
 	{
         
 	}
@@ -49,22 +48,18 @@ public:
 	{
 		Prepare();
 		LoadAssets();
-		CreateSemaphores();
 		CreateUniformBuffers();
 		CreateDescriptorPool();
         CreateDescriptorSet();
 		SetupCommandBuffers();
-
 		m_Ready = true;
 	}
 
 	virtual void Exist() override
 	{
-		WaitFences(m_CurrentBackBuffer);
-
+		WaitFences(m_ImageIndex);
 		Release();
         DestroyAssets();
-		DestorySemaphores();
 		DestroyUniformBuffers();
         DestroyDescriptorPool();
 	}
@@ -89,30 +84,8 @@ private:
 	void Draw()
 	{
 		UpdateUniformBuffers();
-
-		VkPipelineStageFlags waitStageMask 			 = GetVulkanRHI()->GetStageMask();
-		std::shared_ptr<VulkanQueue> gfxQueue 		 = GetVulkanRHI()->GetDevice()->GetGraphicsQueue();
-		std::shared_ptr<VulkanQueue> presentQueue    = GetVulkanRHI()->GetDevice()->GetPresentQueue();
-		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
-		std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
-		VkSemaphore presentCompleteSemaphore 		 = VK_NULL_HANDLE;
-		m_CurrentBackBuffer 						 = swapChain->AcquireImageIndex(&presentCompleteSemaphore);
-        VulkanFenceManager& fenceMgr 				 = GetVulkanRHI()->GetDevice()->GetFenceManager();
-
-		WaitFences(m_CurrentBackBuffer);
-        
-		VkSubmitInfo submitInfo = {};
-		submitInfo.sType 				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.pWaitDstStageMask 	= &waitStageMask;
-		submitInfo.pWaitSemaphores 		= &presentCompleteSemaphore;
-		submitInfo.waitSemaphoreCount 	= 1;
-		submitInfo.pSignalSemaphores 	= &m_RenderComplete;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pCommandBuffers 		= &drawCmdBuffers[m_CurrentBackBuffer];
-		submitInfo.commandBufferCount 	= 1;
-        
-		VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[m_CurrentBackBuffer]));
-		swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
+		m_ImageIndex = AcquireImageIndex();
+		Present(m_ImageIndex);
 	}
 	
 	void SetupCommandBuffers()
@@ -124,8 +97,8 @@ private:
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
         
-        int32 width  = GetRealWidth();
-        int32 height = GetRealHeight();
+        int32 width  = GetFrameWidth();
+        int32 height = GetFrameHeight();
         
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
@@ -138,7 +111,7 @@ private:
 		renderPassBeginInfo.renderArea.extent.height = height;
 		
 		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
-		std::vector<VkFramebuffer> frameBuffers      = GetVulkanRHI()->GetFrameBuffers();
+		std::vector<VkFramebuffer>& frameBuffers     = GetVulkanRHI()->GetFrameBuffers();
 		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
 		{
 			renderPassBeginInfo.framebuffer = frameBuffers[i];
@@ -176,9 +149,9 @@ private:
     
 	void CreateDescriptorSet()
 	{
-		m_DescriptorSets.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
+		m_DescriptorSets.resize(GetFrameCount());
 
-		for (int i = 0; i < m_DescriptorSets.size(); ++i)
+		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
 		{
 			VkDescriptorSetAllocateInfo allocInfo;
 			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
@@ -206,7 +179,7 @@ private:
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
         descriptorPoolInfo.poolSizeCount = (uint32_t)poolSize.size();
         descriptorPoolInfo.pPoolSizes    = poolSize.size() > 0 ? poolSize.data() : nullptr;
-		descriptorPoolInfo.maxSets 	 	 = GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
+		descriptorPoolInfo.maxSets 	 	 = GetFrameCount();
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(GetDevice(), &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
 	}
 	
@@ -220,15 +193,15 @@ private:
         float deltaTime = Engine::Get()->GetDeltaTime();
         m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
         
-        m_MVPBuffers[m_CurrentBackBuffer]->Map(sizeof(m_MVPData), 0);
-        m_MVPBuffers[m_CurrentBackBuffer]->CopyTo(&m_MVPData, sizeof(m_MVPData));
-        m_MVPBuffers[m_CurrentBackBuffer]->Unmap();
+        m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
+        m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
+        m_MVPBuffers[m_ImageIndex]->Unmap();
 	}
     
 	void CreateUniformBuffers()
 	{
-        m_MVPBuffers.resize(GetBufferCount());
-        for (int i = 0; i < m_MVPBuffers.size(); ++i) {
+        m_MVPBuffers.resize(GetFrameCount());
+        for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
             m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
         }
         
@@ -239,14 +212,14 @@ private:
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-        m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetRealWidth(), (float)GetRealHeight(), 0.01f, 3000.0f);
+        m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
         
 		UpdateUniformBuffers();
 	}
 
 	void DestroyUniformBuffers()
 	{
-        for (int i = 0; i < m_MVPBuffers.size(); ++i)
+        for (int32 i = 0; i < m_MVPBuffers.size(); ++i)
         {
             m_MVPBuffers[i]->Destroy();
             delete m_MVPBuffers[i];
@@ -270,18 +243,6 @@ private:
         m_Material   = std::make_shared<Material>(m_Shader);
 	}
     
-	void CreateSemaphores()
-	{
-		VkSemaphoreCreateInfo createInfo;
-		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-		vkCreateSemaphore(GetDevice(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
-	}
-    
-	void DestorySemaphores()
-	{
-		vkDestroySemaphore(GetDevice(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
-	}
-
 private:
 	
 	bool 							m_Ready;
@@ -293,12 +254,10 @@ private:
 	UBOData 						m_MVPData;
     std::vector<VulkanBuffer*>      m_MVPBuffers;
     
-	VkSemaphore 					m_RenderComplete;
-    
 	std::vector<VkDescriptorSet> 	m_DescriptorSets;
 	VkDescriptorPool 				m_DescriptorPool;
 
-	uint32 							m_CurrentBackBuffer;
+	uint32 							m_ImageIndex;
 };
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)

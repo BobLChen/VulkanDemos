@@ -55,12 +55,12 @@ public:
         return m_VulkanRHI->GetDevice()->GetInstanceHandle();
     }
     
-    FORCEINLINE int32 GetRealWidth() const
+    FORCEINLINE int32 GetFrameWidth() const
     {
         return m_VulkanRHI->GetSwapChain()->GetWidth();
     }
     
-    FORCEINLINE int32 GetRealHeight() const
+    FORCEINLINE int32 GetFrameHeight() const
     {
         return m_VulkanRHI->GetSwapChain()->GetHeight();
     }
@@ -85,7 +85,7 @@ public:
         m_Height = height;
     }
     
-    FORCEINLINE int32 GetBufferCount()
+    FORCEINLINE int32 GetFrameCount()
     {
         return GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
     }
@@ -103,26 +103,56 @@ public:
 		m_Application = application;
 	}
 	
+	FORCEINLINE int AcquireImageIndex()
+	{
+		return GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_PresentComplete);
+	}
+
 	FORCEINLINE void WaitFences(int index)
 	{
 		VERIFYVULKANRESULT(vkWaitForFences(GetDevice(), 1, &(m_Fences[index]), VK_TRUE, MAX_uint64));
 		VERIFYVULKANRESULT(vkResetFences(GetDevice(), 1, &(m_Fences[index])));
 	}
 
-	virtual void Prepare()
+	void Present(int index)
 	{
-		m_Fences.resize(GetBufferCount());
+		WaitFences(index);
 
-		// 创建fence
+		std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
+		VkPipelineStageFlags waitStageMask 			 = GetVulkanRHI()->GetStageMask();
+		std::shared_ptr<VulkanQueue> gfxQueue 		 = GetVulkanRHI()->GetDevice()->GetGraphicsQueue();
+		std::shared_ptr<VulkanQueue> presentQueue    = GetVulkanRHI()->GetDevice()->GetPresentQueue();
+		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
+		
+		VkSubmitInfo submitInfo = {};
+		submitInfo.sType 				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pWaitDstStageMask 	= &waitStageMask;
+		submitInfo.pWaitSemaphores 		= &m_PresentComplete;
+		submitInfo.waitSemaphoreCount 	= 1;
+		submitInfo.pSignalSemaphores 	= &m_RenderComplete;
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pCommandBuffers 		= &drawCmdBuffers[index];
+		submitInfo.commandBufferCount 	= 1;
+        
+		VERIFYVULKANRESULT(vkQueueSubmit(gfxQueue->GetHandle(), 1, &submitInfo, m_Fences[index]));
+		swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
+	}
+
+	virtual void Prepare()
+	{		// 创建fence
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
+		m_Fences.resize(GetFrameCount());
 		for (int32 i = 0; i < m_Fences.size(); ++i)
 		{
 			VERIFYVULKANRESULT(vkCreateFence(GetDevice(), &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Fences[i]));
 		}
 
+		// 创建Semaphore
+		VkSemaphoreCreateInfo createInfo;
+		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+		vkCreateSemaphore(GetDevice(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
 	}
 
 	virtual void Release()
@@ -132,6 +162,8 @@ public:
 		{
 			vkDestroyFence(GetDevice(), m_Fences[i], VULKAN_CPU_ALLOCATOR);
 		}
+		// 销毁Semaphore
+		vkDestroySemaphore(GetDevice(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 	}
 
 	virtual void PreInit() = 0;
@@ -144,7 +176,9 @@ public:
 
 protected:
 	std::vector<VkFence>				m_Fences;
-	
+	VkSemaphore 						m_RenderComplete;
+	VkSemaphore							m_PresentComplete;
+
 private:
 
 	int32 								m_Width;
