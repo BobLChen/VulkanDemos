@@ -49,6 +49,7 @@ endif ()
 set(ALL_LIBS
 	${Vulkan_LIBRARY}
 	imgui
+	assimp
 	SPIRV_Cross
 	Monkey
 )

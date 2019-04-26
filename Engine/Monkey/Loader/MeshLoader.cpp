@@ -16,7 +16,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 	const aiScene* scene = nullptr;
 	Assimp::Importer importer;
 
-	scene = importer.ReadFile(filename.c_str(), assimpFlags);
+	scene = importer.ReadFile(FileManager::GetFilePath(filename).c_str(), assimpFlags);
 
 	for (uint32 i = 0; i < scene->mNumMeshes; ++i)
 	{
@@ -83,7 +83,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 		std::vector<VertexChannelInfo> channels;
 		int32 offset = 0;
 		// position
-		if (channelMask | (1 << VertexAttribute::VA_Position))
+		if (channelMask & (1 << VertexAttribute::VA_Position))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_Position;
@@ -94,7 +94,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			offset += 12;
 		}
 		// uv
-		if (channelMask | (1 << VertexAttribute::VA_UV0))
+		if (channelMask & (1 << VertexAttribute::VA_UV0))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_UV0;
@@ -105,7 +105,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			offset += 8;
 		}
 		// uv1
-		if (channelMask | (1 << VertexAttribute::VA_UV1))
+		if (channelMask & (1 << VertexAttribute::VA_UV1))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_UV1;
@@ -116,7 +116,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			offset += 8;
 		}
 		// color
-		if (channelMask | (1 << VertexAttribute::VA_Color))
+		if (channelMask & (1 << VertexAttribute::VA_Color))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_Color;
@@ -127,7 +127,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			offset += 16;
 		}
 		// normal
-		if (channelMask | (1 << VertexAttribute::VA_Normal))
+		if (channelMask & (1 << VertexAttribute::VA_Normal))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_Normal;
@@ -138,7 +138,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 			offset += 12;
 		}
 		// tangent
-		if (channelMask | (1 << VertexAttribute::VA_Tangent))
+		if (channelMask & (1 << VertexAttribute::VA_Tangent))
 		{
 			VertexChannelInfo channel = {};
 			channel.attribute = VertexAttribute::VA_Tangent;
@@ -167,7 +167,7 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 		// make vertexbuffer
 		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>();
 		vertexBuffer->AddStream(streamInfo, channels, vertStreamData);
-		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT16);
+		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT32);
 		
 		// upload to gpu
 		vertexBuffer->Upload();

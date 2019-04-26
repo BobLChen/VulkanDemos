@@ -190,12 +190,12 @@ ENDIF(ASSIMP_DOUBLE_PRECISION)
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_LIST_DIR}/revision.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/revision.h
+  ${CMAKE_CURRENT_LIST_DIR}/revision.h
 )
 
 CONFIGURE_FILE(
   ${CMAKE_CURRENT_LIST_DIR}/include/assimp/config.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/include/assimp/config.h
+  ${CMAKE_CURRENT_LIST_DIR}/include/assimp/config.h
 )
 
 INCLUDE_DIRECTORIES( BEFORE
