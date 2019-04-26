@@ -31,7 +31,17 @@ public:
 	const std::string& GetAssetsPath() const;
 
 	static Engine* Get();
-
+    
+    void SetDeltaTime(float deltaTime)
+    {
+        m_DeltaTime = deltaTime;
+    }
+    
+    float GetDeltaTime()
+    {
+        return m_DeltaTime;
+    }
+    
 protected:
 
 	static Engine* g_Instance;
@@ -39,4 +49,6 @@ protected:
 	std::shared_ptr<VulkanRHI> m_VulkanRHI;
 	std::string m_AssetsPath;
 	bool m_IsRequestingExit;
+    
+    float m_DeltaTime;
 };

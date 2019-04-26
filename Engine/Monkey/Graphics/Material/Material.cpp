@@ -77,11 +77,13 @@ void Material::InitState()
 	m_MultisampleState.pSampleMask          = nullptr;
 }
 
-VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo, const VertexInputBindingInfo& inputBindingInfo)
+VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo)
 {
 	VkPipeline pipelineResult = VK_NULL_HANDLE;
 	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
 	
+	const VertexInputBindingInfo& inputBindingInfo = m_Shader->GetVertexInputBindingInfo();
+
     if (inputDeclareInfo.GetAttributes().size() != inputBindingInfo.GetAttributes().size())
     {
         MLOGE(

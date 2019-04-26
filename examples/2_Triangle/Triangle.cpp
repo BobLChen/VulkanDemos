@@ -46,7 +46,7 @@ public:
 	virtual void Init() override
 	{
 		m_VulkanRHI = GetVulkanRHI();
-		m_Device    = m_VulkanRHI->GetDevice()->GetInstanceHandle();
+		m_Device    = GetDevice();
 
 		CreateSemaphores();
 		CreateFences();
@@ -424,7 +424,8 @@ private:
 	
 	void UpdateUniformBuffers()
 	{
-		m_MVPData.model.AppendRotation(0.1f, Vector3::UpVector);
+		float deltaTime = Engine::Get()->GetDeltaTime();
+		m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
 
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
@@ -632,7 +633,7 @@ private:
 
 	void CreateFences()
 	{
-		m_Fences.resize(m_VulkanRHI->GetSwapChain()->GetBackBufferCount());
+		m_Fences.resize(GetBufferCount());
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;

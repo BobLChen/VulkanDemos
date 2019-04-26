@@ -49,6 +49,7 @@ endif ()
 set(ALL_LIBS
 	${Vulkan_LIBRARY}
 	imgui
+	assimp
 	SPIRV_Cross
 	Monkey
 )
@@ -65,9 +66,11 @@ include_directories(
 	external/glm/include/
 	external/imgui/
 	external/SPIRV-Cross/
+	external/assimp/include/
 )
 
 add_subdirectory(Engine)
 add_subdirectory(external/imgui)
 add_subdirectory(external/SPIRV-Cross)
+add_subdirectory(external/assimp)
 add_subdirectory(examples)

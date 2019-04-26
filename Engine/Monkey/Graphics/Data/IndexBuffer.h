@@ -80,6 +80,14 @@ public:
 		}
 		return !m_Invalid;
 	}
+    
+    FORCEINLINE void Upload()
+    {
+        if (m_Invalid)
+        {
+            CreateBuffer();
+        }
+    }
 	
 protected:
 

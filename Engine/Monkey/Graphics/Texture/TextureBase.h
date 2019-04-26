@@ -16,7 +16,7 @@ public:
 		return !m_Invalid;
 	}
     
-    const VkDescriptorImageInfo& GetImageInfo() const
+    const VkDescriptorImageInfo& GetDescriptorImageInfo() const
     {
         return m_DescriptorInfo;
     }

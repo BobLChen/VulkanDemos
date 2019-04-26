@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -26,22 +26,22 @@ public:
         m_Hash = Crc::MemCrc32(dataPtr, dataSize);
 	}
     
-	const VkShaderModule& GetHandle() const
+	FORCEINLINE const VkShaderModule& GetHandle() const
 	{
 		return m_ShaderModule;
 	}
     
-    const uint32* GetData() const
+    FORCEINLINE const uint32* GetData() const
     {
         return m_Data;
     }
     
-    const uint32 GetDataSize() const
+    FORCEINLINE const uint32 GetDataSize() const
     {
         return m_DataSize;
     }
     
-    const uint32 GetHash() const
+    FORCEINLINE const uint32 GetHash() const
     {
         return m_Hash;
     }
@@ -64,7 +64,7 @@ public:
 	{
 
 	}
-
+    
 	FORCEINLINE int32 GetLocation(VertexAttribute attribute) const
 	{
 		for (int32 i = 0; i < m_Attributes.size(); ++i)
@@ -128,30 +128,7 @@ protected:
 
 class Shader
 {
-private:
 
-    struct UBInfo
-    {
-        VkBuffer				buffer;
-        VkDeviceMemory			memory;
-        uint32					offset;
-        uint32					size;
-        uint32					allocationSize;
-		uint32					binding;
-		VkDescriptorBufferInfo	bufferInfo;
-    };
-    
-	struct UBDataInfo
-	{
-		uint8*	dataPtr;
-		uint32  dataSize;
-	};
-
-	struct ImageInfo
-	{
-		uint32 binding;
-	};
-	
 public:
 
 	Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule> frag, std::shared_ptr<ShaderModule> geom = nullptr, std::shared_ptr<ShaderModule> comp = nullptr, std::shared_ptr<ShaderModule> tesc = nullptr, std::shared_ptr<ShaderModule> tese = nullptr);
@@ -161,55 +138,34 @@ public:
 	static std::shared_ptr<Shader> Create(const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
 
 	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const std::string& filename);
-
-    void SetUniformData(const std::string& name, uint8* dataPtr, uint32 dataSize);
     
-    void SetTextureData(const std::string& name, std::shared_ptr<TextureBase> texture);
+    FORCEINLINE void Upload()
+    {
+        if (m_InvalidLayout)
+        {
+            UpdatePipelineLayout();
+        }
+    }
     
-	FORCEINLINE VkPipelineLayout GetPipelineLayout()
+	FORCEINLINE const VkDescriptorSetLayout& GetDescriptorSetLayout() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
+		return m_DescriptorSetLayout;
+	}
+    
+	FORCEINLINE const VkPipelineLayout& GetPipelineLayout() const
+	{
 		return m_PipelineLayout;
 	}
 
-	FORCEINLINE const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderStages()
+	FORCEINLINE const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderStages() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_ShaderStages;
 	}
     
-	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo()
+	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
 	{
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-
 		return m_VertexInputBindingInfo;
 	}
-
-    FORCEINLINE const VkDescriptorSet& GetDescriptorSet()
-    {
-		if (m_InvalidLayout)
-		{
-			UpdatePipelineLayout();
-		}
-        
-        if (m_InvalidDescSet)
-        {
-            UpdateDescriptorSet();
-        }
-
-        return m_DescriptorSet;
-    }
 
     FORCEINLINE const std::shared_ptr<ShaderModule> GetVertModule() const
     {
@@ -245,6 +201,12 @@ public:
     {
         return m_Hash;
     }
+
+	FORCEINLINE const std::vector<VkDescriptorPoolSize>& GetPoolSizes() const
+	{
+		return m_PoolSizes;
+	}
+
 protected:
     
     void UpdateVertPipelineLayout();
@@ -263,32 +225,21 @@ protected:
     
     void DestroyPipelineLayout();
     
-    void UpdateDescriptorSet();
-	
-    void CreateUniformBuffer(UBInfo& uniformBuffer, uint32 dataSize, VkBufferUsageFlags usage);
-    
 private:
     
-	bool					m_InvalidLayout;
-    bool                    m_InvalidDescSet;
-	VkPipelineLayout		m_PipelineLayout;
-	VkDescriptorPool		m_DescriptorPool;
-	VkDescriptorSetLayout	m_DescriptorSetLayout;
-	VkDescriptorSet			m_DescriptorSet;
-	VertexInputBindingInfo	m_VertexInputBindingInfo;
+	uint32												m_Hash;
+
+	bool												m_InvalidLayout;
+	VkDescriptorSetLayout								m_DescriptorSetLayout;
+	VkPipelineLayout									m_PipelineLayout;
+	VertexInputBindingInfo								m_VertexInputBindingInfo;
     
-    uint32                  m_Hash;
-
-	typedef std::shared_ptr<TextureBase>				TexturePtr;
-
 	std::vector<VkPipelineShaderStageCreateInfo>		m_ShaderStages;
     std::vector<VkDescriptorSetLayoutBinding>			m_SetLayoutBindings;
-    std::vector<VkDescriptorPoolSize>					m_PoolSizes;
-	std::unordered_map<std::string, UBInfo>				m_UBInfos;
-    std::unordered_map<std::string, ImageInfo>			m_ImageInfos;
-	std::unordered_map<std::string, TexturePtr>			m_Texturess;
-	std::unordered_map<std::string, UBDataInfo>			m_UBDatas;
     
+	int32												m_DescriptorTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
+	std::vector<VkDescriptorPoolSize>					m_PoolSizes;
+
 protected:
 
 	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;

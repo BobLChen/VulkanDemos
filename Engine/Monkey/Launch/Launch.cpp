@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <chrono>
 
 Engine* GameEngine = nullptr;
 AppModeBase* AppMode = nullptr;
@@ -31,6 +32,8 @@ int32 EngineInit()
 
 void EngineLoop()
 {
+	auto tStart = std::chrono::high_resolution_clock::now();
+
 	GameEngine->PumpMessage();
 	if (GameEngine->IsRequestingExit())
 	{
@@ -38,6 +41,10 @@ void EngineLoop()
 	}
 	GameEngine->Tick();
 	AppMode->Loop();
+    
+    auto tEnd  = std::chrono::high_resolution_clock::now();
+    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+    GameEngine->SetDeltaTime((float)tDiff / 1000.0f);
 }
 
 void EngineExit()
