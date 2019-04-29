@@ -68,17 +68,17 @@ Vulkan Examples
 - http://xiaopengyou.fun/article/33
 - https://github.com/BobLChen/VulkanTutorials/blob/master/examples/2_Triangle/Triangle.md
 
-![Triangle](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/2_Triangle/triangle.jpg)
+![Triangle](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/2_Triangle.jpg)
 
 ### OBJ
-![OBJLoader](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/3_OBJLoader/obj.png)
+![OBJLoader](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/3_OBJLoader.jpg)
 
 ### Pipelines
-![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/4_Pipelines/pipelines.png)
+![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/4_Pipelines.jpg)
 
 ### Texture
-![Texture](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/5_Texture/texture.jpg)
+![Texture](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/5_Texture.jpg)
 
 ### DynamicUniformBuffer
-![DynamicUniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/examples/6_DynamicUniformBuffer/DynamicUniformBuffer.png)
+![DynamicUniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/6_DynamicUniformBuffer.jpg)
 
