@@ -88,9 +88,6 @@ private:
 
 	void SetupCommandBuffers()
 	{
-		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
-		std::vector<VkFramebuffer>& frameBuffers     = GetVulkanRHI()->GetFrameBuffers();
-
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
@@ -98,56 +95,53 @@ private:
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
-		int32 width  = GetFrameWidth();
-		int32 height = GetFrameHeight();
-
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.renderPass = GetVulkanRHI()->GetRenderPass();
+		renderPassBeginInfo.renderPass = m_RenderPass;
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width = width;
-		renderPassBeginInfo.renderArea.extent.height = height;
+		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
+		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
 
 		VkViewport viewport = {};
 		viewport.x = 0;
-		viewport.y = height;
-		viewport.width  = (float)width;
-		viewport.height = -(float)height;
+		viewport.y = m_FrameHeight;
+		viewport.width  =  (float)m_FrameWidth;
+		viewport.height = -(float)m_FrameHeight;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
-		scissor.extent.width  = (uint32)width;
-		scissor.extent.height = (uint32)height;
+		scissor.extent.width  = (uint32)m_FrameWidth;
+		scissor.extent.height = (uint32)m_FrameHeight;
 		scissor.offset.x      = 0;
 		scissor.offset.y      = 0;
 
 		VkDeviceSize offsets[1] = { 0 };
         VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
         
-		for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
+		for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
 		{
-			renderPassBeginInfo.framebuffer = frameBuffers[i];
-			VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
-			vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-			vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-			vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
-			vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-			vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
-			vkCmdBindIndexBuffer(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
-			vkCmdDrawIndexed(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
-			vkCmdEndRenderPass(drawCmdBuffers[i]);
-			VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
+			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
+			vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
+			vkCmdSetScissor(m_DrawCmdBuffers[i], 0, 1, &scissor);
+			vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
+			vkCmdBindPipeline(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdBindVertexBuffers(m_DrawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
+			vkCmdBindIndexBuffer(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
+			vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
+			vkCmdEndRenderPass(m_DrawCmdBuffers[i]);
+			VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[i]));
 		}
 	}
 
 	void CreateDescriptorSet()
 	{
-		m_DescriptorSets.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
+		m_DescriptorSets.resize(GetFrameCount());
 
 		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
 		{
