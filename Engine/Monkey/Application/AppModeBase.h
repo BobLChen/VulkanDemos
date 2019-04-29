@@ -139,7 +139,8 @@ public:
 	}
 
 	virtual void Prepare()
-	{		// 创建fence
+	{		
+		// 创建fence
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -153,6 +154,17 @@ public:
 		VkSemaphoreCreateInfo createInfo;
 		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
 		vkCreateSemaphore(GetDevice(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_RenderComplete);
+
+		// frame and cmd
+		m_DrawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
+        m_FrameBuffers   = GetVulkanRHI()->GetFrameBuffers();
+
+		// render pass
+		m_RenderPass     = GetVulkanRHI()->GetRenderPass();
+
+		// frame size
+		m_FrameWidth     = GetFrameWidth();
+		m_FrameHeight    = GetFrameHeight();
 	}
 
 	virtual void Release()
@@ -178,9 +190,13 @@ protected:
 	std::vector<VkFence>				m_Fences;
 	VkSemaphore 						m_RenderComplete;
 	VkSemaphore							m_PresentComplete;
+	VkRenderPass						m_RenderPass;
+	std::vector<VkCommandBuffer>		m_DrawCmdBuffers;
+    std::vector<VkFramebuffer>			m_FrameBuffers;
 
+	int32								m_FrameWidth;
+	int32								m_FrameHeight;
 private:
-
 	int32 								m_Width;
 	int32 								m_Height;
 	std::string 						m_Title;

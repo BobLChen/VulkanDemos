@@ -24,10 +24,10 @@ typedef std::shared_ptr<Renderable>		RenderablePtr;
 typedef std::shared_ptr<Shader>			ShaderPtr;
 typedef std::shared_ptr<Material>		MaterialPtr;
 
-class Pipelines : public AppModeBase
+class PipelinesMode : public AppModeBase
 {
 public:
-    Pipelines(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+    PipelinesMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
 		, m_ImageIndex(0)
@@ -35,7 +35,7 @@ public:
         
     }
     
-    virtual ~Pipelines()
+    virtual ~PipelinesMode()
     {
         
     }
@@ -91,12 +91,6 @@ private:
 
     void SetupCommandBuffers()
     {
-		std::vector<VkCommandBuffer>& drawCmdBuffers = GetVulkanRHI()->GetCommandBuffers();
-		std::vector<VkFramebuffer>& frameBuffers     = GetVulkanRHI()->GetFrameBuffers();
-
-		uint32 width  = GetFrameWidth();
-		uint32 height = GetFrameHeight();
-
 		VkCommandBufferBeginInfo cmdBeginInfo;
         ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
@@ -106,25 +100,25 @@ private:
 
         VkRenderPassBeginInfo renderPassBeginInfo;
         ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-        renderPassBeginInfo.renderPass      = GetVulkanRHI()->GetRenderPass();
+        renderPassBeginInfo.renderPass      = m_RenderPass;
         renderPassBeginInfo.clearValueCount = 2;
         renderPassBeginInfo.pClearValues    = clearValues;
         renderPassBeginInfo.renderArea.offset.x = 0;
         renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width  = width;
-        renderPassBeginInfo.renderArea.extent.height = height;
+		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
+        renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
         
-        for (int32 i = 0; i < drawCmdBuffers.size(); ++i)
+        for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
         {
-            renderPassBeginInfo.framebuffer = frameBuffers[i];
+            renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
             
-            VERIFYVULKANRESULT(vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBeginInfo));
-            vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+            VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
+            vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             
 			for (int32 j = 0; j < m_Shaders.size(); ++j)
 			{
-				int32 ww = 0.5f * width;
-				int32 hh = 0.5f * height;
+				int32 ww = 0.5f * m_FrameWidth;
+				int32 hh = 0.5f * m_FrameHeight;
 				int32 tx = (j % 2) * ww;
 				int32 ty = (j / 2) * hh;
 
@@ -137,25 +131,25 @@ private:
 				viewport.y = ty + hh;
 
 				VkRect2D scissor = {};
-				scissor.extent.width  = width;
-				scissor.extent.height = height;
+				scissor.extent.width  = ww;
+				scissor.extent.height = hh;
 				scissor.offset.x = tx;
 				scissor.offset.y = ty;
 
 				VkDeviceSize offsets[1] = { 0 };
 				VkPipeline pipeline = m_Materials[j]->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
 				
-				vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
-				vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
-				vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shaders[0]->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
-				vkCmdBindPipeline(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-				vkCmdBindVertexBuffers(drawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
-				vkCmdBindIndexBuffer(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
-				vkCmdDrawIndexed(drawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
+				vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
+				vkCmdSetScissor(m_DrawCmdBuffers[i], 0, 1, &scissor);
+				vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shaders[0]->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
+				vkCmdBindPipeline(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+				vkCmdBindVertexBuffers(m_DrawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
+				vkCmdBindIndexBuffer(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
+				vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
 			}
 
-			vkCmdEndRenderPass(drawCmdBuffers[i]);
-            VERIFYVULKANRESULT(vkEndCommandBuffer(drawCmdBuffers[i]));
+			vkCmdEndRenderPass(m_DrawCmdBuffers[i]);
+            VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[i]));
         }
     }
 
@@ -286,5 +280,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-    return new Pipelines(1120, 840, "Pipelines", cmdLine);
+    return new PipelinesMode(1120, 840, "Pipelines", cmdLine);
 }

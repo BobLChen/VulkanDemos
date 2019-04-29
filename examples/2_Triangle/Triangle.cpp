@@ -633,7 +633,7 @@ private:
 
 	void CreateFences()
 	{
-		m_Fences.resize(GetBufferCount());
+		m_Fences.resize(GetFrameCount());
 		VkFenceCreateInfo fenceCreateInfo;
 		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
 		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
