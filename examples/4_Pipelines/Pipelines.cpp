@@ -24,10 +24,10 @@ typedef std::shared_ptr<Renderable>		RenderablePtr;
 typedef std::shared_ptr<Shader>			ShaderPtr;
 typedef std::shared_ptr<Material>		MaterialPtr;
 
-class Pipelines : public AppModeBase
+class PipelinesMode : public AppModeBase
 {
 public:
-    Pipelines(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+    PipelinesMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
 		, m_ImageIndex(0)
@@ -35,7 +35,7 @@ public:
         
     }
     
-    virtual ~Pipelines()
+    virtual ~PipelinesMode()
     {
         
     }
@@ -286,5 +286,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-    return new Pipelines(1120, 840, "Pipelines", cmdLine);
+    return new PipelinesMode(1120, 840, "Pipelines", cmdLine);
 }

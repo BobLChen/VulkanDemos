@@ -128,3 +128,18 @@ SETUP_SAMPLE_START(5_Texture)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(5_Texture)
+
+SETUP_SAMPLE_START(6_DynamicUniformBuffer)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/6_DynamicUniformBuffer/DynamicUniformBuffer.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/6_DynamicUniformBuffer/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(6_DynamicUniformBuffer)

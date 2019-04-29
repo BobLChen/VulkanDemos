@@ -21,10 +21,10 @@
 #include "File/FileManager.h"
 #include <vector>
 
-class DescriptorSets : public AppModeBase
+class TextureMode : public AppModeBase
 {
 public:
-	DescriptorSets(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	TextureMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
 		, m_ImageIndex(0)
@@ -32,7 +32,7 @@ public:
 
 	}
 
-	virtual ~DescriptorSets()
+	virtual ~TextureMode()
 	{
 
 	}
@@ -282,5 +282,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return new DescriptorSets(1120, 840, "DescriptorSets", cmdLine);
+	return new TextureMode(1120, 840, "Texture", cmdLine);
 }
