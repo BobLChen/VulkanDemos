@@ -67,7 +67,7 @@ vec4 ShadeSkin(vec3 albedo, vec3 normal, vec3 specular, vec3 viewDir, vec3 light
 
 void main() 
 {
-	vec3 lightDir = vec3(0, 0, 1);
+	vec3 lightDir = vec3(0, 0, -1);
 	vec3 normal = normalize(inNormal);
 	vec4 diffuse = texture(samplerColorMap, inUV0);
 	vec4 specular = texture(samplerSpecularMap, inUV0);

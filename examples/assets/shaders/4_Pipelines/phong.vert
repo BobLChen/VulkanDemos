@@ -23,7 +23,7 @@ void main()
 {
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 
-	outLightDir = vec3(0, 50, 50) - inPosition;
-	outViewDir  = vec3(0, 0, 1);		
+	outLightDir = vec3(0, 50, -50) - inPosition;
+	outViewDir  = vec3(0, 0, -1);		
 	outNormal   = inNormal;
 }

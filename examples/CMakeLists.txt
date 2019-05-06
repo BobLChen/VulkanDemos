@@ -143,3 +143,18 @@ SETUP_SAMPLE_START(6_DynamicUniformBuffer)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(6_DynamicUniformBuffer)
+
+SETUP_SAMPLE_START(7_PushConstants)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/7_PushConstants/PushConstants.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/7_PushConstants/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(7_PushConstants)
