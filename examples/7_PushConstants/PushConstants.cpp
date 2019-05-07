@@ -93,6 +93,7 @@ private:
 		m_ImageIndex = AcquireImageIndex();
         SetupCommandBuffers();
 		Present(m_ImageIndex);
+		VERIFYVULKANRESULT(vkQueueWaitIdle(GetVulkanRHI()->GetDevice()->GetGraphicsQueue()->GetHandle()));
 	}
 	
 	void SetupCommandBuffers()
@@ -113,7 +114,8 @@ private:
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
 		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
-		
+		renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
+
 		VkViewport viewport = {};
 		viewport.x = 0;
 		viewport.y = m_FrameHeight;
@@ -131,8 +133,8 @@ private:
 		VkDeviceSize offsets[1] = { 0 };
         VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
 
-        renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
         VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[m_ImageIndex], &cmdBeginInfo));
+
         vkCmdBeginRenderPass(m_DrawCmdBuffers[m_ImageIndex], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(m_DrawCmdBuffers[m_ImageIndex], 0, 1, &viewport);
         vkCmdSetScissor(m_DrawCmdBuffers[m_ImageIndex], 0, 1, &scissor);
@@ -152,6 +154,7 @@ private:
         vkCmdBindIndexBuffer(m_DrawCmdBuffers[m_ImageIndex], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
         vkCmdDrawIndexed(m_DrawCmdBuffers[m_ImageIndex], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
         vkCmdEndRenderPass(m_DrawCmdBuffers[m_ImageIndex]);
+
         VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[m_ImageIndex]));
 	}
     
