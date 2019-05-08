@@ -413,7 +413,7 @@ private:
     void UpdateUniformBuffers()
     {
         float deltaTime = Engine::Get()->GetDeltaTime();
-        // m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
+        m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
         
         m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
         m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
