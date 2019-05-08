@@ -158,3 +158,18 @@ SETUP_SAMPLE_START(7_PushConstants)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(7_PushConstants)
+
+SETUP_SAMPLE_START(8_SpecializationConstant)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/8_SpecializationConstant/SpecializationConstant.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/8_SpecializationConstant/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(8_SpecializationConstant)
