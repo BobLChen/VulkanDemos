@@ -8,6 +8,7 @@
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Texture/TextureBase.h"
 #include "Utils/Crc.h"
+#include "spirv_cross.hpp"
 
 #include <vector>
 #include <memory>
@@ -208,6 +209,7 @@ public:
 	}
 
 protected:
+    void CollectResources(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlagBits flagBits);
     
     void UpdateVertPipelineLayout();
     
@@ -236,6 +238,7 @@ private:
     
 	std::vector<VkPipelineShaderStageCreateInfo>		m_ShaderStages;
     std::vector<VkDescriptorSetLayoutBinding>			m_SetLayoutBindings;
+    std::vector<VkPushConstantRange>                    m_PushConstantRanges;
     
 	int32												m_DescriptorTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 	std::vector<VkDescriptorPoolSize>					m_PoolSizes;

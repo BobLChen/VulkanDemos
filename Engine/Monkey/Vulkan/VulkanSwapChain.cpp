@@ -291,18 +291,11 @@ VulkanSwapChain::SwapStatus VulkanSwapChain::Present(std::shared_ptr<VulkanQueue
 
 	VkPresentInfoKHR createInfo;
 	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
-
-	VkSemaphore semaphore = VK_NULL_HANDLE;
-	if (doneSemaphore)
-	{
-		semaphore = *doneSemaphore;
-		createInfo.waitSemaphoreCount = 1;
-		createInfo.pWaitSemaphores    = &semaphore;
-	}
-
-	createInfo.swapchainCount = 1;
-	createInfo.pSwapchains    = &m_SwapChain;
-	createInfo.pImageIndices  = (uint32*)&m_CurrentImageIndex;
+	createInfo.waitSemaphoreCount = doneSemaphore == nullptr ? 0 : 1;
+	createInfo.pWaitSemaphores    = doneSemaphore;
+	createInfo.swapchainCount	  = 1;
+	createInfo.pSwapchains        = &m_SwapChain;
+	createInfo.pImageIndices      = (uint32*)&m_CurrentImageIndex;
     
 	VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &createInfo);
 
