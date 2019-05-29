@@ -22,13 +22,10 @@
 #include "Utils/Alignment.h"
 #include <vector>
 
-#define CUBE_SIZE  5
-#define CUBE_COUNT CUBE_SIZE * CUBE_SIZE * CUBE_SIZE
-
-class SpeciallizationConstant : public AppModeBase
+class SpeciallizationConstantMode : public AppModeBase
 {
 public:
-    SpeciallizationConstant(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+    SpeciallizationConstantMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
     : AppModeBase(width, height, title)
     , m_Ready(false)
     , m_ImageIndex(0)
@@ -36,7 +33,7 @@ public:
         
     }
     
-    virtual ~SpeciallizationConstant()
+    virtual ~SpeciallizationConstantMode()
     {
         
     }
@@ -452,5 +449,5 @@ private:
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-    return new SpeciallizationConstant(1120, 840, "SpeciallizationConstant", cmdLine);
+    return new SpeciallizationConstantMode(1120, 840, "SpeciallizationConstantMode", cmdLine);
 }
