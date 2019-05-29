@@ -263,8 +263,19 @@ private:
 		m_Material->SetDepthWriteEnable(true);
 		m_Material->SetStencilTestEnable(true);
         
+		std::vector<std::string> images = {
+			"assets/textures/brick_bump.jpg",
+			"assets/textures/brick_diffuse.jpg",
+			"assets/textures/perlin-512.png",
+			"assets/textures/roughness_map.jpg",
+			"assets/textures/UV_Grid_Sm.jpg",
+			"assets/textures/water.jpg",
+			"assets/textures/waterdudv.jpg",
+			"assets/textures/waternormals.jpg"
+		};
+
         m_Diffuse  = std::make_shared<Texture2D>();
-		m_Diffuse->LoadFromFile("assets/textures/head_diffuse.jpg");
+		m_Diffuse->LoadFromFiles(images);
 
         m_Renderable = MeshLoader::LoadFromFile("assets/models/plane.obj")[0];
     }
