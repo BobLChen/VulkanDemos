@@ -76,7 +76,7 @@ public:
 private:
 
 	struct UboInstanceData {
-		Matrix4x4 model;
+		
 		Vector4   index;
 	};
     
@@ -84,7 +84,8 @@ private:
     {
         Matrix4x4 view;
         Matrix4x4 projection;
-		UboInstanceData instances[NUM_INSTANCE];
+		Matrix4x4 models[NUM_INSTANCE];
+		float indexs[NUM_INSTANCE];
     };
     
     void Draw()
@@ -204,14 +205,14 @@ private:
         for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
             m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
         }
-        
+
 		for (int32 i = 0; i < NUM_INSTANCE; ++i)
 		{
-			m_MVPData.instances[i].index = Vector4(i);
-			m_MVPData.instances[i].model.SetIdentity();
-			m_MVPData.instances[i].model.AppendTranslation(Vector3(0, i * 10.0f - 50.0f, 0));
-			m_MVPData.instances[i].model.AppendRotation(-5.0f, Vector3::RightVector);
-			m_MVPData.instances[i].model.AppendRotation(90.0f, Vector3::ForwardVector);
+			m_MVPData.indexs[i] = i;
+			m_MVPData.models[i].SetIdentity();
+			m_MVPData.models[i].AppendTranslation(Vector3(0, i * 10.0f - 50.0f, 0));
+			m_MVPData.models[i].AppendRotation(-5.0f, Vector3::RightVector);
+			m_MVPData.models[i].AppendRotation(90.0f, Vector3::ForwardVector);
 		}
         
         m_MVPData.view.SetIdentity();
@@ -245,12 +246,6 @@ private:
     
     void UpdateUniformBuffers()
     {
-		/*for (int32 i = 0; i < NUM_INSTANCE; ++i)
-		{
-			float deltaTime = Engine::Get()->GetDeltaTime();
-			m_MVPData.instances[i].model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
-		}*/
-        
         m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
         m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
         m_MVPBuffers[m_ImageIndex]->Unmap();
