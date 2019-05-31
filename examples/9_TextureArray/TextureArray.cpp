@@ -85,12 +85,11 @@ private:
         Matrix4x4 view;
         Matrix4x4 projection;
 		Matrix4x4 models[NUM_INSTANCE];
-		float indexs[NUM_INSTANCE];
+		Vector4 indexs[NUM_INSTANCE];
     };
     
     void Draw()
     {
-        UpdateUniformBuffers();
         m_ImageIndex = AcquireImageIndex();
         Present(m_ImageIndex);
     }
@@ -201,14 +200,15 @@ private:
     
     void CreateUniformBuffers()
     {
+		uint32 uboSize = sizeof(m_MVPData);
         m_MVPBuffers.resize(GetFrameCount());
         for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
-            m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
+            m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uboSize);
         }
 
 		for (int32 i = 0; i < NUM_INSTANCE; ++i)
 		{
-			m_MVPData.indexs[i] = i;
+			m_MVPData.indexs[i] = Vector4(i);
 			m_MVPData.models[i].SetIdentity();
 			m_MVPData.models[i].AppendTranslation(Vector3(0, i * 10.0f - 50.0f, 0));
 			m_MVPData.models[i].AppendRotation(-5.0f, Vector3::RightVector);
@@ -216,13 +216,18 @@ private:
 		}
         
         m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector4(0, 0, -80.0f));
+        m_MVPData.view.SetOrigin(Vector4(0, 0, -60.0f));
         m_MVPData.view.SetInverse();
         
         m_MVPData.projection.SetIdentity();
         m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
         
-        UpdateUniformBuffers();
+		for (int32 i = 0; i < m_MVPBuffers.size(); ++i)
+		{
+			m_MVPBuffers[i]->Map(uboSize, 0);
+			m_MVPBuffers[i]->CopyTo(&m_MVPData, uboSize);
+			m_MVPBuffers[i]->Unmap();
+		}
     }
     
     void DestroyAssets()
@@ -244,19 +249,10 @@ private:
         m_MVPBuffers.clear();
     }
     
-    void UpdateUniformBuffers()
-    {
-        m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
-        m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
-        m_MVPBuffers[m_ImageIndex]->Unmap();
-    }
-    
     void LoadAssets()
     {
         m_Shader   = Shader::Create("assets/shaders/9_TextureArray/instancing.vert.spv", "assets/shaders/9_TextureArray/instancing.frag.spv");
         m_Material = std::make_shared<Material>(m_Shader);
-		m_Material->SetDepthWriteEnable(true);
-		m_Material->SetStencilTestEnable(true);
         
 		std::vector<std::string> images = {
 			"assets/textures/brick_bump.jpg",

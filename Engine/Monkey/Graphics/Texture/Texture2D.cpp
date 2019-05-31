@@ -12,6 +12,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "Loader/stb_image.h"
 
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "Loader/stb_image_resize.h"
+
+#define STB_IMAGE_WRITE_STATIC
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "Loader/stb_image_write.h"
+
 Texture2D::Texture2D()
 {
 
@@ -49,28 +56,39 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		}
 
 		ImageInfo imageInfo;
-		imageInfo.data = stbi_load_from_memory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 4);
+		imageInfo.data = stbi_load_from_memory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 0);
+
+		delete[] dataPtr;
+		dataSize = -1;
+		dataPtr  = nullptr;
+
 		if (!imageInfo.data)
 		{
 			return;
 		}
 
-		if (imageInfo.comp == 3)
+		if (imageInfo.comp != 4)
 		{
-			uint8* temp = new unsigned char[imageInfo.width * imageInfo.height * 4];
-			for (uint32 i = 0; i < imageInfo.width * imageInfo.height; ++i)
+			uint32 size = imageInfo.width * imageInfo.height;
+			uint8* temp = new uint8[size * 4];
+			for (uint32 i = 0; i < size; ++i)
 			{
-				temp[i * 4 + 0] = imageInfo.data[i * 3 + 0];
-				temp[i * 4 + 1] = imageInfo.data[i * 3 + 1];
-				temp[i * 4 + 2] = imageInfo.data[i * 3 + 2];
-				temp[i * 4 + 3] = 255;
+				uint32 idx1 = i * 4;
+				uint32 idx0 = i * imageInfo.comp;
+				for (int j = 0; j < imageInfo.comp; ++j) 
+				{
+					temp[idx1 + j] = imageInfo.data[idx0 + j];
+				}
+				for (int j = imageInfo.comp; j < 4; ++j) 
+				{
+					temp[idx1 + j] = j == 3 ? 255 : 0;
+				}
 			}
 			free(imageInfo.data);
 			imageInfo.data = temp;
 			imageInfo.comp = 4;
 		}
 
-		delete[] dataPtr;
 		images[i] = imageInfo;
 	}
 
@@ -207,7 +225,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.maxAnisotropy = vulkanRHI->GetDevice()->GetLimits().maxSamplerAnisotropy;
-	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.anisotropyEnable = VK_FALSE;
 	VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &m_ImageSampler));
 	
 	VkImageViewCreateInfo viewInfo;
