@@ -71,7 +71,7 @@ SET( PUBLIC_HEADERS
   ${HEADER_PATH}/camera.h
   ${HEADER_PATH}/color4.h
   ${HEADER_PATH}/color4.inl
-  ${CMAKE_CURRENT_BINARY_DIR}/../include/assimp/config.h
+  ${HEADER_PATH}/config.h
   ${HEADER_PATH}/defs.h
   ${HEADER_PATH}/Defines.h
   ${HEADER_PATH}/cfileio.h
