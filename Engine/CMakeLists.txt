@@ -160,6 +160,8 @@ set(Monkey_Graphics_Texture_SRCS
 set(Monkey_Loader_HDRS
 	Monkey/Loader/MeshLoader.h
 	Monkey/Loader/stb_image.h
+	Monkey/Loader/stb_image_resize.h
+	Monkey/Loader/stb_image_write.h
 )
 set(Monkey_Loader_SRCS
 	Monkey/Loader/MeshLoader.cpp

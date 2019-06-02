@@ -223,7 +223,10 @@ void Shader::CollectResources(spirv_cross::Compiler& compiler, spirv_cross::Shad
         // const std::string &varName      = compiler.get_name(res.id);
         int32 bindingSet = compiler.get_decoration(res.id, spv::DecorationBinding);
         int32 bindingIdx = -1;
-        
+
+		int32 size0 = compiler.get_declared_struct_size(type);
+		int32 size1 = compiler.get_declared_struct_size(base_type);
+
         for (int32 j = 0; j < m_SetLayoutBindings.size(); ++j)
         {
             if (m_SetLayoutBindings[j].binding == bindingSet &&
