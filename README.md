@@ -84,3 +84,9 @@ Vulkan Examples
 
 ### SpeciallizationConstant
 ![SpeciallizationConstant](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/8_SpecializationConstants.jpg)
+
+### TextureArray
+![TextureArray](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/9_TextureArray.jpg)
+
+### Texture3D
+![Texture3D](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/10_Texture3D.jpg)
