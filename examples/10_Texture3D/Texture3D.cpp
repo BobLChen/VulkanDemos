@@ -180,6 +180,7 @@ private:
         Matrix4x4 model;
         Matrix4x4 view;
         Matrix4x4 projection;
+        Vector4 depth;
     };
     
     void Draw()
@@ -297,6 +298,8 @@ private:
             m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
         }
         
+        m_MVPData.depth.Set(0, 0, 0, 0);
+        
         m_MVPData.model.SetIdentity();
         
         m_MVPData.view.SetIdentity();
@@ -332,7 +335,10 @@ private:
     void UpdateUniformBuffers()
     {
         float deltaTime = Engine::Get()->GetDeltaTime();
-        m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
+        // m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
+        
+        m_MVPData.depth.z += deltaTime;
+        m_MVPData.depth.x  = (MMath::Sin(m_MVPData.depth.z) + 1) * 0.5f;
         
         m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
         m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
