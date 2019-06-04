@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
 #include "Application/AppModeBase.h"
@@ -210,13 +210,12 @@ private:
 		{
 			m_MVPData.indexs[i] = Vector4(i);
 			m_MVPData.models[i].SetIdentity();
-			m_MVPData.models[i].AppendTranslation(Vector3(0, i * 10.0f - 50.0f, 0));
-			m_MVPData.models[i].AppendRotation(-5.0f, Vector3::RightVector);
-			m_MVPData.models[i].AppendRotation(90.0f, Vector3::ForwardVector);
+            m_MVPData.models[i].AppendTranslation(Vector3(i * 25 - 87.5fÅ, 0, 0));
 		}
         
         m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector4(0, 0, -60.0f));
+        m_MVPData.view.AppendRotation(90.0f, Vector3::RightVector);
+        m_MVPData.view.SetOrigin(Vector4(0, 150, 0));
         m_MVPData.view.SetInverse();
         
         m_MVPData.projection.SetIdentity();

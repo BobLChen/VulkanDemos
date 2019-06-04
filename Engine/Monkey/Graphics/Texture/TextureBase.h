@@ -37,6 +37,7 @@ protected:
 	uint32						m_Depth;
 	uint32						m_MipLevels;
 	uint32						m_LayerCount;
+	VkFormat					m_Format;
 
 	bool						m_Invalid;
 };

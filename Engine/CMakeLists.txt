@@ -151,10 +151,12 @@ set(Monkey_Graphics_Renderer_SRCS
 set(Monkey_Graphics_Texture_HDRS
 	Monkey/Graphics/Texture/TextureBase.h
 	Monkey/Graphics/Texture/Texture2D.h
+	Monkey/Graphics/Texture/Texture3D.h
 )
 set(Monkey_Graphics_Texture_SRCS
 	Monkey/Graphics/Texture/TextureBase.cpp
 	Monkey/Graphics/Texture/Texture2D.cpp
+	Monkey/Graphics/Texture/Texture3D.cpp
 )
 
 set(Monkey_Loader_HDRS
