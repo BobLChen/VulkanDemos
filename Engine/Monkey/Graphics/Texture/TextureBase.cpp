@@ -13,6 +13,7 @@ TextureBase::TextureBase()
 	, m_Depth(0)
 	, m_MipLevels(0)
 	, m_LayerCount(0)
+	, m_Format(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_Invalid(true)
 {
 

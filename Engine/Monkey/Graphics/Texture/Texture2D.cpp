@@ -89,13 +89,14 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 
 	m_Width       = images[0].width;
 	m_Height      = images[0].height;
-    m_MipLevels	  = MMath::FloorToInt(MMath::Log2(MMath::Max(m_Width, m_Height))) + 1;
+	m_Depth       = 1;
 	m_MipLevels   = 1;
+	m_LayerCount  = images.size();
 	m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	m_Format      = VK_FORMAT_R8G8B8A8_UNORM;
 	
     std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
     VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
     uint32 memoryTypeIndex = 0;
     VkMemoryRequirements memReqs = {};
@@ -105,6 +106,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
     // 准备staging数据
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
     VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+
     // staging buffer
     VkBufferCreateInfo bufferCreateInfo;
     ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
@@ -112,13 +114,15 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
     bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &stagingBuffer));
-    // bind staging memory
+    
+	// bind staging memory
     vkGetBufferMemoryRequirements(device, stagingBuffer, &memReqs);
     vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
     memAllocInfo.allocationSize  = memReqs.size;
     memAllocInfo.memoryTypeIndex = memoryTypeIndex;
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &stagingMemory));
     VERIFYVULKANRESULT(vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0));
+
     // 将数据拷贝到staging buffer
 	for (int32 i = 0; i < filenames.size(); ++i)
 	{
@@ -128,13 +132,14 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		std::memcpy(stagingDataPtr, images[i].data, size);
 		vkUnmapMemory(device, stagingMemory);
 	}
+
 	// 创建image
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format          = format;
+    imageCreateInfo.format          = m_Format;
     imageCreateInfo.mipLevels       = m_MipLevels;
-    imageCreateInfo.arrayLayers     = images.size();
+    imageCreateInfo.arrayLayers     = m_LayerCount;
     imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
     imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
     imageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
@@ -142,6 +147,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
     imageCreateInfo.extent          = { (uint32_t)m_Width, (uint32_t)m_Height, 1 };
     imageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Image));
+
     // bind image buffer
     vkGetImageMemoryRequirements(device, m_Image, &memReqs);
     vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
@@ -155,7 +161,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subresourceRange.levelCount = 1;
-	subresourceRange.layerCount = images.size();
+	subresourceRange.layerCount = m_LayerCount;
 	subresourceRange.baseMipLevel = 0;
 
 	{
@@ -219,7 +225,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	samplerInfo.maxLod = 0.0f;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.mipLodBias = 0.0f;
-	samplerInfo.maxAnisotropy = vulkanRHI->GetDevice()->GetLimits().maxSamplerAnisotropy;
+	samplerInfo.maxAnisotropy = 1.0f;
 	samplerInfo.anisotropyEnable = VK_FALSE;
 	VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &m_ImageSampler));
 	
@@ -227,10 +233,10 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 	viewInfo.image = m_Image;
-	viewInfo.format = format;
+	viewInfo.format = m_Format;
 	viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.layerCount = images.size();
+	viewInfo.subresourceRange.layerCount = m_LayerCount;
 	viewInfo.subresourceRange.levelCount = 1;
 	VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &m_ImageView));
 
@@ -238,7 +244,9 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	m_DescriptorInfo.imageView	 = m_ImageView;
 	m_DescriptorInfo.imageLayout = m_ImageLayout;
 
-    MLOG("Image create success. size=%dx%d", m_Width, m_Height);
+	m_Invalid = false;
+
+    MLOG("Texture2D Array create success. size=%dx%d,Layer=%d", m_Width, m_Height, m_LayerCount);
 }
 
 void Texture2D::LoadFromFile(const std::string& filename)
@@ -265,12 +273,14 @@ void Texture2D::LoadFromFile(const std::string& filename)
     
 	m_Width       = width;
 	m_Height      = height;
+	m_Depth       = 1;
+	m_LayerCount  = 1;
+	m_Format      = VK_FORMAT_R8G8B8A8_UNORM;
     m_MipLevels	  = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
 	m_ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	
     std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
     VkDevice device = vulkanRHI->GetDevice()->GetInstanceHandle();
-	VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
 
     uint32 memoryTypeIndex = 0;
     VkMemoryRequirements memReqs = {};
@@ -280,6 +290,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     // 准备staging数据
     VkBuffer stagingBuffer = VK_NULL_HANDLE;
     VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+
     // staging buffer
     VkBufferCreateInfo bufferCreateInfo;
     ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
@@ -287,6 +298,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &stagingBuffer));
+
     // bind staging memory
     vkGetBufferMemoryRequirements(device, stagingBuffer, &memReqs);
     vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
@@ -294,16 +306,18 @@ void Texture2D::LoadFromFile(const std::string& filename)
     memAllocInfo.memoryTypeIndex = memoryTypeIndex;
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &stagingMemory));
     VERIFYVULKANRESULT(vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0));
+
     // 将数据拷贝到staging buffer
     void* stagingDataPtr = nullptr;
     VERIFYVULKANRESULT(vkMapMemory(device, stagingMemory, 0, memReqs.size, 0, &stagingDataPtr));
     std::memcpy(stagingDataPtr, rgbaData, bufferCreateInfo.size);
     vkUnmapMemory(device, stagingMemory);
+
 	// 创建image
     VkImageCreateInfo imageCreateInfo;
     ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
     imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format          = format;
+    imageCreateInfo.format          = m_Format;
     imageCreateInfo.mipLevels       = m_MipLevels;
     imageCreateInfo.arrayLayers     = 1;
     imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
@@ -313,6 +327,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     imageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
     imageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Image));
+
     // bind image buffer
     vkGetImageMemoryRequirements(device, m_Image, &memReqs);
     vulkanRHI->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
@@ -326,7 +341,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subresourceRange.levelCount = 1;
-	subresourceRange.layerCount = 1;
+	subresourceRange.layerCount = m_LayerCount;
 
 	{
 		VkImageMemoryBarrier imageMemoryBarrier;
@@ -341,13 +356,13 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	}
 
 	VkBufferImageCopy bufferCopyRegion = {};
-	bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	bufferCopyRegion.imageSubresource.mipLevel = 0;
+	bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+	bufferCopyRegion.imageSubresource.mipLevel       = 0;
 	bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
-	bufferCopyRegion.imageSubresource.layerCount = 1;
-	bufferCopyRegion.imageExtent.width = width;
-	bufferCopyRegion.imageExtent.height = height;
-	bufferCopyRegion.imageExtent.depth = 1;
+	bufferCopyRegion.imageSubresource.layerCount     = 1;
+	bufferCopyRegion.imageExtent.width  = m_Width;
+	bufferCopyRegion.imageExtent.height = m_Height;
+	bufferCopyRegion.imageExtent.depth  = m_Depth;
 
 	vkCmdCopyBufferToImage(copyCmd, stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
 
@@ -376,23 +391,23 @@ void Texture2D::LoadFromFile(const std::string& filename)
 
 		imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageBlit.srcSubresource.layerCount = 1;
-		imageBlit.srcSubresource.mipLevel = i - 1;
+		imageBlit.srcSubresource.mipLevel   = i - 1;
 		imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
 		imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
 		imageBlit.srcOffsets[1].z = 1;
 
 		imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		imageBlit.dstSubresource.layerCount = 1;
-		imageBlit.dstSubresource.mipLevel = i;
+		imageBlit.dstSubresource.mipLevel   = i;
 		imageBlit.dstOffsets[1].x = int32_t(width >> i);
 		imageBlit.dstOffsets[1].y = int32_t(height >> i);
 		imageBlit.dstOffsets[1].z = 1;
 
 		VkImageSubresourceRange mipSubRange = {};
-		mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
 		mipSubRange.baseMipLevel = i;
-		mipSubRange.levelCount = 1;
-		mipSubRange.layerCount = 1;
+		mipSubRange.levelCount   = 1;
+		mipSubRange.layerCount   = 1;
 
 		{
 			VkImageMemoryBarrier imageMemoryBarrier;
@@ -450,15 +465,13 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	samplerInfo.maxAnisotropy = 1.0;
 	samplerInfo.anisotropyEnable = VK_FALSE;
 	samplerInfo.maxLod = (float)m_MipLevels;
-	samplerInfo.maxAnisotropy = vulkanRHI->GetDevice()->GetLimits().maxSamplerAnisotropy;
-	samplerInfo.anisotropyEnable = VK_TRUE;
 	VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &m_ImageSampler));
 	
 	VkImageViewCreateInfo viewInfo;
 	ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
 	viewInfo.image = m_Image;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = format;
+	viewInfo.format = m_Format;
 	viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	viewInfo.subresourceRange.layerCount = 1;
@@ -469,5 +482,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	m_DescriptorInfo.imageView	 = m_ImageView;
 	m_DescriptorInfo.imageLayout = m_ImageLayout;
 
-    MLOG("Image create success. size=%dx%d", width, height);
+	m_Invalid = false;
+
+    MLOG("Texture2D create success. size=%dx%d", width, height);
 }

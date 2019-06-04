@@ -19,6 +19,7 @@
 #include "Graphics/Renderer/Mesh.h"
 #include "Graphics/Renderer/Renderable.h"
 #include "Graphics/Texture/Texture2D.h"
+#include "Graphics/Texture/Texture3D.h"
 #include "File/FileManager.h"
 #include "Utils/VulkanUtils.h"
 #include <vector>
@@ -181,21 +182,6 @@ private:
         Matrix4x4 projection;
     };
     
-    struct Texture3DData
-    {
-        VkSampler sampler           = VK_NULL_HANDLE;
-        VkImage image               = VK_NULL_HANDLE;
-        VkImageLayout imageLayout   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
-        VkImageView view            = VK_NULL_HANDLE;
-        VkDescriptorImageInfo descriptor;
-        VkFormat format             = VK_FORMAT_R8_UNORM;
-        int32 width                 = -1;
-        int32 height                = -1;
-        int32 depth                 = -1;
-        int32 mipLevels             = 1;
-    };
-    
     void Draw()
     {
         UpdateUniformBuffers();
@@ -281,7 +267,7 @@ private:
             writeDescriptorSet.dstSet            = m_DescriptorSets[i];
             writeDescriptorSet.descriptorCount = 1;
             writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            writeDescriptorSet.pImageInfo      = &(m_Texture3D.descriptor);
+            writeDescriptorSet.pImageInfo      = &(m_Texture3D->GetDescriptorImageInfo());
             writeDescriptorSet.dstBinding      = 1;
             vkUpdateDescriptorSets(GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
         }
@@ -328,6 +314,7 @@ private:
         m_Shader     = nullptr;
         m_Material   = nullptr;
         m_Renderable = nullptr;
+		m_Texture3D  = nullptr;
         
         Material::DestroyCache();
     }
@@ -392,16 +379,12 @@ private:
         return data;
     }
     
-    void CreateNoiseTexture3D(int32 width, int32 height, int32 depth)
+    void LoadNoiseTexture3D(int32 width, int32 height, int32 depth)
     {
-        m_Texture3D.width     = width;
-        m_Texture3D.height    = height;
-        m_Texture3D.depth     = depth;
-        m_Texture3D.mipLevels = 1;
-        m_Texture3D.format    = VK_FORMAT_R8_UNORM;
-        
+		VkFormat format = VK_FORMAT_R8_UNORM;
+
         VkFormatProperties formatProperties;
-        vkGetPhysicalDeviceFormatProperties(GetVulkanRHI()->GetDevice()->GetPhysicalHandle(), m_Texture3D.format, &formatProperties);
+        vkGetPhysicalDeviceFormatProperties(GetVulkanRHI()->GetDevice()->GetPhysicalHandle(), format, &formatProperties);
         if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_DST_BIT))
         {
             MLOGE("Error: Device does not support flag TRANSFER_DST for selected texture format!");
@@ -417,152 +400,13 @@ private:
         
         uint8* data = GenerateNoiseData(width, height, depth);
         
-        VkBuffer stagingBuffer = VK_NULL_HANDLE;
-        VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
-        
-        uint32 memoryTypeIndex = 0;
-        VkMemoryRequirements memReqs = {};
-        VkMemoryAllocateInfo memAllocInfo;
-        ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-        
-        VkBufferCreateInfo bufferCreateInfo;
-        ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-        bufferCreateInfo.size = width * height * depth;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        VERIFYVULKANRESULT(vkCreateBuffer(GetDevice(), &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &stagingBuffer));
-        
-        vkGetBufferMemoryRequirements(GetDevice(), stagingBuffer, &memReqs);
-        GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, &memoryTypeIndex);
-        memAllocInfo.allocationSize  = memReqs.size;
-        memAllocInfo.memoryTypeIndex = memoryTypeIndex;
-        VERIFYVULKANRESULT(vkAllocateMemory(GetDevice(), &memAllocInfo, VULKAN_CPU_ALLOCATOR, &stagingMemory));
-        VERIFYVULKANRESULT(vkBindBufferMemory(GetDevice(), stagingBuffer, stagingMemory, 0));
-        
-        // 将数据拷贝到staging buffer
-        void* stagingDataPtr = nullptr;
-        VERIFYVULKANRESULT(vkMapMemory(GetDevice(), stagingMemory, 0, memReqs.size, 0, &stagingDataPtr));
-        std::memcpy(stagingDataPtr, data, bufferCreateInfo.size);
-        vkUnmapMemory(GetDevice(), stagingMemory);
-        
-        // Create optimal tiled target image
-        VkImageCreateInfo imageCreateInfo;
-        ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
-        imageCreateInfo.imageType     = VK_IMAGE_TYPE_3D;
-        imageCreateInfo.format        = m_Texture3D.format;
-        imageCreateInfo.mipLevels     = m_Texture3D.mipLevels;
-        imageCreateInfo.arrayLayers   = 1;
-        imageCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
-        imageCreateInfo.extent.width  = m_Texture3D.width;
-        imageCreateInfo.extent.height = m_Texture3D.height;
-        imageCreateInfo.extent.depth  = m_Texture3D.depth;
-        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageCreateInfo.usage         = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        VERIFYVULKANRESULT(vkCreateImage(GetDevice(), &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Texture3D.image));
-        
-        vkGetImageMemoryRequirements(GetDevice(), m_Texture3D.image, &memReqs);
-        GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex);
-        memAllocInfo.allocationSize  = memReqs.size;
-        memAllocInfo.memoryTypeIndex = memoryTypeIndex;
-        VERIFYVULKANRESULT(vkAllocateMemory(GetDevice(), &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_Texture3D.deviceMemory));
-        VERIFYVULKANRESULT(vkBindImageMemory(GetDevice(), m_Texture3D.image, m_Texture3D.deviceMemory, 0));
-        
-        VkCommandBuffer copyCmd = vk_demo_util::CreateCommandBuffer(GetVulkanRHI()->GetCommandPool(), VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-        
-        VkImageSubresourceRange subresourceRange = {};
-        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.levelCount = 1;
-        subresourceRange.layerCount = 1;
-        subresourceRange.baseMipLevel = 0;
-        
-        {
-            VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = 0;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.image = m_Texture3D.image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        }
-        
-        VkBufferImageCopy bufferCopyRegion = {};
-        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        bufferCopyRegion.imageSubresource.mipLevel = 0;
-        bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
-        bufferCopyRegion.imageSubresource.layerCount = 1;
-        bufferCopyRegion.imageExtent.width = width;
-        bufferCopyRegion.imageExtent.height = height;
-        bufferCopyRegion.imageExtent.depth = depth;
-        
-        vkCmdCopyBufferToImage(copyCmd, stagingBuffer, m_Texture3D.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
-        
-        {
-            VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            imageMemoryBarrier.image = m_Texture3D.image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        }
-        
-        vk_demo_util::FlushCommandBuffer(copyCmd, GetVulkanRHI()->GetCommandPool(), GetVulkanRHI()->GetDevice()->GetGraphicsQueue()->GetHandle(), true);
-        
-        vkFreeMemory(GetDevice(), stagingMemory, VULKAN_CPU_ALLOCATOR);
-        vkDestroyBuffer(GetDevice(), stagingBuffer, VULKAN_CPU_ALLOCATOR);
-        
-        // Create sampler
-        VkSamplerCreateInfo samplerInfo;
-        ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
-        samplerInfo.magFilter = VK_FILTER_LINEAR;
-        samplerInfo.minFilter = VK_FILTER_LINEAR;
-        samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        samplerInfo.mipLodBias = 0.0f;
-        samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
-        samplerInfo.minLod = 0.0f;
-        samplerInfo.maxLod = 0.0f;
-        samplerInfo.maxAnisotropy = 1.0;
-        samplerInfo.anisotropyEnable = VK_FALSE;
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VERIFYVULKANRESULT(vkCreateSampler(GetDevice(), &samplerInfo, VULKAN_CPU_ALLOCATOR, &m_Texture3D.sampler));
-
-        // Create image view
-        VkImageViewCreateInfo viewInfo;
-        ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
-        viewInfo.image    = m_Texture3D.image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_3D;
-        viewInfo.format   = m_Texture3D.format;
-        viewInfo.components = {
-            VK_COMPONENT_SWIZZLE_R,
-            VK_COMPONENT_SWIZZLE_G,
-            VK_COMPONENT_SWIZZLE_B,
-            VK_COMPONENT_SWIZZLE_A
-        };
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-        viewInfo.subresourceRange.levelCount = 1;
-        VERIFYVULKANRESULT(vkCreateImageView(GetDevice(), &viewInfo, VULKAN_CPU_ALLOCATOR, &m_Texture3D.view));
-        
-        // Fill image descriptor image info to be used descriptor set setup
-        m_Texture3D.descriptor.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        m_Texture3D.descriptor.imageView   = m_Texture3D.view;
-        m_Texture3D.descriptor.sampler     = m_Texture3D.sampler;
+		m_Texture3D = std::make_shared<Texture3D>();
+		m_Texture3D->LoadFromBuffer(data, width, height, depth, format);
     }
     
     void LoadAssets()
     {
-        CreateNoiseTexture3D(128, 128, 128);
+        LoadNoiseTexture3D(128, 128, 128);
         
         m_Shader   = Shader::Create("assets/shaders/10_Texture3D/texture3D.vert.spv", "assets/shaders/10_Texture3D/texture3D.frag.spv");
         m_Material = std::make_shared<Material>(m_Shader);
@@ -577,7 +421,7 @@ private:
     std::shared_ptr<Material>        m_Material;
     std::shared_ptr<Renderable>      m_Renderable;
     
-    Texture3DData                    m_Texture3D;
+	std::shared_ptr<Texture3D>       m_Texture3D;  
     UBOData                          m_MVPData;
     std::vector<VulkanBuffer*>       m_MVPBuffers;
     
