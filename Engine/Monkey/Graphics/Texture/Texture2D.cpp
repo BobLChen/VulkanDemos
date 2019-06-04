@@ -29,11 +29,6 @@ Texture2D::~Texture2D()
 
 }
 
-void Texture2D::LoadFromBuffer(void* buffer, VkDeviceSize bufferSize, VkFormat format, uint32_t width, uint32_t height, VulkanDevice* device, VkQueue copyQueue, VkFilter filter, VkImageUsageFlags imageUsageFlags, VkImageLayout imageLayout)
-{
-
-}
-
 void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 {
 	struct ImageInfo
