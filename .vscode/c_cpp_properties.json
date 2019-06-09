@@ -5,8 +5,6 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Engine/Monkey/**",
-                "${workspaceFolder}/external/glfw/include/**",
-                "${workspaceFolder}/external/glm/include/**",
                 "${workspaceFolder}/external/imgui/**",
                 "${workspaceFolder}/external/vulkan/linux/include/**"
             ],
