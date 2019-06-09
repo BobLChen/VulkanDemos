@@ -219,6 +219,9 @@ private:
         m_Material   = nullptr;
         m_Renderable = nullptr;
 
+		m_Diffuse    = nullptr;
+		m_Specular   = nullptr;
+
         Material::DestroyCache();
 	}
 

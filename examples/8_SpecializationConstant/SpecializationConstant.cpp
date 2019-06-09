@@ -393,6 +393,8 @@ private:
         m_Shader     = nullptr;
         m_Material   = nullptr;
         m_Renderable = nullptr;
+
+        m_Diffuse    = nullptr;
         
         Material::DestroyCache();
     }
