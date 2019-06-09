@@ -210,7 +210,7 @@ private:
 		{
 			m_MVPData.indexs[i] = Vector4(i);
 			m_MVPData.models[i].SetIdentity();
-            m_MVPData.models[i].AppendTranslation(Vector3(i * 25 - 87.5fÅ, 0, 0));
+            m_MVPData.models[i].AppendTranslation(Vector3(i * 25 - 87.5f, 0, 0));
 		}
         
         m_MVPData.view.SetIdentity();
@@ -234,6 +234,8 @@ private:
         m_Shader     = nullptr;
         m_Material   = nullptr;
         m_Renderable = nullptr;
+
+        m_Diffuse    = nullptr;
         
         Material::DestroyCache();
     }
