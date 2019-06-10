@@ -5,6 +5,7 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"
+#include "Vulkan/VulkanDescriptorInfo.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Texture/TextureBase.h"
 #include "Utils/Crc.h"
@@ -18,8 +19,9 @@
 class ShaderModule
 {
 public:
-	ShaderModule(VkShaderModule shaderModule, uint32* dataPtr, uint32 dataSize)
-		: m_ShaderModule(shaderModule)
+	ShaderModule(VkShaderStageFlagBits stageFlasg, VkShaderModule shaderModule, uint32* dataPtr, uint32 dataSize)
+		: m_StageFlags(stageFlasg)
+		, m_ShaderModule(shaderModule)
         , m_Data(dataPtr)
         , m_DataSize(dataSize)
         , m_Hash(0)
@@ -47,13 +49,19 @@ public:
         return m_Hash;
     }
 
+	FORCEINLINE const VkShaderStageFlagBits GetStageFlags() const
+	{
+		return m_StageFlags;
+	}
+
 	virtual ~ShaderModule();
     
 protected:
-	VkShaderModule m_ShaderModule;
-    uint32*        m_Data;
-    uint32         m_DataSize;
-    uint32         m_Hash;
+	VkShaderStageFlagBits	m_StageFlags;
+	VkShaderModule			m_ShaderModule;
+    uint32*					m_Data;
+    uint32					m_DataSize;
+    uint32					m_Hash;
 };
 
 class VertexInputBindingInfo
@@ -105,7 +113,7 @@ public:
 		m_Locations.clear();
 	}
 
-	FORCEINLINE void Update()
+	FORCEINLINE void GenerateHash()
 	{
 		if (!m_Valid)
 		{
@@ -138,31 +146,15 @@ public:
 
 	static std::shared_ptr<Shader> Create(const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
 
-	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const std::string& filename);
+	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const std::string& filename, VkShaderStageFlagBits stageFlags);
+
+	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const char* filename, VkShaderStageFlagBits stageFlags);
     
-    FORCEINLINE void Upload()
-    {
-        if (m_InvalidLayout)
-        {
-            UpdatePipelineLayout();
-        }
-    }
-    
-	FORCEINLINE const VkDescriptorSetLayout& GetDescriptorSetLayout() const
+	FORCEINLINE const VulkanDescriptorSetsLayoutInfo& GetSetLayoutInfo() const
 	{
-		return m_DescriptorSetLayout;
-	}
-    
-	FORCEINLINE const VkPipelineLayout& GetPipelineLayout() const
-	{
-		return m_PipelineLayout;
+		return m_SetsLayoutInfo;
 	}
 
-	FORCEINLINE const std::vector<VkPipelineShaderStageCreateInfo>& GetShaderStages() const
-	{
-		return m_ShaderStages;
-	}
-    
 	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
 	{
 		return m_VertexInputBindingInfo;
@@ -203,46 +195,18 @@ public:
         return m_Hash;
     }
 
-	FORCEINLINE const std::vector<VkDescriptorPoolSize>& GetPoolSizes() const
-	{
-		return m_PoolSizes;
-	}
-
 protected:
     void CollectResources(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlagBits flagBits);
     
-    void UpdateVertPipelineLayout();
-    
-    void UpdateFragPipelineLayout();
+	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
 
-	void UpdateCompPipelineLayout();
-
-	void UpdateGeomPipelineLayout();
-
-	void UpdateTescPipelineLayout();
-
-	void UpdateTesePipelineLayout();
-    
-	void UpdatePipelineLayout();
-    
-    void DestroyPipelineLayout();
-    
 private:
     
 	uint32												m_Hash;
 
-	bool												m_InvalidLayout;
-	VkDescriptorSetLayout								m_DescriptorSetLayout;
-	VkPipelineLayout									m_PipelineLayout;
 	VertexInputBindingInfo								m_VertexInputBindingInfo;
-    
-	std::vector<VkPipelineShaderStageCreateInfo>		m_ShaderStages;
-    std::vector<VkDescriptorSetLayoutBinding>			m_SetLayoutBindings;
-    std::vector<VkPushConstantRange>                    m_PushConstantRanges;
-    
-	int32												m_DescriptorTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
-	std::vector<VkDescriptorPoolSize>					m_PoolSizes;
-
+	VulkanDescriptorSetsLayoutInfo						m_SetsLayoutInfo;
+	
 protected:
 
 	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;
