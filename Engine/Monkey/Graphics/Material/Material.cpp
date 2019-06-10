@@ -6,8 +6,6 @@
 #include <cstring>
 #include <unordered_map>
 
-std::unordered_map<uint32, VkPipeline> G_PipelineCache;
-
 Material::Material(std::shared_ptr<Shader> shader)
 	: m_Hash(0)
 	, m_InvalidPipeline(true)
@@ -20,16 +18,6 @@ Material::Material(std::shared_ptr<Shader> shader)
 Material::~Material()
 {
 	m_Shader = nullptr;
-}
-
-void Material::DestroyCache()
-{
-    VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    for (auto it = G_PipelineCache.begin(); it != G_PipelineCache.end(); ++it)
-    {
-        vkDestroyPipeline(device, it->second, VULKAN_CPU_ALLOCATOR);
-    }
-    G_PipelineCache.clear();
 }
 
 void Material::InitState()

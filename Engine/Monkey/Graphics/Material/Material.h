@@ -15,10 +15,6 @@ public:
 
     virtual ~Material();
     
-    static void DestroyCache();
-
-	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo);
-
 	FORCEINLINE void SetShader(std::shared_ptr<Shader> shader)
 	{
 		m_Shader = shader;
@@ -574,7 +570,6 @@ protected:
 	}
 
 private:
-
 	VkPipelineInputAssemblyStateCreateInfo	m_InputAssemblyState;
 	VkPipelineRasterizationStateCreateInfo	m_RasterizationState;
 	VkPipelineColorBlendAttachmentState		m_ColorBlendAttachmentState;
@@ -583,9 +578,8 @@ private:
 	VkPipelineMultisampleStateCreateInfo	m_MultisampleState;
 
 protected:
-
-	uint32 m_Hash;
-	bool   m_InvalidPipeline;
+	uint32					m_Hash;
+	bool					m_InvalidPipeline;
 	std::shared_ptr<Shader> m_Shader;
 };
 

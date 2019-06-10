@@ -196,16 +196,13 @@ public:
     }
 
 protected:
-    void CollectResources(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlagBits flagBits);
-    
 	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
 
 private:
     
-	uint32												m_Hash;
-
-	VertexInputBindingInfo								m_VertexInputBindingInfo;
-	VulkanDescriptorSetsLayoutInfo						m_SetsLayoutInfo;
+	uint32	                       m_Hash;
+	VertexInputBindingInfo         m_VertexInputBindingInfo;
+	VulkanDescriptorSetsLayoutInfo m_SetsLayoutInfo;
 	
 protected:
 
