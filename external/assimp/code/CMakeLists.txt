@@ -58,6 +58,8 @@ set(ASSIMP_BUILD_FBX_IMPORTER True)
 set(ASSIMP_BUILD_COLLADA_IMPORTER True)
 set(ASSIMP_BUILD_3DS_IMPORTER True)
 
+set(ASSIMP_BUILD_GLTF_EXPORTER True)
+
 SET( COMPILER_HEADERS
   ${HEADER_PATH}/Compiler/pushpack1.h
   ${HEADER_PATH}/Compiler/poppack1.h
@@ -222,7 +224,7 @@ ENDIF ( ASSIMP_BUILD_NONFREE_C4D_IMPORTER )
 # ASSIMP_BUILD_XXX_IMPORTER to FALSE for each importer
 # if this variable is set to FALSE, the user can manually enable importers by setting
 # ASSIMP_BUILD_XXX_IMPORTER to TRUE for each importer
-OPTION(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_IMPORTER values" TRUE)
+OPTION(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_IMPORTER values" OFF)
 
 # macro to add the CMake Option ADD_ASSIMP_IMPORTER_<name> which enables compile of loader
 # this way selective loaders can be compiled (reduces filesize + compile time)
@@ -250,7 +252,7 @@ ENDMACRO()
 # ASSIMP_BUILD_XXX_EXPORTER to FALSE for each exporter
 # if this variable is set to FALSE, the user can manually enable exporters by setting
 # ASSIMP_BUILD_XXX_EXPORTER to TRUE for each exporter
-OPTION(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_EXPORTER values" TRUE)
+OPTION(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT "default value of all ASSIMP_BUILD_XXX_EXPORTER values" OFF)
 
 # macro to add the CMake Option ADD_ASSIMP_IMPORTER_<name> which enables compile of loader
 # this way selective loaders can be compiled (reduces filesize + compile time)
