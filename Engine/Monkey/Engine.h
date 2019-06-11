@@ -28,6 +28,10 @@ public:
 
 	std::shared_ptr<VulkanRHI> GetVulkanRHI();
 
+	std::shared_ptr<VulkanDevice> GetVulkanDevice();
+
+	VkDevice GetDeviceHandle();
+
 	const std::string& GetAssetsPath() const;
 
 	static Engine* Get();

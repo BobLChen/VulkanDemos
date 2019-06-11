@@ -5,6 +5,7 @@
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
 #include "VulkanRHI.h"
+#include "VulkanPipeline.h"
 
 #include <vector>
 #include <memory>
@@ -95,6 +96,11 @@ public:
     {
         return m_ResourceHeapManager;
     }
+
+	inline VulkanPipelineStateManager& GetPipelineStateManager()
+	{
+		return m_PipelineStateManager;
+	}
     
 private:
     
@@ -130,4 +136,5 @@ private:
     VulkanFenceManager                      m_FenceManager;
     VulkanDeviceMemoryManager               m_MemoryManager;
     VulkanResourceHeapManager               m_ResourceHeapManager;
+	VulkanPipelineStateManager              m_PipelineStateManager;
 };

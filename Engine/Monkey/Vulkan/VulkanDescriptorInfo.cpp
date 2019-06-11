@@ -1,4 +1,6 @@
 ﻿#include "VulkanDescriptorInfo.h"
+#include "VulkanPipeline.h"
+#include "Engine.h"
 
 void VulkanDescriptorSetsLayoutInfo::GenerateHash()
 {
@@ -12,8 +14,89 @@ void VulkanDescriptorSetsLayoutInfo::GenerateHash()
 	}
 }
 
-void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers = nullptr)
+void VulkanDescriptorSetsLayoutInfo::GenerateDescriptorSetLayouts()
 {
+	if (m_LayoutHandles.size() != 0) {
+		MLOGE("Layout handles generated!");
+		return;
+	}
+
+	const VkPhysicalDeviceLimits& limits = Engine::Get()->GetVulkanDevice()->GetLimits();
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER] + 
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] >= limits.maxDescriptorSetSamplers) 
+	{
+		MLOGE("Max DescriptorSetSamplers!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER] + 
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] >= limits.maxDescriptorSetUniformBuffers) 
+	{
+		MLOGE("Max DescriptorSetUniformBuffers!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] >= limits.maxDescriptorSetUniformBuffersDynamic) 
+	{
+		MLOGE("Max DescriptorSetUniformBuffersDynamic!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER] +
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] >= limits.maxDescriptorSetUniformBuffers) 
+	{
+		MLOGE("Max DescriptorSetUniformBuffers!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] >= limits.maxDescriptorSetStorageBuffersDynamic) 
+	{
+		MLOGE("Max DescriptorSetStorageBuffersDynamic!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] + 
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE] + 
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] >= limits.maxDescriptorSetSampledImages) 
+	{
+		MLOGE("Max DescriptorSetSampledImages!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE] + 
+		m_LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER] >= limits.maxDescriptorSetStorageImages) 
+	{
+		MLOGE("Max DescriptorSetStorageImages!");
+		return;
+	}
+
+	if (m_LayoutTypes[VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT] >= limits.maxDescriptorSetInputAttachments) 
+	{
+		MLOGE("Max DescriptorSetInputAttachments!");
+		return;
+	}
+
+	m_LayoutHandles.resize(m_SetLayouts.size());
+
+	VulkanPipelineStateManager& manager = Engine::Get()->GetVulkanDevice()->GetPipelineStateManager();
+
+	for (int32 i = 0; i < m_SetLayouts.size(); ++i)
+	{
+		VulkanDescriptorSetLayoutInfo* setLayoutInfo = m_SetLayouts[i];
+		m_LayoutHandles[i] = manager.GetDescriptorSetLayout(*setLayoutInfo);
+	}
+
+	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo;
+	ZeroVulkanStruct(descriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+	descriptorSetAllocateInfo.descriptorSetCount = m_LayoutHandles.size();
+	descriptorSetAllocateInfo.pSetLayouts        = m_LayoutHandles.data();
+
+}
+
+void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
+{
+	m_LayoutTypes[descriptorType] += 1;
+
 	VulkanDescriptorSetLayoutInfo* setLayout = nullptr;
 
 	for (int32 i = 0; i < m_SetLayouts.size(); ++i)
@@ -50,4 +133,78 @@ void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, V
 	bindingInfo.pImmutableSamplers = samplers;
 
 	setLayout->layoutBindings.push_back(bindingInfo);
+}
+
+
+VulkanLayout::VulkanLayout()
+	: m_PipelineLayout(VK_NULL_HANDLE)
+{
+
+}
+
+VulkanLayout::~VulkanLayout()
+{
+	if (m_PipelineLayout != VK_NULL_HANDLE) {
+		VkDevice device  = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+		vkDestroyPipelineLayout(device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
+		m_PipelineLayout = VK_NULL_HANDLE;
+	}
+}
+
+void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
+{
+	// 反编译Shader获取相关信息
+	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
+	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+	
+	// push constant不支持
+
+    // 获取Uniform Buffer信息
+    for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
+    {
+        spirv_cross::Resource& res      = resources.uniform_buffers[i];
+        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+        const std::string &varName      = compiler.get_name(res.id);
+
+        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+		// 直接使用Dynamic的UniformBuffer
+		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, shaderModule->GetStageFlags());
+    }
+    
+    // 获取Texture
+    for (int32 i = 0; i < resources.sampled_images.size(); ++i)
+    {
+        spirv_cross::Resource& res      = resources.sampled_images[i];
+        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+        const std::string&      varName = compiler.get_name(res.id);
+
+        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, shaderModule->GetStageFlags());
+    }
+
+	// 获取input信息
+	bool hasInputInfo = false;
+    for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
+    {
+		hasInputInfo = true;
+        spirv_cross::Resource& res = resources.stage_inputs[i];
+        const std::string &varName = compiler.get_name(res.id);
+        VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
+		m_VertexInputBindingInfo.AddBinding(attribute, compiler.get_decoration(res.id, spv::DecorationLocation));
+    }
+
+	if (hasInputInfo) {
+		m_VertexInputBindingInfo.GenerateHash();
+	}
+}
+
+void VulkanLayout::GeneratePipelineLayout()
+{
+
 }

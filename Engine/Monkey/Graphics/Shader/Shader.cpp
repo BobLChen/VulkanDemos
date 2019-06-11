@@ -95,13 +95,6 @@ Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule>
 		temp = tese->GetHash();
 		m_Hash = Crc::MemCrc32(&temp, sizeof(uint32));
 	}
-
-	ProcessBindingsForStage(m_VertShaderModule);
-	ProcessBindingsForStage(m_FragShaderModule);
-	ProcessBindingsForStage(m_GeomShaderModule);
-	ProcessBindingsForStage(m_CompShaderModule);
-	ProcessBindingsForStage(m_TescShaderModule);
-	ProcessBindingsForStage(m_TeseShaderModule);
 }
 
 Shader::~Shader()
@@ -112,59 +105,6 @@ Shader::~Shader()
 	m_CompShaderModule = nullptr;
 	m_TescShaderModule = nullptr;
 	m_TeseShaderModule = nullptr;
-}
-
-void Shader::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
-{
-	// 反编译Shader获取相关信息
-	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
-	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-	
-	// push constant不支持
-
-    // 获取Uniform Buffer信息
-    for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
-    {
-        spirv_cross::Resource& res      = resources.uniform_buffers[i];
-        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
-        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
-        const std::string &varName      = compiler.get_name(res.id);
-
-        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
-		// 直接使用Dynamic的UniformBuffer
-		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, shaderModule->GetStageFlags());
-    }
-    
-    // 获取Texture
-    for (int32 i = 0; i < resources.sampled_images.size(); ++i)
-    {
-        spirv_cross::Resource& res      = resources.sampled_images[i];
-        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
-        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
-        const std::string&      varName = compiler.get_name(res.id);
-
-        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
-		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, shaderModule->GetStageFlags());
-    }
-
-	// 获取input信息
-	bool hasInputInfo = false;
-    for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
-    {
-		hasInputInfo = true;
-        spirv_cross::Resource& res = resources.stage_inputs[i];
-        const std::string &varName = compiler.get_name(res.id);
-        VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
-		m_VertexInputBindingInfo.AddBinding(attribute, compiler.get_decoration(res.id, spv::DecorationLocation));
-    }
-
-	if (hasInputInfo) {
-		m_VertexInputBindingInfo.GenerateHash();
-	}
 }
 
 std::shared_ptr<Shader> Shader::Create(const char* vert, const char* frag, const char* geom, const char* compute, const char* tesc, const char* tese)

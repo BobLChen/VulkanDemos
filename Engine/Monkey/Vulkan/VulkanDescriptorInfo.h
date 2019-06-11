@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
+#include "Graphics/Shader/Shader.h"
 #include "Utils/Crc.h"
 #include "VulkanPlatform.h"
 
@@ -102,13 +103,72 @@ public:
 		m_SetLayouts = info.m_SetLayouts;
 	}
 
+	inline const std::vector<VkDescriptorSetLayout>& GetHandles()
+	{
+		return m_LayoutHandles;
+	}
+
+	inline const VkDescriptorSetAllocateInfo& GetDescriptorSetAllocateInfo() const
+	{
+		return m_DescriptorSetAllocateInfo;
+	}
+
 	void AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers = nullptr);
 	
 	void GenerateHash();
+
+	void GenerateDescriptorSetLayouts();
 
 protected:
 	uint32										m_LayoutTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 	std::vector<VulkanDescriptorSetLayoutInfo*>	m_SetLayouts;
 	uint32										m_Hash = 0;
 	uint32										m_TypesUsageID = ~0;
+	std::vector<VkDescriptorSetLayout>			m_LayoutHandles;
+};
+
+class VulkanLayout
+{
+public:
+	VulkanLayout();
+
+	~VulkanLayout();
+
+	inline const VulkanDescriptorSetsLayoutInfo& GetDescriptorSetsLayout() const
+	{
+		return m_SetsLayoutInfo;
+	}
+
+	inline VkPipelineLayout GetPipelineLayout() const
+	{
+		return m_PipelineLayout;
+	}
+
+	inline bool HasDescriptors() const
+	{
+		return m_SetsLayoutInfo.GetLayouts().size() > 0;
+	}
+
+	inline uint32 GetDescriptorSetsLayoutHash() const
+	{
+		return m_SetsLayoutInfo.GetHash();
+	}
+
+	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
+	{
+		return m_VertexInputBindingInfo;
+	}
+
+	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
+
+protected:
+
+	void GeneratePipelineLayout();
+
+protected:
+
+	VkPipelineLayout               m_PipelineLayout;
+	VertexInputBindingInfo         m_VertexInputBindingInfo;
+	VulkanDescriptorSetsLayoutInfo m_SetsLayoutInfo;
+	
 };

@@ -68,7 +68,7 @@ class VertexInputBindingInfo
 {
 public:
 	VertexInputBindingInfo()
-		: m_Valid(false)
+		: m_Invalid(true)
 		, m_Hash(0)
 	{
 
@@ -95,7 +95,7 @@ public:
 	
 	FORCEINLINE void AddBinding(VertexAttribute attribute, int32 location)
 	{
-		m_Valid = false;
+		m_Invalid = true;
 		m_Attributes.push_back(attribute);
 		m_Locations.push_back(location);
 	}
@@ -107,19 +107,19 @@ public:
     
 	FORCEINLINE void Clear()
 	{
-		m_Valid = false;
-		m_Hash  = 0;
+		m_Invalid = false;
+		m_Hash    = 0;
 		m_Attributes.clear();
 		m_Locations.clear();
 	}
 
 	FORCEINLINE void GenerateHash()
 	{
-		if (!m_Valid)
+		if (m_Invalid)
 		{
-			m_Hash  = Crc::MemCrc32(m_Attributes.data(), int32(m_Attributes.size() * sizeof(int32)), 0);
-			m_Hash  = Crc::MemCrc32(m_Locations.data(), int32(m_Locations.size() * sizeof(int32)), m_Hash);
-			m_Valid = true;
+			m_Hash = Crc::MemCrc32(m_Attributes.data(), int32(m_Attributes.size() * sizeof(int32)), 0);
+			m_Hash = Crc::MemCrc32(m_Locations.data(), int32(m_Locations.size() * sizeof(int32)), m_Hash);
+			m_Invalid = false;
 		}
 	}
 
@@ -129,7 +129,7 @@ public:
     }
     
 protected:
-	bool                         m_Valid;
+	bool                         m_Invalid;
 	uint32                       m_Hash;
 	std::vector<VertexAttribute> m_Attributes;
 	std::vector<int32>           m_Locations;
@@ -150,16 +150,6 @@ public:
 
 	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const char* filename, VkShaderStageFlagBits stageFlags);
     
-	FORCEINLINE const VulkanDescriptorSetsLayoutInfo& GetSetLayoutInfo() const
-	{
-		return m_SetsLayoutInfo;
-	}
-
-	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
-	{
-		return m_VertexInputBindingInfo;
-	}
-
     FORCEINLINE const std::shared_ptr<ShaderModule> GetVertModule() const
     {
         return m_VertShaderModule;
@@ -195,14 +185,9 @@ public:
         return m_Hash;
     }
 
-protected:
-	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
-
 private:
-    
 	uint32	                       m_Hash;
 	VertexInputBindingInfo         m_VertexInputBindingInfo;
-	VulkanDescriptorSetsLayoutInfo m_SetsLayoutInfo;
 	
 protected:
 

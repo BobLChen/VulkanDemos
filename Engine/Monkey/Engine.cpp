@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "Application/SlateApplication.h"
+#include "Vulkan/VulkanDevice.h"
 
 Engine* Engine::g_Instance = nullptr;
 
@@ -19,6 +20,16 @@ Engine::~Engine()
 std::shared_ptr<VulkanRHI> Engine::GetVulkanRHI()
 {
 	return m_VulkanRHI;
+}
+
+std::shared_ptr<VulkanDevice> Engine::GetVulkanDevice()
+{
+	return m_VulkanRHI->GetDevice();
+}
+
+VkDevice Engine::GetDeviceHandle()
+{
+	return GetVulkanDevice()->GetInstanceHandle();
 }
 
 int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)
