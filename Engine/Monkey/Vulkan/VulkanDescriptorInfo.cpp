@@ -2,20 +2,16 @@
 #include "VulkanPipeline.h"
 #include "Engine.h"
 
-void VulkanDescriptorSetsLayoutInfo::GenerateHash()
+void VulkanDescriptorSetsLayoutInfo::Compile()
 {
+	m_Hash = 0;
 	const int32 layoutCount = m_SetLayouts.size();
-	m_Hash = Crc::MemCrc32(&m_TypesUsageID, sizeof(uint32), layoutCount);
-
 	for (int32 i = 0; i < layoutCount; ++i)
 	{
 		m_SetLayouts[i]->GenerateHash();
 		m_Hash = Crc::MemCrc32(&(m_SetLayouts[i]->hash), sizeof(uint32), m_Hash);
 	}
-}
 
-void VulkanDescriptorSetsLayoutInfo::GenerateDescriptorSetLayouts()
-{
 	if (m_LayoutHandles.size() != 0) {
 		MLOGE("Layout handles generated!");
 		return;
@@ -77,20 +73,11 @@ void VulkanDescriptorSetsLayoutInfo::GenerateDescriptorSetLayouts()
 	}
 
 	m_LayoutHandles.resize(m_SetLayouts.size());
-
-	VulkanPipelineStateManager& manager = Engine::Get()->GetVulkanDevice()->GetPipelineStateManager();
-
 	for (int32 i = 0; i < m_SetLayouts.size(); ++i)
 	{
 		VulkanDescriptorSetLayoutInfo* setLayoutInfo = m_SetLayouts[i];
-		m_LayoutHandles[i] = manager.GetDescriptorSetLayout(*setLayoutInfo);
+		m_LayoutHandles[i] = Engine::Get()->GetVulkanDevice()->GetPipelineStateManager().GetDescriptorSetLayout(setLayoutInfo);
 	}
-
-	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo;
-	ZeroVulkanStruct(descriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-	descriptorSetAllocateInfo.descriptorSetCount = m_LayoutHandles.size();
-	descriptorSetAllocateInfo.pSetLayouts        = m_LayoutHandles.data();
-
 }
 
 void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
@@ -107,7 +94,8 @@ void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, V
 		}
 	}
 
-	if (setLayout == nullptr) {
+	if (setLayout == nullptr) 
+	{
 		setLayout = new VulkanDescriptorSetLayoutInfo();
 		m_SetLayouts.push_back(setLayout);
 	}
@@ -151,14 +139,32 @@ VulkanLayout::~VulkanLayout()
 	}
 }
 
+VulkanGfxLayout::VulkanGfxLayout()
+{
+
+}
+
+VulkanGfxLayout::~VulkanGfxLayout()
+{
+
+}
+
+VulkanComputeLayout::VulkanComputeLayout()
+{
+
+}
+
+VulkanComputeLayout::~VulkanComputeLayout()
+{
+
+}
+
 void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
 {
 	// 反编译Shader获取相关信息
 	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
 	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 	
-	// push constant不支持
-
     // 获取Uniform Buffer信息
     for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
     {
@@ -189,22 +195,28 @@ void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderM
     }
 
 	// 获取input信息
-	bool hasInputInfo = false;
-    for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
-    {
-		hasInputInfo = true;
-        spirv_cross::Resource& res = resources.stage_inputs[i];
-        const std::string &varName = compiler.get_name(res.id);
-        VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
-		m_VertexInputBindingInfo.AddBinding(attribute, compiler.get_decoration(res.id, spv::DecorationLocation));
-    }
-
-	if (hasInputInfo) {
+	if (shaderModule->GetStageFlags() == VK_PIPELINE_STAGE_VERTEX_SHADER_BIT)
+	{
+		for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
+		{
+			spirv_cross::Resource& res = resources.stage_inputs[i];
+			const std::string &varName = compiler.get_name(res.id);
+			VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
+			m_VertexInputBindingInfo.AddBinding(attribute, compiler.get_decoration(res.id, spv::DecorationLocation));
+		}
 		m_VertexInputBindingInfo.GenerateHash();
 	}
 }
 
-void VulkanLayout::GeneratePipelineLayout()
+void VulkanLayout::Compile()
 {
+	m_SetsLayoutInfo.Compile();
 
+	const std::vector<VkDescriptorSetLayout>& layoutHandles = m_SetsLayoutInfo.GetHandles();
+
+	VkPipelineLayoutCreateInfo pipeLayoutInfo;
+	ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+	pipeLayoutInfo.setLayoutCount = layoutHandles.size();
+	pipeLayoutInfo.pSetLayouts    = layoutHandles.data();
+	VERIFYVULKANRESULT(vkCreatePipelineLayout(Engine::Get()->GetDeviceHandle(), &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 }

@@ -569,6 +569,11 @@ public:
 		}
 	}
 
+	FORCEINLINE const VulkanPipelineStateInfo& GetPipelineStateInfo() const
+	{
+		return m_StateInfo;
+	}
+
 protected:
 
 	FORCEINLINE void MarkStateDirty()

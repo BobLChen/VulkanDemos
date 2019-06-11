@@ -18,7 +18,6 @@ struct VulkanDescriptorSetLayoutInfo
 	inline void GenerateHash()
 	{
 		hash = Crc::MemCrc32(layoutBindings.data(), sizeof(VkDescriptorSetLayoutBinding) * layoutBindings.size());
-		// set不管
 	}
 
 	inline bool operator == (const VulkanDescriptorSetLayoutInfo& info)
@@ -72,7 +71,7 @@ public:
 
 	inline uint32 GetTypesUsed(VkDescriptorType type) const
 	{
-		return m_LayoutTypes[type];
+		return m_LayoutTypes[type] > 0;
 	}
 
 	const std::vector<VulkanDescriptorSetLayoutInfo*>& GetLayouts() const
@@ -85,22 +84,9 @@ public:
 		return m_Hash;
 	}
 
-	uint32 GetTypesUsageI() const
-	{
-		return m_TypesUsageID;
-	}
-
 	inline const uint32* GetLayoutTypes() const
 	{
 		return m_LayoutTypes;
-	}
-
-	void CopyFrom(const VulkanDescriptorSetsLayoutInfo& info)
-	{
-		memcpy(m_LayoutTypes, info.m_LayoutTypes, sizeof(m_LayoutTypes));
-		m_Hash = info.m_Hash;
-		m_TypesUsageID = info.m_TypesUsageID;
-		m_SetLayouts = info.m_SetLayouts;
 	}
 
 	inline const std::vector<VkDescriptorSetLayout>& GetHandles()
@@ -108,22 +94,21 @@ public:
 		return m_LayoutHandles;
 	}
 
-	inline const VkDescriptorSetAllocateInfo& GetDescriptorSetAllocateInfo() const
+	void CopyFrom(const VulkanDescriptorSetsLayoutInfo& info)
 	{
-		return m_DescriptorSetAllocateInfo;
+		memcpy(m_LayoutTypes, info.m_LayoutTypes, sizeof(m_LayoutTypes));
+		m_Hash = info.m_Hash;
+		m_SetLayouts = info.m_SetLayouts;
 	}
 
 	void AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers = nullptr);
 	
-	void GenerateHash();
-
-	void GenerateDescriptorSetLayouts();
+	void Compile();
 
 protected:
+	uint32										m_Hash = 0;
 	uint32										m_LayoutTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 	std::vector<VulkanDescriptorSetLayoutInfo*>	m_SetLayouts;
-	uint32										m_Hash = 0;
-	uint32										m_TypesUsageID = ~0;
 	std::vector<VkDescriptorSetLayout>			m_LayoutHandles;
 };
 
@@ -132,7 +117,9 @@ class VulkanLayout
 public:
 	VulkanLayout();
 
-	~VulkanLayout();
+	virtual ~VulkanLayout();
+
+	virtual bool IsGfxLayout() const = 0;
 
 	inline const VulkanDescriptorSetsLayoutInfo& GetDescriptorSetsLayout() const
 	{
@@ -149,7 +136,7 @@ public:
 		return m_SetsLayoutInfo.GetLayouts().size() > 0;
 	}
 
-	inline uint32 GetDescriptorSetsLayoutHash() const
+	inline uint32 GetLayoutHash() const
 	{
 		return m_SetsLayoutInfo.GetHash();
 	}
@@ -161,14 +148,37 @@ public:
 
 	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
 
-protected:
-
-	void GeneratePipelineLayout();
+	void Compile();
 
 protected:
 
 	VkPipelineLayout               m_PipelineLayout;
 	VertexInputBindingInfo         m_VertexInputBindingInfo;
 	VulkanDescriptorSetsLayoutInfo m_SetsLayoutInfo;
-	
+};
+
+class VulkanGfxLayout : public VulkanLayout
+{
+public:
+	VulkanGfxLayout();
+
+	~VulkanGfxLayout();
+
+	virtual bool IsGfxLayout() const final override
+	{
+		return true;
+	}
+};
+
+class VulkanComputeLayout : public VulkanLayout
+{
+public:
+	VulkanComputeLayout();
+
+	~VulkanComputeLayout();
+
+	virtual bool IsGfxLayout() const final override
+	{
+		return false;
+	}
 };

@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+class  Shader;
 struct VulkanDescriptorSetLayoutInfo;
 
 struct VulkanPipelineStateInfo
@@ -80,17 +81,63 @@ struct VulkanPipelineStateInfo
 	VkPipelineMultisampleStateCreateInfo	multisampleState;
 };
 
+class VulkanPipeline
+{
+public:
+	VulkanPipeline();
+
+	virtual ~VulkanPipeline();
+
+	inline VkPipeline GetHandle() const
+	{
+		return m_Pipeline;
+	}
+
+	inline const VulkanLayout& GetLayout() const
+	{
+		return *m_Layout;
+	}
+
+protected:
+	VkPipeline     m_Pipeline;
+	VulkanLayout*  m_Layout;
+};
+
+class VulkanGfxPipeline : public VulkanPipeline
+{
+public:
+	VulkanGfxPipeline();
+
+	~VulkanGfxPipeline();
+
+	inline const VertexInputBindingInfo& GetVertexInputInfo() const
+	{
+		return m_VertexInputInfo;
+	}
+
+protected:
+
+	VertexInputBindingInfo m_VertexInputInfo;
+};
+
 class VulkanPipelineStateManager
 {
 public:
 	
-	VkDescriptorSetLayout GetDescriptorSetLayout(const VulkanDescriptorSetLayoutInfo& setLayoutInfo);
+	VkDescriptorSetLayout GetDescriptorSetLayout(const VulkanDescriptorSetLayoutInfo* setLayoutInfo);
 
 	VulkanPipelineStateManager();
 
 	~VulkanPipelineStateManager();
 
+	VulkanPipeline* GetVulkanPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader);
+
 private:
 
-	std::unordered_map<uint32, VkDescriptorSetLayout> m_DescriptorSetLayoutCache;
+	
+
+private:
+
+	std::unordered_map<uint32, VulkanPipeline*>         m_PipelineCache;
+	std::unordered_map<uint32, VkDescriptorSetLayout>   m_DescriptorSetLayoutCache;
 };
