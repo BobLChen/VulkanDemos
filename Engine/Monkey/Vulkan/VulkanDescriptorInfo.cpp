@@ -1,6 +1,10 @@
-﻿#include "VulkanDescriptorInfo.h"
+#include "Graphics/Shader/Shader.h"
+
+#include "VulkanDevice.h"
+#include "VulkanDescriptorInfo.h"
 #include "VulkanPipeline.h"
 #include "Engine.h"
+#include "spirv_cross.hpp"
 
 void VulkanDescriptorSetsLayoutInfo::Compile()
 {

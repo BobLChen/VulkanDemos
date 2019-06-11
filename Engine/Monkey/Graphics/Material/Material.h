@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -567,8 +567,9 @@ public:
 			m_InvalidStateInfo = false;
 			m_StateInfo.GenerateHash();
 		}
+        return m_StateInfo.hash;
 	}
-
+    
 	FORCEINLINE const VulkanPipelineStateInfo& GetPipelineStateInfo() const
 	{
 		return m_StateInfo;

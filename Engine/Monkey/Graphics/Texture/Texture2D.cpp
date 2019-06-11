@@ -11,13 +11,13 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "Loader/stb_image.h"
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "Loader/stb_image_resize.h"
-
-#define STB_IMAGE_WRITE_STATIC
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "Loader/stb_image_write.h"
+//
+//#define STB_IMAGE_RESIZE_IMPLEMENTATION
+//#include "Loader/stb_image_resize.h"
+//
+//#define STB_IMAGE_WRITE_STATIC
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#include "Loader/stb_image_write.h"
 
 Texture2D::Texture2D()
 {

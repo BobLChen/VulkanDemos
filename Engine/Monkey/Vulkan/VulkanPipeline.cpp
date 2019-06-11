@@ -1,4 +1,4 @@
-﻿#include "Graphics/Shader/Shader.h"
+#include "Graphics/Shader/Shader.h"
 
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorInfo.h"
@@ -45,19 +45,19 @@ VulkanPipelineStateManager::~VulkanPipelineStateManager()
 	m_DescriptorSetLayoutCache.clear();
 }
 
-VulkanPipeline* VulkanPipelineStateManager::GetVulkanPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader)
+VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader)
 {
 	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), shader->GetHash());
 	
-	auto it = m_PipelineCache.find(key);
-	if (it != m_PipelineCache.end()) 
+	auto it = m_GfxPipelineCache.find(key);
+	if (it != m_GfxPipelineCache.end())
 	{
 		return it->second;
 	}
 
-
-
-	return nullptr;
+    VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
+    
+	return pipeline;
 }
 
 VkDescriptorSetLayout VulkanPipelineStateManager::GetDescriptorSetLayout(const VulkanDescriptorSetLayoutInfo* setLayoutInfo)

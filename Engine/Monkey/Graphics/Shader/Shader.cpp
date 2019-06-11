@@ -1,6 +1,5 @@
 #include "Shader.h"
 #include "Engine.h"
-#include "spirv_cross.hpp"
 
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"

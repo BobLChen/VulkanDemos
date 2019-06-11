@@ -1,13 +1,85 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
-#include "Graphics/Shader/Shader.h"
 #include "Utils/Crc.h"
 #include "VulkanPlatform.h"
 
 #include <memory>
 #include <vector>
+
+class ShaderModule;
+
+class VertexInputBindingInfo
+{
+public:
+    VertexInputBindingInfo()
+    : m_Invalid(true)
+    , m_Hash(0)
+    {
+        
+    }
+    
+    FORCEINLINE int32 GetLocation(VertexAttribute attribute) const
+    {
+        for (int32 i = 0; i < m_Attributes.size(); ++i)
+        {
+            if (m_Attributes[i] == attribute)
+            {
+                return m_Locations[i];
+            }
+        }
+        
+        MLOGE("Can't found location, Attribute : %d", attribute);
+        return -1;
+    }
+    
+    FORCEINLINE uint32 GetHash() const
+    {
+        return m_Hash;
+    }
+    
+    FORCEINLINE void AddBinding(VertexAttribute attribute, int32 location)
+    {
+        m_Invalid = true;
+        m_Attributes.push_back(attribute);
+        m_Locations.push_back(location);
+    }
+    
+    FORCEINLINE int32 GetInputCount() const
+    {
+        return int32(m_Attributes.size());
+    }
+    
+    FORCEINLINE void Clear()
+    {
+        m_Invalid = false;
+        m_Hash    = 0;
+        m_Attributes.clear();
+        m_Locations.clear();
+    }
+    
+    FORCEINLINE void GenerateHash()
+    {
+        if (m_Invalid)
+        {
+            m_Hash = Crc::MemCrc32(m_Attributes.data(), int32(m_Attributes.size() * sizeof(int32)), 0);
+            m_Hash = Crc::MemCrc32(m_Locations.data(), int32(m_Locations.size() * sizeof(int32)), m_Hash);
+            m_Invalid = false;
+        }
+    }
+    
+    FORCEINLINE const std::vector<VertexAttribute>& GetAttributes() const
+    {
+        return m_Attributes;
+    }
+    
+protected:
+    bool                         m_Invalid;
+    uint32                       m_Hash;
+    std::vector<VertexAttribute> m_Attributes;
+    std::vector<int32>           m_Locations;
+};
 
 struct VulkanDescriptorSetLayoutInfo
 {

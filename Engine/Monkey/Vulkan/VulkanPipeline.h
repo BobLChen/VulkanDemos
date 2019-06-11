@@ -1,15 +1,15 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "Utils/Crc.h"
 #include "VulkanPlatform.h"
+#include "VulkanDescriptorInfo.h"
 
 #include <memory>
 #include <vector>
 
-class  Shader;
-struct VulkanDescriptorSetLayoutInfo;
+class Shader;
 
 struct VulkanPipelineStateInfo
 {
@@ -130,14 +130,14 @@ public:
 
 	~VulkanPipelineStateManager();
 
-	VulkanPipeline* GetVulkanPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader);
-
+	VulkanGfxPipeline* GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader);
+    
 private:
 
 	
 
 private:
 
-	std::unordered_map<uint32, VulkanPipeline*>         m_PipelineCache;
+	std::unordered_map<uint32, VulkanGfxPipeline*>      m_GfxPipelineCache;
 	std::unordered_map<uint32, VkDescriptorSetLayout>   m_DescriptorSetLayoutCache;
 };
