@@ -6,7 +6,6 @@
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Graphics/Shader/Shader.h"
-#include "Graphics/Data/VertexBuffer.h"
 #include <memory>
 
 class Material

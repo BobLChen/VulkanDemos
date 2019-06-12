@@ -1,6 +1,8 @@
 #include "Math/Math.h"
 #include "Utils/Crc.h"
 #include "Vulkan/VulkanRHI.h"
+#include "Vulkan/VulkanResources.h"
+#include "Vulkan/VulkanDevice.h"
 #include "VertexBuffer.h"
 #include "Engine.h"
 #include <string>
@@ -35,7 +37,6 @@ const VertexInputDeclareInfo& VertexBuffer::GetVertexInputStateInfo()
     if (m_InputStateDirty)
     {
 		m_InputStateDirty = false;
-		m_VertexInputStateInfo.Clear();
 		
 		for (int32 i = 0; i < m_Streams.size(); ++i)
 		{
@@ -67,7 +68,7 @@ const VertexInputDeclareInfo& VertexBuffer::GetVertexInputStateInfo()
 			}
 		}
 		
-		m_VertexInputStateInfo.Update();
+        m_VertexInputStateInfo.GenerateHash();
     }
     
     return m_VertexInputStateInfo;

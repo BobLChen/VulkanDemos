@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
+#include "Vulkan/VulkanResources.h"
 #include "Core/MObject.h"
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"

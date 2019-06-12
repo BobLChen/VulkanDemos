@@ -2,6 +2,7 @@
 
 #include "Core/PixelFormat.h"
 #include "Common/Log.h"
+#include <string>
 
 enum ShaderFrequency
 {

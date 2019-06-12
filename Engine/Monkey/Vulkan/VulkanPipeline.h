@@ -99,6 +99,9 @@ public:
 	}
 
 protected:
+    friend class VulkanPipelineStateManager;
+    
+protected:
 	VkPipeline     m_Pipeline;
 	VulkanLayout*  m_Layout;
 };
@@ -112,12 +115,11 @@ public:
 
 	inline const VertexInputBindingInfo& GetVertexInputInfo() const
 	{
-		return m_VertexInputInfo;
+		return m_Layout->GetVertexInputBindingInfo();
 	}
-
+    
 protected:
-
-	VertexInputBindingInfo m_VertexInputInfo;
+    
 };
 
 class VulkanPipelineStateManager
@@ -132,12 +134,15 @@ public:
 
 	VulkanGfxPipeline* GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader);
     
+    VulkanGfxLayout* GetGfxLayout(std::shared_ptr<Shader> shader);
+    
 private:
 
-	
+    VkPipeline GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader);
 
 private:
-
+    
+    std::unordered_map<uint32, VulkanGfxLayout*>        m_GfxLayoutCache;
 	std::unordered_map<uint32, VulkanGfxPipeline*>      m_GfxPipelineCache;
 	std::unordered_map<uint32, VkDescriptorSetLayout>   m_DescriptorSetLayoutCache;
 };

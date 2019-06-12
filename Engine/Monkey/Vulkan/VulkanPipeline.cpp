@@ -45,6 +45,28 @@ VulkanPipelineStateManager::~VulkanPipelineStateManager()
 	m_DescriptorSetLayoutCache.clear();
 }
 
+VulkanGfxLayout* VulkanPipelineStateManager::GetGfxLayout(std::shared_ptr<Shader> shader)
+{
+    const uint32 key = shader->GetHash();
+    auto it = m_GfxLayoutCache.find(key);
+    if (it != m_GfxLayoutCache.end()) {
+        return it->second;
+    }
+    
+    VulkanGfxLayout* layout = new VulkanGfxLayout();
+    layout->ProcessBindingsForStage(shader->GetVertModule());
+    layout->ProcessBindingsForStage(shader->GetCompModule());
+    layout->ProcessBindingsForStage(shader->GetGeomModule());
+    layout->ProcessBindingsForStage(shader->GetTescModule());
+    layout->ProcessBindingsForStage(shader->GetTeseModule());
+    layout->ProcessBindingsForStage(shader->GetFragModule());
+    layout->Compile();
+    
+    m_GfxLayoutCache.insert(std::make_pair(key, layout));
+    
+    return layout;
+}
+
 VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader)
 {
 	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), shader->GetHash());
@@ -54,10 +76,22 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipeli
 	{
 		return it->second;
 	}
-
+    
+    VulkanGfxLayout* layout = GetGfxLayout(shader);
     VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
+    pipeline->m_Layout   = layout;
+    pipeline->m_Pipeline = GetGfxPipeline(pipelineStateInfo, layout, shader);
     
 	return pipeline;
+}
+
+VkPipeline VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader)
+{
+    
+    
+    
+    
+    return VK_NULL_HANDLE;
 }
 
 VkDescriptorSetLayout VulkanPipelineStateManager::GetDescriptorSetLayout(const VulkanDescriptorSetLayoutInfo* setLayoutInfo)

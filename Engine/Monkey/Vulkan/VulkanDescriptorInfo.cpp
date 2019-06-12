@@ -199,7 +199,7 @@ void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderM
     }
 
 	// 获取input信息
-	if (shaderModule->GetStageFlags() == VK_PIPELINE_STAGE_VERTEX_SHADER_BIT)
+	if (shaderModule->GetStageFlags() == VK_SHADER_STAGE_VERTEX_BIT)
 	{
 		for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
 		{
