@@ -13,7 +13,7 @@ VertexBuffer::VertexBuffer()
     , m_DataSize(0)
     , m_CurrentChannels(0)
 	, m_Invalid(true)
-    , m_InputStateDirty(false)
+	, m_Hash(0)
 {
     
 }
@@ -32,46 +32,41 @@ VertexBuffer::~VertexBuffer()
     m_Channels.clear();
 }
 
-const VertexInputDeclareInfo& VertexBuffer::GetVertexInputStateInfo()
+void VertexBuffer::UpdateVertexInputState()
 {
-    if (m_InputStateDirty)
-    {
-		m_InputStateDirty = false;
-		
-		for (int32 i = 0; i < m_Streams.size(); ++i)
+	m_VertexInputStateInfo.Clear();
+
+    for (int32 i = 0; i < m_Streams.size(); ++i)
+	{
+		int32 stride = 0;
+		uint32 channelMask = m_Streams[i].channelMask;
+
+		for (int32 j = 0; j < m_Channels.size(); ++j)
 		{
-			int32 stride = 0;
-			uint32 channelMask = m_Streams[i].channelMask;
-
-			for (int32 j = 0; j < m_Channels.size(); ++j)
+			VertexAttribute attribute = m_Channels[j].attribute;
+			if ((1 << attribute) & channelMask)
 			{
-				VertexAttribute attribute = m_Channels[j].attribute;
-				if ((1 << attribute) & channelMask)
-				{
-					VertexInputDeclareInfo::AttributeDescription inputAttribute;
-					inputAttribute.binding   = i;
-					inputAttribute.format    = VEToVkFormat(m_Channels[j].format);
-					inputAttribute.offset    = stride;
-					inputAttribute.attribute = attribute;
-					stride += ElementTypeToSize(m_Channels[j].format);
-					m_VertexInputStateInfo.AddAttribute(inputAttribute);
-				}
-			}
-
-			if (stride > 0)
-			{
-				VertexInputDeclareInfo::BindingDescription vertexInputBinding;
-				vertexInputBinding.binding   = i;
-				vertexInputBinding.stride    = stride;
-				vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-				m_VertexInputStateInfo.AddBinding(vertexInputBinding);
+				VertexInputDeclareInfo::AttributeDescription inputAttribute;
+				inputAttribute.binding   = i;
+				inputAttribute.format    = VEToVkFormat(m_Channels[j].format);
+				inputAttribute.offset    = stride;
+				inputAttribute.attribute = attribute;
+				stride += ElementTypeToSize(m_Channels[j].format);
+				m_VertexInputStateInfo.AddAttribute(inputAttribute);
 			}
 		}
+
+		if (stride > 0)
+		{
+			VertexInputDeclareInfo::BindingDescription vertexInputBinding;
+			vertexInputBinding.binding   = i;
+			vertexInputBinding.stride    = stride;
+			vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			m_VertexInputStateInfo.AddBinding(vertexInputBinding);
+		}
+	}
 		
-        m_VertexInputStateInfo.GenerateHash();
-    }
-    
-    return m_VertexInputStateInfo;
+    m_VertexInputStateInfo.GenerateHash();
 }
 
 void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr)
@@ -103,9 +98,8 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 		m_Channels.push_back(channels[i]);
 	}
     
-	m_Invalid = true;
-	m_InputStateDirty = true;
-	m_DataSize += streamInfo.size;
+	m_Invalid     = true;
+	m_DataSize   += streamInfo.size;
 	m_VertexCount = streamInfo.size / stride;
 	m_Datas.push_back(dataPtr);
 	m_Streams.push_back(streamInfo);
@@ -119,7 +113,7 @@ void VertexBuffer::DestroyBuffer()
 		return;
 	}
     
-	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+	VkDevice device = Engine::Get()->GetDeviceHandle();
 
 	for (int32 i = 0; i < m_Streams.size(); ++i)
 	{

@@ -116,22 +116,7 @@ public:
 		return m_Memories;
 	}
 
-	FORCEINLINE void Invalid()
-	{
-		DestroyBuffer();
-        m_Invalid = true;
-	}
-    
-	FORCEINLINE bool IsValid()
-	{
-		if (m_Invalid)
-		{
-			CreateBuffer();
-		}
-		return !m_Invalid;
-	}
-    
-    FORCEINLINE void Upload()
+    FORCEINLINE void UpdateResources()
     {
         if (m_Invalid)
         {
@@ -139,13 +124,18 @@ public:
         }
     }
 	
-    const VertexInputDeclareInfo& GetVertexInputStateInfo();
+    const VertexInputDeclareInfo& GetVertexInputStateInfo() const
+	{
+		return m_VertexInputStateInfo;
+	}
 
 protected:
 
 	void DestroyBuffer();
 
 	void CreateBuffer();
+
+	void UpdateVertexInputState();
 
 protected:
 
@@ -161,6 +151,7 @@ protected:
 	uint32							m_CurrentChannels;
 
 	bool							m_Invalid;
-    bool							m_InputStateDirty;
 	VertexInputDeclareInfo			m_VertexInputStateInfo;
+
+	uint32							m_Hash;
 };

@@ -165,6 +165,13 @@ set(Monkey_Graphics_Texture_SRCS
 	Monkey/Graphics/Texture/Texture3D.cpp
 )
 
+set(Monkey_Graphics_Command_HDRS
+	Monkey/Graphics/Command/DrawCommand.h
+)
+set(Monkey_Graphics_Command_SRCS
+	Monkey/Graphics/Command/DrawCommand.cpp
+)
+
 set(Monkey_Loader_HDRS
 	Monkey/Loader/MeshLoader.h
 	Monkey/Loader/stb_image.h
@@ -464,6 +471,8 @@ add_library(Monkey STATIC
 	${Monkey_Graphics_Material_HDRS}
 	${Monkey_Graphics_Renderer_HDRS}
 	${Monkey_Graphics_Renderer_SRCS}
+	${Monkey_Graphics_Command_HDRS}
+	${Monkey_Graphics_Command_SRCS}
 )
 
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
@@ -513,3 +522,4 @@ source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Mon
 source_group(Monkey\\Graphics\\Material FILES ${Monkey_Graphics_Material_SRCS} ${Monkey_Graphics_Material_HDRS})
 source_group(Monkey\\Graphics\\Renderer FILES ${Monkey_Graphics_Renderer_HDRS} ${Monkey_Graphics_Renderer_SRCS})
 source_group(Monkey\\Graphics\\Texture FILES ${Monkey_Graphics_Texture_HDRS} ${Monkey_Graphics_Texture_SRCS})
+source_group(Monkey\\Graphics\\Command FILES ${Monkey_Graphics_Command_HDRS} ${Monkey_Graphics_Command_SRCS})

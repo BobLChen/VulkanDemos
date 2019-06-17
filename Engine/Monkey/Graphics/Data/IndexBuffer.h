@@ -16,72 +16,62 @@ public:
 
 	virtual ~IndexBuffer();
 
-	FORCEINLINE VkIndexType GetIndexType() const
+	inline VkIndexType GetIndexType() const
 	{
 		return m_IndexType;
 	}
 
-	FORCEINLINE PrimitiveType GetPrimitiveType() const
+	inline PrimitiveType GetPrimitiveType() const
 	{
 		return m_PrimitiveType;
 	}
 
-	FORCEINLINE const uint8* GetData() const
+	inline const uint8* GetData() const
 	{
 		return m_Data;
 	}
 
-	FORCEINLINE uint32 GetDataSize() const
+	inline uint32 GetDataSize() const
 	{
 		return m_DataSize;
 	}
 
-	FORCEINLINE uint32 GetIndexCount() const
+	inline uint32 GetIndexCount() const
 	{
 		return m_IndexCount;
 	}
 
-	FORCEINLINE VkBuffer GetBuffer() const
+	inline VkBuffer GetBuffer() const
 	{
 		return m_Buffer;
 	}
 
-	FORCEINLINE VkDeviceMemory GetMemory() const
+	inline VkDeviceMemory GetMemory() const
 	{
 		return m_Memory;
 	}
 
-	FORCEINLINE uint32 GetAlignment() const
+	inline uint32 GetAlignment() const
 	{
 		return m_Alignment;
 	}
 
-	FORCEINLINE uint32 GetAllocationSize() const
+	inline uint32 GetAllocationSize() const
 	{
 		return m_AllocationSize;
 	}
 
-	FORCEINLINE uint32 GetTriangleCount() const
+	inline uint32 GetTriangleCount() const
 	{
 		return m_TriangleCount;
 	}
 
-	FORCEINLINE void Invalid()
+	inline uint32 GetHash() const
 	{
-		DestroyBuffer();
-		m_Invalid = true;
+		return m_Hash;
 	}
     
-	FORCEINLINE bool IsValid()
-	{
-		if (m_Invalid)
-		{
-			CreateBuffer();
-		}
-		return !m_Invalid;
-	}
-    
-    FORCEINLINE void Upload()
+    inline void UpdateResources()
     {
         if (m_Invalid)
         {
@@ -110,4 +100,6 @@ protected:
 	bool                m_Invalid;
 	uint32              m_AllocationSize;
 	uint32              m_Alignment;
+
+	uint32				m_Hash;
 };

@@ -6,6 +6,8 @@
 #include "Vulkan/RHIDefinitions.h"
 #include "Vulkan/VulkanPlatform.h"
 
+#include "Utils/Crc.h"
+
 #include <vector>
 
 struct VertexStreamInfo
@@ -24,12 +26,12 @@ struct VertexStreamInfo
         
     }
     
-    FORCEINLINE bool operator == (const VertexStreamInfo& rhs) const
+    inline bool operator == (const VertexStreamInfo& rhs) const
     {
         return channelMask == rhs.channelMask && size == rhs.size && alignment == rhs.alignment && allocationSize == rhs.allocationSize;
     }
     
-    FORCEINLINE bool operator != (const VertexStreamInfo& rhs) const
+    inline bool operator != (const VertexStreamInfo& rhs) const
     {
         return !(*this == rhs);
     }
@@ -51,12 +53,12 @@ struct VertexChannelInfo
         
     }
     
-    FORCEINLINE bool operator == (const VertexChannelInfo& rhs) const
+    inline bool operator == (const VertexChannelInfo& rhs) const
     {
         return stream == rhs.stream && offset == rhs.offset && format == rhs.format && attribute == rhs.attribute;
     }
     
-    FORCEINLINE bool operator != (const VertexChannelInfo& rhs) const
+    inline bool operator != (const VertexChannelInfo& rhs) const
     {
         return !(*this == rhs);
     }
@@ -88,32 +90,40 @@ public:
         
     }
     
-    FORCEINLINE void AddBinding(const BindingDescription& binding)
+    inline void AddBinding(const BindingDescription& binding)
     {
         m_Invalid = true;
         m_Bindings.push_back(binding);
     }
     
-    FORCEINLINE void AddAttribute(const AttributeDescription& attribute)
+    inline void AddAttribute(const AttributeDescription& attribute)
     {
         m_Invalid = true;
         m_InputAttributes.push_back(attribute);
     }
     
-    FORCEINLINE uint32 GetHash() const
+    inline uint32 GetHash() const
     {
         return m_hash;
     }
     
-    FORCEINLINE const std::vector<BindingDescription>& GetBindings() const
+    inline const std::vector<BindingDescription>& GetBindings() const
     {
         return m_Bindings;
     }
     
-    FORCEINLINE const std::vector<AttributeDescription>& GetAttributes() const
+    inline const std::vector<AttributeDescription>& GetAttributes() const
     {
         return m_InputAttributes;
     }
+
+	void Clear()
+	{
+		m_Bindings.clear();
+		m_InputAttributes.clear();
+		m_Invalid = true;
+		m_hash    = 0;
+	}
     
     void GenerateHash();
     
@@ -123,4 +133,75 @@ protected:
     
     std::vector<BindingDescription>      m_Bindings;
     std::vector<AttributeDescription>    m_InputAttributes;
+};
+
+class VertexInputBindingInfo
+{
+public:
+    VertexInputBindingInfo()
+    : m_Invalid(true)
+    , m_Hash(0)
+    {
+        
+    }
+    
+    inline int32 GetLocation(VertexAttribute attribute) const
+    {
+        for (int32 i = 0; i < m_Attributes.size(); ++i)
+        {
+            if (m_Attributes[i] == attribute)
+            {
+                return m_Locations[i];
+            }
+        }
+        
+        MLOGE("Can't found location, Attribute : %d", attribute);
+        return -1;
+    }
+    
+    inline uint32 GetHash() const
+    {
+        return m_Hash;
+    }
+    
+    inline void AddBinding(VertexAttribute attribute, int32 location)
+    {
+        m_Invalid = true;
+        m_Attributes.push_back(attribute);
+        m_Locations.push_back(location);
+    }
+    
+    inline int32 GetInputCount() const
+    {
+        return int32(m_Attributes.size());
+    }
+    
+    inline void Clear()
+    {
+        m_Invalid = false;
+        m_Hash    = 0;
+        m_Attributes.clear();
+        m_Locations.clear();
+    }
+    
+    inline void GenerateHash()
+    {
+        if (m_Invalid)
+        {
+            m_Hash = Crc::MemCrc32(m_Attributes.data(), int32(m_Attributes.size() * sizeof(int32)), 0);
+            m_Hash = Crc::MemCrc32(m_Locations.data(), int32(m_Locations.size() * sizeof(int32)), m_Hash);
+            m_Invalid = false;
+        }
+    }
+    
+    inline const std::vector<VertexAttribute>& GetAttributes() const
+    {
+        return m_Attributes;
+    }
+    
+protected:
+    bool                         m_Invalid;
+    uint32                       m_Hash;
+    std::vector<VertexAttribute> m_Attributes;
+    std::vector<int32>           m_Locations;
 };

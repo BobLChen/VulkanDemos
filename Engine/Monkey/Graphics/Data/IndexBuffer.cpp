@@ -1,6 +1,9 @@
 #include "Math/Math.h"
+#include "Utils/Crc.h"
+
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanDevice.h"
+
 #include "Engine.h"
 #include "IndexBuffer.h"
 
@@ -16,9 +19,9 @@ IndexBuffer::IndexBuffer(uint8* dataPtr, uint32 dataSize, PrimitiveType primitiv
 	, m_Invalid(true)
 	, m_AllocationSize(0)
 	, m_Alignment(0)
+	, m_Hash(0)
 {
-	m_IndexCount    = dataSize / IndexTypeToSize(indexType);
-	m_TriangleCount = m_IndexCount / PrimitiveTypeToSize(primitiveType);
+	
 }
 
 IndexBuffer::~IndexBuffer()
@@ -37,6 +40,10 @@ void IndexBuffer::CreateBuffer()
 		return;
 	}
     m_Invalid = false;
+
+	m_Hash          = Crc::MemCrc32(m_Data, m_DataSize, 0);
+	m_IndexCount    = m_DataSize / IndexTypeToSize(m_IndexType);
+	m_TriangleCount = m_IndexCount / PrimitiveTypeToSize(m_PrimitiveType);
 
 	VkBuffer hostBuffer                         = VK_NULL_HANDLE;
 	VkDeviceMemory hostMemory                   = VK_NULL_HANDLE;
@@ -148,7 +155,7 @@ void IndexBuffer::DestroyBuffer()
         return;
     }
     
-	VkDevice device = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+	VkDevice device = Engine::Get()->GetDeviceHandle();
 
 	vkDestroyBuffer(device, m_Buffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(device, m_Memory, VULKAN_CPU_ALLOCATOR);
