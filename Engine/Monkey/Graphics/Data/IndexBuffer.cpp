@@ -35,12 +35,11 @@ IndexBuffer::~IndexBuffer()
 
 void IndexBuffer::CreateBuffer()
 {
-	if (!m_Invalid)
-	{
+	if (!m_Invalid) {
 		return;
 	}
-    m_Invalid = false;
 
+    m_Invalid       = false;
 	m_Hash          = Crc::MemCrc32(m_Data, m_DataSize, 0);
 	m_IndexCount    = m_DataSize / IndexTypeToSize(m_IndexType);
 	m_TriangleCount = m_IndexCount / PrimitiveTypeToSize(m_PrimitiveType);
@@ -150,8 +149,7 @@ void IndexBuffer::CreateBuffer()
 
 void IndexBuffer::DestroyBuffer()
 {
-    if (m_Invalid)
-    {
+    if (m_Invalid) {
         return;
     }
     

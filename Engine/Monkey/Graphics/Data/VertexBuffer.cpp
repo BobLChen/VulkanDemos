@@ -30,6 +30,7 @@ VertexBuffer::~VertexBuffer()
 	m_Datas.clear();
 	m_Streams.clear();
     m_Channels.clear();
+	m_VertexInputStateInfo.Clear();
 }
 
 void VertexBuffer::UpdateVertexInputState()
@@ -108,8 +109,7 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 
 void VertexBuffer::DestroyBuffer()
 {
-	if (m_Invalid)
-	{
+	if (m_Invalid) {
 		return;
 	}
     
@@ -123,6 +123,7 @@ void VertexBuffer::DestroyBuffer()
 		m_Buffers[i] = VK_NULL_HANDLE;
 	}
     
+	m_Hash    = 0;
 	m_Invalid = true;
 	m_Buffers.clear();
 	m_Memories.clear();
@@ -130,12 +131,16 @@ void VertexBuffer::DestroyBuffer()
 
 void VertexBuffer::CreateBuffer()
 {
-	if (!m_Invalid)
-	{
+	if (!m_Invalid) {
 		return;
 	}
+
 	m_Invalid = false;
-    
+	m_Hash    = 0;
+	for (int32 i = 0; i < m_Streams.size(); ++i) {
+		m_Hash = Crc::MemCrc32(m_Datas[i], m_Streams[i].size, m_Hash);
+	}
+
 	std::shared_ptr<VulkanRHI> vulkanRHI = Engine::Get()->GetVulkanRHI();
 	std::shared_ptr<VulkanDevice> vulkanDevice = vulkanRHI->GetDevice();
 	VkDevice device = vulkanDevice->GetInstanceHandle();

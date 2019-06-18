@@ -35,57 +35,57 @@ public:
     
     void Destroy();
     
-    FORCEINLINE const VkBuffer& GetBuffer() const
+    inline const VkBuffer& GetBuffer() const
     {
         return m_Buffer;
     }
     
-    FORCEINLINE const VkDeviceMemory& GetMemory() const
+    inline const VkDeviceMemory& GetMemory() const
     {
         return m_Memory;
     }
     
-    FORCEINLINE const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const
+    inline const VkDescriptorBufferInfo& GetDescriptorBufferInfo() const
     {
         return m_DescriptorBufferInfo;
     }
     
-    FORCEINLINE const VkBufferUsageFlags& GetBufferUsage() const
+    inline const VkBufferUsageFlags& GetBufferUsage() const
     {
         return m_UsageFlags;
     }
     
-    FORCEINLINE const VkMemoryPropertyFlags& GetMemoryProperty() const
+    inline const VkMemoryPropertyFlags& GetMemoryProperty() const
     {
         return m_MemoryPropertyFlags;
     }
     
-    FORCEINLINE const VkDeviceSize& GetSize() const
+    inline const VkDeviceSize& GetSize() const
     {
         return m_Size;
     }
     
-    FORCEINLINE const VkDeviceSize& GetAlignment() const
+    inline const VkDeviceSize& GetAlignment() const
     {
         return m_Alignment;
     }
     
-    FORCEINLINE void* GetMappedPtr() const
+    inline void* GetMappedPtr() const
     {
         return m_MapDataPtr;
     }
     
 private:
     
-    VkBuffer m_Buffer;
-    VkDeviceMemory m_Memory;
-    VkDescriptorBufferInfo m_DescriptorBufferInfo;
+    VkBuffer				m_Buffer;
+    VkDeviceMemory			m_Memory;
+    VkDescriptorBufferInfo	m_DescriptorBufferInfo;
     
-    VkBufferUsageFlags m_UsageFlags;
-    VkMemoryPropertyFlags m_MemoryPropertyFlags;
+    VkBufferUsageFlags		m_UsageFlags;
+    VkMemoryPropertyFlags	m_MemoryPropertyFlags;
     
-    VkDeviceSize m_Size;
-    VkDeviceSize m_Alignment;
+    VkDeviceSize			m_Size;
+    VkDeviceSize			m_Alignment;
     
-    void* m_MapDataPtr;
+    void*					m_MapDataPtr;
 };

@@ -133,13 +133,13 @@ public:
 
 	~VulkanPipelineStateManager();
 
-	VulkanGfxPipeline* GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader);
+	VulkanGfxPipeline* GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
     
     VulkanGfxLayout* GetGfxLayout(std::shared_ptr<Shader> shader);
     
 private:
 
-    VkPipeline GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader);
+    VkPipeline GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
 
 private:
     

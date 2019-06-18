@@ -17,12 +17,12 @@ public:
     
 	void AddStream(const VertexStreamInfo& streamInfo, const std::vector<VertexChannelInfo>& channels, uint8* dataPtr);
 
-	FORCEINLINE int32 GetStreamCount() const
+	inline int32 GetStreamCount() const
     {
         return int32(m_Streams.size());
     }
 
-	FORCEINLINE int32 GetStreamIndex(VertexAttribute attribute) const
+	inline int32 GetStreamIndex(VertexAttribute attribute) const
     {
         uint32 channelMask = 1 << attribute;
         for (int32 i = 0; i < m_Streams.size(); ++i)
@@ -36,7 +36,7 @@ public:
         return -1;
     }
 
-	FORCEINLINE int32 GetChannelIndex(VertexAttribute attribute) const
+	inline int32 GetChannelIndex(VertexAttribute attribute) const
 	{
 		for (int32 i = 0; i < m_Channels.size(); ++i)
 		{
@@ -49,74 +49,74 @@ public:
 		return -1;
 	}
 
-	FORCEINLINE const VertexStreamInfo& GetStream(int32 index) const
+	inline const VertexStreamInfo& GetStream(int32 index) const
 	{
 		return m_Streams[index];
 	}
 
-	FORCEINLINE const VertexChannelInfo& GetChannel(int32 index) const
+	inline const VertexChannelInfo& GetChannel(int32 index) const
 	{
 		return m_Channels[index];
 	}
 
-	FORCEINLINE const VertexStreamInfo& GetStream(VertexAttribute attribute) const
+	inline const VertexStreamInfo& GetStream(VertexAttribute attribute) const
 	{
 		int32 index = GetStreamIndex(attribute);
 		return GetStream(index);
 	}
 
-	FORCEINLINE const VertexChannelInfo& GetChannel(VertexAttribute attribute) const
+	inline const VertexChannelInfo& GetChannel(VertexAttribute attribute) const
 	{
 		int32 index = GetChannelIndex(attribute);
 		return GetChannel(index);
 	}
 
-	FORCEINLINE uint8* GetDataPtr(int32 stream) const
+	inline uint8* GetDataPtr(int32 stream) const
 	{ 
 		return m_Datas[stream];
 	}
 
-	FORCEINLINE int32 GetDataSize() const
+	inline int32 GetDataSize() const
 	{ 
 		return m_DataSize;
 	}
 
-	FORCEINLINE int32 GetVertexCount() const
+	inline int32 GetVertexCount() const
 	{ 
 		return m_VertexCount;
 	}
 
-	FORCEINLINE uint32 GetChannelMask() const
+	inline uint32 GetChannelMask() const
 	{
 		return m_CurrentChannels;
 	}
 
-	FORCEINLINE const std::vector<VertexStreamInfo>& GetStreams() const
+	inline const std::vector<VertexStreamInfo>& GetStreams() const
 	{
 		return m_Streams;
 	}
 
-	FORCEINLINE const std::vector<VertexChannelInfo>& GetChannels() const
+	inline const std::vector<VertexChannelInfo>& GetChannels() const
 	{
 		return m_Channels;
 	}
 
-	FORCEINLINE bool HasAttribute(VertexAttribute attribute) const
+	inline bool HasAttribute(VertexAttribute attribute) const
 	{
 		return m_CurrentChannels & (1 << (int32)attribute);
 	}
 
-	FORCEINLINE const std::vector<VkBuffer>& GetVKBuffers() const
+	inline const std::vector<VkBuffer>& GetVKBuffers() const
 	{
 		return m_Buffers;
 	}
 
-	FORCEINLINE const std::vector<VkDeviceMemory>& GetVKMemories() const
+	inline const std::vector<VkDeviceMemory>& GetVKMemories() const
 	{
 		return m_Memories;
 	}
 
-    FORCEINLINE void UpdateResources()
+    inline void UpdateResources()
     {
         if (m_Invalid)
         {
@@ -124,9 +124,14 @@ public:
         }
     }
 	
-    const VertexInputDeclareInfo& GetVertexInputStateInfo() const
+    inline const VertexInputDeclareInfo& GetVertexInputStateInfo() const
 	{
 		return m_VertexInputStateInfo;
+	}
+
+	inline const uint32 GetHash() const
+	{
+		return m_Hash;
 	}
 
 protected:

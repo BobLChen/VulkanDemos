@@ -15,40 +15,35 @@
 class MeshDrawCommand
 {
 public:
-	MeshDrawCommand()
-	{
+	MeshDrawCommand();
 
-	}
-
-	~MeshDrawCommand()
-	{
-
-	}
+	virtual ~MeshDrawCommand();
 
 	void GenerateHash();
+
+	void Prepare();
+
+	void Reset();
 
 public:
 
 	std::shared_ptr<Material>			material;
 	std::shared_ptr<Renderable>			renderable;
 
-	uint32								firstIndex;
-	uint32								numPrimitives;
-	uint32								numInstances;
+	uint32		firstIndex;
+	uint32		numPrimitives;
+	uint32		numInstances;
+
+	uint32		hash;
+	bool        ready;
 };
 
 class MeshDrawListContext
 {
 public:
-	MeshDrawListContext()
-	{
+	MeshDrawListContext();
 
-	}
-
-	virtual ~MeshDrawListContext()
-	{
-
-	}
+	virtual ~MeshDrawListContext();
 
 	virtual MeshDrawCommand* AddCommand(MeshDrawCommand* command);
 	

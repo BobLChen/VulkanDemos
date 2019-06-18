@@ -67,30 +67,63 @@ VulkanGfxLayout* VulkanPipelineStateManager::GetGfxLayout(std::shared_ptr<Shader
     return layout;
 }
 
-VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader)
+VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
 {
 	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), shader->GetHash());
+	key = Crc::MemCrc32(&key, sizeof(uint32), inputInfo.GetHash());
 	
 	auto it = m_GfxPipelineCache.find(key);
-	if (it != m_GfxPipelineCache.end())
-	{
+	if (it != m_GfxPipelineCache.end()) {
 		return it->second;
 	}
     
     VulkanGfxLayout* layout = GetGfxLayout(shader);
     VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
     pipeline->m_Layout   = layout;
-    pipeline->m_Pipeline = GetGfxPipeline(pipelineStateInfo, layout, shader);
+    pipeline->m_Pipeline = GetVulkanGfxPipeline(pipelineStateInfo, layout, shader, inputInfo);
     
 	return pipeline;
 }
 
-VkPipeline VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader)
+VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
 {
-    
-    
-    
-    
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+	ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+	pipelineCreateInfo.layout = gfxLayout->GetPipelineLayout();
+	
+	VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo;
+	ZeroVulkanStruct(colorBlendCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
+	colorBlendCreateInfo.attachmentCount   = 1;
+    colorBlendCreateInfo.pAttachments      = &(pipelineStateInfo.colorBlendAttachmentState);
+    colorBlendCreateInfo.blendConstants[0] = 1.0f;
+	colorBlendCreateInfo.blendConstants[1] = 1.0f;
+	colorBlendCreateInfo.blendConstants[2] = 1.0f;
+	colorBlendCreateInfo.blendConstants[3] = 1.0f;
+
+	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfos;
+	std::vector<std::shared_ptr<ShaderModule>> shaderModules;
+	shaderModules.push_back(shader->GetVertModule());
+	shaderModules.push_back(shader->GetFragModule());
+	shaderModules.push_back(shader->GetGeomModule());
+	shaderModules.push_back(shader->GetTescModule());
+	shaderModules.push_back(shader->GetTeseModule());
+	shaderModules.push_back(shader->GetCompModule());
+	for (int32 i = 0; i < shaderModules.size(); ++i)
+	{
+		std::shared_ptr<ShaderModule> shaderModule = shaderModules[i];
+		if (shaderModule == nullptr) {
+			continue;
+		}
+		VkPipelineShaderStageCreateInfo shaderCreateInfo;
+		ZeroVulkanStruct(shaderCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+		shaderCreateInfo.stage  = shaderModule->GetStageFlags();
+		shaderCreateInfo.module = shaderModule->GetHandle();
+		shaderCreateInfo.pName  = "main";
+		shaderCreateInfos.push_back(shaderCreateInfo);
+	}
+
+
+
     return VK_NULL_HANDLE;
 }
 
