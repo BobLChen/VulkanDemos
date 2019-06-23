@@ -539,7 +539,7 @@ protected:
 class VulkanResourceHeapManager
 {
 public:
-    VulkanResourceHeapManager(std::shared_ptr<VulkanDevice> device);
+    VulkanResourceHeapManager(VulkanDevice* device);
     
     virtual ~VulkanResourceHeapManager();
     
@@ -561,7 +561,7 @@ public:
     
     VulkanResourceAllocation* AllocateBufferMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line);
     
-    std::shared_ptr<VulkanDevice> GetVulkanDevice()
+    VulkanDevice* GetVulkanDevice()
     {
         return m_VulkanDevice;
     }
@@ -635,7 +635,7 @@ protected:
     }
     
 protected:
-    std::shared_ptr<VulkanDevice>           m_VulkanDevice;
+    VulkanDevice*							m_VulkanDevice;
     VulkanDeviceMemoryManager*              m_DeviceMemoryManager;
     std::vector<VulkanResourceHeap*>        m_ResourceTypeHeaps;
     std::vector<VulkanSubBufferAllocator*>  m_UsedBufferAllocations[(int32)PoolSizes::SizesCount + 1];

@@ -10,6 +10,7 @@
 #include <memory>
 #include <vector>
 
+class VulkanDevice;
 class Shader;
 
 struct VulkanPipelineStateInfo
@@ -137,12 +138,17 @@ public:
     
     VulkanGfxLayout* GetGfxLayout(std::shared_ptr<Shader> shader);
     
+	void Init(VulkanDevice* device);
+
+	void Destory();
+
 private:
 
     VkPipeline GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
 
 private:
-    
+    VulkanDevice*	m_VulkanDevice;
+
     std::unordered_map<uint32, VulkanGfxLayout*>        m_GfxLayoutCache;
 	std::unordered_map<uint32, VulkanGfxPipeline*>      m_GfxPipelineCache;
 	std::unordered_map<uint32, VkDescriptorSetLayout>   m_DescriptorSetLayoutCache;

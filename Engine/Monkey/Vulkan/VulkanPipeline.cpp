@@ -2,6 +2,7 @@
 
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorInfo.h"
+#include "VulkanDevice.h"
 #include "Engine.h"
 
 VulkanPipeline::VulkanPipeline()
@@ -31,11 +32,17 @@ VulkanGfxPipeline::~VulkanGfxPipeline()
 }
 
 VulkanPipelineStateManager::VulkanPipelineStateManager()
+	: m_VulkanDevice(nullptr)
 {
 
 }
 
-VulkanPipelineStateManager::~VulkanPipelineStateManager()
+void VulkanPipelineStateManager::Init(VulkanDevice* device)
+{
+	m_VulkanDevice = device;
+}
+
+void VulkanPipelineStateManager::Destory()
 {
 	VkDevice device = Engine::Get()->GetDeviceHandle();
 	for (auto it = m_DescriptorSetLayoutCache.begin(); it != m_DescriptorSetLayoutCache.end(); ++it)
@@ -43,6 +50,11 @@ VulkanPipelineStateManager::~VulkanPipelineStateManager()
 		vkDestroyDescriptorSetLayout(device, it->second, VULKAN_CPU_ALLOCATOR);
 	}
 	m_DescriptorSetLayoutCache.clear();
+}
+
+VulkanPipelineStateManager::~VulkanPipelineStateManager()
+{
+	
 }
 
 VulkanGfxLayout* VulkanPipelineStateManager::GetGfxLayout(std::shared_ptr<Shader> shader)

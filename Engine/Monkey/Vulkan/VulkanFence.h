@@ -3,11 +3,11 @@
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "VulkanPlatform.h"
-#include "VulkanDevice.h"
 
 #include <memory>
 #include <vector>
 
+class VulkanDevice;
 class VulkanFenceManager;
 
 class VulkanFence
@@ -86,7 +86,7 @@ protected:
 	std::vector<VulkanFence*> m_UsedFences;
 };
 
-class VulkanSemaphore : public RefCount
+class VulkanSemaphore
 {
 public:
 	VulkanSemaphore(VulkanDevice* device);

@@ -28,15 +28,6 @@ public:
         vkCmdBindIndexBuffer(command, m_IndexBuffer->GetBuffer(), 0, m_IndexBuffer->GetIndexType());
     }
     
-    FORCEINLINE bool IsValid() const
-    {
-        if (m_VertexBuffer == nullptr || m_IndexBuffer == nullptr)
-        {
-            return false;
-        }
-        return m_VertexBuffer->IsValid() && m_IndexBuffer->IsValid();
-    }
-    
     FORCEINLINE std::shared_ptr<VertexBuffer> GetVertexBuffer() const
     {
         return m_VertexBuffer;

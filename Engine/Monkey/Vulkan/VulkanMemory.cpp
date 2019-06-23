@@ -539,8 +539,8 @@ VulkanResourceHeap::~VulkanResourceHeap()
     if (dump)
     {
 #if MONKEY_DEBUG
-        m_Owner->GetParent()->GetMemoryManager().DumpMemory();
-        m_Owner->GetParent()->GetResourceHeapManager().DumpMemory();
+        m_Owner->GetVulkanDevice()->GetMemoryManager().DumpMemory();
+        m_Owner->GetVulkanDevice()->GetResourceHeapManager().DumpMemory();
 #endif
     }
 }
@@ -840,7 +840,7 @@ void VulkanSubBufferAllocator::Release(VulkanBufferSubAllocation* subAllocation)
 
 // VulkanResourceHeapManager
 
-VulkanResourceHeapManager::VulkanResourceHeapManager(std::shared_ptr<VulkanDevice> device)
+VulkanResourceHeapManager::VulkanResourceHeapManager(VulkanDevice* device)
     : m_VulkanDevice(device)
     , m_DeviceMemoryManager(&device->GetMemoryManager())
 {

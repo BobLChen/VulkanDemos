@@ -170,8 +170,8 @@ std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::str
 		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexStreamData, indexStreamSize, PrimitiveType::PT_TriangleList, VkIndexType::VK_INDEX_TYPE_UINT32);
 		
 		// upload to gpu
-		vertexBuffer->Upload();
-		indexBuffer->Upload();
+		vertexBuffer->UpdateResources();
+		indexBuffer->UpdateResources();
 
 		// 创建Renderable
 		std::shared_ptr<Renderable> renderable = std::make_shared<Renderable>(vertexBuffer, indexBuffer);

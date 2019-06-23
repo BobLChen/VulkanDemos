@@ -4,6 +4,7 @@
 #include "VulkanPlatform.h"
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
+#include "VulkanFence.h"
 #include "VulkanRHI.h"
 #include "VulkanPipeline.h"
 

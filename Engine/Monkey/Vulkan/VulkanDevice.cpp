@@ -406,6 +406,7 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
     m_MemoryManager.Init(this);
     m_ResourceHeapManager.Init();
 	m_FenceManager.Init(this);
+	m_PipelineStateManager.Init(this);
 }
 
 void VulkanDevice::Destroy()
@@ -413,6 +414,7 @@ void VulkanDevice::Destroy()
     m_ResourceHeapManager.Destory();
 	m_FenceManager.Destory();
     m_MemoryManager.Destory();
+	m_PipelineStateManager.Destory();
     
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
