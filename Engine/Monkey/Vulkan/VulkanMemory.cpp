@@ -50,169 +50,6 @@ void VulkanRange::JoinConsecutiveRanges(std::vector<VulkanRange>& ranges)
     }
 }
 
-// VulkanFence
-
-VulkanFence::VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool createSignaled)
-    : m_VkFence(VK_NULL_HANDLE)
-	, m_State(createSignaled ? VulkanFence::State::Signaled : VulkanFence::State::NotReady)
-	, m_Owner(owner)
-{
-	VkFenceCreateInfo createInfo;
-	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-	createInfo.flags = createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
-	vkCreateFence(device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_VkFence);
-}
-
-VulkanFence::~VulkanFence()
-{
-	if (m_VkFence != VK_NULL_HANDLE)
-	{
-		MLOG("Didn't get properly destroyed by FFenceManager!");
-	}
-}
-
-// VulkanFenceManager
-
-VulkanFenceManager::VulkanFenceManager()
-	: m_Device(nullptr)
-{
-
-}
-
-VulkanFenceManager::~VulkanFenceManager()
-{
-	if (m_UsedFences.size() > 0)
-	{
-		MLOG("No all fences are done!");
-	}
-}
-
-void VulkanFenceManager::Init(VulkanDevice* device)
-{
-	m_Device = device;
-}
-
-void VulkanFenceManager::Destory()
-{
-	if (m_UsedFences.size() > 0)
-	{
-		MLOG("No all fences are done!");
-	}
-
-	for (int32 i = 0; i < m_FreeFences.size(); ++i)
-	{
-		DestoryFence(m_FreeFences[i]);
-	}
-}
-
-VulkanFence* VulkanFenceManager::CreateFence(bool createSignaled)
-{
-	if (m_FreeFences.size() > 0)
-	{
-		VulkanFence* fence = m_FreeFences.back();
-		m_FreeFences.pop_back();
-		m_UsedFences.push_back(fence);
-		if (createSignaled)
-		{
-			fence->m_State = VulkanFence::State::Signaled;
-		}
-		return fence;
-	}
-
-	VulkanFence* newFence = new VulkanFence(m_Device, this, createSignaled);
-	m_UsedFences.push_back(newFence);
-	return newFence;
-}
-
-bool VulkanFenceManager::WaitForFence(VulkanFence* fence, uint64 timeInNanoseconds)
-{
-	VkResult result = vkWaitForFences(m_Device->GetInstanceHandle(), 1, &fence->m_VkFence, true, timeInNanoseconds);
-	switch (result)
-	{
-	case VK_SUCCESS:
-		fence->m_State = VulkanFence::State::Signaled;
-		return true;
-	case VK_TIMEOUT:
-        return false;
-	default:
-		MLOG("Unkow error %d", (int32)result);
-        return false;
-	}
-}
-
-void VulkanFenceManager::ResetFence(VulkanFence* fence)
-{
-	if (fence->m_State != VulkanFence::State::NotReady)
-	{
-		vkResetFences(m_Device->GetInstanceHandle(), 1, &fence->m_VkFence);
-		fence->m_State = VulkanFence::State::NotReady;
-	}
-}
-
-void VulkanFenceManager::ReleaseFence(VulkanFence*& fence)
-{
-	ResetFence(fence);
-	for (int32 i = 0; i < m_UsedFences.size(); ++i) {
-		if (m_UsedFences[i] == fence)
-		{
-			m_UsedFences.erase(m_UsedFences.begin() + i);
-			break;
-		}
-	}
-	m_FreeFences.push_back(fence);
-	fence = nullptr;
-}
-
-void VulkanFenceManager::WaitAndReleaseFence(VulkanFence*& fence, uint64 timeInNanoseconds)
-{
-	if (!fence->IsSignaled()) {
-		WaitForFence(fence, timeInNanoseconds);
-	}
-	ReleaseFence(fence);
-}
-
-bool VulkanFenceManager::CheckFenceState(VulkanFence* fence)
-{
-	VkResult result = vkGetFenceStatus(m_Device->GetInstanceHandle(), fence->m_VkFence);
-	switch (result)
-	{
-	case VK_SUCCESS:
-		fence->m_State = VulkanFence::State::Signaled;
-		break;
-	case VK_NOT_READY:
-		break;
-	default:
-		break;
-	}
-	return false;
-}
-
-void VulkanFenceManager::DestoryFence(VulkanFence* fence)
-{
-	vkDestroyFence(m_Device->GetInstanceHandle(), fence->m_VkFence, VULKAN_CPU_ALLOCATOR);
-	fence->m_VkFence = VK_NULL_HANDLE;
-	delete fence;
-}
-
-// VulkanSemaphore
-VulkanSemaphore::VulkanSemaphore(VulkanDevice* device)
-    : m_VkSemaphore(VK_NULL_HANDLE)
-	, m_Device(device)
-{
-	VkSemaphoreCreateInfo createInfo;
-	ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-	vkCreateSemaphore(device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_VkSemaphore);
-}
-
-VulkanSemaphore::~VulkanSemaphore()
-{
-	if (m_VkSemaphore == VK_NULL_HANDLE)
-	{
-		MLOG("Failed destory VkSemaphore.");
-	}
-	vkDestroySemaphore(m_Device->GetInstanceHandle(), m_VkSemaphore, VULKAN_CPU_ALLOCATOR);
-}
-
 // VulkanDeviceMemoryAllocation
 VulkanDeviceMemoryAllocation::VulkanDeviceMemoryAllocation()
 	: m_Size(0)
@@ -687,7 +524,7 @@ VulkanResourceHeap::~VulkanResourceHeap()
                 MLOG("Page allocation %p has unfreed %s resources", (void*)page->m_DeviceMemoryAllocation->GetHandle(), name);
                 leak = true;
             }
-            m_Owner->GetParent()->GetMemoryManager().Free(page->m_DeviceMemoryAllocation);
+            m_Owner->GetVulkanDevice()->GetMemoryManager().Free(page->m_DeviceMemoryAllocation);
             delete page;
         }
         usedPages.clear();
@@ -695,9 +532,9 @@ VulkanResourceHeap::~VulkanResourceHeap()
     };
     
     bool dump = false;
-    dump = dump || DeletePages(m_UsedBufferPages, "Buffer");
-    dump = dump || DeletePages(m_UsedImagePages, "Image");
-    dump = dump || DeletePages(m_FreePages, "Free");
+    dump = dump || DeletePages(m_UsedBufferPages,   "Buffer");
+    dump = dump || DeletePages(m_UsedImagePages,    "Image");
+    dump = dump || DeletePages(m_FreePages,         "Free");
     
     if (dump)
     {
@@ -746,7 +583,7 @@ void VulkanResourceHeap::ReleaseFreedPages(bool immediately)
     {
         VulkanResourceHeapPage* page = m_FreePages[index];
         m_UsedMemory -= page->m_MaxSize;
-        m_Owner->GetParent()->GetMemoryManager().Free(page->m_DeviceMemoryAllocation);
+        m_Owner->GetVulkanDevice()->GetMemoryManager().Free(page->m_DeviceMemoryAllocation);
         delete page;
     }
     
@@ -817,10 +654,10 @@ VulkanResourceAllocation* VulkanResourceHeap::AllocateResource(Type type, uint32
     }
     
     uint32 allocationSize = MMath::Max(size, targetDefaultPageSize);
-    VulkanDeviceMemoryAllocation* deviceMemoryAllocation = m_Owner->GetParent()->GetMemoryManager().Alloc(true, allocationSize, m_MemoryTypeIndex, nullptr, file, line);
+    VulkanDeviceMemoryAllocation* deviceMemoryAllocation = m_Owner->GetVulkanDevice()->GetMemoryManager().Alloc(true, allocationSize, m_MemoryTypeIndex, nullptr, file, line);
     if (!deviceMemoryAllocation && size < allocationSize)
     {
-        deviceMemoryAllocation = m_Owner->GetParent()->GetMemoryManager().Alloc(false, size, m_MemoryTypeIndex, nullptr, file, line);
+        deviceMemoryAllocation = m_Owner->GetVulkanDevice()->GetMemoryManager().Alloc(false, size, m_MemoryTypeIndex, nullptr, file, line);
     }
     
     VulkanResourceHeapPage* newPage = new VulkanResourceHeapPage(this, deviceMemoryAllocation, m_PageIDCounter);
@@ -1003,8 +840,8 @@ void VulkanSubBufferAllocator::Release(VulkanBufferSubAllocation* subAllocation)
 
 // VulkanResourceHeapManager
 
-VulkanResourceHeapManager::VulkanResourceHeapManager(VulkanDevice* device)
-    : VulkanDeviceChild(device)
+VulkanResourceHeapManager::VulkanResourceHeapManager(std::shared_ptr<VulkanDevice> device)
+    : m_VulkanDevice(device)
     , m_DeviceMemoryManager(&device->GetMemoryManager())
 {
     
@@ -1017,7 +854,7 @@ VulkanResourceHeapManager::~VulkanResourceHeapManager()
 
 void VulkanResourceHeapManager::Init()
 {
-    VulkanDeviceMemoryManager& memoryManager = m_Device->GetMemoryManager();
+    VulkanDeviceMemoryManager& memoryManager = m_VulkanDevice->GetMemoryManager();
 
     const uint32 typeBits = (1 << memoryManager.GetNumMemoryTypes()) - 1;
     const VkPhysicalDeviceMemoryProperties& memoryProperties = memoryManager.GetMemoryProperties();
@@ -1058,7 +895,7 @@ void VulkanResourceHeapManager::Init()
             VkDeviceSize heapSize = memoryProperties.memoryHeaps[heapIndex].size;
             VkDeviceSize pageSize = MMath::Min<VkDeviceSize>(heapSize / 8, GPU_ONLY_HEAP_PAGE_SIZE);
             m_ResourceTypeHeaps[typeIndices[index]] = new VulkanResourceHeap(this, typeIndices[index], uint32(pageSize));
-            m_ResourceTypeHeaps[typeIndices[index]]->m_IsHostCachedSupported      = ((memoryProperties.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT) == VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
+            m_ResourceTypeHeaps[typeIndices[index]]->m_IsHostCachedSupported      = ((memoryProperties.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)      == VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
             m_ResourceTypeHeaps[typeIndices[index]]->m_IsLazilyAllocatedSupported = ((memoryProperties.memoryTypes[index].propertyFlags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) == VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
         }
     }
@@ -1175,7 +1012,7 @@ VulkanResourceAllocation* VulkanResourceHeapManager::AllocateImageMemory(const V
 
 VulkanBufferSubAllocation* VulkanResourceHeapManager::AllocateBuffer(uint32 size, VkBufferUsageFlags bufferUsageFlags, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line)
 {
-    const VkPhysicalDeviceLimits& limits = m_Device->GetLimits();
+    const VkPhysicalDeviceLimits& limits = m_VulkanDevice->GetLimits();
     uint32 alignment = 1;
     
     bool isStorageOrTexel = (bufferUsageFlags & (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)) != 0;
@@ -1233,16 +1070,16 @@ VulkanBufferSubAllocation* VulkanResourceHeapManager::AllocateBuffer(uint32 size
     ZeroVulkanStruct(bufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
     bufferCreateInfo.size  = bufferSize;
     bufferCreateInfo.usage = bufferUsageFlags;
-    VERIFYVULKANRESULT(vkCreateBuffer(m_Device->GetInstanceHandle(), &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &buffer));
+    VERIFYVULKANRESULT(vkCreateBuffer(m_VulkanDevice->GetInstanceHandle(), &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &buffer));
     
     VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements(m_Device->GetInstanceHandle(), buffer, &memReqs);
+    vkGetBufferMemoryRequirements(m_VulkanDevice->GetInstanceHandle(), buffer, &memReqs);
     uint32 memoryTypeIndex = 0;
-    VERIFYVULKANRESULT(m_Device->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex));
+    VERIFYVULKANRESULT(m_VulkanDevice->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex));
     alignment = MMath::Max((uint32)memReqs.alignment, alignment);
     
-    VulkanDeviceMemoryAllocation* deviceMemoryAllocation = m_Device->GetMemoryManager().Alloc(false, memReqs.size, memoryTypeIndex, nullptr, file, line);
-    VERIFYVULKANRESULT(vkBindBufferMemory(m_Device->GetInstanceHandle(), buffer, deviceMemoryAllocation->GetHandle(), 0));
+    VulkanDeviceMemoryAllocation* deviceMemoryAllocation = m_VulkanDevice->GetMemoryManager().Alloc(false, memReqs.size, memoryTypeIndex, nullptr, file, line);
+    VERIFYVULKANRESULT(vkBindBufferMemory(m_VulkanDevice->GetInstanceHandle(), buffer, deviceMemoryAllocation->GetHandle(), 0));
 
     if (deviceMemoryAllocation->CanBeMapped())
     {
@@ -1369,8 +1206,8 @@ void VulkanResourceHeapManager::ReleaseFreedResources(bool immediately)
         for (int32 index = 0; index < freeAllocations.size(); ++index)
         {
             VulkanSubBufferAllocator* bufferAllocation = freeAllocations[index];
-            bufferAllocation->Destroy(GetParent());
-            GetParent()->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
+            bufferAllocation->Destroy(m_VulkanDevice);
+            m_VulkanDevice->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
             delete bufferAllocation;
         }
         freeAllocations.clear();
@@ -1389,8 +1226,8 @@ void VulkanResourceHeapManager::DestroyResourceAllocations()
             {
                 MLOG("Suballocation(s) for Buffer %p were not released.", (void*)bufferAllocation->m_Buffer);
             }
-            bufferAllocation->Destroy(GetParent());
-            GetParent()->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
+            bufferAllocation->Destroy(m_VulkanDevice);
+            m_VulkanDevice->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
             delete bufferAllocation;
         }
         usedAllocations.clear();
@@ -1401,8 +1238,8 @@ void VulkanResourceHeapManager::DestroyResourceAllocations()
         for (int32 index = 0; index < freeAllocations.size(); ++index)
         {
             VulkanSubBufferAllocator* bufferAllocation = freeAllocations[index];
-            bufferAllocation->Destroy(GetParent());
-            GetParent()->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
+            bufferAllocation->Destroy(m_VulkanDevice);
+            m_VulkanDevice->GetMemoryManager().Free(bufferAllocation->m_DeviceMemoryAllocation);
             delete bufferAllocation;
         }
         freeAllocations.clear();

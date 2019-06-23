@@ -7,8 +7,217 @@
 #include "Vulkan/VulkanPlatform.h"
 
 #include "Utils/Crc.h"
+#include "HAL/ThreadSafeCounter.h"
 
 #include <vector>
+
+class MResource
+{
+public:
+
+    MResource(bool inDoNotDeferDelete = true)
+        : m_MarkedForDelete(0)
+        , m_DoNotDeferDelete(inDoNotDeferDelete)
+    {
+
+    }
+
+    virtual ~MResource()
+    {
+        if (m_NumRef.GetValue() != 0)
+        {
+            MLOGE("Can't release resources.");
+        }
+    }
+
+    uint32 AddRef() const
+    {
+        int32 newValue = m_NumRef.Increment();
+        return newValue;
+    }
+
+    uint32 Release() const
+    {
+        int32 newValue = m_NumRef.Decrement();
+        if (newValue == 0)
+        {
+            if (!DeferDelete())
+            {
+                delete this;
+            }
+            else 
+            {
+                m_MarkedForDelete = true;
+                m_PendingDeletes.push_back(const_cast<MResource*>(this));
+            }
+        }
+        return newValue;
+    }
+
+    inline uint32 GetRefCount() const
+    {
+        int32 value = m_NumRef.GetValue();
+        return value;
+    }
+
+    inline bool DeferDelete() const
+    {
+        return !m_DoNotDeferDelete;
+    }
+
+
+    inline bool IsValid() const
+    {
+        return !m_MarkedForDelete && m_NumRef.GetValue() > 0;
+    }
+
+private:
+
+    struct DeferDeleteResources
+    {
+        DeferDeleteResources(uint32 inFrameDeleted = 0)
+            : frameDeleted(inFrameDeleted)
+        {
+
+        }
+
+        std::vector<MResource*> resources;
+        uint32                  frameDeleted;
+    };
+
+    static std::vector<DeferDeleteResources>    g_DeferredDeletionQueue;
+    static uint32                               g_CurrentFrame;
+
+    static std::vector<MResource*>              m_PendingDeletes;
+
+private:
+
+    mutable int32               m_MarkedForDelete;
+    mutable ThreadSafeCounter   m_NumRef;
+
+    bool                        m_DoNotDeferDelete;
+};
+
+struct UniformBufferLayout
+{
+public:
+
+    struct ResourceParameter
+    {
+        uint16                  memberOffset;
+        UniformBufferBaseType   memberType;
+    };
+
+    uint32                          constantBufferSize;
+    std::vector<ResourceParameter>  resources;
+
+public:
+
+    explicit UniformBufferLayout(std::string inName)
+        : constantBufferSize(0)
+        , m_Name(inName)
+        , m_Hash(0)
+    {
+        
+    }
+
+    explicit UniformBufferLayout()
+        : constantBufferSize(0)
+        , m_Name("")
+        , m_Hash(0)
+    {
+
+    }
+
+    inline uint32 GetHash() const
+    {
+        return m_Hash;
+    }
+
+    void ComputeHash()
+	{
+		uint32 tempHash = constantBufferSize << 16;
+		
+		for (int32 i = 0; i < resources.size(); ++i)
+		{
+			tempHash ^= resources[i].memberOffset;
+		}
+
+		uint32 num = resources.size();
+		while (num >= 4)
+		{
+			tempHash ^= (resources[--num].memberType << 0);
+			tempHash ^= (resources[--num].memberType << 8);
+			tempHash ^= (resources[--num].memberType << 16);
+			tempHash ^= (resources[--num].memberType << 24);
+		}
+
+		while (num >= 2)
+		{
+			tempHash ^= resources[--num].memberType << 0;
+			tempHash ^= resources[--num].memberType << 16;
+		}
+
+		while (num > 0)
+		{
+			tempHash ^= resources[--num].memberType;
+		}
+        
+		m_Hash = tempHash;
+	}
+
+    void CopyFrom(const UniformBufferLayout& source)
+    {
+        constantBufferSize  = source.constantBufferSize;
+        resources           = source.resources;
+        m_Name              = source.m_Name;
+        m_Hash              = source.m_Hash;
+    }
+
+    inline const std::string& GetName() const
+    {
+        return m_Name;
+    }
+
+private:
+    std::string     m_Name;
+    uint32          m_Hash;
+};
+
+class UniformBuffer : public MResource
+{
+public:
+    UniformBuffer(const UniformBufferLayout& inLayout)
+        : layout(&inLayout)
+    {
+
+    }
+
+    inline uint32 GetSize() const
+    {
+        return layout->constantBufferSize;
+    }
+
+    inline const UniformBufferLayout& GetLayout() const
+    {
+        return *layout;
+    }
+
+public:
+    const UniformBufferLayout* layout;
+};
+
+class VulkanUniformBuffer : public UniformBuffer
+{
+public:
+
+    VulkanUniformBuffer(const UniformBufferLayout& inLayout, const void* contents, UniformBufferUsage inUsage);
+
+    void UpdateConstantData(const void* contents, int32 contentsSize);
+
+public:
+    std::vector<uint8> constantData;
+};
 
 struct VertexStreamInfo
 {

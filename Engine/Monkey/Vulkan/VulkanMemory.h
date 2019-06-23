@@ -8,7 +8,6 @@
 #include <vector>
 
 class VulkanDevice;
-class VulkanFenceManager;
 class VulkanDeviceMemoryManager;
 class VulkanResourceHeap;
 class VulkanResourceHeapPage;
@@ -70,34 +69,6 @@ struct VulkanRange
     {
         return offset < vulkanRange.offset;
     }
-};
-
-class VulkanDeviceChild
-{
-public:
-	VulkanDeviceChild(VulkanDevice* device = nullptr)
-		: m_Device(device)
-	{
-
-	}
-
-	virtual ~VulkanDeviceChild()
-	{
-
-	}
-
-	inline VulkanDevice* GetParent() const
-	{
-		return m_Device;
-	}
-
-	inline void SetParent(VulkanDevice* device)
-	{
-		m_Device = device;
-	}
-
-protected:
-	VulkanDevice* m_Device;
 };
 
 class VulkanDeviceMemoryAllocation
@@ -273,99 +244,6 @@ protected:
     uint32                           m_NumAllocations;
     uint32                           m_PeakNumAllocations;
     std::vector<HeapInfo>            m_HeapInfos;
-};
-
-class VulkanFence
-{
-public:
-	enum class State
-	{
-		NotReady,
-		Signaled,
-	};
-
-	VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool createSignaled);
-
-	inline VkFence GetHandle() const
-	{
-		return m_VkFence;
-	}
-
-	inline bool IsSignaled() const
-	{
-		return m_State == State::Signaled;
-	}
-
-	VulkanFenceManager* GetOwner()
-	{
-		return m_Owner;
-	}
-
-protected:
-	virtual ~VulkanFence();
-	friend class VulkanFenceManager;
-
-	VkFence             m_VkFence;
-	State               m_State;
-	VulkanFenceManager* m_Owner;
-};
-
-class VulkanFenceManager
-{
-public:
-	VulkanFenceManager();
-	
-	virtual ~VulkanFenceManager();
-
-	void Init(VulkanDevice* device);
-
-	void Destory();
-
-	VulkanFence* CreateFence(bool createSignaled = false);
-
-	bool WaitForFence(VulkanFence* fence, uint64 timeInNanoseconds);
-
-	void ResetFence(VulkanFence* fence);
-
-	void ReleaseFence(VulkanFence*& fence);
-
-	void WaitAndReleaseFence(VulkanFence*& fence, uint64 timeInNanoseconds);
-
-	inline bool IsFenceSignaled(VulkanFence* fence)
-	{
-		if (fence->IsSignaled())
-		{
-			return true;
-		}
-		return CheckFenceState(fence);
-	}
-
-protected:
-	bool CheckFenceState(VulkanFence* fence);
-
-	void DestoryFence(VulkanFence* fence);
-
-protected:
-	VulkanDevice*             m_Device;
-	std::vector<VulkanFence*> m_FreeFences;
-	std::vector<VulkanFence*> m_UsedFences;
-};
-
-class VulkanSemaphore : public RefCount
-{
-public:
-	VulkanSemaphore(VulkanDevice* device);
-
-	virtual ~VulkanSemaphore();
-
-	inline VkSemaphore GetHandle() const
-	{
-		return m_VkSemaphore;
-	}
-
-protected:
-	VkSemaphore     m_VkSemaphore;
-	VulkanDevice*   m_Device;
 };
 
 class VulkanResourceAllocation : public RefCount
@@ -658,10 +536,10 @@ protected:
     std::vector<VulkanResourceHeapPage*>    m_FreePages;
 };
 
-class VulkanResourceHeapManager : public VulkanDeviceChild
+class VulkanResourceHeapManager
 {
 public:
-    VulkanResourceHeapManager(VulkanDevice* device);
+    VulkanResourceHeapManager(std::shared_ptr<VulkanDevice> device);
     
     virtual ~VulkanResourceHeapManager();
     
@@ -683,6 +561,11 @@ public:
     
     VulkanResourceAllocation* AllocateBufferMemory(const VkMemoryRequirements& memoryReqs, VkMemoryPropertyFlags memoryPropertyFlags, const char* file, uint32 line);
     
+    std::shared_ptr<VulkanDevice> GetVulkanDevice()
+    {
+        return m_VulkanDevice;
+    }
+
 protected:
     void ReleaseFreedResources(bool immediately);
     
@@ -751,6 +634,8 @@ protected:
         return poolSize;
     }
     
+protected:
+    std::shared_ptr<VulkanDevice>           m_VulkanDevice;
     VulkanDeviceMemoryManager*              m_DeviceMemoryManager;
     std::vector<VulkanResourceHeap*>        m_ResourceTypeHeaps;
     std::vector<VulkanSubBufferAllocator*>  m_UsedBufferAllocations[(int32)PoolSizes::SizesCount + 1];
