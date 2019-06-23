@@ -7,9 +7,13 @@
 #include "Vulkan/VulkanPlatform.h"
 
 #include "Utils/Crc.h"
+#include "Math/Math.h"
+#include "Utils/Alignment.h"
 #include "HAL/ThreadSafeCounter.h"
 
 #include <vector>
+
+class VulkanDevice;
 
 class MResource
 {
@@ -207,6 +211,7 @@ public:
     const UniformBufferLayout* layout;
 };
 
+// not real uniform buffer
 class VulkanUniformBuffer : public UniformBuffer
 {
 public:
@@ -217,6 +222,97 @@ public:
 
 public:
     std::vector<uint8> constantData;
+};
+
+// ring buffer
+class VulkanRingBuffer
+{
+public:
+	VulkanRingBuffer(VulkanDevice* device, uint64 totalSize, VkFlags usage, VkMemoryPropertyFlags memPropertyFlags);
+
+	virtual ~VulkanRingBuffer();
+
+	inline uint64 AllocateMemory(uint64 size, uint32 alignment)
+	{
+		alignment = MMath::Max(alignment, m_MinAlignment);
+		uint64 allocationOffset = Align<uint64>(m_BufferOffset, alignment);
+		if (allocationOffset + size <= m_BufferSize)
+		{
+			m_BufferOffset = allocationOffset + size;
+			return allocationOffset;
+		}
+
+		return WrapAroundAllocateMemory(size, alignment);
+	}
+
+	inline VulkanSubBufferAllocator* GetBufferAllocator() const
+	{
+		return m_BufferSubAllocation->GetBufferAllocator();
+	}
+
+	inline uint32 GetBufferOffset() const
+	{
+		return m_BufferSubAllocation->GetOffset();
+	}
+
+	inline VkBuffer GetHandle() const
+	{
+		return m_BufferSubAllocation->GetHandle();
+	}
+
+	inline void* GetMappedPointer()
+	{
+		return m_BufferSubAllocation->GetMappedPointer();
+	}
+
+protected:
+	uint64 WrapAroundAllocateMemory(uint64 size, uint32 alignment);
+
+protected:
+	VulkanDevice*				m_VulkanDevice;
+
+	uint64						m_BufferSize;
+	uint64						m_BufferOffset;
+	uint32						m_MinAlignment;
+	VulkanBufferSubAllocation*	m_BufferSubAllocation;
+};
+
+// real uniform buffer uploader
+class VulkanUniformBufferUploader
+{
+public:
+	VulkanUniformBufferUploader(VulkanDevice* device);
+
+	virtual ~VulkanUniformBufferUploader();
+
+	uint8* GetCPUMappedPointer()
+	{
+		return (uint8*)m_RingBuffer->GetMappedPointer();
+	}
+
+	uint64 AllocateMemory(uint64 size, uint32 alignment)
+	{
+		return m_RingBuffer->AllocateMemory(size, alignment);
+	}
+
+	VulkanSubBufferAllocator* GetBufferAllocator() const
+	{
+		return m_RingBuffer->GetBufferAllocator();
+	}
+
+	VkBuffer GetBufferHandle() const
+	{
+		return m_RingBuffer->GetHandle();
+	}
+
+	inline uint32 GetBufferOffset() const
+	{
+		return m_RingBuffer->GetBufferOffset();
+	}
+
+protected:
+	VulkanDevice*			m_VulkanDevice;
+	VulkanRingBuffer*		m_RingBuffer;
 };
 
 struct VertexStreamInfo
