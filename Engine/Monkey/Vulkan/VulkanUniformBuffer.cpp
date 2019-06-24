@@ -8,8 +8,9 @@
 
 enum
 {
+	PackedUniformsGlobalDrawRingBufferSize = 2 * 1024 * 1024,
 	PackedUniformsSIngleDrawRingBufferSize = 8 * 1024 * 1024,
-	PackedUniformsMultiDrawRingBufferSize  = 8 * 1024 * 1024
+	PackedUniformsMultiDrawRingBufferSize  = 16 * 1024 * 1024,
 };
 
 // VulkanUniformBuffer
@@ -54,15 +55,38 @@ uint64 VulkanRingBuffer::WrapAroundAllocateMemory(uint64 size, uint32 alignment)
 	return 0;
 }
 
+VulkanSubBufferAllocator* VulkanRingBuffer::GetBufferAllocator() const
+{
+	return m_BufferSubAllocation->GetBufferAllocator();
+}
+
+uint32 VulkanRingBuffer::GetBufferOffset() const
+{
+	return m_BufferSubAllocation->GetOffset();
+}
+
+VkBuffer VulkanRingBuffer::GetHandle() const
+{
+	return m_BufferSubAllocation->GetHandle();
+}
+
+void* VulkanRingBuffer::GetMappedPointer()
+{
+	return m_BufferSubAllocation->GetMappedPointer();
+}
+
 // uniformbuffer uploader
 VulkanUniformBufferUploader::VulkanUniformBufferUploader(VulkanDevice* device)
 	: m_VulkanDevice(device)
-	, m_RingBuffer(nullptr)
 {
-	
+	m_RingBuffers[UniformBufferUsage::UniformBuffer_GlobalDraw] = new VulkanRingBuffer(device, PackedUniformsGlobalDrawRingBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	m_RingBuffers[UniformBufferUsage::UniformBuffer_SingleDraw] = new VulkanRingBuffer(device, PackedUniformsSIngleDrawRingBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	m_RingBuffers[UniformBufferUsage::UniformBuffer_MultiDraw]  = new VulkanRingBuffer(device, PackedUniformsMultiDrawRingBufferSize,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
 VulkanUniformBufferUploader::~VulkanUniformBufferUploader()
 {
-
+	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_GlobalDraw];
+	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_SingleDraw];
+	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_MultiDraw];
 }

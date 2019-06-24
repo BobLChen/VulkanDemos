@@ -14,6 +14,8 @@
 #include <vector>
 
 class VulkanDevice;
+class VulkanSubBufferAllocator;
+class VulkanBufferSubAllocation;
 
 class MResource
 {
@@ -245,25 +247,13 @@ public:
 		return WrapAroundAllocateMemory(size, alignment);
 	}
 
-	inline VulkanSubBufferAllocator* GetBufferAllocator() const
-	{
-		return m_BufferSubAllocation->GetBufferAllocator();
-	}
+	VulkanSubBufferAllocator* GetBufferAllocator() const;
 
-	inline uint32 GetBufferOffset() const
-	{
-		return m_BufferSubAllocation->GetOffset();
-	}
+	uint32 GetBufferOffset() const;
 
-	inline VkBuffer GetHandle() const
-	{
-		return m_BufferSubAllocation->GetHandle();
-	}
+	VkBuffer GetHandle() const;
 
-	inline void* GetMappedPointer()
-	{
-		return m_BufferSubAllocation->GetMappedPointer();
-	}
+	void* GetMappedPointer();
 
 protected:
 	uint64 WrapAroundAllocateMemory(uint64 size, uint32 alignment);
@@ -285,34 +275,39 @@ public:
 
 	virtual ~VulkanUniformBufferUploader();
 
-	uint8* GetCPUMappedPointer()
+	uint8* GetCPUMappedPointer(UniformBufferUsage usage)
 	{
-		return (uint8*)m_RingBuffer->GetMappedPointer();
+		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
+		return (uint8*)ringBuffer->GetMappedPointer();
 	}
 
-	uint64 AllocateMemory(uint64 size, uint32 alignment)
+	uint64 AllocateMemory(UniformBufferUsage usage, uint64 size, uint32 alignment)
 	{
-		return m_RingBuffer->AllocateMemory(size, alignment);
+		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
+		return ringBuffer->AllocateMemory(size, alignment);
 	}
 
-	VulkanSubBufferAllocator* GetBufferAllocator() const
+	VulkanSubBufferAllocator* GetBufferAllocator(UniformBufferUsage usage) const
 	{
-		return m_RingBuffer->GetBufferAllocator();
+		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
+		return ringBuffer->GetBufferAllocator();
 	}
 
-	VkBuffer GetBufferHandle() const
+	VkBuffer GetBufferHandle(UniformBufferUsage usage) const
 	{
-		return m_RingBuffer->GetHandle();
+		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
+		return ringBuffer->GetHandle();
 	}
 
-	inline uint32 GetBufferOffset() const
+	inline uint32 GetBufferOffset(UniformBufferUsage usage) const
 	{
-		return m_RingBuffer->GetBufferOffset();
+		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
+		return ringBuffer->GetBufferOffset();
 	}
 
 protected:
 	VulkanDevice*			m_VulkanDevice;
-	VulkanRingBuffer*		m_RingBuffer;
+	VulkanRingBuffer*		m_RingBuffers[UniformBufferUsage::UniformBuffer_Count];
 };
 
 struct VertexStreamInfo

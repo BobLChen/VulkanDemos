@@ -317,8 +317,9 @@ enum CubeFace
 enum UniformBufferUsage
 {
     UniformBuffer_SingleDraw = 0,
-    UniformBuffer_SingleFrame,
-    UniformBuffer_MultiFrame,
+    UniformBuffer_MultiDraw,
+    UniformBuffer_GlobalDraw,
+	UniformBuffer_Count,
 };
 
 enum UniformBufferBaseType

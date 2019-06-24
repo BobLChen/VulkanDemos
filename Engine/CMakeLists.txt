@@ -105,6 +105,7 @@ set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanResources.cpp
 	Monkey/Vulkan/VulkanUniformBuffer.cpp
 	Monkey/Vulkan/VulkanFence.cpp
+	Monkey/Vulkan/VulkanContext.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -121,6 +122,7 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanPipeline.h
 	Monkey/Vulkan/VulkanResources.h
 	Monkey/Vulkan/VulkanFence.h
+	Monkey/Vulkan/VulkanContext.h
 )
 
 set(Monkey_Graphics_Data_HDRS
