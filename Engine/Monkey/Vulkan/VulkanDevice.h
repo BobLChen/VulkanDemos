@@ -7,6 +7,7 @@
 #include "VulkanFence.h"
 #include "VulkanRHI.h"
 #include "VulkanPipeline.h"
+#include "VulkanContext.h"
 
 #include <vector>
 #include <memory>
@@ -138,4 +139,7 @@ private:
     VulkanDeviceMemoryManager               m_MemoryManager;
     VulkanResourceHeapManager               m_ResourceHeapManager;
 	VulkanPipelineStateManager              m_PipelineStateManager;
+    
+    VulkanCommandListContextImmediate*      m_ImmediateContext;
+    std::vector<VulkanCommandListContext*>  m_CommandContexts;
 };

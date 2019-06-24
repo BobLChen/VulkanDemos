@@ -407,6 +407,8 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
     m_ResourceHeapManager.Init();
 	m_FenceManager.Init(this);
 	m_PipelineStateManager.Init(this);
+    
+    m_ImmediateContext = new VulkanCommandListContextImmediate(this, m_GfxQueue);
 }
 
 void VulkanDevice::Destroy()

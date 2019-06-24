@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
@@ -16,7 +16,7 @@ class VulkanCommandListContext
 {
 public:
 
-	VulkanCommandListContext(VulkanRHI* vulkanRHI, VulkanDevice* inDevice, VulkanQueue* inQueue, VulkanCommandListContext* inImmediate);
+	VulkanCommandListContext(VulkanDevice* inDevice, std::shared_ptr<VulkanQueue> inQueue, VulkanCommandListContext* inImmediate);
 
 	virtual ~VulkanCommandListContext();
 
@@ -30,7 +30,7 @@ public:
 		return m_UniformUploader;
 	}
 
-	inline VulkanQueue* GetQueue() const
+	inline std::shared_ptr<VulkanQueue> GetQueue() const
 	{
 		return m_Queue;
 	}
@@ -41,16 +41,14 @@ public:
 	}
 
 protected:
-
-	VulkanRHI*						m_VulkanRHI;
 	VulkanCommandListContext*		m_Immediate;
 	VulkanDevice*					m_Device;
-	VulkanQueue*					m_Queue;
+	std::shared_ptr<VulkanQueue>    m_Queue;
 	VulkanUniformBufferUploader*	m_UniformUploader;
 };
 
 class VulkanCommandListContextImmediate : public VulkanCommandListContext
 {
 public:
-	VulkanCommandListContextImmediate(VulkanRHI* inVulkanRHI, VulkanDevice* inDevice, VulkanQueue* inQueue);
+	VulkanCommandListContextImmediate(VulkanDevice* inDevice, std::shared_ptr<VulkanQueue> inQueue);
 };

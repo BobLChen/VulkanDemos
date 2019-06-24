@@ -10,6 +10,8 @@
 #include <vector>
 
 class ShaderModule;
+class VulkanDevice;
+class VulkanCommandListContext;
 
 struct VulkanDescriptorSetLayoutInfo
 {
@@ -183,4 +185,54 @@ public:
 	{
 		return false;
 	}
+};
+
+class VulkanDescriptorPool
+{
+public:
+    VulkanDescriptorPool(VulkanDevice* inDevice, const VulkanDescriptorSetsLayoutInfo& layout, uint32 maxSetsAllocations);
+    
+    ~VulkanDescriptorPool();
+    
+    inline VkDescriptorPool GetHandle() const
+    {
+        return m_DescriptorPool;
+    }
+    
+    inline bool CanAllocate(const VulkanDescriptorSetsLayoutInfo& inLayout) const
+    {
+        return m_MaxDescriptorSets > m_NumAllocatedDescriptorSets + inLayout.GetLayouts().size();
+    }
+    
+    inline bool IsEmpty() const
+    {
+        return m_NumAllocatedDescriptorSets == 0;
+    }
+    
+    inline uint32 GetNumAllocatedDescriptorSets() const
+    {
+        return m_NumAllocatedDescriptorSets;
+    }
+    
+    void TrackAddUsage(const VulkanDescriptorSetsLayoutInfo& inLayout);
+    
+    void TrackRemoveUsage(const VulkanDescriptorSetsLayoutInfo& inLayout);
+    
+    void Reset();
+    
+    bool AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& inDescriptorSetAllocateInfo, VkDescriptorSet* outSets);
+    
+private:
+    VulkanDevice*       m_Device;
+    
+    uint32              m_MaxDescriptorSets;
+    uint32              m_NumAllocatedDescriptorSets;
+    uint32              m_PeakAllocatedDescriptorSets;
+    
+    VkDescriptorPool    m_DescriptorPool;
+    
+    const VulkanDescriptorSetsLayoutInfo& m_Layout;
+    
+private:
+    friend class VulkanCommandListContext;
 };
