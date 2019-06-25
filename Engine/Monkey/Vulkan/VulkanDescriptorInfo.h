@@ -56,15 +56,15 @@ struct VulkanDescriptorSetLayoutInfo
 	}
 };
 
-class VulkanDescriptorSetsLayoutInfo
+class VulkanDescriptorSetsLayout
 {
 public:
-	VulkanDescriptorSetsLayoutInfo()
+	VulkanDescriptorSetsLayout()
 	{
 		memset(m_LayoutTypes, 0, sizeof(m_LayoutTypes));
 	}
 
-	~VulkanDescriptorSetsLayoutInfo()
+	~VulkanDescriptorSetsLayout()
 	{
 		for (int32 i = 0; i < m_SetLayouts.size(); ++i) {
 			VulkanDescriptorSetLayoutInfo* layout = m_SetLayouts[i];
@@ -93,12 +93,17 @@ public:
 		return m_LayoutTypes;
 	}
 
-	inline const std::vector<VkDescriptorSetLayout>& GetHandles()
+	inline const std::vector<VkDescriptorSetLayout>& GetHandles() const
 	{
 		return m_LayoutHandles;
 	}
 
-	void CopyFrom(const VulkanDescriptorSetsLayoutInfo& info)
+	inline const VkDescriptorSetAllocateInfo& GetAllocateInfo() const
+	{
+		return m_DescriptorSetAllocateInfo;
+	}
+
+	void CopyFrom(const VulkanDescriptorSetsLayout& info)
 	{
 		memcpy(m_LayoutTypes, info.m_LayoutTypes, sizeof(m_LayoutTypes));
 		m_Hash = info.m_Hash;
@@ -114,6 +119,7 @@ protected:
 	uint32										m_LayoutTypes[VK_DESCRIPTOR_TYPE_RANGE_SIZE];
 	std::vector<VulkanDescriptorSetLayoutInfo*>	m_SetLayouts;
 	std::vector<VkDescriptorSetLayout>			m_LayoutHandles;
+	VkDescriptorSetAllocateInfo					m_DescriptorSetAllocateInfo;
 };
 
 class VulkanLayout
@@ -125,7 +131,7 @@ public:
 
 	virtual bool IsGfxLayout() const = 0;
 
-	inline const VulkanDescriptorSetsLayoutInfo& GetDescriptorSetsLayout() const
+	inline const VulkanDescriptorSetsLayout& GetDescriptorSetsLayout() const
 	{
 		return m_SetsLayoutInfo;
 	}
@@ -158,7 +164,7 @@ protected:
 
 	VkPipelineLayout               m_PipelineLayout;
 	VertexInputBindingInfo         m_VertexInputBindingInfo;
-	VulkanDescriptorSetsLayoutInfo m_SetsLayoutInfo;
+	VulkanDescriptorSetsLayout m_SetsLayoutInfo;
 };
 
 class VulkanGfxLayout : public VulkanLayout
@@ -190,7 +196,7 @@ public:
 class VulkanDescriptorPool
 {
 public:
-    VulkanDescriptorPool(VulkanDevice* inDevice, const VulkanDescriptorSetsLayoutInfo& layout, uint32 maxSetsAllocations);
+    VulkanDescriptorPool(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& layout, uint32 maxSetsAllocations);
     
     ~VulkanDescriptorPool();
     
@@ -199,7 +205,7 @@ public:
         return m_DescriptorPool;
     }
     
-    inline bool CanAllocate(const VulkanDescriptorSetsLayoutInfo& inLayout) const
+    inline bool CanAllocate(const VulkanDescriptorSetsLayout& inLayout) const
     {
         return m_MaxDescriptorSets > m_NumAllocatedDescriptorSets + inLayout.GetLayouts().size();
     }
@@ -214,9 +220,9 @@ public:
         return m_NumAllocatedDescriptorSets;
     }
     
-    void TrackAddUsage(const VulkanDescriptorSetsLayoutInfo& inLayout);
+    void TrackAddUsage(const VulkanDescriptorSetsLayout& inLayout);
     
-    void TrackRemoveUsage(const VulkanDescriptorSetsLayoutInfo& inLayout);
+    void TrackRemoveUsage(const VulkanDescriptorSetsLayout& inLayout);
     
     void Reset();
     
@@ -231,8 +237,42 @@ private:
     
     VkDescriptorPool    m_DescriptorPool;
     
-    const VulkanDescriptorSetsLayoutInfo& m_Layout;
+    const VulkanDescriptorSetsLayout& m_Layout;
     
 private:
     friend class VulkanCommandListContext;
+};
+
+class VulkanTypedDescriptorPoolSet
+{
+	typedef std::vector<VulkanDescriptorPool*> PoolList;
+
+public:
+
+	bool AllocateDescriptorSets(const VulkanDescriptorSetsLayout& inLayout, VkDescriptorSet* outSets);
+
+protected:
+	
+	VulkanTypedDescriptorPoolSet(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& inLayout);
+
+	~VulkanTypedDescriptorPoolSet();
+
+	void Reset();
+
+	VulkanDescriptorPool* GetFreePool(bool forceNewPool = false);
+
+	VulkanDescriptorPool* PushNewPool();
+
+	inline uint32 GetPoolsCount() const 
+	{
+		return m_PoolsCount;
+	}
+
+private:
+	VulkanDevice*	m_Device;
+	uint32			m_PoolsCount;
+	PoolList		m_PoolsList;
+	int32			m_CurrentPool;
+
+	const VulkanDescriptorSetsLayout& m_Layout;
 };

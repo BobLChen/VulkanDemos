@@ -6,7 +6,8 @@
 #include "Engine.h"
 #include "spirv_cross.hpp"
 
-void VulkanDescriptorSetsLayoutInfo::Compile()
+// VulkanDescriptorSetsLayout
+void VulkanDescriptorSetsLayout::Compile()
 {
 	m_Hash = 0;
 	const int32 layoutCount = m_SetLayouts.size();
@@ -82,9 +83,11 @@ void VulkanDescriptorSetsLayoutInfo::Compile()
 		VulkanDescriptorSetLayoutInfo* setLayoutInfo = m_SetLayouts[i];
 		m_LayoutHandles[i] = Engine::Get()->GetVulkanDevice()->GetPipelineStateManager().GetDescriptorSetLayout(setLayoutInfo);
 	}
+
+	
 }
 
-void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
+void VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
 {
 	m_LayoutTypes[descriptorType] += 1;
 
@@ -127,7 +130,7 @@ void VulkanDescriptorSetsLayoutInfo::AddDescriptor(uint32 set, uint32 binding, V
 	setLayout->layoutBindings.push_back(bindingInfo);
 }
 
-
+// VulkanLayout
 VulkanLayout::VulkanLayout()
 	: m_PipelineLayout(VK_NULL_HANDLE)
 {
@@ -141,26 +144,6 @@ VulkanLayout::~VulkanLayout()
 		vkDestroyPipelineLayout(device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
 		m_PipelineLayout = VK_NULL_HANDLE;
 	}
-}
-
-VulkanGfxLayout::VulkanGfxLayout()
-{
-
-}
-
-VulkanGfxLayout::~VulkanGfxLayout()
-{
-
-}
-
-VulkanComputeLayout::VulkanComputeLayout()
-{
-
-}
-
-VulkanComputeLayout::~VulkanComputeLayout()
-{
-
 }
 
 void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
@@ -223,4 +206,177 @@ void VulkanLayout::Compile()
 	pipeLayoutInfo.setLayoutCount = layoutHandles.size();
 	pipeLayoutInfo.pSetLayouts    = layoutHandles.data();
 	VERIFYVULKANRESULT(vkCreatePipelineLayout(Engine::Get()->GetDeviceHandle(), &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
+}
+
+// VulkanGfxLayout
+VulkanGfxLayout::VulkanGfxLayout()
+{
+
+}
+
+VulkanGfxLayout::~VulkanGfxLayout()
+{
+
+}
+
+// VulkanComputeLayout
+VulkanComputeLayout::VulkanComputeLayout()
+{
+
+}
+
+VulkanComputeLayout::~VulkanComputeLayout()
+{
+
+}
+
+// VulkanDescriptorPool
+VulkanDescriptorPool::VulkanDescriptorPool(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& layout, uint32 maxSetsAllocations)
+	: m_Device(inDevice)
+	, m_MaxDescriptorSets(maxSetsAllocations)
+	, m_NumAllocatedDescriptorSets(0)
+	, m_PeakAllocatedDescriptorSets(0)
+	, m_DescriptorPool(VK_NULL_HANDLE)
+	, m_Layout(layout)
+{
+	std::vector<VkDescriptorPoolSize> types;
+	for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex <= VK_DESCRIPTOR_TYPE_END_RANGE; ++typeIndex)
+	{
+		VkDescriptorType descriptorType =(VkDescriptorType)typeIndex;
+		uint32 numTypesUsed = layout.GetTypesUsed(descriptorType);
+		if (numTypesUsed > 0)
+		{
+			VkDescriptorPoolSize poolSize = {};
+			poolSize.descriptorCount = numTypesUsed * m_MaxDescriptorSets;
+			poolSize.type = descriptorType;
+			types.push_back(poolSize);
+		}
+	}
+
+	VkDescriptorPoolCreateInfo poolCreateInfo;
+	ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+	poolCreateInfo.poolSizeCount = types.size();
+	poolCreateInfo.pPoolSizes    = types.data();
+	poolCreateInfo.maxSets       = m_MaxDescriptorSets;
+	vkCreateDescriptorPool(inDevice->GetInstanceHandle(), &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool);
+}
+
+VulkanDescriptorPool::~VulkanDescriptorPool()
+{
+	if (m_DescriptorPool != VK_NULL_HANDLE)
+	{
+		vkDestroyDescriptorPool(m_Device->GetInstanceHandle(), m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
+		m_DescriptorPool = VK_NULL_HANDLE;
+	}
+}
+
+void VulkanDescriptorPool::TrackAddUsage(const VulkanDescriptorSetsLayout& inLayout)
+{
+	if (m_Layout.GetHash() != inLayout.GetHash())
+	{
+		MLOGE("VulkanDescriptorSetsLayout not equal.");
+		return;
+	}
+
+	m_NumAllocatedDescriptorSets += inLayout.GetLayouts().size();
+	m_PeakAllocatedDescriptorSets = MMath::Max(m_NumAllocatedDescriptorSets, m_PeakAllocatedDescriptorSets);
+}
+    
+void VulkanDescriptorPool::TrackRemoveUsage(const VulkanDescriptorSetsLayout& inLayout)
+{
+	if (m_Layout.GetHash() != inLayout.GetHash())
+	{
+		MLOGE("VulkanDescriptorSetsLayout not equal.");
+		return;
+	}
+
+	m_NumAllocatedDescriptorSets -= inLayout.GetLayouts().size();
+}
+    
+void VulkanDescriptorPool::Reset()
+{
+	if (m_DescriptorPool != VK_NULL_HANDLE)
+	{
+		vkResetDescriptorPool(m_Device->GetInstanceHandle(), m_DescriptorPool, 0);
+	}
+
+	m_NumAllocatedDescriptorSets = 0;
+}
+    
+bool VulkanDescriptorPool::AllocateDescriptorSets(const VkDescriptorSetAllocateInfo& inDescriptorSetAllocateInfo, VkDescriptorSet* outSets)
+{
+	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = inDescriptorSetAllocateInfo;
+	descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
+
+	return vkAllocateDescriptorSets(m_Device->GetInstanceHandle(), &descriptorSetAllocateInfo, outSets);
+}
+
+// VulkanTypedDescriptorPoolSet
+VulkanTypedDescriptorPoolSet::VulkanTypedDescriptorPoolSet(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& inLayout)
+	: m_Device(inDevice)
+	, m_PoolsCount(0)
+	, m_CurrentPool(0)
+	, m_Layout(inLayout)
+{
+	PushNewPool();
+}
+
+VulkanTypedDescriptorPoolSet::~VulkanTypedDescriptorPoolSet()
+{
+	for (int32 i = 0; i < m_PoolsList.size(); ++i)
+	{
+		delete m_PoolsList[i];
+	}
+	m_PoolsList.clear();
+	m_PoolsCount = 0;
+}
+
+bool VulkanTypedDescriptorPoolSet::AllocateDescriptorSets(const VulkanDescriptorSetsLayout& inLayout, VkDescriptorSet* outSets)
+{
+	const std::vector<VkDescriptorSetLayout>& layoutHandles = inLayout.GetHandles();
+
+	if (layoutHandles.size() > 0)
+	{
+		while (m_PoolsList[m_PoolsCount]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets))
+		{
+			GetFreePool(true);
+		}
+		m_PoolsList[m_PoolsCount]->TrackAddUsage(inLayout);
+	}
+
+	return true;
+}
+
+void VulkanTypedDescriptorPoolSet::Reset()
+{
+	for (int32 i = 0; i < m_PoolsList.size(); ++i)
+	{
+		m_PoolsList[i]->Reset();
+	}
+	m_CurrentPool = 0;
+}
+
+VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::GetFreePool(bool forceNewPool = false)
+{
+	if (!forceNewPool)
+	{
+		return m_PoolsList[m_CurrentPool];
+	}
+
+	if (m_CurrentPool + 1 < m_PoolsList.size())
+	{
+		m_CurrentPool = m_CurrentPool + 1;
+		return m_PoolsList[m_CurrentPool];
+	}
+
+	return PushNewPool();
+}
+
+VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::PushNewPool()
+{
+	const uint32 MaxSetsAllocations = 32 << MMath::Min(m_PoolsCount++, 2u);
+	VulkanDescriptorPool* newPool = new VulkanDescriptorPool(m_Device, m_Layout, MaxSetsAllocations);
+	m_PoolsList.push_back(newPool);
+	m_CurrentPool = m_PoolsList.size() - 1;
+	return newPool;
 }
