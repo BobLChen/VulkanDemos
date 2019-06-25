@@ -84,7 +84,9 @@ void VulkanDescriptorSetsLayout::Compile()
 		m_LayoutHandles[i] = Engine::Get()->GetVulkanDevice()->GetPipelineStateManager().GetDescriptorSetLayout(setLayoutInfo);
 	}
 
-	
+    ZeroVulkanStruct(m_DescriptorSetAllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+    m_DescriptorSetAllocateInfo.descriptorSetCount = m_LayoutHandles.size();
+    m_DescriptorSetAllocateInfo.pSetLayouts        = m_LayoutHandles.data();
 }
 
 void VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
@@ -379,4 +381,43 @@ VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::PushNewPool()
 	m_PoolsList.push_back(newPool);
 	m_CurrentPool = m_PoolsList.size() - 1;
 	return newPool;
+}
+
+// VulkanDescriptorPoolSetContainer
+VulkanDescriptorPoolSetContainer::~VulkanDescriptorPoolSetContainer()
+{
+    for (auto it = m_TypedDescriptorPools.begin(); it != m_TypedDescriptorPools.end(); ++it)
+    {
+        VulkanTypedDescriptorPoolSet* poolSet = it->second;
+        delete poolSet;
+    }
+    m_TypedDescriptorPools.clear();
+}
+
+VulkanTypedDescriptorPoolSet* VulkanDescriptorPoolSetContainer::AcquireTypedPoolSet(const VulkanDescriptorSetsLayout& layout)
+{
+    const uint32 hash = layout.GetHash();
+    auto it = m_TypedDescriptorPools.find(hash);
+    VulkanTypedDescriptorPoolSet* poolSet = nullptr;
+    
+    if (it == m_TypedDescriptorPools.end())
+    {
+        poolSet = new VulkanTypedDescriptorPoolSet(m_VulkanDevice, layout);
+        m_TypedDescriptorPools.insert(std::make_pair(hash, poolSet));
+    }
+    else
+    {
+        poolSet = it->second;
+    }
+    
+    return poolSet;
+}
+
+void VulkanDescriptorPoolSetContainer::Reset()
+{
+    for (auto it = m_TypedDescriptorPools.begin(); it != m_TypedDescriptorPools.end(); ++it)
+    {
+        VulkanTypedDescriptorPoolSet* poolSet = it->second;
+        poolSet->Reset();
+    }
 }

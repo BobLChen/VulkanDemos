@@ -13,6 +13,14 @@ class ShaderModule;
 class VulkanDevice;
 class VulkanCommandListContext;
 
+struct FVulkanDescriptorSetWriteContainer
+{
+    std::vector<VkDescriptorImageInfo>  descriptorImageInfo;
+    std::vector<VkDescriptorBufferInfo> descriptorBufferInfo;
+    std::vector<VkWriteDescriptorSet>   descriptorWrites;
+    std::vector<uint8>                  bindingToDynamicOffsetMap;
+};
+
 struct VulkanDescriptorSetLayoutInfo
 {
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
@@ -275,4 +283,64 @@ private:
 	int32			m_CurrentPool;
 
 	const VulkanDescriptorSetsLayout& m_Layout;
+};
+
+class VulkanDescriptorPoolSetContainer
+{
+public:
+    VulkanDescriptorPoolSetContainer(VulkanDevice* inDevice)
+        : m_VulkanDevice(inDevice)
+        , m_Used(true)
+    {
+        
+    }
+    
+    ~VulkanDescriptorPoolSetContainer();
+    
+    VulkanTypedDescriptorPoolSet* AcquireTypedPoolSet(const VulkanDescriptorSetsLayout& layout);
+    
+    void Reset();
+    
+    inline void SetUsed(bool inUsed)
+    {
+        m_Used = inUsed;
+    }
+    
+    inline bool IsUnused() const
+    {
+        return !m_Used;
+    }
+    
+private:
+    VulkanDevice*   m_VulkanDevice;
+    bool            m_Used;
+    std::unordered_map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPools;
+};
+
+class VulkanDescriptorPoolsManager
+{
+    typedef std::vector<VulkanDescriptorPoolSetContainer*> PoolSets;
+    
+public:
+    
+    VulkanDescriptorPoolsManager();
+    
+    virtual ~VulkanDescriptorPoolsManager();
+    
+    VulkanDescriptorPoolSetContainer& AcquirePoolSetContainer();
+    
+    void ReleasePoolSet(VulkanDescriptorPoolSetContainer& PoolSet);
+    
+    void GC();
+    
+    void Init(VulkanDevice* inDevice)
+    {
+        m_VulkanDevice = inDevice;
+    }
+    
+    void Destroy();
+    
+private:
+    VulkanDevice*   m_VulkanDevice;
+    PoolSets        m_PoolSets;
 };
