@@ -468,3 +468,49 @@ void VulkanDescriptorPoolsManager::Destroy()
 	}
 	m_PoolSets.clear();
 }
+
+// VulkanDescriptorSetWriter
+uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDescriptorType>& types, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo)
+{
+	m_NumWrites = types.size();
+	m_WriteDescriptorSet = inWriteDescriptors;
+
+	int32 dynamicOffsetIndex = 0;
+	for (int32 i = 0; i < m_NumWrites; ++i)
+	{
+		m_WriteDescriptorSet->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		m_WriteDescriptorSet->dstBinding = i;
+		m_WriteDescriptorSet->descriptorCount = 1;
+		m_WriteDescriptorSet->descriptorType = types[i];
+		
+		switch (types[i])
+		{
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+			++dynamicOffsetIndex;
+			m_WriteDescriptorSet->pBufferInfo = inBufferInfo++;
+			break;
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			m_WriteDescriptorSet->pBufferInfo = inBufferInfo++;
+			break;
+		case VK_DESCRIPTOR_TYPE_SAMPLER:
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+			/*inImageInfo->sampler     = sampler;
+			inImageInfo->imageView   = view;
+			inImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			m_WriteDescriptorSet->pImageInfo = inImageInfo++;*/
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+			break;
+		default:
+			MLOGE("Unsupported descriptor type %d", (int32)types[i]);
+			break;
+		}
+	}
+
+	return dynamicOffsetIndex;
+}

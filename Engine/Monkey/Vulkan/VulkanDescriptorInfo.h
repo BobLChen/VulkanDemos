@@ -393,8 +393,11 @@ protected:
 	template <VkDescriptorType DescriptorType>
 	bool WriteBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset = 0)
 	{
-
-		return false;
+		VkDescriptorBufferInfo* bufferInfo = const_cast<VkDescriptorBufferInfo*>(m_WriteDescriptorSet[descriptorIndex].pBufferInfo);
+		bufferInfo->buffer = bufferAllocation.GetHandle();
+		bufferInfo->offset = offset;
+		bufferInfo->range  = range;
+		return true;
 	}
 
 protected:
