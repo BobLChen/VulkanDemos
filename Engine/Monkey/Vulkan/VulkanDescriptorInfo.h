@@ -5,6 +5,7 @@
 #include "Utils/Crc.h"
 #include "VulkanPlatform.h"
 #include "VulkanResources.h"
+#include "VulkanMemory.h"
 
 #include <memory>
 #include <vector>

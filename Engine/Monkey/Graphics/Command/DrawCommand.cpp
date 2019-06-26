@@ -1,4 +1,4 @@
-﻿#include "DrawCommand.h"
+#include "DrawCommand.h"
 #include "Engine.h"
 
 #include "Vulkan/VulkanDevice.h"
@@ -40,7 +40,7 @@ void MeshDrawCommand::Prepare()
 {
 	std::shared_ptr<VulkanDevice> device = Engine::Get()->GetVulkanDevice();
 	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material->GetPipelineStateInfo(), material->GetShader(), renderable->GetVertexBuffer()->GetVertexInputStateInfo());
-	
+    
 }
 
 void MeshDrawCommand::Reset()

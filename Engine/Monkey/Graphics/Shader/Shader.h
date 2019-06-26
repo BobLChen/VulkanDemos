@@ -76,39 +76,44 @@ public:
 
 	static std::shared_ptr<ShaderModule> LoadSPIPVShader(const char* filename, VkShaderStageFlagBits stageFlags);
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetVertModule() const
+    inline const std::shared_ptr<ShaderModule> GetVertModule() const
     {
         return m_VertShaderModule;
     }
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetFragModule() const
+    inline const std::shared_ptr<ShaderModule> GetFragModule() const
     {
         return m_FragShaderModule;
     }
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetGeomModule() const
+    inline const std::shared_ptr<ShaderModule> GetGeomModule() const
     {
         return m_GeomShaderModule;
     }
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetCompModule() const
+    inline const std::shared_ptr<ShaderModule> GetCompModule() const
     {
         return m_CompShaderModule;
     }
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetTescModule() const
+    inline const std::shared_ptr<ShaderModule> GetTescModule() const
     {
         return m_TescShaderModule;
     }
     
-    FORCEINLINE const std::shared_ptr<ShaderModule> GetTeseModule() const
+    inline const std::shared_ptr<ShaderModule> GetTeseModule() const
     {
         return m_TeseShaderModule;
     }
     
-    FORCEINLINE const uint32 GetHash() const
+    inline const uint32 GetHash() const
     {
         return m_Hash;
+    }
+    
+    inline const std::vector<VkPipelineShaderStageCreateInfo>& GetStageInfo() const
+    {
+        return m_ShaderCreateInfos;
     }
 
 private:
@@ -124,4 +129,6 @@ protected:
 	std::shared_ptr<ShaderModule> m_CompShaderModule;
 	std::shared_ptr<ShaderModule> m_TescShaderModule;
 	std::shared_ptr<ShaderModule> m_TeseShaderModule;
+    
+    std::vector<VkPipelineShaderStageCreateInfo> m_ShaderCreateInfos;
 };

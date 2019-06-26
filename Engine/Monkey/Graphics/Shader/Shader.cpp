@@ -94,6 +94,27 @@ Shader::Shader(std::shared_ptr<ShaderModule> vert, std::shared_ptr<ShaderModule>
 		temp = tese->GetHash();
 		m_Hash = Crc::MemCrc32(&temp, sizeof(uint32));
 	}
+    
+    std::vector<std::shared_ptr<ShaderModule>> shaderModules;
+    shaderModules.push_back(vert);
+    shaderModules.push_back(frag);
+    shaderModules.push_back(geom);
+    shaderModules.push_back(tesc);
+    shaderModules.push_back(tese);
+    shaderModules.push_back(comp);
+    for (int32 i = 0; i < shaderModules.size(); ++i)
+    {
+        std::shared_ptr<ShaderModule> shaderModule = shaderModules[i];
+        if (shaderModule == nullptr) {
+            continue;
+        }
+        VkPipelineShaderStageCreateInfo shaderCreateInfo;
+        ZeroVulkanStruct(shaderCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+        shaderCreateInfo.stage  = shaderModule->GetStageFlags();
+        shaderCreateInfo.module = shaderModule->GetHandle();
+        shaderCreateInfo.pName  = "main";
+        m_ShaderCreateInfos.push_back(shaderCreateInfo);
+    }
 }
 
 Shader::~Shader()

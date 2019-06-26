@@ -15,6 +15,7 @@
 #include "Graphics/Shader/Shader.h"
 #include "Graphics/Material/Material.h"
 #include "Graphics/Renderer/Renderable.h"
+#include "Graphics/Command/DrawCommand.h"
 #include "File/FileManager.h"
 #include "Loader/MeshLoader.h"
 
@@ -28,7 +29,6 @@ public:
 	OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModeBase(width, height, title)
 		, m_Ready(false)
-		, m_DescriptorPool(VK_NULL_HANDLE)
 		, m_ImageIndex(0)
 	{
         
@@ -49,8 +49,6 @@ public:
 		Prepare();
 		LoadAssets();
 		CreateUniformBuffers();
-		CreateDescriptorPool();
-        CreateDescriptorSet();
 		SetupCommandBuffers();
 		m_Ready = true;
 	}
@@ -61,7 +59,6 @@ public:
 		Release();
         DestroyAssets();
 		DestroyUniformBuffers();
-        DestroyDescriptorPool();
 	}
     
 	virtual void Loop() override
@@ -122,64 +119,22 @@ private:
 		scissor.offset.y      = 0;
 
 		VkDeviceSize offsets[1] = { 0 };
-        VkPipeline pipeline = m_Material->GetPipeline(m_Renderable->GetVertexBuffer()->GetVertexInputStateInfo());
-
-		for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
-		{
-			renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
-			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
-			vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
-			vkCmdSetScissor(m_DrawCmdBuffers[i], 0, 1, &scissor);
-			vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
-			vkCmdBindPipeline(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-			vkCmdBindVertexBuffers(m_DrawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
-			vkCmdBindIndexBuffer(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
-			vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
-			vkCmdEndRenderPass(m_DrawCmdBuffers[i]);
-			VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[i]));
-		}
-	}
-    
-	void CreateDescriptorSet()
-	{
-		m_DescriptorSets.resize(GetFrameCount());
-
-		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
-		{
-			VkDescriptorSetAllocateInfo allocInfo;
-			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-			allocInfo.descriptorPool     = m_DescriptorPool;
-			allocInfo.descriptorSetCount = 1;
-			allocInfo.pSetLayouts        = &(m_Shader->GetDescriptorSetLayout());
-			VERIFYVULKANRESULT(vkAllocateDescriptorSets(GetDevice(), &allocInfo, &(m_DescriptorSets[i])));
-            
-			VkWriteDescriptorSet writeDescriptorSet;
-			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-			writeDescriptorSet.dstSet 		   = m_DescriptorSets[i];
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->GetDescriptorBufferInfo());
-			writeDescriptorSet.dstBinding      = 0;
-			vkUpdateDescriptorSets(GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
-		}
-	}
-    
-	void CreateDescriptorPool()
-	{
-        const std::vector<VkDescriptorPoolSize>& poolSize = m_Material->GetShader()->GetPoolSizes();
         
-		VkDescriptorPoolCreateInfo descriptorPoolInfo;
-		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-        descriptorPoolInfo.poolSizeCount = (uint32_t)poolSize.size();
-        descriptorPoolInfo.pPoolSizes    = poolSize.size() > 0 ? poolSize.data() : nullptr;
-		descriptorPoolInfo.maxSets 	 	 = GetFrameCount();
-		VERIFYVULKANRESULT(vkCreateDescriptorPool(GetDevice(), &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
-	}
-	
-	void DestroyDescriptorPool()
-	{
-		vkDestroyDescriptorPool(GetDevice(), m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
+//        for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
+//        {
+//            renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
+//            VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
+//            vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+//            vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
+//            vkCmdSetScissor(m_DrawCmdBuffers[i], 0, 1, &scissor);
+//            vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
+//            vkCmdBindPipeline(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+//            vkCmdBindVertexBuffers(m_DrawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
+//            vkCmdBindIndexBuffer(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
+//            vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
+//            vkCmdEndRenderPass(m_DrawCmdBuffers[i]);
+//            VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[i]));
+//        }
 	}
     
 	void UpdateUniformBuffers()
@@ -204,7 +159,7 @@ private:
 		m_MVPData.view.SetIdentity();
 		m_MVPData.view.SetOrigin(Vector4(0, 0, -30.0f));
 		m_MVPData.view.SetInverse();
-
+        
 		m_MVPData.projection.SetIdentity();
         m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
         
@@ -226,32 +181,37 @@ private:
         m_Shader       = nullptr;
         m_Material     = nullptr;
         m_Renderable   = nullptr;
-
-        Material::DestroyCache();
+        m_DrawCommand  = nullptr;
     }
     
 	void LoadAssets()
 	{
-        m_Renderable = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
-        m_Shader     = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
-        m_Material   = std::make_shared<Material>(m_Shader);
+        m_Renderable  = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
+        m_Shader      = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
+        m_Material    = std::make_shared<Material>(m_Shader);
+        
+        m_DrawCommand = std::make_shared<MeshDrawCommand>();
+        m_DrawCommand->material   = m_Material;
+        m_DrawCommand->renderable = m_Renderable;
+        m_DrawCommand->Prepare();
+        
+        MLOG("DrawCommand Prepare done.")
 	}
     
 private:
 	
-	bool 							m_Ready;
+	bool 							    m_Ready;
     
-    std::shared_ptr<Shader>         m_Shader;
-	std::shared_ptr<Material>		m_Material;
-	std::shared_ptr<Renderable>     m_Renderable;
-
-	UBOData 						m_MVPData;
-    std::vector<VulkanBuffer*>      m_MVPBuffers;
+    std::shared_ptr<MeshDrawCommand>    m_DrawCommand;
     
-	std::vector<VkDescriptorSet> 	m_DescriptorSets;
-	VkDescriptorPool 				m_DescriptorPool;
+    std::shared_ptr<Shader>             m_Shader;
+	std::shared_ptr<Material>		    m_Material;
+	std::shared_ptr<Renderable>         m_Renderable;
 
-	uint32 							m_ImageIndex;
+	UBOData 						    m_MVPData;
+    std::vector<VulkanBuffer*>          m_MVPBuffers;
+    
+	uint32 							    m_ImageIndex;
 };
 
 AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)

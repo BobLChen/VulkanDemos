@@ -148,7 +148,8 @@ private:
 
 private:
     VulkanDevice*	m_VulkanDevice;
-
+    VkPipelineCache m_PipelineCache;
+    
     std::unordered_map<uint32, VulkanGfxLayout*>        m_GfxLayoutCache;
 	std::unordered_map<uint32, VulkanGfxPipeline*>      m_GfxPipelineCache;
 	std::unordered_map<uint32, VkDescriptorSetLayout>   m_DescriptorSetLayoutCache;

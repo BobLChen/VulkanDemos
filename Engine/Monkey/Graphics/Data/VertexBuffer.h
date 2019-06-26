@@ -121,6 +121,7 @@ public:
         if (m_Invalid)
         {
             CreateBuffer();
+            UpdateVertexInputState();
         }
     }
 	

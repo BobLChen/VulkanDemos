@@ -150,6 +150,11 @@ VulkanLayout::~VulkanLayout()
 
 void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
 {
+    if (shaderModule == nullptr)
+    {
+        return;
+    }
+    
 	// 反编译Shader获取相关信息
 	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
 	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
@@ -358,7 +363,7 @@ void VulkanTypedDescriptorPoolSet::Reset()
 	m_CurrentPool = 0;
 }
 
-VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::GetFreePool(bool forceNewPool = false)
+VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::GetFreePool(bool forceNewPool)
 {
 	if (!forceNewPool)
 	{

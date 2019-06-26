@@ -33,23 +33,33 @@ VulkanGfxPipeline::~VulkanGfxPipeline()
 
 VulkanPipelineStateManager::VulkanPipelineStateManager()
 	: m_VulkanDevice(nullptr)
+    , m_PipelineCache(VK_NULL_HANDLE)
 {
-
+    
 }
 
 void VulkanPipelineStateManager::Init(VulkanDevice* device)
 {
 	m_VulkanDevice = device;
+    
+    VkPipelineCacheCreateInfo createInfo;
+    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
+    VERIFYVULKANRESULT(vkCreatePipelineCache(device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineCache));
 }
 
 void VulkanPipelineStateManager::Destory()
 {
-	VkDevice device = Engine::Get()->GetDeviceHandle();
+    VkDevice device = m_VulkanDevice->GetInstanceHandle();
 	for (auto it = m_DescriptorSetLayoutCache.begin(); it != m_DescriptorSetLayoutCache.end(); ++it)
 	{
 		vkDestroyDescriptorSetLayout(device, it->second, VULKAN_CPU_ALLOCATOR);
 	}
 	m_DescriptorSetLayoutCache.clear();
+    
+    if (m_PipelineCache != VK_NULL_HANDLE)
+    {
+        vkDestroyPipelineCache(device, m_PipelineCache, VULKAN_CPU_ALLOCATOR);
+    }
 }
 
 VulkanPipelineStateManager::~VulkanPipelineStateManager()
@@ -94,6 +104,7 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipeli
     pipeline->m_Layout   = layout;
     pipeline->m_Pipeline = GetVulkanGfxPipeline(pipelineStateInfo, layout, shader, inputInfo);
     
+    m_GfxPipelineCache.insert(std::make_pair(key, pipeline));
 	return pipeline;
 }
 
@@ -101,7 +112,7 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 {
 	const VertexInputBindingInfo& inputBindingInfo = gfxLayout->GetVertexInputBindingInfo();
 	const std::vector<VertexAttribute>& attributes = inputBindingInfo.GetAttributes();
-	 
+    
 	std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;
 	std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
 
@@ -126,8 +137,8 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 		}
 
 		VkVertexInputAttributeDescription inputAttributeDesc = {};
-		inputAttributeDesc.location = attrDesc.binding;
-		inputAttributeDesc.binding  = location;
+        inputAttributeDesc.binding  = attrDesc.binding;
+		inputAttributeDesc.location = location;
 		inputAttributeDesc.format   = attrDesc.format;
 		inputAttributeDesc.offset   = attrDesc.offset;
 		vertexInputAttributs.push_back(inputAttributeDesc);
@@ -178,36 +189,17 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 	ZeroVulkanStruct(dynamicStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
 	dynamicStateCreateInfo.dynamicStateCount = (uint32_t)dynamicStates.size();
 	dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
-
-	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfos;
-	std::vector<std::shared_ptr<ShaderModule>> shaderModules;
-	shaderModules.push_back(shader->GetVertModule());
-	shaderModules.push_back(shader->GetFragModule());
-	shaderModules.push_back(shader->GetGeomModule());
-	shaderModules.push_back(shader->GetTescModule());
-	shaderModules.push_back(shader->GetTeseModule());
-	shaderModules.push_back(shader->GetCompModule());
-	for (int32 i = 0; i < shaderModules.size(); ++i)
-	{
-		std::shared_ptr<ShaderModule> shaderModule = shaderModules[i];
-		if (shaderModule == nullptr) {
-			continue;
-		}
-		VkPipelineShaderStageCreateInfo shaderCreateInfo;
-		ZeroVulkanStruct(shaderCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-		shaderCreateInfo.stage  = shaderModule->GetStageFlags();
-		shaderCreateInfo.module = shaderModule->GetHandle();
-		shaderCreateInfo.pName  = "main";
-		shaderCreateInfos.push_back(shaderCreateInfo);
-	}
-
+    
+    VkPipeline vkPipeline = VK_NULL_HANDLE;
+    const std::vector<VkPipelineShaderStageCreateInfo> shaderStageInfo = shader->GetStageInfo();
+    
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 	ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 	pipelineCreateInfo.layout 				= gfxLayout->GetPipelineLayout();
 	pipelineCreateInfo.renderPass 			= Engine::Get()->GetVulkanRHI()->GetRenderPass();
-	pipelineCreateInfo.stageCount 			= (uint32_t)shaderCreateInfos.size();
-	pipelineCreateInfo.pStages 				= shaderCreateInfos.data();
-	pipelineCreateInfo.pVertexInputState 	= &sdasd;
+    pipelineCreateInfo.stageCount 			= shaderStageInfo.size();
+    pipelineCreateInfo.pStages 				= shaderStageInfo.data();
+	pipelineCreateInfo.pVertexInputState 	= &vertexInputCreateInfo;
 	pipelineCreateInfo.pInputAssemblyState 	= &pipelineStateInfo.inputAssemblyState;
 	pipelineCreateInfo.pRasterizationState 	= &pipelineStateInfo.rasterizationState;
 	pipelineCreateInfo.pColorBlendState 	= &colorBlendCreateInfo;
@@ -215,10 +207,9 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 	pipelineCreateInfo.pViewportState 		= &pipelineStateInfo.viewportState;
 	pipelineCreateInfo.pDepthStencilState 	= &pipelineStateInfo.depthStencilState;
 	pipelineCreateInfo.pDynamicState 		= &dynamicStateCreateInfo;
-	VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
-		
-
-    return VK_NULL_HANDLE;
+	VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_VulkanDevice->GetInstanceHandle(), m_PipelineCache, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &vkPipeline));
+    
+    return vkPipeline;
 }
 
 VkDescriptorSetLayout VulkanPipelineStateManager::GetDescriptorSetLayout(const VulkanDescriptorSetLayoutInfo* setLayoutInfo)

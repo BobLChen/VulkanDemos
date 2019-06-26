@@ -392,7 +392,7 @@ public:
         return m_Handle;
     }
     
-    inline VulkanSubBufferAllocator* GetBufferAllocator()
+    inline VulkanSubBufferAllocator* GetBufferAllocator() const
     {
         return m_Owner;
     }
