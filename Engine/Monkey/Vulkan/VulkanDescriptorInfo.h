@@ -260,6 +260,7 @@ public:
 	bool AllocateDescriptorSets(const VulkanDescriptorSetsLayout& inLayout, VkDescriptorSet* outSets);
 
 protected:
+	friend class VulkanDescriptorPoolSetContainer;
 	
 	VulkanTypedDescriptorPoolSet(VulkanDevice* inDevice, const VulkanDescriptorSetsLayout& inLayout);
 
@@ -323,24 +324,82 @@ class VulkanDescriptorPoolsManager
     
 public:
     
-    VulkanDescriptorPoolsManager();
+    VulkanDescriptorPoolsManager()
+		: m_VulkanDevice(nullptr)
+	{
+
+	}
     
-    virtual ~VulkanDescriptorPoolsManager();
-    
-    VulkanDescriptorPoolSetContainer& AcquirePoolSetContainer();
-    
-    void ReleasePoolSet(VulkanDescriptorPoolSetContainer& PoolSet);
-    
-    void GC();
-    
-    void Init(VulkanDevice* inDevice)
+    virtual ~VulkanDescriptorPoolsManager()
+	{
+
+	}
+
+	void Init(VulkanDevice* inDevice)
     {
         m_VulkanDevice = inDevice;
     }
+    
+    VulkanDescriptorPoolSetContainer& AcquirePoolSetContainer();
+    
+    void ReleasePoolSet(VulkanDescriptorPoolSetContainer& poolSet);
+    
+    void GC();
     
     void Destroy();
     
 private:
     VulkanDevice*   m_VulkanDevice;
     PoolSets        m_PoolSets;
+};
+
+class VulkanDescriptorSetWriter
+{
+public:
+	VulkanDescriptorSetWriter()
+		: m_WriteDescriptorSet(nullptr)
+		, m_NumWrites(0)
+	{
+
+	}
+
+	const VkWriteDescriptorSet* GetWriteDescriptors() const
+	{
+		return m_WriteDescriptorSet;
+	} 
+
+	const uint32 GetNumWrites() const
+	{
+		return m_NumWrites;
+	}
+
+	void SetDescriptorSet(VkDescriptorSet descriptorSet)
+	{
+		for (uint32 i = 0; i < m_NumWrites; ++i)
+		{
+			m_WriteDescriptorSet[i].dstSet = descriptorSet;
+		}
+	}
+
+	bool WriteDynamicUniformBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset)
+	{
+		return WriteBuffer<VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC>(descriptorIndex, bufferAllocation, offset, range, dynamicOffset);
+	} 
+
+protected:
+	
+	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorType>& types, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo);
+
+	template <VkDescriptorType DescriptorType>
+	bool WriteBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset = 0)
+	{
+
+		return false;
+	}
+
+protected:
+	VkWriteDescriptorSet*		m_WriteDescriptorSet;
+	std::vector<uint32>			m_DynamicOffsets;
+	uint32						m_NumWrites;
+
 };

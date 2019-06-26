@@ -421,3 +421,50 @@ void VulkanDescriptorPoolSetContainer::Reset()
         poolSet->Reset();
     }
 }
+
+// VulkanDescriptorPoolsManager
+
+VulkanDescriptorPoolSetContainer& VulkanDescriptorPoolsManager::AcquirePoolSetContainer()
+{
+	for (int32 i = 0; i < m_PoolSets.size(); ++i)
+	{
+		if (m_PoolSets[i]->IsUnused())
+		{
+			m_PoolSets[i]->SetUsed(true);
+			return *(m_PoolSets[i]);
+		}
+	}
+
+	VulkanDescriptorPoolSetContainer* poolSet = new VulkanDescriptorPoolSetContainer(m_VulkanDevice);
+	m_PoolSets.push_back(poolSet);
+
+	return *poolSet;
+}
+    
+void VulkanDescriptorPoolsManager::ReleasePoolSet(VulkanDescriptorPoolSetContainer& poolSet)
+{
+	poolSet.Reset();
+	poolSet.SetUsed(false);
+}
+    
+void VulkanDescriptorPoolsManager::GC()
+{
+	for (int32 i = m_PoolSets.size() - 1; i >= 0; --i)
+	{
+		VulkanDescriptorPoolSetContainer* poolSet = m_PoolSets[i];
+		if (poolSet->IsUnused())
+		{
+			m_PoolSets.erase(m_PoolSets.begin() + i);
+			delete poolSet;
+		}
+	}
+}
+    
+void VulkanDescriptorPoolsManager::Destroy()
+{
+	for (int32 i = 0; i < m_PoolSets.size(); ++i)
+	{
+		delete m_PoolSets[i];
+	}
+	m_PoolSets.clear();
+}
