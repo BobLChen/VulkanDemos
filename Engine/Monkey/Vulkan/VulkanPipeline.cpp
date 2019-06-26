@@ -99,10 +99,69 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipeli
 
 VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
 {
-    VkGraphicsPipelineCreateInfo pipelineCreateInfo;
-	ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-	pipelineCreateInfo.layout = gfxLayout->GetPipelineLayout();
+	const VertexInputBindingInfo& inputBindingInfo = gfxLayout->GetVertexInputBindingInfo();
+	const std::vector<VertexAttribute>& attributes = inputBindingInfo.GetAttributes();
+	 
+	std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;
+	std::vector<VkVertexInputBindingDescription>   vertexInputBindings;
+
+	for (int32 i = 0; i < attributes.size(); ++i)
+	{
+		VertexInputDeclareInfo::AttributeDescription attrDesc;
+		VertexInputDeclareInfo::BindingDescription   bindDesc;
+
+		VertexAttribute attribute = attributes[i];
+		int32 location            = inputBindingInfo.GetLocation(attribute);
+		
+		if (!inputInfo.GetAttributeDescription(attribute, attrDesc)) 
+		{
+			MLOGE("Attribute not found in vertex streaming. %d", attribute);
+			return VK_NULL_HANDLE;
+		}
+
+		if (!inputInfo.GetBindingDescription(attribute, bindDesc))
+		{
+			MLOGE("Attribute not found in vertex streaming. %d", attribute);
+			return VK_NULL_HANDLE;
+		}
+
+		VkVertexInputAttributeDescription inputAttributeDesc = {};
+		inputAttributeDesc.location = attrDesc.binding;
+		inputAttributeDesc.binding  = location;
+		inputAttributeDesc.format   = attrDesc.format;
+		inputAttributeDesc.offset   = attrDesc.offset;
+		vertexInputAttributs.push_back(inputAttributeDesc);
+
+		bool found = false;
+		for (int32 j = 0; j < vertexInputBindings.size(); ++j)
+		{
+			if (vertexInputBindings[j].binding   == bindDesc.binding && 
+				vertexInputBindings[j].stride    == bindDesc.stride  &&
+				vertexInputBindings[j].inputRate == bindDesc.inputRate
+			)
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+		{
+			VkVertexInputBindingDescription inputBindingDesc = {};
+			inputBindingDesc.binding   = bindDesc.binding;
+			inputBindingDesc.stride    = bindDesc.stride;
+			inputBindingDesc.inputRate = bindDesc.inputRate;
+			vertexInputBindings.push_back(inputBindingDesc);
+		}
+	}
 	
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
+	ZeroVulkanStruct(vertexInputCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+	vertexInputCreateInfo.vertexBindingDescriptionCount   = vertexInputBindings.size();
+	vertexInputCreateInfo.pVertexBindingDescriptions      = vertexInputBindings.data();
+	vertexInputCreateInfo.vertexAttributeDescriptionCount = vertexInputAttributs.size();
+	vertexInputCreateInfo.pVertexAttributeDescriptions    = vertexInputAttributs.data();
+
 	VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo;
 	ZeroVulkanStruct(colorBlendCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
 	colorBlendCreateInfo.attachmentCount   = 1;
@@ -111,6 +170,14 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 	colorBlendCreateInfo.blendConstants[1] = 1.0f;
 	colorBlendCreateInfo.blendConstants[2] = 1.0f;
 	colorBlendCreateInfo.blendConstants[3] = 1.0f;
+
+	std::vector<VkDynamicState> dynamicStates;
+	dynamicStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+	dynamicStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo;
+	ZeroVulkanStruct(dynamicStateCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+	dynamicStateCreateInfo.dynamicStateCount = (uint32_t)dynamicStates.size();
+	dynamicStateCreateInfo.pDynamicStates    = dynamicStates.data();
 
 	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfos;
 	std::vector<std::shared_ptr<ShaderModule>> shaderModules;
@@ -134,7 +201,22 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 		shaderCreateInfos.push_back(shaderCreateInfo);
 	}
 
-
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+	ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+	pipelineCreateInfo.layout 				= gfxLayout->GetPipelineLayout();
+	pipelineCreateInfo.renderPass 			= Engine::Get()->GetVulkanRHI()->GetRenderPass();
+	pipelineCreateInfo.stageCount 			= (uint32_t)shaderCreateInfos.size();
+	pipelineCreateInfo.pStages 				= shaderCreateInfos.data();
+	pipelineCreateInfo.pVertexInputState 	= &sdasd;
+	pipelineCreateInfo.pInputAssemblyState 	= &pipelineStateInfo.inputAssemblyState;
+	pipelineCreateInfo.pRasterizationState 	= &pipelineStateInfo.rasterizationState;
+	pipelineCreateInfo.pColorBlendState 	= &colorBlendCreateInfo;
+	pipelineCreateInfo.pMultisampleState 	= &pipelineStateInfo.multisampleState;
+	pipelineCreateInfo.pViewportState 		= &pipelineStateInfo.viewportState;
+	pipelineCreateInfo.pDepthStencilState 	= &pipelineStateInfo.depthStencilState;
+	pipelineCreateInfo.pDynamicState 		= &dynamicStateCreateInfo;
+	VERIFYVULKANRESULT(vkCreateGraphicsPipelines(m_Device, m_VulkanRHI->GetPipelineCache(), 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
+		
 
     return VK_NULL_HANDLE;
 }

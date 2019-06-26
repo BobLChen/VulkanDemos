@@ -159,7 +159,7 @@ public:
 		return m_SetsLayoutInfo.GetHash();
 	}
 
-	FORCEINLINE const VertexInputBindingInfo& GetVertexInputBindingInfo() const
+	inline const VertexInputBindingInfo& GetVertexInputBindingInfo() const
 	{
 		return m_VertexInputBindingInfo;
 	}

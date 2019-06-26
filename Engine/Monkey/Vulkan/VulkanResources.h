@@ -389,6 +389,35 @@ public:
     {
         
     }
+
+    inline bool GetBindingDescription(VertexAttribute attribute, BindingDescription& outBinding) const
+    {
+        AttributeDescription attributeDescription;
+        if (!GetAttributeDescription(attribute, attributeDescription)) {
+            return false;
+        }
+        for (int32 i = 0; i < m_Bindings.size(); ++i)
+        {
+            if (m_Bindings[i].binding == attributeDescription.binding)
+            {
+                outBinding = m_Bindings[i];
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline bool GetAttributeDescription(VertexAttribute attribute, AttributeDescription& outDescription) const
+    {
+        for (int32 i = 0; i < m_InputAttributes.size(); ++i)
+        {
+            if (m_InputAttributes[i].attribute == attribute) {
+                outDescription = m_InputAttributes[i];
+                return true;
+            }
+        }
+        return false;
+    }
     
     inline void AddBinding(const BindingDescription& binding)
     {

@@ -39,7 +39,8 @@ void MeshDrawCommand::GenerateHash()
 void MeshDrawCommand::Prepare()
 {
 	std::shared_ptr<VulkanDevice> device = Engine::Get()->GetVulkanDevice();
-	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material->GetPipelineStateInfo(), material->GetShader(), renderable->GetVertexBuffer()->GetVertexInputStateInfo());;
+	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material->GetPipelineStateInfo(), material->GetShader(), renderable->GetVertexBuffer()->GetVertexInputStateInfo());
+	
 }
 
 void MeshDrawCommand::Reset()
