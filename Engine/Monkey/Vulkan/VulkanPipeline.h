@@ -102,10 +102,17 @@ public:
 
 protected:
     friend class VulkanPipelineStateManager;
+
+	void CreateDescriptorWriteInfos();
     
 protected:
-	VkPipeline     m_Pipeline;
-	VulkanLayout*  m_Layout;
+	VkPipeline     							m_Pipeline;
+	VulkanLayout*  							m_Layout;
+
+	std::vector<VkDescriptorSet>			m_DescriptorSetHandles;
+	std::vector<uint32>						m_DynamicOffsets;
+	std::vector<VulkanDescriptorSetWriter>	m_DSWriter;
+	VulkanDescriptorSetWriteContainer		m_DSWriteContainer;
 };
 
 class VulkanGfxPipeline : public VulkanPipeline

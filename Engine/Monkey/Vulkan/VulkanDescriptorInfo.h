@@ -14,7 +14,7 @@ class ShaderModule;
 class VulkanDevice;
 class VulkanCommandListContext;
 
-struct FVulkanDescriptorSetWriteContainer
+struct VulkanDescriptorSetWriteContainer
 {
     std::vector<VkDescriptorImageInfo>  descriptorImageInfo;
     std::vector<VkDescriptorBufferInfo> descriptorBufferInfo;
@@ -389,6 +389,8 @@ public:
 
 protected:
 	
+	friend class VulkanPipeline;
+
 	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorType>& types, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo);
 
 	template <VkDescriptorType DescriptorType>

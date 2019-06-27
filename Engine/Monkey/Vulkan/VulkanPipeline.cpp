@@ -1,10 +1,11 @@
-#include "Graphics/Shader/Shader.h"
+﻿#include "Graphics/Shader/Shader.h"
 
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorInfo.h"
 #include "VulkanDevice.h"
 #include "Engine.h"
 
+// VulkanPipeline
 VulkanPipeline::VulkanPipeline()
 	: m_Pipeline(VK_NULL_HANDLE)
 	, m_Layout(nullptr)
@@ -21,6 +22,60 @@ VulkanPipeline::~VulkanPipeline()
 	}
 }
 
+void VulkanPipeline::CreateDescriptorWriteInfos()
+{
+	const VulkanDescriptorSetsLayout& setsLayout = m_Layout->GetDescriptorSetsLayout();
+
+	// 遍历出VkDescriptorType的数量信息，创建出对应的writer。
+	int32 numBufferInfos = 0;
+	int32 numImageInfos  = 0;
+	int32 numWrites      = 0;
+
+	for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex <= VK_DESCRIPTOR_TYPE_END_RANGE; ++typeIndex)
+	{
+		VkDescriptorType descriptorType =(VkDescriptorType)typeIndex;
+		uint32 numTypesUsed = setsLayout.GetTypesUsed(descriptorType);
+		if (numTypesUsed == 0)
+		{
+			continue;
+		}
+
+		numWrites += numTypesUsed;
+
+		switch (descriptorType)
+		{
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+			numBufferInfos = numTypesUsed;
+			break;
+		
+		default:
+			break;
+		}
+	}
+	// buffer
+	if (numBufferInfos > 0) {
+		m_DSWriteContainer.descriptorBufferInfo.resize(numBufferInfos);
+	}
+	// image
+	// VkWriteDescriptorSet
+	m_DSWriteContainer.descriptorWrites.resize(numWrites);
+
+	// 创建出Writer
+	const std::vector<VulkanDescriptorSetLayoutInfo*>& setLayoutInfos = setsLayout.GetLayouts();
+	m_DSWriter.resize(setLayoutInfos.size());
+
+	VkWriteDescriptorSet* currentWriteSet     = m_DSWriteContainer.descriptorWrites.data();
+	VkDescriptorImageInfo* currentImageInfo   = m_DSWriteContainer.descriptorImageInfo.data();
+	VkDescriptorBufferInfo* currentBufferInfo = m_DSWriteContainer.descriptorBufferInfo.data();
+	
+	for (int32 set = 0; set < setLayoutInfos.size(); ++set)
+	{
+		VulkanDescriptorSetLayoutInfo* setLayoutInfo = setLayoutInfos[set];
+		m_DSWriter[set].SetupDescriptorWrites(setLayoutInfo->layoutBindings, currentWriteSet, currentImageInfo, currentBufferInfo);
+	}
+}
+
+// VulkanGfxPipeline
 VulkanGfxPipeline::VulkanGfxPipeline()
 {
 
@@ -31,6 +86,7 @@ VulkanGfxPipeline::~VulkanGfxPipeline()
 
 }
 
+// VulkanPipelineStateManager
 VulkanPipelineStateManager::VulkanPipelineStateManager()
 	: m_VulkanDevice(nullptr)
     , m_PipelineCache(VK_NULL_HANDLE)
