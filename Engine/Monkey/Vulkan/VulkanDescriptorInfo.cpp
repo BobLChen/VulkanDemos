@@ -13,7 +13,7 @@ void VulkanDescriptorSetsLayout::Compile()
 	const int32 layoutCount = m_SetLayouts.size();
 	for (int32 i = 0; i < layoutCount; ++i)
 	{
-		m_SetLayouts[i]->GenerateHash();
+		m_SetLayouts[i]->Compile();
 		m_Hash = Crc::MemCrc32(&(m_SetLayouts[i]->hash), sizeof(uint32), m_Hash);
 	}
 
@@ -106,23 +106,10 @@ void VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDes
 	if (setLayout == nullptr) 
 	{
 		setLayout = new VulkanDescriptorSetLayoutInfo();
+        setLayout->set = set;
 		m_SetLayouts.push_back(setLayout);
 	}
-
-	for (int32 i = 0; i < setLayout->layoutBindings.size(); ++i)
-	{
-		VkDescriptorSetLayoutBinding& layoutBinding = setLayout->layoutBindings[i];
-		if (layoutBinding.binding == binding && 
-			layoutBinding.descriptorType == descriptorType && 
-			layoutBinding.stageFlags == stageFlags && 
-			layoutBinding.pImmutableSamplers == samplers
-		)
-		{
-			layoutBinding.descriptorCount += 1;
-			return;
-		}
-	}
-
+    
 	VkDescriptorSetLayoutBinding bindingInfo = {};
 	bindingInfo.descriptorCount    = 1;
 	bindingInfo.descriptorType     = descriptorType;
@@ -475,20 +462,28 @@ void VulkanDescriptorPoolsManager::Destroy()
 }
 
 // VulkanDescriptorSetWriter
-uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDescriptorType>& types, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo)
+uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo)
 {
-	m_NumWrites = types.size();
+    m_NumWrites = bindings.size();
 	m_WriteDescriptorSet = inWriteDescriptors;
-
+    
 	int32 dynamicOffsetIndex = 0;
 	for (int32 i = 0; i < m_NumWrites; ++i)
 	{
+        const VkDescriptorSetLayoutBinding& setBinding = bindings[i];
+        
 		m_WriteDescriptorSet->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		m_WriteDescriptorSet->dstBinding = i;
-		m_WriteDescriptorSet->descriptorCount = 1;
-		m_WriteDescriptorSet->descriptorType = types[i];
-		
-		switch (types[i])
+        m_WriteDescriptorSet->pNext = nullptr;
+        m_WriteDescriptorSet->dstSet = VK_NULL_HANDLE;
+        m_WriteDescriptorSet->dstBinding = setBinding.binding;
+        m_WriteDescriptorSet->dstArrayElement = 0;
+		m_WriteDescriptorSet->descriptorCount = setBinding.descriptorCount;
+		m_WriteDescriptorSet->descriptorType = setBinding.descriptorType;
+        m_WriteDescriptorSet->pImageInfo = nullptr;
+        m_WriteDescriptorSet->pBufferInfo = nullptr;
+        m_WriteDescriptorSet->pTexelBufferView = nullptr;
+        
+		switch (setBinding.descriptorType)
 		{
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
 			++dynamicOffsetIndex;
@@ -503,19 +498,16 @@ uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDesc
 		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
 		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
 		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			/*inImageInfo->sampler     = sampler;
-			inImageInfo->imageView   = view;
-			inImageInfo->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			m_WriteDescriptorSet->pImageInfo = inImageInfo++;*/
+			// image info
 			break;
 		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
 		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
 			break;
 		default:
-			MLOGE("Unsupported descriptor type %d", (int32)types[i]);
+			MLOGE("Unsupported descriptor type %d", (int32)setBinding.descriptorType);
 			break;
 		}
 	}
-
+    
 	return dynamicOffsetIndex;
 }

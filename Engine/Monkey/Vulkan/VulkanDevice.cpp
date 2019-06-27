@@ -1,6 +1,9 @@
 #include "VulkanDevice.h"
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
+#include "VulkanFence.h"
+#include "VulkanPipeline.h"
+#include "VulkanContext.h"
 #include "Application/SlateApplication.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
@@ -10,9 +13,14 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_ComputeQueue(nullptr)
     , m_TransferQueue(nullptr)
     , m_PresentQueue(nullptr)
-    , m_ResourceHeapManager(this)
+    , m_FenceManager(nullptr)
+    , m_MemoryManager(nullptr)
+    , m_ResourceHeapManager(nullptr)
+    , m_PipelineStateManager(nullptr)
+    , m_DescriptorPoolsManager(nullptr)
+    , m_ImmediateContext(nullptr)
 {
-	
+    
 }
 
 VulkanDevice::~VulkanDevice()
@@ -402,21 +410,40 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
 
 	CreateDevice();
 	SetupFormats();
-
-    m_MemoryManager.Init(this);
-    m_ResourceHeapManager.Init();
-	m_FenceManager.Init(this);
-	m_PipelineStateManager.Init(this);
+    
+    m_MemoryManager = new VulkanDeviceMemoryManager();
+    m_MemoryManager->Init(this);
+    
+    m_ResourceHeapManager = new VulkanResourceHeapManager(this);
+    m_ResourceHeapManager->Init();
+    
+    m_FenceManager = new VulkanFenceManager();
+	m_FenceManager->Init(this);
+    
+    m_PipelineStateManager = new VulkanPipelineStateManager();
+	m_PipelineStateManager->Init(this);
+    
+    m_DescriptorPoolsManager = new VulkanDescriptorPoolsManager();
+    m_DescriptorPoolsManager->Init(this);
     
     m_ImmediateContext = new VulkanCommandListContextImmediate(this, m_GfxQueue);
 }
 
 void VulkanDevice::Destroy()
 {
-    m_ResourceHeapManager.Destory();
-	m_FenceManager.Destory();
-    m_MemoryManager.Destory();
-	m_PipelineStateManager.Destory();
+    m_ResourceHeapManager->Destory();
+	m_FenceManager->Destory();
+    m_MemoryManager->Destory();
+	m_PipelineStateManager->Destory();
+    m_DescriptorPoolsManager->Destroy();
+    
+    delete m_ResourceHeapManager;
+    delete m_FenceManager;
+    delete m_MemoryManager;
+    delete m_PipelineStateManager;
+    delete m_DescriptorPoolsManager;
+    
+    delete m_ImmediateContext;
     
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;

@@ -27,10 +27,44 @@ struct VulkanDescriptorSetLayoutInfo
 	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 	uint32 set;
 	uint32 hash;
-
-	inline void GenerateHash()
+    uint32 numImagesInfo;
+    uint32 numBuffersInfo;
+    uint32 numTypes;
+    
+	inline void Compile()
 	{
 		hash = Crc::MemCrc32(layoutBindings.data(), sizeof(VkDescriptorSetLayoutBinding) * layoutBindings.size());
+        
+        numImagesInfo  = 0;
+        numBuffersInfo = 0;
+        numTypes       = layoutBindings.size();
+        
+        for (int32 i = 0; i < layoutBindings.size(); ++i)
+        {
+            VkDescriptorType descriptorType = layoutBindings[i].descriptorType;
+            switch (descriptorType)
+            {
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                    numBuffersInfo += 1;
+                    break;
+                case VK_DESCRIPTOR_TYPE_SAMPLER:
+                case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+                case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+                case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+                    numImagesInfo += 1;
+                    break;
+                case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+                case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+                    break;
+                default:
+                    MLOGE("Unsupported descriptor type %d", (int32)descriptorType);
+                    break;
+            }
+        }
+        
 	}
 
 	inline bool operator == (const VulkanDescriptorSetLayoutInfo& info)
@@ -391,7 +425,7 @@ protected:
 	
 	friend class VulkanPipeline;
 
-	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorType>& types, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo);
+	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo);
 
 	template <VkDescriptorType DescriptorType>
 	bool WriteBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset = 0)
@@ -404,8 +438,8 @@ protected:
 	}
 
 protected:
-	VkWriteDescriptorSet*		m_WriteDescriptorSet;
-	std::vector<uint32>			m_DynamicOffsets;
-	uint32						m_NumWrites;
+	VkWriteDescriptorSet*	m_WriteDescriptorSet;
+	uint32*			        m_DynamicOffsets;
+	uint32					m_NumWrites;
 
 };

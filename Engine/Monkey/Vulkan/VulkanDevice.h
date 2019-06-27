@@ -4,14 +4,19 @@
 #include "VulkanPlatform.h"
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
-#include "VulkanFence.h"
 #include "VulkanRHI.h"
-#include "VulkanPipeline.h"
-#include "VulkanContext.h"
 
 #include <vector>
 #include <memory>
 #include <map>
+
+class VulkanFenceManager;
+class VulkanDeviceMemoryManager;
+class VulkanResourceHeapManager;
+class VulkanPipelineStateManager;
+class VulkanDescriptorPoolsManager;
+class VulkanCommandListContextImmediate;
+class VulkanCommandListContext;
 
 class VulkanDevice
 {
@@ -86,24 +91,28 @@ public:
     
 	inline VulkanFenceManager& GetFenceManager()
 	{
-		return m_FenceManager;
+		return *m_FenceManager;
 	}
     
     inline VulkanDeviceMemoryManager& GetMemoryManager()
     {
-        return m_MemoryManager;
+        return *m_MemoryManager;
     }
     
     inline VulkanResourceHeapManager& GetResourceHeapManager()
     {
-        return m_ResourceHeapManager;
+        return *m_ResourceHeapManager;
     }
 
 	inline VulkanPipelineStateManager& GetPipelineStateManager()
 	{
-		return m_PipelineStateManager;
+		return *m_PipelineStateManager;
 	}
     
+    inline VulkanDescriptorPoolsManager& GetDescriptorPoolsManager()
+    {
+        return *m_DescriptorPoolsManager;
+    }
 private:
     
     void MapFormatSupport(PixelFormat format, VkFormat vkFormat);
@@ -135,10 +144,11 @@ private:
     std::shared_ptr<VulkanQueue>            m_TransferQueue;
     std::shared_ptr<VulkanQueue>            m_PresentQueue;
 
-    VulkanFenceManager                      m_FenceManager;
-    VulkanDeviceMemoryManager               m_MemoryManager;
-    VulkanResourceHeapManager               m_ResourceHeapManager;
-	VulkanPipelineStateManager              m_PipelineStateManager;
+    VulkanFenceManager*                     m_FenceManager;
+    VulkanDeviceMemoryManager*              m_MemoryManager;
+    VulkanResourceHeapManager*              m_ResourceHeapManager;
+	VulkanPipelineStateManager*             m_PipelineStateManager;
+    VulkanDescriptorPoolsManager*           m_DescriptorPoolsManager;
     
     VulkanCommandListContextImmediate*      m_ImmediateContext;
     std::vector<VulkanCommandListContext*>  m_CommandContexts;

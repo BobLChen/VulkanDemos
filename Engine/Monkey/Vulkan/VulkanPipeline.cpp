@@ -1,4 +1,4 @@
-﻿#include "Graphics/Shader/Shader.h"
+#include "Graphics/Shader/Shader.h"
 
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorInfo.h"
@@ -25,54 +25,71 @@ VulkanPipeline::~VulkanPipeline()
 void VulkanPipeline::CreateDescriptorWriteInfos()
 {
 	const VulkanDescriptorSetsLayout& setsLayout = m_Layout->GetDescriptorSetsLayout();
-
-	// 遍历出VkDescriptorType的数量信息，创建出对应的writer。
+    
 	int32 numBufferInfos = 0;
 	int32 numImageInfos  = 0;
 	int32 numWrites      = 0;
-
+    
 	for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex <= VK_DESCRIPTOR_TYPE_END_RANGE; ++typeIndex)
 	{
 		VkDescriptorType descriptorType =(VkDescriptorType)typeIndex;
 		uint32 numTypesUsed = setsLayout.GetTypesUsed(descriptorType);
-		if (numTypesUsed == 0)
-		{
+		if (numTypesUsed == 0) {
 			continue;
 		}
-
 		numWrites += numTypesUsed;
-
+        
 		switch (descriptorType)
 		{
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			numBufferInfos = numTypesUsed;
+			numBufferInfos += numTypesUsed;
 			break;
-		
+        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+            numImageInfos += numTypesUsed;
+            break;
 		default:
 			break;
 		}
 	}
-	// buffer
+    
 	if (numBufferInfos > 0) {
 		m_DSWriteContainer.descriptorBufferInfo.resize(numBufferInfos);
 	}
-	// image
-	// VkWriteDescriptorSet
+    if (numImageInfos > 0) {
+        m_DSWriteContainer.descriptorImageInfo.resize(numImageInfos);
+    }
 	m_DSWriteContainer.descriptorWrites.resize(numWrites);
-
-	// 创建出Writer
+    
 	const std::vector<VulkanDescriptorSetLayoutInfo*>& setLayoutInfos = setsLayout.GetLayouts();
 	m_DSWriter.resize(setLayoutInfos.size());
-
+    
 	VkWriteDescriptorSet* currentWriteSet     = m_DSWriteContainer.descriptorWrites.data();
 	VkDescriptorImageInfo* currentImageInfo   = m_DSWriteContainer.descriptorImageInfo.data();
 	VkDescriptorBufferInfo* currentBufferInfo = m_DSWriteContainer.descriptorBufferInfo.data();
 	
+    std::vector<uint32> dynamicOffsetsStart(setLayoutInfos.size());
+    uint32 totalNumDynamicOffsets = 0;
+    
 	for (int32 set = 0; set < setLayoutInfos.size(); ++set)
 	{
+        dynamicOffsetsStart[set] = totalNumDynamicOffsets;
+        
 		VulkanDescriptorSetLayoutInfo* setLayoutInfo = setLayoutInfos[set];
-		m_DSWriter[set].SetupDescriptorWrites(setLayoutInfo->layoutBindings, currentWriteSet, currentImageInfo, currentBufferInfo);
+        uint32 numDynamicOffsets = m_DSWriter[set].SetupDescriptorWrites(setLayoutInfo->layoutBindings, currentWriteSet, currentImageInfo, currentBufferInfo);
+        
+        totalNumDynamicOffsets += numDynamicOffsets;
+        currentWriteSet        += setLayoutInfo->numTypes;
+        currentImageInfo       += setLayoutInfo->numImagesInfo;
+        currentBufferInfo      += setLayoutInfo->numBuffersInfo;
 	}
+    
+    m_DynamicOffsets.resize(totalNumDynamicOffsets);
+    for (int32 set = 0; set < setLayoutInfos.size(); ++set)
+    {
+        m_DSWriter[set].m_DynamicOffsets = m_DynamicOffsets.data() + dynamicOffsetsStart[set];
+    }
+    
+    m_DescriptorSetHandles.resize(setLayoutInfos.size());
 }
 
 // VulkanGfxPipeline
@@ -159,6 +176,7 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipeli
     VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
     pipeline->m_Layout   = layout;
     pipeline->m_Pipeline = GetVulkanGfxPipeline(pipelineStateInfo, layout, shader, inputInfo);
+    pipeline->CreateDescriptorWriteInfos();
     
     m_GfxPipelineCache.insert(std::make_pair(key, pipeline));
 	return pipeline;

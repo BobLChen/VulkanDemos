@@ -5,6 +5,7 @@
 
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/RHIDefinitions.h"
+#include "Vulkan/VulkanResources.h"
 #include <vector>
 
 class VertexBuffer
