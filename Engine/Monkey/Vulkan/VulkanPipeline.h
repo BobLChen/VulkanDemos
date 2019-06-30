@@ -11,7 +11,11 @@
 #include <vector>
 
 class VulkanDevice;
+class VulkanCommandListContext;
+
 class Shader;
+class Material;
+class Renderable;
 
 struct VulkanPipelineStateInfo
 {
@@ -122,10 +126,7 @@ public:
 
 	~VulkanGfxPipeline();
 
-	inline const VertexInputBindingInfo& GetVertexInputInfo() const
-	{
-		return m_Layout->GetVertexInputBindingInfo();
-	}
+	bool UpdateDescriptorSets(std::shared_ptr<Material> material, VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext);
     
 protected:
     
@@ -141,7 +142,7 @@ public:
 
 	~VulkanPipelineStateManager();
 
-	VulkanGfxPipeline* GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
+	VulkanGfxPipeline* GetGfxPipeline(std::shared_ptr<Material> material, std::shared_ptr<Renderable>);
     
     VulkanGfxLayout* GetGfxLayout(std::shared_ptr<Shader> shader);
     

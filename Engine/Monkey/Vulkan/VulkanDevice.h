@@ -5,6 +5,7 @@
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
 #include "VulkanRHI.h"
+#include "VulkanContext.h"
 
 #include <vector>
 #include <memory>
@@ -15,8 +16,6 @@ class VulkanDeviceMemoryManager;
 class VulkanResourceHeapManager;
 class VulkanPipelineStateManager;
 class VulkanDescriptorPoolsManager;
-class VulkanCommandListContextImmediate;
-class VulkanCommandListContext;
 
 class VulkanDevice
 {
@@ -113,6 +112,12 @@ public:
     {
         return *m_DescriptorPoolsManager;
     }
+
+	inline VulkanCommandListContextImmediate GetImmediateContext()
+	{
+		return *m_ImmediateContext;
+	}
+
 private:
     
     void MapFormatSupport(PixelFormat format, VkFormat vkFormat);

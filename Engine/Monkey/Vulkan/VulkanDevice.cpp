@@ -3,7 +3,6 @@
 #include "VulkanGlobals.h"
 #include "VulkanFence.h"
 #include "VulkanPipeline.h"
-#include "VulkanContext.h"
 #include "Application/SlateApplication.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)

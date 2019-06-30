@@ -193,24 +193,14 @@ private:
 class UniformBuffer : public MResource
 {
 public:
-    UniformBuffer(const UniformBufferLayout& inLayout)
-        : layout(&inLayout)
+
+    UniformBuffer()
     {
 
-    }
-
-    inline uint32 GetSize() const
-    {
-        return layout->constantBufferSize;
-    }
-
-    inline const UniformBufferLayout& GetLayout() const
-    {
-        return *layout;
     }
 
 public:
-    const UniformBufferLayout* layout;
+
 };
 
 // not real uniform buffer
@@ -218,11 +208,21 @@ class VulkanUniformBuffer : public UniformBuffer
 {
 public:
 
-    VulkanUniformBuffer(const UniformBufferLayout& inLayout, const void* contents, UniformBufferUsage inUsage);
+    VulkanUniformBuffer(uint32 contentSize);
 
     void UpdateConstantData(const void* contents, int32 contentsSize);
 
-public:
+	inline const uint32 GetContentSize() const
+	{
+		return constantData.size();
+	}
+
+	inline const uint8* GetData() const
+	{
+		return constantData.data();
+	}
+
+protected:
     std::vector<uint8> constantData;
 };
 
@@ -275,39 +275,34 @@ public:
 
 	virtual ~VulkanUniformBufferUploader();
 
-	uint8* GetCPUMappedPointer(UniformBufferUsage usage)
+	uint8* GetCPUMappedPointer()
 	{
-		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
-		return (uint8*)ringBuffer->GetMappedPointer();
+		return (uint8*)m_RingBuffer->GetMappedPointer();
 	}
 
-	uint64 AllocateMemory(UniformBufferUsage usage, uint64 size, uint32 alignment)
+	uint64 AllocateMemory(uint64 size, uint32 alignment)
 	{
-		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
-		return ringBuffer->AllocateMemory(size, alignment);
+		return m_RingBuffer->AllocateMemory(size, alignment);
 	}
 
-	VulkanSubBufferAllocator* GetBufferAllocator(UniformBufferUsage usage) const
+	VulkanSubBufferAllocator* GetBufferAllocator() const
 	{
-		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
-		return ringBuffer->GetBufferAllocator();
+		return m_RingBuffer->GetBufferAllocator();
 	}
 
-	VkBuffer GetBufferHandle(UniformBufferUsage usage) const
+	VkBuffer GetBufferHandle() const
 	{
-		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
-		return ringBuffer->GetHandle();
+		return m_RingBuffer->GetHandle();
 	}
 
-	inline uint32 GetBufferOffset(UniformBufferUsage usage) const
+	inline uint32 GetBufferOffset() const
 	{
-		VulkanRingBuffer* ringBuffer = m_RingBuffers[usage];
-		return ringBuffer->GetBufferOffset();
+		return m_RingBuffer->GetBufferOffset();
 	}
 
 protected:
 	VulkanDevice*			m_VulkanDevice;
-	VulkanRingBuffer*		m_RingBuffers[UniformBufferUsage::UniformBuffer_Count];
+	VulkanRingBuffer*		m_RingBuffer;
 };
 
 struct VertexStreamInfo

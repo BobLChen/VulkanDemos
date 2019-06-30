@@ -153,7 +153,7 @@ public:
 		m_SetLayouts = info.m_SetLayouts;
 	}
 
-	void AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers = nullptr);
+	int32 AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers = nullptr);
 	
 	void Compile();
 
@@ -168,52 +168,33 @@ protected:
 class VulkanLayout
 {
 public:
-	VulkanLayout();
+	VulkanLayout(const VulkanDescriptorSetsLayout& inSetsLayout);
 
 	virtual ~VulkanLayout();
 
 	virtual bool IsGfxLayout() const = 0;
-
-	inline const VulkanDescriptorSetsLayout& GetDescriptorSetsLayout() const
-	{
-		return m_SetsLayoutInfo;
-	}
 
 	inline VkPipelineLayout GetPipelineLayout() const
 	{
 		return m_PipelineLayout;
 	}
 
-	inline bool HasDescriptors() const
+	inline const VulkanDescriptorSetsLayout& GetSetsLayout() const
 	{
-		return m_SetsLayoutInfo.GetLayouts().size() > 0;
+		return m_SetsLayout;
 	}
-
-	inline uint32 GetLayoutHash() const
-	{
-		return m_SetsLayoutInfo.GetHash();
-	}
-
-	inline const VertexInputBindingInfo& GetVertexInputBindingInfo() const
-	{
-		return m_VertexInputBindingInfo;
-	}
-
-	void ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule);
 
 	void Compile();
 
 protected:
-
-	VkPipelineLayout               m_PipelineLayout;
-	VertexInputBindingInfo         m_VertexInputBindingInfo;
-	VulkanDescriptorSetsLayout m_SetsLayoutInfo;
+	VkPipelineLayout	m_PipelineLayout;
+	const VulkanDescriptorSetsLayout&	m_SetsLayout;
 };
 
 class VulkanGfxLayout : public VulkanLayout
 {
 public:
-	VulkanGfxLayout();
+	VulkanGfxLayout(const VulkanDescriptorSetsLayout& inSetsLayout);
 
 	~VulkanGfxLayout();
 
@@ -221,12 +202,15 @@ public:
 	{
 		return true;
 	}
+
+protected:
+	
 };
 
 class VulkanComputeLayout : public VulkanLayout
 {
 public:
-	VulkanComputeLayout();
+	VulkanComputeLayout(const VulkanDescriptorSetsLayout& inSetsLayout);
 
 	~VulkanComputeLayout();
 
@@ -393,9 +377,11 @@ class VulkanDescriptorSetWriter
 public:
 	VulkanDescriptorSetWriter()
 		: m_WriteDescriptorSet(nullptr)
+		, m_BindingToDynamicOffsetMap(nullptr)
+		, m_DynamicOffsets(nullptr)
 		, m_NumWrites(0)
 	{
-
+		
 	}
 
 	const VkWriteDescriptorSet* GetWriteDescriptors() const
@@ -416,7 +402,7 @@ public:
 		}
 	}
 
-	bool WriteDynamicUniformBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset)
+	bool WriteDynamicUniformBuffer(uint32 descriptorIndex, const VulkanSubBufferAllocator& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset)
 	{
 		return WriteBuffer<VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC>(descriptorIndex, bufferAllocation, offset, range, dynamicOffset);
 	} 
@@ -425,20 +411,28 @@ protected:
 	
 	friend class VulkanPipeline;
 
-	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo);
+	uint32 SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo, uint8* inBindingToDynamicOffsetMap);
 
 	template <VkDescriptorType DescriptorType>
-	bool WriteBuffer(uint32 descriptorIndex, const VulkanBufferSubAllocation& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset = 0)
+	bool WriteBuffer(uint32 descriptorIndex, const VulkanSubBufferAllocator& bufferAllocation, VkDeviceSize offset, VkDeviceSize range, uint32 dynamicOffset = 0)
 	{
-		VkDescriptorBufferInfo* bufferInfo = const_cast<VkDescriptorBufferInfo*>(m_WriteDescriptorSet[descriptorIndex].pBufferInfo);
+		VkDescriptorBufferInfo* bufferInfo = m_WriteDescriptorSet[descriptorIndex].pBufferInfo;
 		bufferInfo->buffer = bufferAllocation.GetHandle();
 		bufferInfo->offset = offset;
 		bufferInfo->range  = range;
+
+		if (DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+		{
+			const uint8 dynamicOffsetIndex = m_BindingToDynamicOffsetMap[descriptorIndex];
+			m_DynamicOffsets[dynamicOffsetIndex] = dynamicOffset;
+		}
+
 		return true;
 	}
 
 protected:
 	VkWriteDescriptorSet*	m_WriteDescriptorSet;
+	uint8*					m_BindingToDynamicOffsetMap;
 	uint32*			        m_DynamicOffsets;
 	uint32					m_NumWrites;
 

@@ -36,11 +36,11 @@ void MeshDrawCommand::GenerateHash()
 	hash = Crc::MemCrc32(&tempHash, sizeof(uint32), hash);
 }
 
-void MeshDrawCommand::Prepare()
+void MeshDrawCommand::Prepare(VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext)
 {
 	std::shared_ptr<VulkanDevice> device = Engine::Get()->GetVulkanDevice();
-	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material->GetPipelineStateInfo(), material->GetShader(), renderable->GetVertexBuffer()->GetVertexInputStateInfo());
-    
+	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material, renderable);
+    pipeline->UpdateDescriptorSets(material, cmdBuffer, cmdListContext);
 }
 
 void MeshDrawCommand::Reset()

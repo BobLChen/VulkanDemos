@@ -8,22 +8,14 @@
 
 enum
 {
-	PackedUniformsGlobalDrawRingBufferSize = 2 * 1024 * 1024,
-	PackedUniformsSIngleDrawRingBufferSize = 8 * 1024 * 1024,
-	PackedUniformsMultiDrawRingBufferSize  = 16 * 1024 * 1024,
+	PackedUniformsSIngleDrawRingBufferSize = 32 * 1024 * 1024,
 };
 
 // VulkanUniformBuffer
-VulkanUniformBuffer::VulkanUniformBuffer(const UniformBufferLayout& inLayout, const void* contents, UniformBufferUsage inUsage)
-    : UniformBuffer(inLayout)
+VulkanUniformBuffer::VulkanUniformBuffer(uint32 contentSize)
 {
-    if (inLayout.constantBufferSize > 0)
-    {
-        constantData.resize(inLayout.constantBufferSize);
-        if (contents)
-        {
-            memcpy(constantData.data(), contents, inLayout.constantBufferSize);
-        }
+    if (contentSize > 0) {
+        constantData.resize(contentSize);
     }
 }
 
@@ -79,14 +71,10 @@ void* VulkanRingBuffer::GetMappedPointer()
 VulkanUniformBufferUploader::VulkanUniformBufferUploader(VulkanDevice* device)
 	: m_VulkanDevice(device)
 {
-	m_RingBuffers[UniformBufferUsage::UniformBuffer_GlobalDraw] = new VulkanRingBuffer(device, PackedUniformsGlobalDrawRingBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	m_RingBuffers[UniformBufferUsage::UniformBuffer_SingleDraw] = new VulkanRingBuffer(device, PackedUniformsSIngleDrawRingBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	m_RingBuffers[UniformBufferUsage::UniformBuffer_MultiDraw]  = new VulkanRingBuffer(device, PackedUniformsMultiDrawRingBufferSize,  VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	m_RingBuffer = new VulkanRingBuffer(device, PackedUniformsSIngleDrawRingBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
 VulkanUniformBufferUploader::~VulkanUniformBufferUploader()
 {
-	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_GlobalDraw];
-	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_SingleDraw];
-	delete m_RingBuffers[UniformBufferUsage::UniformBuffer_MultiDraw];
+	delete m_RingBuffer;
 }

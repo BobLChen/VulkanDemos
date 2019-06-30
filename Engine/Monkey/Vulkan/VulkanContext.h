@@ -40,6 +40,11 @@ public:
 		return m_Device;
 	}
 
+	inline std::shared_ptr<VulkanQueue> GetQueue() const
+	{
+		return m_Queue;
+	}
+
 protected:
 	VulkanCommandListContext*		m_Immediate;
 	VulkanDevice*					m_Device;

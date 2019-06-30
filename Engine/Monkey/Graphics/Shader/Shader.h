@@ -5,6 +5,8 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"
+#include "Vulkan/VulkanDescriptorInfo.h"
+#include "Vulkan/VulkanResources.h"
 
 #include "Utils/Crc.h"
 
@@ -12,6 +14,17 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+struct ShaderParamInfo
+{
+	std::string			name;
+	uint32				set;
+	uint32				binding;
+	uint32				bufferSize;
+	VkDescriptorType	descriptorType;
+	VkShaderStageFlags	stageFlags;
+	int32				descriptorIndex;
+};
 
 class ShaderModule
 {
@@ -116,19 +129,48 @@ public:
         return m_ShaderCreateInfos;
     }
 
-private:
-	uint32 m_Hash;
-	
+	inline const VertexInputBindingInfo& GetVertexInputBindingInfo() const
+	{
+		return m_VertexInputBindingInfo;
+	}
+
+	inline const VulkanDescriptorSetsLayout& GetDescriptorSetsLayout() const
+	{
+		return m_SetsLayoutInfo;
+	}
+
+	inline const std::vector<ShaderParamInfo>& GetParams()
+	{
+		return m_Params;
+	}
+
+	void Compile();
+
 protected:
 
-	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;
+	typedef std::vector<ShaderParamInfo> ShaderParamArray;
 
-	std::shared_ptr<ShaderModule> m_VertShaderModule;
-	std::shared_ptr<ShaderModule> m_FragShaderModule;
-	std::shared_ptr<ShaderModule> m_GeomShaderModule;
-	std::shared_ptr<ShaderModule> m_CompShaderModule;
-	std::shared_ptr<ShaderModule> m_TescShaderModule;
-	std::shared_ptr<ShaderModule> m_TeseShaderModule;
+	void GenerateHash();
+
+	void ProcessShaderModule(std::shared_ptr<ShaderModule> shaderModule);
+
+protected:
+
+	typedef std::vector<VkPipelineShaderStageCreateInfo> ShaderStageCreateInfoArray;
+	
+	uint32							m_Hash;
+	VulkanDescriptorSetsLayout		m_SetsLayoutInfo;
+	VertexInputBindingInfo			m_VertexInputBindingInfo;
+	ShaderParamArray				m_Params;
+
+	std::shared_ptr<ShaderModule>	m_VertShaderModule;
+	std::shared_ptr<ShaderModule>	m_FragShaderModule;
+	std::shared_ptr<ShaderModule>	m_GeomShaderModule;
+	std::shared_ptr<ShaderModule>	m_CompShaderModule;
+	std::shared_ptr<ShaderModule>	m_TescShaderModule;
+	std::shared_ptr<ShaderModule>	m_TeseShaderModule;
     
-    std::vector<VkPipelineShaderStageCreateInfo> m_ShaderCreateInfos;
+    ShaderStageCreateInfoArray		m_ShaderCreateInfos;
+
+	static std::unordered_map<std::string, std::shared_ptr<ShaderModule>> g_ShaderModules;
 };

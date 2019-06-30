@@ -89,7 +89,7 @@ void VulkanDescriptorSetsLayout::Compile()
     m_DescriptorSetAllocateInfo.pSetLayouts        = m_LayoutHandles.data();
 }
 
-void VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
+int32 VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, VkSampler* samplers)
 {
 	m_LayoutTypes[descriptorType] += 1;
 
@@ -117,11 +117,14 @@ void VulkanDescriptorSetsLayout::AddDescriptor(uint32 set, uint32 binding, VkDes
 	bindingInfo.pImmutableSamplers = samplers;
 
 	setLayout->layoutBindings.push_back(bindingInfo);
+
+	return setLayout->layoutBindings.size() - 1;
 }
 
 // VulkanLayout
-VulkanLayout::VulkanLayout()
+VulkanLayout::VulkanLayout(const VulkanDescriptorSetsLayout& inSetsLayout)
 	: m_PipelineLayout(VK_NULL_HANDLE)
+	, m_SetsLayout(inSetsLayout)
 {
 
 }
@@ -135,65 +138,9 @@ VulkanLayout::~VulkanLayout()
 	}
 }
 
-void VulkanLayout::ProcessBindingsForStage(std::shared_ptr<ShaderModule> shaderModule)
-{
-    if (shaderModule == nullptr)
-    {
-        return;
-    }
-    
-	// 反编译Shader获取相关信息
-	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
-	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-	
-    // 获取Uniform Buffer信息
-    for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
-    {
-        spirv_cross::Resource& res      = resources.uniform_buffers[i];
-        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
-        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
-        const std::string &varName      = compiler.get_name(res.id);
-
-        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
-		// 直接使用Dynamic的UniformBuffer
-		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, shaderModule->GetStageFlags());
-    }
-    
-    // 获取Texture
-    for (int32 i = 0; i < resources.sampled_images.size(); ++i)
-    {
-        spirv_cross::Resource& res      = resources.sampled_images[i];
-        spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
-        spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
-        const std::string&      varName = compiler.get_name(res.id);
-
-        int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-		int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-
-		m_SetsLayoutInfo.AddDescriptor(set, binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, shaderModule->GetStageFlags());
-    }
-
-	// 获取input信息
-	if (shaderModule->GetStageFlags() == VK_SHADER_STAGE_VERTEX_BIT)
-	{
-		for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
-		{
-			spirv_cross::Resource& res = resources.stage_inputs[i];
-			const std::string &varName = compiler.get_name(res.id);
-			VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
-			m_VertexInputBindingInfo.AddBinding(attribute, compiler.get_decoration(res.id, spv::DecorationLocation));
-		}
-		m_VertexInputBindingInfo.GenerateHash();
-	}
-}
-
 void VulkanLayout::Compile()
 {
-	m_SetsLayoutInfo.Compile();
-
-	const std::vector<VkDescriptorSetLayout>& layoutHandles = m_SetsLayoutInfo.GetHandles();
+	const std::vector<VkDescriptorSetLayout>& layoutHandles = m_SetsLayout.GetHandles();
 
 	VkPipelineLayoutCreateInfo pipeLayoutInfo;
 	ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
@@ -203,7 +150,8 @@ void VulkanLayout::Compile()
 }
 
 // VulkanGfxLayout
-VulkanGfxLayout::VulkanGfxLayout()
+VulkanGfxLayout::VulkanGfxLayout(const VulkanDescriptorSetsLayout& inSetsLayout)
+	: VulkanLayout(inSetsLayout)
 {
 
 }
@@ -214,7 +162,8 @@ VulkanGfxLayout::~VulkanGfxLayout()
 }
 
 // VulkanComputeLayout
-VulkanComputeLayout::VulkanComputeLayout()
+VulkanComputeLayout::VulkanComputeLayout(const VulkanDescriptorSetsLayout& inSetsLayout)
+	: VulkanLayout(inSetsLayout)
 {
 
 }
@@ -462,10 +411,11 @@ void VulkanDescriptorPoolsManager::Destroy()
 }
 
 // VulkanDescriptorSetWriter
-uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo)
+uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDescriptorSetLayoutBinding>& bindings, VkWriteDescriptorSet* inWriteDescriptors, VkDescriptorImageInfo* inImageInfo, VkDescriptorBufferInfo* inBufferInfo, uint8* inBindingToDynamicOffsetMap)
 {
     m_NumWrites = bindings.size();
 	m_WriteDescriptorSet = inWriteDescriptors;
+	m_BindingToDynamicOffsetMap = inBindingToDynamicOffsetMap;
     
 	int32 dynamicOffsetIndex = 0;
 	for (int32 i = 0; i < m_NumWrites; ++i)
@@ -486,7 +436,7 @@ uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDesc
 		switch (setBinding.descriptorType)
 		{
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			++dynamicOffsetIndex;
+			m_BindingToDynamicOffsetMap[i] = dynamicOffsetIndex++;
 			m_WriteDescriptorSet->pBufferInfo = inBufferInfo++;
 			break;
 		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
@@ -507,6 +457,8 @@ uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDesc
 			MLOGE("Unsupported descriptor type %d", (int32)setBinding.descriptorType);
 			break;
 		}
+
+		++m_WriteDescriptorSet;
 	}
     
 	return dynamicOffsetIndex;

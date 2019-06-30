@@ -1,8 +1,11 @@
 #include "Graphics/Shader/Shader.h"
+#include "Graphics/Material/Material.h"
+#include "Graphics/Renderer/Renderable.h"
 
 #include "VulkanPipeline.h"
 #include "VulkanDescriptorInfo.h"
 #include "VulkanDevice.h"
+#include "VulkanContext.h"
 #include "Engine.h"
 
 // VulkanPipeline
@@ -24,49 +27,32 @@ VulkanPipeline::~VulkanPipeline()
 
 void VulkanPipeline::CreateDescriptorWriteInfos()
 {
-	const VulkanDescriptorSetsLayout& setsLayout = m_Layout->GetDescriptorSetsLayout();
-    
+	const VulkanDescriptorSetsLayout& setsLayout = m_Layout->GetSetsLayout();
+    const std::vector<VulkanDescriptorSetLayoutInfo*>& setLayoutInfos = setsLayout.GetLayouts();
+
 	int32 numBufferInfos = 0;
 	int32 numImageInfos  = 0;
 	int32 numWrites      = 0;
     
-	for (uint32 typeIndex = VK_DESCRIPTOR_TYPE_BEGIN_RANGE; typeIndex <= VK_DESCRIPTOR_TYPE_END_RANGE; ++typeIndex)
+	for (int32 set = 0; set < setLayoutInfos.size(); ++set)
 	{
-		VkDescriptorType descriptorType =(VkDescriptorType)typeIndex;
-		uint32 numTypesUsed = setsLayout.GetTypesUsed(descriptorType);
-		if (numTypesUsed == 0) {
-			continue;
-		}
-		numWrites += numTypesUsed;
-        
-		switch (descriptorType)
-		{
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			numBufferInfos += numTypesUsed;
-			break;
-        case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-            numImageInfos += numTypesUsed;
-            break;
-		default:
-			break;
-		}
+		numBufferInfos += setLayoutInfos[set]->numBuffersInfo;
+		numImageInfos  += setLayoutInfos[set]->numImagesInfo;
 	}
+
+	numWrites = numBufferInfos + numImageInfos;
     
-	if (numBufferInfos > 0) {
-		m_DSWriteContainer.descriptorBufferInfo.resize(numBufferInfos);
-	}
-    if (numImageInfos > 0) {
-        m_DSWriteContainer.descriptorImageInfo.resize(numImageInfos);
-    }
+	m_DSWriteContainer.descriptorBufferInfo.resize(numBufferInfos);
+    m_DSWriteContainer.descriptorImageInfo.resize(numImageInfos);
 	m_DSWriteContainer.descriptorWrites.resize(numWrites);
-    
-	const std::vector<VulkanDescriptorSetLayoutInfo*>& setLayoutInfos = setsLayout.GetLayouts();
+	m_DSWriteContainer.bindingToDynamicOffsetMap.resize(numWrites);
 	m_DSWriter.resize(setLayoutInfos.size());
     
 	VkWriteDescriptorSet* currentWriteSet     = m_DSWriteContainer.descriptorWrites.data();
 	VkDescriptorImageInfo* currentImageInfo   = m_DSWriteContainer.descriptorImageInfo.data();
 	VkDescriptorBufferInfo* currentBufferInfo = m_DSWriteContainer.descriptorBufferInfo.data();
-	
+	uint8* currentBindingToDynamicOffsetMap   = m_DSWriteContainer.bindingToDynamicOffsetMap.data();
+
     std::vector<uint32> dynamicOffsetsStart(setLayoutInfos.size());
     uint32 totalNumDynamicOffsets = 0;
     
@@ -75,17 +61,17 @@ void VulkanPipeline::CreateDescriptorWriteInfos()
         dynamicOffsetsStart[set] = totalNumDynamicOffsets;
         
 		VulkanDescriptorSetLayoutInfo* setLayoutInfo = setLayoutInfos[set];
-        uint32 numDynamicOffsets = m_DSWriter[set].SetupDescriptorWrites(setLayoutInfo->layoutBindings, currentWriteSet, currentImageInfo, currentBufferInfo);
+        uint32 numDynamicOffsets = m_DSWriter[set].SetupDescriptorWrites(setLayoutInfo->layoutBindings, currentWriteSet, currentImageInfo, currentBufferInfo, currentBindingToDynamicOffsetMap);
         
         totalNumDynamicOffsets += numDynamicOffsets;
-        currentWriteSet        += setLayoutInfo->numTypes;
-        currentImageInfo       += setLayoutInfo->numImagesInfo;
-        currentBufferInfo      += setLayoutInfo->numBuffersInfo;
+        currentWriteSet += setLayoutInfo->numTypes;
+        currentImageInfo += setLayoutInfo->numImagesInfo;
+        currentBufferInfo += setLayoutInfo->numBuffersInfo;
+		currentBindingToDynamicOffsetMap += setLayoutInfo->numTypes;
 	}
     
     m_DynamicOffsets.resize(totalNumDynamicOffsets);
-    for (int32 set = 0; set < setLayoutInfos.size(); ++set)
-    {
+    for (int32 set = 0; set < setLayoutInfos.size(); ++set) {
         m_DSWriter[set].m_DynamicOffsets = m_DynamicOffsets.data() + dynamicOffsetsStart[set];
     }
     
@@ -101,6 +87,33 @@ VulkanGfxPipeline::VulkanGfxPipeline()
 VulkanGfxPipeline::~VulkanGfxPipeline()
 {
 
+}
+
+bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material, VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext)
+{
+	VulkanUniformBufferUploader* uniformBufferUploader = cmdListContext->GetUniformBufferUploader();
+	uint8* cpuRingBufferBase = uniformBufferUploader->GetCPUMappedPointer();
+	const VkDeviceSize uboAlignment = Engine::Get()->GetVulkanDevice()->GetLimits().minUniformBufferOffsetAlignment;
+	const std::vector<VulkanDescriptorSetLayoutInfo*>& setsLayout = m_Layout->GetSetsLayout().GetLayouts();
+	const std::vector<Material::UniformBufferParam>& ubParams = material->GetUniformBufferParams();
+
+	for (int32 i = 0; i < ubParams.size(); ++i)
+	{
+		int32 set     = ubParams[i].set;
+		int32 binding = ubParams[i].binding;
+		int32 ubSize  = ubParams[i].buffer->GetContentSize();
+		uint64 ringOffset = uniformBufferUploader->AllocateMemory(ubSize, uboAlignment);
+		
+		memcpy(cpuRingBufferBase + ringOffset, ubParams[i].buffer->GetData(), ubSize);
+
+		m_DSWriter[set].WriteDynamicUniformBuffer(ubParams[i].descriptorIndex, *(uniformBufferUploader->GetBufferAllocator()), uniformBufferUploader->GetBufferOffset(), ubSize, ringOffset);
+	}
+
+	// Engine::Get()->GetVulkanDevice()->AcquirePoolSetAndDescriptors();
+	
+
+
+	return true;
 }
 
 // VulkanPipelineStateManager
@@ -148,13 +161,7 @@ VulkanGfxLayout* VulkanPipelineStateManager::GetGfxLayout(std::shared_ptr<Shader
         return it->second;
     }
     
-    VulkanGfxLayout* layout = new VulkanGfxLayout();
-    layout->ProcessBindingsForStage(shader->GetVertModule());
-    layout->ProcessBindingsForStage(shader->GetCompModule());
-    layout->ProcessBindingsForStage(shader->GetGeomModule());
-    layout->ProcessBindingsForStage(shader->GetTescModule());
-    layout->ProcessBindingsForStage(shader->GetTeseModule());
-    layout->ProcessBindingsForStage(shader->GetFragModule());
+    VulkanGfxLayout* layout = new VulkanGfxLayout(shader->GetDescriptorSetsLayout());
     layout->Compile();
     
     m_GfxLayoutCache.insert(std::make_pair(key, layout));
@@ -162,9 +169,11 @@ VulkanGfxLayout* VulkanPipelineStateManager::GetGfxLayout(std::shared_ptr<Shader
     return layout;
 }
 
-VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
+VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(std::shared_ptr<Material> material, std::shared_ptr<Renderable> renderable)
 {
-	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), shader->GetHash());
+	const VulkanPipelineStateInfo& pipelineStateInfo = material->GetPipelineStateInfo();
+	const VertexInputDeclareInfo& inputInfo          = renderable->GetVertexBuffer()->GetVertexInputStateInfo();
+	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), material->GetShader()->GetHash());
 	key = Crc::MemCrc32(&key, sizeof(uint32), inputInfo.GetHash());
 	
 	auto it = m_GfxPipelineCache.find(key);
@@ -172,19 +181,21 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(const VulkanPipeli
 		return it->second;
 	}
     
-    VulkanGfxLayout* layout = GetGfxLayout(shader);
+    VulkanGfxLayout* layout = GetGfxLayout(material->GetShader());
     VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
-    pipeline->m_Layout   = layout;
-    pipeline->m_Pipeline = GetVulkanGfxPipeline(pipelineStateInfo, layout, shader, inputInfo);
+    pipeline->m_Layout     = layout;
+    pipeline->m_Pipeline   = GetVulkanGfxPipeline(pipelineStateInfo, layout, material->GetShader(), inputInfo);
     pipeline->CreateDescriptorWriteInfos();
     
+	MLOG("CreateGraphicsPipeline [%ud]", key);
+
     m_GfxPipelineCache.insert(std::make_pair(key, pipeline));
 	return pipeline;
 }
 
 VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
 {
-	const VertexInputBindingInfo& inputBindingInfo = gfxLayout->GetVertexInputBindingInfo();
+	const VertexInputBindingInfo& inputBindingInfo = shader->GetVertexInputBindingInfo();
 	const std::vector<VertexAttribute>& attributes = inputBindingInfo.GetAttributes();
     
 	std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;

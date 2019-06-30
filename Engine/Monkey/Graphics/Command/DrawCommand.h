@@ -12,6 +12,8 @@
 #include <memory>
 #include <vector>
 
+class VulkanCommandListContext;
+
 class MeshDrawCommand
 {
 public:
@@ -21,7 +23,7 @@ public:
 
 	void GenerateHash();
 
-	void Prepare();
+	void Prepare(VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext);
 
 	void Reset();
 

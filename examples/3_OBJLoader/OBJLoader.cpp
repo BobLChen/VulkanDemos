@@ -193,7 +193,7 @@ private:
         m_DrawCommand = std::make_shared<MeshDrawCommand>();
         m_DrawCommand->material   = m_Material;
         m_DrawCommand->renderable = m_Renderable;
-        m_DrawCommand->Prepare();
+        m_DrawCommand->Prepare(m_DrawCmdBuffers[0], &(GetVulkanRHI()->GetDevice()->GetImmediateContext()));
         
         MLOG("DrawCommand Prepare done.")
 	}
