@@ -5,14 +5,18 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 class VulkanCommandListContext;
 class VulkanDevice;
 class VulkanQueue;
+class VulkanFence;
 class VulkanDescriptorPoolSetContainer;
 class VulkanCommandBufferPool;
 class VulkanCommandBufferManager;
 class VulkanSemaphore;
+class VulkanDescriptorSetsLayout;
+class VulkanTypedDescriptorPoolSet;
 
 class VulkanCmdBuffer
 {
@@ -104,17 +108,51 @@ public:
 		return m_State;
 	}
 
+	inline VulkanFence* GetFence() const
+	{
+		return m_Fence;
+	}
+
+	void AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore);
+
+	void Begin();
+
+	void End();
+
+	bool AcquirePoolSetAndDescriptorsIfNeeded(const class VulkanDescriptorSetsLayout& layout, bool needDescriptors, VkDescriptorSet* outDescriptors);
+
+protected:
+
+	void RefreshFenceStatus();
+
+	void AcquirePoolSetContainer();
+
+	void AllocMemory();
+
+	void FreeMemory();
+
 protected:
 
 	VkViewport					m_Viewport;
 	VkRect2D					m_Scissor;
 	uint32						m_StencilRef;
 	State						m_State;
+	bool						m_IsUploadOnly;
 
 	VulkanCommandBufferPool*	m_CommandBufferPool;
 
 	VulkanDevice*				m_VulkanDevice;
 	VkCommandBuffer				m_Handle;
+
+	VulkanFence*				m_Fence;
+
+	VulkanDescriptorPoolSetContainer*   m_DescriptorPoolSetContainer;
+
+	std::vector<VkPipelineStageFlags>	m_WaitFlags;
+	std::vector<VulkanSemaphore*>		m_WaitSemaphores;
+	std::vector<VulkanSemaphore*>		m_SubmittedWaitSemaphores;
+
+	std::unordered_map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPoolSets;
 };
 
 class VulkanCommandBufferPool
@@ -124,7 +162,9 @@ public:
 
 	~VulkanCommandBufferPool();
 
-	void FreeUnusedCmdBuffers(VulkanQueue* queue);
+	void RefreshFenceStatus(VulkanCmdBuffer* skipCmdBuffer = nullptr);
+
+	void FreeUnusedCmdBuffers(std::shared_ptr<VulkanQueue> queue);
 
 	inline VkCommandPool GetHandle() const
 	{
