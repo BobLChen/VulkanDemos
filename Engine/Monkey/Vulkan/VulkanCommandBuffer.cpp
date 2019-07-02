@@ -1,4 +1,4 @@
-﻿#include "VulkanCommandBuffer.h"
+#include "VulkanCommandBuffer.h"
 #include "VulkanDevice.h"
 #include "VulkanMemory.h"
 #include "VulkanFence.h"
@@ -45,7 +45,14 @@ VulkanCmdBuffer::~VulkanCmdBuffer()
 
 void VulkanCmdBuffer::MarkSemaphoresAsSubmitted()
 {
+    m_WaitFlags.clear();
+    m_SubmittedWaitSemaphores = m_WaitSemaphores;
+    m_WaitSemaphores.clear();
+}
 
+void VulkanCmdBuffer::RefreshSubmittedFenceCounter()
+{
+    m_SubmittedFenceCounter = m_FenceSignaledCounter;
 }
 
 void VulkanCmdBuffer::AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore)
@@ -291,7 +298,7 @@ void VulkanCommandBufferManager::SubmitUploadCmdBuffer(uint32 numSignalSemaphore
 	if (!m_UploadCmdBuffer->IsSubmitted() && m_UploadCmdBuffer->HasBegun())
 	{
 		m_UploadCmdBuffer->End();
-		// m_Queue->Submit(m_UploadCmdBuffer, numSignalSemaphores, signalSemaphores);
+		m_Queue->Submit(m_UploadCmdBuffer, numSignalSemaphores, signalSemaphores);
 	}
 	m_UploadCmdBuffer = nullptr;
 }
@@ -303,11 +310,11 @@ void VulkanCommandBufferManager::SubmitActiveCmdBuffer(VulkanSemaphore* signalSe
 		m_ActiveCmdBuffer->End();
 		if (signalSemaphore) 
 		{
-			// m_Queue->Submit(m_ActiveCmdBuffer, signalSemaphore->GetHandle());
+			m_Queue->Submit(m_ActiveCmdBuffer, signalSemaphore->GetHandle());
 		}
 		else 
 		{
-			// m_Queue->Submit(m_ActiveCmdBuffer);
+			m_Queue->Submit(m_ActiveCmdBuffer);
 		}
 	}
 	m_ActiveCmdBuffer = nullptr;

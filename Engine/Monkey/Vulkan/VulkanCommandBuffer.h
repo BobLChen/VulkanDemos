@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "VulkanPlatform.h"
@@ -43,7 +43,12 @@ public:
 
 public:
 
-	VulkanCommandBufferPool* GetOwner()
+    inline void SetState(State state)
+    {
+        m_State = state;
+    }
+    
+	inline const VulkanCommandBufferPool* GetOwner() const
 	{
 		return m_CommandBufferPool;
 	}
@@ -117,7 +122,17 @@ public:
 	{
 		return m_Fence;
 	}
-
+    
+    inline const std::vector<VulkanSemaphore*>& GetWaitSemaphores() const
+    {
+        return m_WaitSemaphores;
+    }
+    
+    inline const std::vector<VkPipelineStageFlags>& GetWaitFlags() const
+    {
+        return m_WaitFlags;
+    }
+    
 	void AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore);
 
 	void Begin();
@@ -137,7 +152,9 @@ protected:
 	void FreeMemory();
 
 	void MarkSemaphoresAsSubmitted();
-
+    
+    void RefreshSubmittedFenceCounter();
+    
 protected:
 
 	VkViewport					m_Viewport;
