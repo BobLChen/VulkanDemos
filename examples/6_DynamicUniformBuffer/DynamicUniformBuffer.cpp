@@ -288,7 +288,7 @@ private:
             
             VkWriteDescriptorSet writeDescriptorSet;
             ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-            writeDescriptorSet.dstSet            = m_DescriptorSets[i];
+            writeDescriptorSet.dstSet          = m_DescriptorSets[i];
             writeDescriptorSet.descriptorCount = 1;
             writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
             writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->GetDescriptorBufferInfo());

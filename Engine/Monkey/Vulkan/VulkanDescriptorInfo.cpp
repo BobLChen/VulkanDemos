@@ -280,7 +280,7 @@ bool VulkanTypedDescriptorPoolSet::AllocateDescriptorSets(const VulkanDescriptor
 
 	if (layoutHandles.size() > 0)
 	{
-		while (m_PoolsList[m_PoolsCount]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets))
+		while (!m_PoolsList[m_PoolsCount]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets))
 		{
 			GetFreePool(true);
 		}

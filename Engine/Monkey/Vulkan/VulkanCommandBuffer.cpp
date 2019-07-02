@@ -11,6 +11,8 @@ VulkanCmdBuffer::VulkanCmdBuffer(VulkanDevice* inDevice, VulkanCommandBufferPool
 	: m_StencilRef(0)
 	, m_State(State::NotAllocated)
 	, m_IsUploadOnly(inIsUploadOnly)
+	, m_FenceSignaledCounter(0)
+	, m_SubmittedFenceCounter(0)
 	, m_CommandBufferPool(inCommandBufferPool)
 	, m_VulkanDevice(inDevice)
 	, m_Handle(VK_NULL_HANDLE)
@@ -41,6 +43,11 @@ VulkanCmdBuffer::~VulkanCmdBuffer()
 	}
 }
 
+void VulkanCmdBuffer::MarkSemaphoresAsSubmitted()
+{
+
+}
+
 void VulkanCmdBuffer::AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore)
 {
 	m_WaitFlags.push_back(inWaitFlags);
@@ -49,6 +56,11 @@ void VulkanCmdBuffer::AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanS
 
 void VulkanCmdBuffer::Begin()
 {
+	if (m_State != State::ReadyForBegin) {
+		MLOGE("State not ready for begin.");
+		return;
+	}
+
 	m_State = State::IsInsideBegin;
 
 	VkCommandBufferBeginInfo cmdBufBeginInfo;
@@ -88,10 +100,6 @@ void VulkanCmdBuffer::RefreshFenceStatus()
 		VulkanFenceManager* fenceManager = m_Fence->GetOwner();
 		if (fenceManager->IsFenceSignaled(m_Fence))
 		{
-			for (int32 i = 0; i < m_SubmittedWaitSemaphores.size(); ++i)
-			{
-				
-			}
 			m_SubmittedWaitSemaphores.clear();
 
 			memset(&m_Viewport, 0, sizeof(m_Viewport));
@@ -100,6 +108,8 @@ void VulkanCmdBuffer::RefreshFenceStatus()
 
 			vkResetCommandBuffer(m_Handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 			m_Fence->GetOwner()->ResetFence(m_Fence);
+
+			m_FenceSignaledCounter += 1;
 
 			m_TypedDescriptorPoolSets.clear();
 			m_VulkanDevice->GetDescriptorPoolsManager().ReleasePoolSet(*m_DescriptorPoolSetContainer);
@@ -122,7 +132,7 @@ void VulkanCmdBuffer::AllocMemory()
 
 	VkCommandBufferAllocateInfo cmdBufferInfo;
 	ZeroVulkanStruct(cmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-	cmdBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	cmdBufferInfo.commandBufferCount = 1;
 	cmdBufferInfo.commandPool        = m_CommandBufferPool->GetHandle();
 	vkAllocateCommandBuffers(m_VulkanDevice->GetInstanceHandle(), &cmdBufferInfo, &m_Handle);
@@ -142,7 +152,7 @@ void VulkanCmdBuffer::FreeMemory()
 
 	vkFreeCommandBuffers(m_VulkanDevice->GetInstanceHandle(), m_CommandBufferPool->GetHandle(), 1, &m_Handle);
 	m_Handle = VK_NULL_HANDLE;
-	m_State = State::NotAllocated;
+	m_State  = State::NotAllocated;
 }
 
 // VulkanCommandBufferPool

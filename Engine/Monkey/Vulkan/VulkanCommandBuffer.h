@@ -83,6 +83,11 @@ public:
 		return m_Handle;
 	}
 
+	inline volatile uint64 GetFenceSignaledCounter() const
+	{
+		return m_FenceSignaledCounter;
+	}
+
 	inline const VulkanDevice* GetDevice() const
 	{
 		return m_VulkanDevice;
@@ -131,6 +136,8 @@ protected:
 
 	void FreeMemory();
 
+	void MarkSemaphoresAsSubmitted();
+
 protected:
 
 	VkViewport					m_Viewport;
@@ -138,6 +145,8 @@ protected:
 	uint32						m_StencilRef;
 	State						m_State;
 	bool						m_IsUploadOnly;
+	uint64						m_FenceSignaledCounter;
+	uint64						m_SubmittedFenceCounter;
 
 	VulkanCommandBufferPool*	m_CommandBufferPool;
 
