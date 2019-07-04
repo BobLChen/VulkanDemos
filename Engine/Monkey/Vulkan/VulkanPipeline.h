@@ -16,6 +16,7 @@ class VulkanCommandListContext;
 class Shader;
 class Material;
 class Renderable;
+class VulkanCmdBuffer;
 
 struct VulkanPipelineStateInfo
 {
@@ -126,8 +127,10 @@ public:
 
 	~VulkanGfxPipeline();
 
-	bool UpdateDescriptorSets(std::shared_ptr<Material> material, VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext);
+	bool UpdateDescriptorSets(std::shared_ptr<Material> material, VulkanCmdBuffer* cmdBuffer, VulkanCommandListContext* cmdListContext);
     
+	void BindDescriptorSets(VkCommandBuffer cmdBuffer);
+
 protected:
     
 };

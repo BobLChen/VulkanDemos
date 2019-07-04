@@ -150,6 +150,7 @@ public:
 		}
 
 		uint32 num = resources.size();
+		
 		while (num >= 4)
 		{
 			tempHash ^= (resources[--num].memberType << 0);

@@ -4,6 +4,7 @@
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanDescriptorInfo.h"
 #include "Vulkan/VulkanPipeline.h"
+#include "Vulkan/VulkanCommandBuffer.h"
 
 #include "Utils/Crc.h"
 
@@ -36,11 +37,12 @@ void MeshDrawCommand::GenerateHash()
 	hash = Crc::MemCrc32(&tempHash, sizeof(uint32), hash);
 }
 
-void MeshDrawCommand::Prepare(VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext)
+void MeshDrawCommand::Prepare(VulkanCmdBuffer* cmdBuffer, VulkanCommandListContext* cmdListContext)
 {
 	std::shared_ptr<VulkanDevice> device = Engine::Get()->GetVulkanDevice();
 	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material, renderable);
     pipeline->UpdateDescriptorSets(material, cmdBuffer, cmdListContext);
+	pipeline->BindDescriptorSets(cmdBuffer->GetHandle());
 }
 
 void MeshDrawCommand::Reset()

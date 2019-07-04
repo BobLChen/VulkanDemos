@@ -6,6 +6,7 @@
 #include "VulkanDescriptorInfo.h"
 #include "VulkanRHI.h"
 #include "VulkanResources.h"
+#include "VulkanCommandBuffer.h"
 
 // VulkanCommandListContext
 VulkanCommandListContext::VulkanCommandListContext(VulkanDevice* inDevice, std::shared_ptr<VulkanQueue> inQueue, VulkanCommandListContext* inImmediate)
@@ -13,8 +14,16 @@ VulkanCommandListContext::VulkanCommandListContext(VulkanDevice* inDevice, std::
 	, m_Device(inDevice)
 	, m_Queue(inQueue)
 	, m_UniformUploader(nullptr)
+	, m_CommandBufferManager(nullptr)
 {
 	m_UniformUploader = new VulkanUniformBufferUploader(inDevice);
+	m_CommandBufferManager = new VulkanCommandBufferManager(inDevice, this);
+	if (IsImmediate())
+	{
+		m_CommandBufferManager->GetActiveCmdBuffer();
+		m_CommandBufferManager->SubmitActiveCmdBuffer();
+		m_CommandBufferManager->NewActiveCommandBuffer();
+	}
 }
 
 VulkanCommandListContext::~VulkanCommandListContext()

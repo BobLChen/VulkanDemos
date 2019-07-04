@@ -48,7 +48,7 @@ public:
         m_State = state;
     }
     
-	inline const VulkanCommandBufferPool* GetOwner() const
+	inline VulkanCommandBufferPool* GetOwner() const
 	{
 		return m_CommandBufferPool;
 	}
@@ -139,7 +139,7 @@ public:
 
 	void End();
 
-	bool AcquirePoolSetAndDescriptorsIfNeeded(const class VulkanDescriptorSetsLayout& layout, bool needDescriptors, VkDescriptorSet* outDescriptors);
+	bool AcquirePoolSetAndDescriptorsIfNeeded(const class VulkanDescriptorSetsLayout& layout, VkDescriptorSet* outDescriptors);
 
 protected:
 

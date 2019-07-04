@@ -80,10 +80,10 @@ void VulkanCmdBuffer::Begin()
 void VulkanCmdBuffer::End()
 {
 	vkEndCommandBuffer(m_Handle);
-	m_State == State::HasEnded;
+	m_State = State::HasEnded;
 }
 
-bool VulkanCmdBuffer::AcquirePoolSetAndDescriptorsIfNeeded(const class VulkanDescriptorSetsLayout& layout, bool needDescriptors, VkDescriptorSet* outDescriptors)
+bool VulkanCmdBuffer::AcquirePoolSetAndDescriptorsIfNeeded(const class VulkanDescriptorSetsLayout& layout, VkDescriptorSet* outDescriptors)
 {
 	if (!m_DescriptorPoolSetContainer) {
 		AcquirePoolSetContainer();

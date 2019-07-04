@@ -6,6 +6,7 @@
 #include "VulkanDescriptorInfo.h"
 #include "VulkanDevice.h"
 #include "VulkanContext.h"
+#include "VulkanCommandBuffer.h"
 #include "Engine.h"
 
 // VulkanPipeline
@@ -89,7 +90,7 @@ VulkanGfxPipeline::~VulkanGfxPipeline()
 
 }
 
-bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material, VkCommandBuffer cmdBuffer, VulkanCommandListContext* cmdListContext)
+bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material, VulkanCmdBuffer* cmdBuffer, VulkanCommandListContext* cmdListContext)
 {
 	VulkanUniformBufferUploader* uniformBufferUploader = cmdListContext->GetUniformBufferUploader();
 	uint8* cpuRingBufferBase = uniformBufferUploader->GetCPUMappedPointer();
@@ -109,11 +110,31 @@ bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material,
 		m_DSWriter[set].WriteDynamicUniformBuffer(ubParams[i].descriptorIndex, *(uniformBufferUploader->GetBufferAllocator()), uniformBufferUploader->GetBufferOffset(), ubSize, ringOffset);
 	}
 
-	// Engine::Get()->GetVulkanDevice()->AcquirePoolSetAndDescriptors();
-	
+	if (cmdBuffer->AcquirePoolSetAndDescriptorsIfNeeded(m_Layout->GetSetsLayout(), m_DescriptorSetHandles.data()))
+	{
+		for (int32 i = 0; i < setsLayout.size(); ++i)
+		{
+			m_DSWriter[i].SetDescriptorSet(m_DescriptorSetHandles[i]);
+		}
 
+		vkUpdateDescriptorSets(cmdBuffer->GetDevice()->GetInstanceHandle(), m_DSWriteContainer.descriptorWrites.size(), m_DSWriteContainer.descriptorWrites.data(), 0, nullptr);
+	}
 
 	return true;
+}
+
+void VulkanGfxPipeline::BindDescriptorSets(VkCommandBuffer cmdBuffer)
+{
+	vkCmdBindDescriptorSets(
+		cmdBuffer, 
+		VK_PIPELINE_BIND_POINT_COMPUTE, 
+		m_Layout->GetPipelineLayout(), 
+		0, 
+		m_DescriptorSetHandles.size(), 
+		m_DescriptorSetHandles.data(), 
+		m_DynamicOffsets.size(), 
+		m_DynamicOffsets.data()
+	);
 }
 
 // VulkanPipelineStateManager

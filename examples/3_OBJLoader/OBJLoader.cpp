@@ -7,6 +7,8 @@
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanMemory.h"
+#include "Vulkan/VulkanCommandBuffer.h"
+#include "Vulkan/VulkanContext.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "Graphics/Data/VertexBuffer.h"
@@ -58,7 +60,6 @@ public:
 		WaitFences(m_ImageIndex);
 		Release();
         DestroyAssets();
-		DestroyUniformBuffers();
 	}
     
 	virtual void Loop() override
@@ -119,6 +120,8 @@ private:
 		scissor.offset.y      = 0;
 
 		VkDeviceSize offsets[1] = { 0 };
+
+		VulkanCommandBufferManager* commandBufferManager = GetVulkanRHI()->GetDevice()->GetImmediateContext().GetCommandBufferManager();
         
 //        for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
 //        {
@@ -141,19 +144,10 @@ private:
 	{
         float deltaTime = Engine::Get()->GetDeltaTime();
         m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
-        
-        m_MVPBuffers[m_ImageIndex]->Map(sizeof(m_MVPData), 0);
-        m_MVPBuffers[m_ImageIndex]->CopyTo(&m_MVPData, sizeof(m_MVPData));
-        m_MVPBuffers[m_ImageIndex]->Unmap();
 	}
     
 	void CreateUniformBuffers()
 	{
-        m_MVPBuffers.resize(GetFrameCount());
-        for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
-            m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sizeof(m_MVPData));
-        }
-        
         m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
@@ -166,16 +160,6 @@ private:
 		UpdateUniformBuffers();
 	}
 
-	void DestroyUniformBuffers()
-	{
-        for (int32 i = 0; i < m_MVPBuffers.size(); ++i)
-        {
-            m_MVPBuffers[i]->Destroy();
-            delete m_MVPBuffers[i];
-        }
-        m_MVPBuffers.clear();
-	}
-    
     void DestroyAssets()
     {
         m_Shader       = nullptr;
@@ -193,7 +177,7 @@ private:
         m_DrawCommand = std::make_shared<MeshDrawCommand>();
         m_DrawCommand->material   = m_Material;
         m_DrawCommand->renderable = m_Renderable;
-        m_DrawCommand->Prepare(m_DrawCmdBuffers[0], &(GetVulkanRHI()->GetDevice()->GetImmediateContext()));
+        // m_DrawCommand->Prepare(m_DrawCmdBuffers[0], &(GetVulkanRHI()->GetDevice()->GetImmediateContext()));
         
         MLOG("DrawCommand Prepare done.")
 	}
@@ -209,7 +193,6 @@ private:
 	std::shared_ptr<Renderable>         m_Renderable;
 
 	UBOData 						    m_MVPData;
-    std::vector<VulkanBuffer*>          m_MVPBuffers;
     
 	uint32 							    m_ImageIndex;
 };

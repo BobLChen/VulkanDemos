@@ -16,12 +16,17 @@ public:
     
     void Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores = 0, VkSemaphore* signalSemaphores = nullptr);
     
-    FORCEINLINE uint32 GetFamilyIndex() const
+	inline void Submit(VulkanCmdBuffer* cmdBuffer, VkSemaphore signalSemaphore)
+	{
+		Submit(cmdBuffer, 1, &signalSemaphore);
+	}
+
+    inline uint32 GetFamilyIndex() const
     {
         return m_FamilyIndex;
     }
     
-	FORCEINLINE VkQueue GetHandle() const
+	inline VkQueue GetHandle() const
     {
         return m_Queue;
     }

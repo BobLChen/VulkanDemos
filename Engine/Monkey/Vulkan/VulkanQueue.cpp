@@ -17,7 +17,7 @@ VulkanQueue::~VulkanQueue()
     
 }
 
-void VulkanQueue::Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores = 0, VkSemaphore* signalSemaphores = nullptr)
+void VulkanQueue::Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores, VkSemaphore* signalSemaphores)
 {
     VulkanFence* fence = cmdBuffer->GetFence();
     const VkCommandBuffer cmdBuffers[] = { cmdBuffer->GetHandle() };
@@ -30,7 +30,7 @@ void VulkanQueue::Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores 
     submitInfo.pSignalSemaphores    = signalSemaphores;
     
     std::vector<VkSemaphore> waitSemaphores;
-    if (cmdBuffer->GetWaitSemaphores.size() > 0)
+    if (cmdBuffer->GetWaitSemaphores().size() > 0)
     {
         waitSemaphores.resize(cmdBuffer->GetWaitSemaphores().size());
         for (int32 i = 0; i < cmdBuffer->GetWaitSemaphores().size(); ++i)
@@ -42,11 +42,7 @@ void VulkanQueue::Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores 
         submitInfo.pWaitSemaphores    = waitSemaphores.data();
         submitInfo.pWaitDstStageMask  = cmdBuffer->GetWaitFlags().data();
     }
-    {
-        SCOPE_CYCLE_COUNTER(STAT_VulkanQueueSubmit);
-        VERIFYVULKANRESULT(VulkanRHI::vkQueueSubmit(Queue, 1, &SubmitInfo, Fence->GetHandle()));
-    }
-    
+
     vkQueueSubmit(m_Queue, 1, &submitInfo, fence->GetHandle());
     
     cmdBuffer->SetState(VulkanCmdBuffer::State::Submitted);

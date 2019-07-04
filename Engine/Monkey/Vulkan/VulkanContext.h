@@ -11,6 +11,7 @@
 class VulkanRHI;
 class VulkanDevice;
 class VulkanQueue;
+class VulkanCommandBufferManager;
 
 class VulkanCommandListContext
 {
@@ -23,6 +24,11 @@ public:
 	inline bool IsImmediate() const
 	{
 		return m_Immediate == nullptr;
+	}
+
+	inline VulkanCommandBufferManager* GetCommandBufferManager() const
+	{
+		return m_CommandBufferManager;
 	}
 
 	inline VulkanUniformBufferUploader* GetUniformBufferUploader() const
@@ -40,16 +46,12 @@ public:
 		return m_Device;
 	}
 
-	inline std::shared_ptr<VulkanQueue> GetQueue() const
-	{
-		return m_Queue;
-	}
-
 protected:
 	VulkanCommandListContext*		m_Immediate;
 	VulkanDevice*					m_Device;
 	std::shared_ptr<VulkanQueue>    m_Queue;
 	VulkanUniformBufferUploader*	m_UniformUploader;
+	VulkanCommandBufferManager*		m_CommandBufferManager;
 };
 
 class VulkanCommandListContextImmediate : public VulkanCommandListContext
