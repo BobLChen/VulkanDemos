@@ -50,7 +50,7 @@ public:
 	{
 		Prepare();
 		LoadAssets();
-		CreateUniformBuffers();
+		InitShaderParams();
 		SetupCommandBuffers();
 		m_Ready = true;
 	}
@@ -81,16 +81,19 @@ private:
 
 	void Draw()
 	{
-		UpdateUniformBuffers();
+		UpdateShaderParams();
 		m_ImageIndex = AcquireImageIndex();
-		Present(m_ImageIndex);
+		
+        std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
+        VkPipelineStageFlags waitStageMask           = GetVulkanRHI()->GetStageMask();
+        std::shared_ptr<VulkanQueue> gfxQueue        = GetVulkanRHI()->GetDevice()->GetGraphicsQueue();
+        std::shared_ptr<VulkanQueue> presentQueue    = GetVulkanRHI()->GetDevice()->GetPresentQueue();
+        
+        swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
 	}
 	
 	void SetupCommandBuffers()
 	{
-		VkCommandBufferBeginInfo cmdBeginInfo;
-		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
@@ -118,35 +121,31 @@ private:
 		scissor.extent.height = (uint32)m_FrameHeight;
 		scissor.offset.x      = 0;
 		scissor.offset.y      = 0;
-
-		VkDeviceSize offsets[1] = { 0 };
-
-		VulkanCommandBufferManager* commandBufferManager = GetVulkanRHI()->GetDevice()->GetImmediateContext().GetCommandBufferManager();
         
-//        for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
-//        {
-//            renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
-//            VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
-//            vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-//            vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
-//            vkCmdSetScissor(m_DrawCmdBuffers[i], 0, 1, &scissor);
-//            vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Shader->GetPipelineLayout(), 0, 1, &(m_DescriptorSets[i]), 0, nullptr);
-//            vkCmdBindPipeline(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-//            vkCmdBindVertexBuffers(m_DrawCmdBuffers[i], 0, 1, m_Renderable->GetVertexBuffer()->GetVKBuffers().data(), offsets);
-//            vkCmdBindIndexBuffer(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetBuffer(), 0, m_Renderable->GetIndexBuffer()->GetIndexType());
-//            vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
-//            vkCmdEndRenderPass(m_DrawCmdBuffers[i]);
-//            VERIFYVULKANRESULT(vkEndCommandBuffer(m_DrawCmdBuffers[i]));
-//        }
+		VulkanCommandBufferManager* commandBufferManager = GetVulkanRHI()->GetDevice()->GetImmediateContext().GetCommandBufferManager();
+        VulkanCommandListContextImmediate& cmdContext = GetVulkanRHI()->GetDevice()->GetImmediateContext();
+        
+        VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
+        VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
+        
+        renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
+        vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);
+        
+        m_DrawCommand->Prepare(cmdBuffer, &cmdContext);
+        
+        vkCmdEndRenderPass(vkCmdBuffer);
+        commandBufferManager->SubmitActiveCmdBuffer();
 	}
     
-	void UpdateUniformBuffers()
+	void UpdateShaderParams()
 	{
         float deltaTime = Engine::Get()->GetDeltaTime();
         m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
 	}
     
-	void CreateUniformBuffers()
+	void InitShaderParams()
 	{
         m_MVPData.model.SetIdentity();
 
@@ -156,8 +155,6 @@ private:
         
 		m_MVPData.projection.SetIdentity();
         m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
-        
-		UpdateUniformBuffers();
 	}
 
     void DestroyAssets()
@@ -177,7 +174,6 @@ private:
         m_DrawCommand = std::make_shared<MeshDrawCommand>();
         m_DrawCommand->material   = m_Material;
         m_DrawCommand->renderable = m_Renderable;
-        // m_DrawCommand->Prepare(m_DrawCmdBuffers[0], &(GetVulkanRHI()->GetDevice()->GetImmediateContext()));
         
         MLOG("DrawCommand Prepare done.")
 	}

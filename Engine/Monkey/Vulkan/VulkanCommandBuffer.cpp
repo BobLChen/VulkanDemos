@@ -165,7 +165,7 @@ void VulkanCmdBuffer::FreeMemory()
 // VulkanCommandBufferPool
 VulkanCommandBufferPool::VulkanCommandBufferPool(VulkanDevice* inDevice, VulkanCommandBufferManager& inManager)
 	: m_Handle(VK_NULL_HANDLE)
-	, m_Device(nullptr)
+	, m_Device(inDevice)
 	, m_CmdBufferManager(inManager)
 {
 	

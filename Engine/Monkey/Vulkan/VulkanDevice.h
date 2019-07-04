@@ -113,7 +113,7 @@ public:
         return *m_DescriptorPoolsManager;
     }
 
-	inline VulkanCommandListContextImmediate GetImmediateContext()
+	inline VulkanCommandListContextImmediate& GetImmediateContext()
 	{
 		return *m_ImmediateContext;
 	}
