@@ -251,7 +251,7 @@ bool VulkanDescriptorPool::AllocateDescriptorSets(const VkDescriptorSetAllocateI
 	VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = inDescriptorSetAllocateInfo;
 	descriptorSetAllocateInfo.descriptorPool = m_DescriptorPool;
 
-	return vkAllocateDescriptorSets(m_Device->GetInstanceHandle(), &descriptorSetAllocateInfo, outSets);
+	return VK_SUCCESS == vkAllocateDescriptorSets(m_Device->GetInstanceHandle(), &descriptorSetAllocateInfo, outSets);
 }
 
 // VulkanTypedDescriptorPoolSet
@@ -280,11 +280,11 @@ bool VulkanTypedDescriptorPoolSet::AllocateDescriptorSets(const VulkanDescriptor
 
 	if (layoutHandles.size() > 0)
 	{
-		while (!m_PoolsList[m_PoolsCount]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets))
+		while (!(m_PoolsList[m_CurrentPool]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets)))
 		{
 			GetFreePool(true);
 		}
-		m_PoolsList[m_PoolsCount]->TrackAddUsage(inLayout);
+		m_PoolsList[m_CurrentPool]->TrackAddUsage(inLayout);
 	}
 
 	return true;
@@ -422,43 +422,43 @@ uint32 VulkanDescriptorSetWriter::SetupDescriptorWrites(const std::vector<VkDesc
 	{
         const VkDescriptorSetLayoutBinding& setBinding = bindings[i];
         
-		m_WriteDescriptorSet->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        m_WriteDescriptorSet->pNext = nullptr;
-        m_WriteDescriptorSet->dstSet = VK_NULL_HANDLE;
-        m_WriteDescriptorSet->dstBinding = setBinding.binding;
-        m_WriteDescriptorSet->dstArrayElement = 0;
-		m_WriteDescriptorSet->descriptorCount = setBinding.descriptorCount;
-		m_WriteDescriptorSet->descriptorType = setBinding.descriptorType;
-        m_WriteDescriptorSet->pImageInfo = nullptr;
-        m_WriteDescriptorSet->pBufferInfo = nullptr;
-        m_WriteDescriptorSet->pTexelBufferView = nullptr;
+		inWriteDescriptors->sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        inWriteDescriptors->pNext = nullptr;
+        inWriteDescriptors->dstSet = VK_NULL_HANDLE;
+        inWriteDescriptors->dstBinding = setBinding.binding;
+        inWriteDescriptors->dstArrayElement = 0;
+		inWriteDescriptors->descriptorCount = setBinding.descriptorCount;
+		inWriteDescriptors->descriptorType = setBinding.descriptorType;
+        inWriteDescriptors->pImageInfo = nullptr;
+        inWriteDescriptors->pBufferInfo = nullptr;
+        inWriteDescriptors->pTexelBufferView = nullptr;
         
 		switch (setBinding.descriptorType)
 		{
 			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-			m_BindingToDynamicOffsetMap[i] = dynamicOffsetIndex++;
-			m_WriteDescriptorSet->pBufferInfo = inBufferInfo++;
-			break;
-		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-			m_WriteDescriptorSet->pBufferInfo = inBufferInfo++;
-			break;
-		case VK_DESCRIPTOR_TYPE_SAMPLER:
-		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-		case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-		case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-		case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-			// image info
-			break;
-		case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-		case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-			break;
-		default:
-			MLOGE("Unsupported descriptor type %d", (int32)setBinding.descriptorType);
-			break;
+				m_BindingToDynamicOffsetMap[i] = dynamicOffsetIndex++;
+				inWriteDescriptors->pBufferInfo = inBufferInfo++;
+				break;
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+				inWriteDescriptors->pBufferInfo = inBufferInfo++;
+				break;
+			case VK_DESCRIPTOR_TYPE_SAMPLER:
+			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+				// image info
+				break;
+			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+				break;
+			default:
+				MLOGE("Unsupported descriptor type %d", (int32)setBinding.descriptorType);
+				break;
 		}
 
-		++m_WriteDescriptorSet;
+		++inWriteDescriptors;
 	}
     
 	return dynamicOffsetIndex;

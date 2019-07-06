@@ -49,9 +49,9 @@ public:
 	virtual void Init() override
 	{
 		Prepare();
-		LoadAssets();
 		InitShaderParams();
-		SetupCommandBuffers();
+		LoadAssets();
+		RecordCommandBuffers();
 		m_Ready = true;
 	}
 
@@ -82,6 +82,7 @@ private:
 	void Draw()
 	{
 		UpdateShaderParams();
+
 		m_ImageIndex = AcquireImageIndex();
 		
         std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
@@ -92,7 +93,7 @@ private:
         swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
 	}
 	
-	void SetupCommandBuffers()
+	void RecordCommandBuffers()
 	{
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
@@ -126,6 +127,7 @@ private:
         VulkanCommandListContextImmediate& cmdContext = GetVulkanRHI()->GetDevice()->GetImmediateContext();
         
         VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
+
         VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
         
         renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
@@ -170,6 +172,7 @@ private:
         m_Renderable  = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
         m_Shader      = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
         m_Material    = std::make_shared<Material>(m_Shader);
+		m_Material->SetParam("uboMVP", &m_MVPData, sizeof(m_MVPData));
         
         m_DrawCommand = std::make_shared<MeshDrawCommand>();
         m_DrawCommand->material   = m_Material;

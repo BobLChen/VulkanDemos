@@ -9,14 +9,27 @@
 Material::Material(std::shared_ptr<Shader> shader)
 	: m_Hash(0)
 	, m_InvalidStateInfo(true)
-	, m_Shader(shader)
+	, m_Shader(nullptr)
 {
-
+	SetShader(shader);
 }
 
 Material::~Material()
 {
 	m_Shader = nullptr;
+}
+
+void Material::SetParam(const std::string& name, const void* data, uint32 size)
+{
+	for (int32 i = 0; i < m_UniformBufferParams.size(); ++i)
+	{
+		UniformBufferParam& ubParam = m_UniformBufferParams[i];
+		if (ubParam.name == name)
+		{
+			ubParam.buffer->UpdateConstantData(data, size);
+			return;
+		}
+	}
 }
 
 void Material::GenerateShaderParams()

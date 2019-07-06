@@ -591,6 +591,8 @@ public:
 		return m_UniformBufferParams;
 	}
 
+	void SetParam(const std::string& name, const void* data, uint32 size);
+
 protected:
 
 	void GenerateShaderParams();

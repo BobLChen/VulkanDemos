@@ -5,7 +5,7 @@
 
 #include <memory>
 #include <vector>
-#include <unordered_map>
+#include <map>
 
 class VulkanCommandListContext;
 class VulkanDevice;
@@ -178,7 +178,7 @@ protected:
 	std::vector<VulkanSemaphore*>		m_WaitSemaphores;
 	std::vector<VulkanSemaphore*>		m_SubmittedWaitSemaphores;
 
-	std::unordered_map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPoolSets;
+	std::map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPoolSets;
 };
 
 class VulkanCommandBufferPool

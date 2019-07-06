@@ -118,10 +118,13 @@ void VulkanCmdBuffer::RefreshFenceStatus()
 
 			m_FenceSignaledCounter += 1;
 
-			m_TypedDescriptorPoolSets.clear();
-			m_VulkanDevice->GetDescriptorPoolsManager().ReleasePoolSet(*m_DescriptorPoolSetContainer);
-			m_DescriptorPoolSetContainer = nullptr;
-
+			if (m_DescriptorPoolSetContainer)
+			{
+				m_TypedDescriptorPoolSets.clear();
+				m_VulkanDevice->GetDescriptorPoolsManager().ReleasePoolSet(*m_DescriptorPoolSetContainer);
+				m_DescriptorPoolSetContainer = nullptr;
+			}
+			
 			m_State = State::ReadyForBegin;
 		}
 	}
@@ -197,7 +200,7 @@ void VulkanCommandBufferPool::RefreshFenceStatus(VulkanCmdBuffer* skipCmdBuffer)
 	for (int32 i = 0; i < m_UsedCmdBuffers.size(); ++i)
 	{
 		VulkanCmdBuffer* cmdBuffer = m_UsedCmdBuffers[i];
-		if (cmdBuffer == skipCmdBuffer)
+		if (cmdBuffer != skipCmdBuffer)
 		{
 			cmdBuffer->RefreshFenceStatus();
 		}
