@@ -123,11 +123,11 @@ private:
 		scissor.offset.x      = 0;
 		scissor.offset.y      = 0;
         
-		VulkanCommandBufferManager* commandBufferManager = GetVulkanRHI()->GetDevice()->GetImmediateContext().GetCommandBufferManager();
-        VulkanCommandListContextImmediate& cmdContext = GetVulkanRHI()->GetDevice()->GetImmediateContext();
-        
+        VulkanCommandListContextImmediate& cmdContext    = GetVulkanRHI()->GetDevice()->GetImmediateContext();
+		VulkanCommandBufferManager* commandBufferManager = cmdContext.GetCommandBufferManager();
+        commandBufferManager->SubmitActiveCmdBuffer();
+        commandBufferManager->NewActiveCommandBuffer();
         VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
-
         VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
         
         renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];

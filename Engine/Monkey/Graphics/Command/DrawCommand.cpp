@@ -43,16 +43,17 @@ void MeshDrawCommand::Prepare(VulkanCmdBuffer* cmdBuffer, VulkanCommandListConte
     
 	std::shared_ptr<VulkanDevice> device = Engine::Get()->GetVulkanDevice();
 	VulkanGfxPipeline* pipeline = device->GetPipelineStateManager().GetGfxPipeline(material, renderable);
-    pipeline->UpdateDescriptorSets(material, cmdBuffer, cmdListContext);
-	pipeline->BindDescriptorSets(vkCmdBuffer);
     
+    pipeline->UpdateDescriptorSets(material, cmdBuffer, cmdListContext);
+	
     const std::vector<VkBuffer>& vertexBuffers = renderable->GetVertexBuffer()->GetVKBuffers();
     VkBuffer indexBuffer  = renderable->GetIndexBuffer()->GetBuffer();
     VkIndexType indexType = renderable->GetIndexBuffer()->GetIndexType();
     uint32 indexCount = renderable->GetIndexBuffer()->GetIndexCount();
     
     VkDeviceSize offsets[1] = { 0 };
-    vkCmdBindPipeline(vkCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
+    pipeline->BindGfxPipeline(vkCmdBuffer);
+    pipeline->BindDescriptorSets(vkCmdBuffer);
     vkCmdBindVertexBuffers(vkCmdBuffer, 0, vertexBuffers.size(), vertexBuffers.data(), offsets);
     vkCmdBindIndexBuffer(vkCmdBuffer, indexBuffer, 0, indexType);
     vkCmdDrawIndexed(vkCmdBuffer, indexCount, 0, 0, 0, 0);

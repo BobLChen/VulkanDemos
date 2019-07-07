@@ -104,11 +104,16 @@ public:
 	{
 		return *m_Layout;
 	}
-
+    
 protected:
     friend class VulkanPipelineStateManager;
 
 	void CreateDescriptorWriteInfos();
+    
+    void Bind(VkCommandBuffer cmdBuffer, VkPipelineBindPoint bindPoint)
+    {
+        vkCmdBindPipeline(cmdBuffer, bindPoint, m_Pipeline);
+    }
     
 protected:
 	VkPipeline     							m_Pipeline;
@@ -130,7 +135,12 @@ public:
 	bool UpdateDescriptorSets(std::shared_ptr<Material> material, VulkanCmdBuffer* cmdBuffer, VulkanCommandListContext* cmdListContext);
     
 	void BindDescriptorSets(VkCommandBuffer cmdBuffer);
-
+    
+    void BindGfxPipeline(VkCommandBuffer cmdBuffer)
+    {
+        Bind(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
+    }
+    
 protected:
     
 };
