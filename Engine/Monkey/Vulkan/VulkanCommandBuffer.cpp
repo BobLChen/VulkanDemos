@@ -55,7 +55,7 @@ void VulkanCmdBuffer::RefreshSubmittedFenceCounter()
     m_SubmittedFenceCounter = m_FenceSignaledCounter;
 }
 
-void VulkanCmdBuffer::AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore)
+void VulkanCmdBuffer::AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VkSemaphore inWaitSemaphore)
 {
 	m_WaitFlags.push_back(inWaitFlags);
 	m_WaitSemaphores.push_back(inWaitSemaphore);

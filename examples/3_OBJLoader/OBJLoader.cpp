@@ -9,6 +9,7 @@
 #include "Vulkan/VulkanMemory.h"
 #include "Vulkan/VulkanCommandBuffer.h"
 #include "Vulkan/VulkanContext.h"
+#include "Vulkan/VulkanFence.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "Graphics/Data/VertexBuffer.h"
@@ -49,9 +50,18 @@ public:
 	virtual void Init() override
 	{
 		Prepare();
+
+		for (int32 i = 0; i < GetFrameCount(); ++i)
+		{
+			VkSemaphore semaphore;
+			VkSemaphoreCreateInfo createInfo;
+			ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+			vkCreateSemaphore(GetDevice(), &createInfo, VULKAN_CPU_ALLOCATOR, &semaphore);
+			m_RenderingDoneSemaphores.push_back(semaphore);
+		}
+
 		InitShaderParams();
 		LoadAssets();
-		RecordCommandBuffers();
 		m_Ready = true;
 	}
 
@@ -83,17 +93,29 @@ private:
 	{
 		UpdateShaderParams();
 
-		m_ImageIndex = AcquireImageIndex();
-		
-        std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
-        VkPipelineStageFlags waitStageMask           = GetVulkanRHI()->GetStageMask();
+		m_ImageIndex = GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_AcquiredSemaphore);
+
+		VulkanCommandListContextImmediate& cmdContext    = GetVulkanRHI()->GetDevice()->GetImmediateContext();
+		VulkanCommandBufferManager* commandBufferManager = cmdContext.GetCommandBufferManager();
+        VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
+
+		std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
         std::shared_ptr<VulkanQueue> gfxQueue        = GetVulkanRHI()->GetDevice()->GetGraphicsQueue();
         std::shared_ptr<VulkanQueue> presentQueue    = GetVulkanRHI()->GetDevice()->GetPresentQueue();
-        
-        swapChain->Present(gfxQueue, presentQueue, &m_RenderComplete);
+
+		RecordCommandBuffers(cmdContext, cmdBuffer);
+
+		cmdBuffer->End();
+		cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_AcquiredSemaphore);
+
+		presentQueue->Submit(cmdBuffer, m_RenderingDoneSemaphores[m_ImageIndex]);
+		
+        swapChain->Present(gfxQueue, presentQueue, &(m_RenderingDoneSemaphores[m_ImageIndex]));
+
+		commandBufferManager->NewActiveCommandBuffer();
 	}
 	
-	void RecordCommandBuffers()
+	void RecordCommandBuffers(VulkanCommandListContextImmediate& cmdContext, VulkanCmdBuffer* cmdBuffer)
 	{
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
@@ -123,28 +145,22 @@ private:
 		scissor.offset.x      = 0;
 		scissor.offset.y      = 0;
         
-        VulkanCommandListContextImmediate& cmdContext    = GetVulkanRHI()->GetDevice()->GetImmediateContext();
-		VulkanCommandBufferManager* commandBufferManager = cmdContext.GetCommandBufferManager();
-        commandBufferManager->SubmitActiveCmdBuffer();
-        commandBufferManager->NewActiveCommandBuffer();
-        VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
         VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
         
         renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
         vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
         vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);
-        
         m_DrawCommand->Prepare(cmdBuffer, &cmdContext);
-        
         vkCmdEndRenderPass(vkCmdBuffer);
-        commandBufferManager->SubmitActiveCmdBuffer();
 	}
     
 	void UpdateShaderParams()
 	{
         float deltaTime = Engine::Get()->GetDeltaTime();
         m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
+
+		m_Material->SetParam("uboMVP", &m_MVPData, sizeof(m_MVPData));
 	}
     
 	void InitShaderParams()
@@ -172,6 +188,7 @@ private:
         m_Renderable  = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
         m_Shader      = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
         m_Material    = std::make_shared<Material>(m_Shader);
+		m_Material->SetCullMode(VK_CULL_MODE_NONE);
 		m_Material->SetParam("uboMVP", &m_MVPData, sizeof(m_MVPData));
         
         m_DrawCommand = std::make_shared<MeshDrawCommand>();
@@ -190,6 +207,9 @@ private:
     std::shared_ptr<Shader>             m_Shader;
 	std::shared_ptr<Material>		    m_Material;
 	std::shared_ptr<Renderable>         m_Renderable;
+
+	std::vector<VkSemaphore>			m_RenderingDoneSemaphores;
+	VkSemaphore							m_AcquiredSemaphore;
 
 	UBOData 						    m_MVPData;
     

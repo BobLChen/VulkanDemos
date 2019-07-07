@@ -56,7 +56,7 @@ void MeshDrawCommand::Prepare(VulkanCmdBuffer* cmdBuffer, VulkanCommandListConte
     pipeline->BindDescriptorSets(vkCmdBuffer);
     vkCmdBindVertexBuffers(vkCmdBuffer, 0, vertexBuffers.size(), vertexBuffers.data(), offsets);
     vkCmdBindIndexBuffer(vkCmdBuffer, indexBuffer, 0, indexType);
-    vkCmdDrawIndexed(vkCmdBuffer, indexCount, 0, 0, 0, 0);
+    vkCmdDrawIndexed(vkCmdBuffer, indexCount, 1, 0, 0, 0);
 }
 
 void MeshDrawCommand::Reset()

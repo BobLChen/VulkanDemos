@@ -123,7 +123,7 @@ public:
 		return m_Fence;
 	}
     
-    inline const std::vector<VulkanSemaphore*>& GetWaitSemaphores() const
+    inline const std::vector<VkSemaphore>& GetWaitSemaphores() const
     {
         return m_WaitSemaphores;
     }
@@ -133,7 +133,7 @@ public:
         return m_WaitFlags;
     }
     
-	void AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VulkanSemaphore* inWaitSemaphore);
+	void AddWaitSemaphore(VkPipelineStageFlags inWaitFlags, VkSemaphore inWaitSemaphore);
 
 	void Begin();
 
@@ -175,8 +175,8 @@ protected:
 	VulkanDescriptorPoolSetContainer*   m_DescriptorPoolSetContainer;
 
 	std::vector<VkPipelineStageFlags>	m_WaitFlags;
-	std::vector<VulkanSemaphore*>		m_WaitSemaphores;
-	std::vector<VulkanSemaphore*>		m_SubmittedWaitSemaphores;
+	std::vector<VkSemaphore>			m_WaitSemaphores;
+	std::vector<VkSemaphore>			m_SubmittedWaitSemaphores;
 
 	std::map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPoolSets;
 };
