@@ -151,68 +151,104 @@ private:
         vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
         vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);
-        m_DrawCommand->Prepare(cmdBuffer, &cmdContext);
+
+		for (int32 i = 0; i < m_DrawCommands.size(); ++i)
+		{
+			m_DrawCommands[i]->Prepare(cmdBuffer, &cmdContext);
+		}
+        
         vkCmdEndRenderPass(vkCmdBuffer);
 	}
     
 	void UpdateShaderParams()
 	{
         float deltaTime = Engine::Get()->GetDeltaTime();
-        m_MVPData.model.AppendRotation(90.0f * deltaTime, Vector3::UpVector);
+        
+		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
+		{
+			Vector3 position = m_MVPDatas[i].model.GetOrigin();
 
-		m_Material->SetParam("uboMVP", &m_MVPData, sizeof(m_MVPData));
+			m_MVPDatas[i].model.AppendRotation(90.0f * deltaTime, Vector3::UpVector, &position);
+			m_Materials[i]->SetParam("uboMVP", &(m_MVPDatas[i]), sizeof(UBOData));
+		}
 	}
     
 	void InitShaderParams()
 	{
-        m_MVPData.model.SetIdentity();
+		m_MVPDatas.resize(25 * 25);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -30.0f));
-		m_MVPData.view.SetInverse();
+		float tx = 0;
+		float ty = 0;
+
+		for (int32 row = 0; row < 25; ++row)
+		{
+			for (int32 col = 0; col < 25; ++col)
+			{
+				Vector3 position(0, 0, 0);
+				position.x = (row - 12.5f) * 25;
+				position.y = (col - 12.5f) * 25;
+
+				int index = row * 25 + col;
+
+				m_MVPDatas[index].model.SetIdentity();
+				m_MVPDatas[index].model.AppendTranslation(position);
+
+				m_MVPDatas[index].view.SetIdentity();
+				m_MVPDatas[index].view.SetOrigin(Vector4(0, 0, -500.0f));
+				m_MVPDatas[index].view.SetInverse();
         
-		m_MVPData.projection.SetIdentity();
-        m_MVPData.projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
+				m_MVPDatas[index].projection.SetIdentity();
+				m_MVPDatas[index].projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
+			}
+		}
 	}
 
     void DestroyAssets()
     {
         m_Shader       = nullptr;
-        m_Material     = nullptr;
         m_Renderable   = nullptr;
-        m_DrawCommand  = nullptr;
+		m_Materials.clear();
+		m_DrawCommands.clear();
     }
     
 	void LoadAssets()
 	{
         m_Renderable  = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
         m_Shader      = Shader::Create("assets/shaders/3_OBJLoader/obj.vert.spv", "assets/shaders/3_OBJLoader/obj.frag.spv");
-        m_Material    = std::make_shared<Material>(m_Shader);
-		m_Material->SetCullMode(VK_CULL_MODE_NONE);
-		m_Material->SetParam("uboMVP", &m_MVPData, sizeof(m_MVPData));
-        
-        m_DrawCommand = std::make_shared<MeshDrawCommand>();
-        m_DrawCommand->material   = m_Material;
-        m_DrawCommand->renderable = m_Renderable;
-        
+
+		m_Materials.resize(m_MVPDatas.size());
+		m_DrawCommands.resize(m_MVPDatas.size());
+		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
+		{
+			m_Materials[i] = std::make_shared<Material>(m_Shader);
+			m_Materials[i]->SetParam("uboMVP", &(m_MVPDatas[i]), sizeof(UBOData));
+
+			m_DrawCommands[i] = std::make_shared<MeshDrawCommand>();
+			m_DrawCommands[i]->material   = m_Materials[i];
+			m_DrawCommands[i]->renderable = m_Renderable;
+		}
+
         MLOG("DrawCommand Prepare done.")
 	}
     
 private:
-	
+
+	typedef std::vector<std::shared_ptr<MeshDrawCommand>>	MeshDrawCommandList;
+	typedef std::vector<UBOData>							MeshUBODataList;
+	typedef std::vector<std::shared_ptr<Material>>			MaterialList;
+
 	bool 							    m_Ready;
     
-    std::shared_ptr<MeshDrawCommand>    m_DrawCommand;
-    
+    MeshDrawCommandList					m_DrawCommands;
+    MeshUBODataList						m_MVPDatas;
+
     std::shared_ptr<Shader>             m_Shader;
-	std::shared_ptr<Material>		    m_Material;
 	std::shared_ptr<Renderable>         m_Renderable;
+	MaterialList						m_Materials;
 
 	std::vector<VkSemaphore>			m_RenderingDoneSemaphores;
 	VkSemaphore							m_AcquiredSemaphore;
 
-	UBOData 						    m_MVPData;
-    
 	uint32 							    m_ImageIndex;
 };
 
