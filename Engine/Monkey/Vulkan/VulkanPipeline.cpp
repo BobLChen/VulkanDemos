@@ -127,7 +127,7 @@ void VulkanGfxPipeline::BindDescriptorSets(VkCommandBuffer cmdBuffer)
 {
 	vkCmdBindDescriptorSets(
 		cmdBuffer, 
-		VK_PIPELINE_BIND_POINT_COMPUTE, 
+		VK_PIPELINE_BIND_POINT_GRAPHICS, 
 		m_Layout->GetPipelineLayout(), 
 		0, 
 		m_DescriptorSetHandles.size(), 
