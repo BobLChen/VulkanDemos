@@ -1,14 +1,11 @@
 #include "SlateApplication.h"
 #include "Engine.h"
 
-std::shared_ptr<SlateApplication> SlateApplication::m_CurrentApplication = nullptr;
-
-std::shared_ptr<GenericApplication> G_PlatformApplication = nullptr;
-
 SlateApplication::SlateApplication()
 	: GenericApplicationMessageHandler()
 	, m_DeltaTime(0.16f)
 	, m_Engine(nullptr)
+	, m_Application(nullptr)
 {
 
 }
@@ -18,48 +15,25 @@ SlateApplication::~SlateApplication()
 	
 }
 
-void SlateApplication::SetUpEngine(Engine *engine)
+void SlateApplication::Init(Engine* engine)
 {
 	m_Engine = engine;
-}
-
-void SlateApplication::Create(Engine* engine)
-{
-	Create(GenericApplication::Create(), engine);
-}
-
-std::shared_ptr<SlateApplication> SlateApplication::Create(const std::shared_ptr<GenericApplication> platformApplication, Engine* engine)
-{
-	m_CurrentApplication = std::shared_ptr<SlateApplication>(new SlateApplication());
-	m_CurrentApplication->SetUpEngine(engine);
-
-	G_PlatformApplication = platformApplication;
-	G_PlatformApplication->SetMessageHandler(m_CurrentApplication);
-
-	return m_CurrentApplication;
+	m_Application = GenericApplication::Create();
+	m_Application->SetMessageHandler(this);
 }
 
 std::shared_ptr<GenericApplication> SlateApplication::GetPlatformApplication()
 {
-	return G_PlatformApplication;
+	return m_Application;
 }
 
 void SlateApplication::Shutdown(bool shutdownPlatform)
 {
-	if (SlateApplication::IsInitialized())
+	if (m_Application)
 	{
-		m_CurrentApplication->OnShutdown();
-		if (shutdownPlatform) {
-			G_PlatformApplication->Destroy();
-			G_PlatformApplication = nullptr;
-		}
-		m_CurrentApplication = nullptr;
+		m_Application->Destroy();
+		m_Application = nullptr;
 	}
-}
-
-void SlateApplication::SetCursorPos(const Vector2& mouseCoordinate)
-{
-	
 }
 
 void SlateApplication::Tick(float detalTime)
@@ -71,12 +45,7 @@ void SlateApplication::Tick(float detalTime)
 
 void SlateApplication::PumpMessages()
 {
-	G_PlatformApplication->PumpMessages(m_DeltaTime);
-}
-
-void SlateApplication::OnShutdown()
-{
-
+	m_Application->PumpMessages(m_DeltaTime);
 }
 
 void SlateApplication::OnRequestingExit()
@@ -86,19 +55,19 @@ void SlateApplication::OnRequestingExit()
 
 std::shared_ptr<GenericWindow> SlateApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
-	std::shared_ptr<GenericWindow> newWindow = G_PlatformApplication->MakeWindow(width, height, title);
-	G_PlatformApplication->InitializeWindow(newWindow, true);
+	std::shared_ptr<GenericWindow> newWindow = m_Application->MakeWindow(width, height, title);
+	m_Application->InitializeWindow(newWindow, true);
 	return newWindow;
 }
 
 void SlateApplication::TickPlatform(float deltaTime)
 {
-	G_PlatformApplication->Tick(deltaTime);
+	m_Application->Tick(deltaTime);
 }
 
-void SlateApplication::DrawWindows()
+void SlateApplication::SetCursorPos(const Vector2& mouseCoordinate)
 {
-
+	
 }
 
 bool SlateApplication::ShouldProcessUserInputMessages(const std::shared_ptr<GenericWindow> platformWindow) const
@@ -208,7 +177,7 @@ bool SlateApplication::OnSizeChanged(const std::shared_ptr<GenericWindow> window
 
 void SlateApplication::OnOSPaint(const std::shared_ptr<GenericWindow> window)
 {
-	return;
+
 }
 
 WindowSizeLimits SlateApplication::GetSizeLimitsForWindow(const std::shared_ptr<GenericWindow> window) const

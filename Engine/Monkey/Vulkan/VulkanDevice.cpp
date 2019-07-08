@@ -144,7 +144,6 @@ void VulkanDevice::CreateDevice()
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
 	{
 		MLOG("%s", "Cannot create a Vulkan device. Try updating your video driver to a more recent version.\n");
-		SlateApplication::Get().OnRequestingExit();
 		return;
 	}
 

@@ -13,19 +13,23 @@ class SlateApplication : public GenericApplicationMessageHandler
 {
 public:
 
-	virtual ~SlateApplication();
+	SlateApplication();
 
-	void SetCursorPos(const Vector2& mouseCoordinate);
+	virtual ~SlateApplication();
 
 	void Tick(float detalTime);
 
 	void PumpMessages();
 	
-	void OnShutdown();
+	void Init(Engine* engine);
+
+	void Shutdown(bool shutdownPlatform);
 
 	std::shared_ptr<GenericWindow> MakeWindow(int32 width, int32 height, const char* title);
 
 	std::shared_ptr<GenericApplication> GetPlatformApplication();
+
+	void SetCursorPos(const Vector2& mouseCoordinate);
 
 public:
 
@@ -91,17 +95,15 @@ public:
 
 	virtual void OnRequestingExit() override;
 
-	
 protected:
-
-	friend class Engine;
 
 	void TickPlatform(float deltaTime);
 
-	SlateApplication();
-
 private:
 
-	float 	m_DeltaTime;
-	Engine* m_Engine;
+	typedef std::shared_ptr<GenericApplication> GenericApplicationRef;
+
+	float 					m_DeltaTime;
+	Engine*					m_Engine;
+	GenericApplicationRef	m_Application;
 };

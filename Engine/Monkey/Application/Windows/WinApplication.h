@@ -25,14 +25,16 @@ public:
 
 	virtual std::shared_ptr<GenericWindow> GetWindow() override;
 
-	virtual void SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler) override;
+	virtual void SetMessageHandler(GenericApplicationMessageHandler* messageHandler) override;
 
-	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately) override;
+	virtual void InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately) override;
 
 protected:
+
 	static LRESULT CALLBACK AppWndProc(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam);
 
 	int32 ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARAM lParam);
+
 private:
 	std::shared_ptr<WinWindow> m_Window;
 };

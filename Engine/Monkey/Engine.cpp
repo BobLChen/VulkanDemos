@@ -32,10 +32,21 @@ VkDevice Engine::GetDeviceHandle()
 	return GetVulkanDevice()->GetInstanceHandle();
 }
 
+const char* Engine::GetTitle()
+{
+	return m_SlateApplication->GetPlatformApplication()->GetWindow()->GetTitle();
+}
+
+std::shared_ptr<SlateApplication> Engine::GetApplication()
+{
+	return m_SlateApplication;
+}
+
 int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)
 {
-	SlateApplication::Create(this);
-	SlateApplication::Get().MakeWindow(width, height, title);
+	m_SlateApplication = std::make_shared<SlateApplication>();
+	m_SlateApplication->Init(this);
+	m_SlateApplication->MakeWindow(width, height, title);
 
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
 	m_VulkanRHI->Init();
@@ -44,24 +55,17 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
     {
         std::string exePath = cmdLine[0];
         int32 length = 0;
-        
-        for (size_t i = 0; i < exePath.size(); ++i)
-        {
-            if (exePath[i] == '\\')
-            {
+        for (size_t i = 0; i < exePath.size(); ++i) {
+            if (exePath[i] == '\\') {
                 exePath[i] = '/';
             }
         }
-        
-        for (size_t i = exePath.size() - 1; i >= 0; --i)
-        {
-            if (exePath[i] == '/')
-            {
+        for (size_t i = exePath.size() - 1; i >= 0; --i) {
+            if (exePath[i] == '/') {
                 break;
             }
             length += 1;
         }
-        
         m_AssetsPath = exePath.substr(0, exePath.size() - length);
     }
 	
@@ -84,17 +88,18 @@ void Engine::Exist()
 {
 	m_VulkanRHI->Shutdown();
 	m_VulkanRHI = nullptr;
-	SlateApplication::Get().Shutdown();
+
+	m_SlateApplication->Shutdown(true);
 }
 
 void Engine::Tick()
 {
-	SlateApplication::Get().Tick(0.016f);
+	m_SlateApplication->Tick(0.016f);
 }
 
 void Engine::PumpMessage()
 {
-	SlateApplication::Get().PumpMessages();
+	m_SlateApplication->PumpMessages();
 }
 
 bool Engine::IsRequestingExit()

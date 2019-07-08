@@ -66,7 +66,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-void WinApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void WinApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	GenericApplication::SetMessageHandler(messageHandler);
 }
@@ -100,7 +100,7 @@ std::shared_ptr<GenericWindow> WinApplication::GetWindow()
 	return m_Window;
 }
 
-void WinApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void WinApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 	m_Window = std::dynamic_pointer_cast<WinWindow>(window);
 	m_Window->Initialize(this);

@@ -1,8 +1,13 @@
-#include "VulkanRHI.h"
-#include "VulkanPlatform.h"
+
 #include "Common/Common.h"
 #include "Common/Log.h"
+
+#include "Engine.h"
 #include "Application/SlateApplication.h"
+#include "Application/GenericApplication.h"
+
+#include "VulkanRHI.h"
+#include "VulkanPlatform.h"
 #include "VulkanCommon.h"
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
@@ -222,8 +227,9 @@ void VulkanRHI::DestoryCommandPool()
 void VulkanRHI::RecreateSwapChain()
 {
     uint32 desiredNumBackBuffers = 3;
-    int32 width  = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetWidth();
-    int32 height = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetHeight();
+	
+    int32 width  = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetWidth();
+    int32 height = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetHeight();
     m_SwapChain  = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
     
     m_FrameImageViews.resize(m_FrameImages.size());
@@ -325,10 +331,10 @@ void VulkanRHI::DestoryDepthStencil()
 void VulkanRHI::CreateInstance()
 {
 	GetInstanceLayersAndExtensions(m_InstanceExtensions, m_InstanceLayers, m_SupportsDebugUtilsExt);
-
+	
 	VkApplicationInfo appInfo;
 	ZeroVulkanStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
-	appInfo.pApplicationName   = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle();
+	appInfo.pApplicationName   = Engine::Get()->GetTitle();
 	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
 	appInfo.pEngineName        = ENGINE_NAME;
 	appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 0);
@@ -339,7 +345,6 @@ void VulkanRHI::CreateInstance()
     appInfo.apiVersion         = VK_API_VERSION_1_1;
 #endif
 	
-    
 	VkInstanceCreateInfo instanceCreateInfo;
 	ZeroVulkanStruct(instanceCreateInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
 	instanceCreateInfo.pApplicationInfo        = &appInfo;
@@ -391,7 +396,7 @@ void VulkanRHI::CreateInstance()
     
     if (result != VK_SUCCESS)
     {
-        SlateApplication::Get().OnRequestingExit();
+
     }
 }
 
@@ -403,14 +408,12 @@ void VulkanRHI::SelectAndInitDevice()
     if (result == VK_ERROR_INITIALIZATION_FAILED)
     {
         MLOG("%s\n", "Cannot find a compatible Vulkan device or driver. Try updating your video driver to a more recent version and make sure your video card supports Vulkan.");
-        SlateApplication::Get().OnRequestingExit();
         return;
     }
     
     if (gpuCount == 0)
     {
         MLOG("%s\n", "Couldn't enumerate physical devices! Make sure your drivers are up to date and that you are not pending a reboot.");
-        SlateApplication::Get().OnRequestingExit();
         return;
     }
 
@@ -471,7 +474,6 @@ void VulkanRHI::SelectAndInitDevice()
     {
         MLOG("%s", "No devices found!");
         deviceIndex = -1;
-        SlateApplication::Get().OnRequestingExit();
         return;
     }
 	

@@ -1,6 +1,6 @@
 #include "Configuration/Platform.h"
 #include "Application/SlateApplication.h"
-
+#include "Engine.h"
 #include "Vulkan/Windows/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
@@ -26,11 +26,12 @@ void VulkanWindowsPlatform::FreeVulkanLibrary()
 void VulkanWindowsPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
 	uint32_t count;
-    const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    const char** extensions = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
     for (int32 i = 0; i < count; ++i)
     {
         outExtensions.push_back(extensions[i]);
     }
+	
 }
 
 void VulkanWindowsPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensions)
@@ -40,5 +41,5 @@ void VulkanWindowsPlatform::GetDeviceExtensions(std::vector<const char*>& outExt
 
 void VulkanWindowsPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-	SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
+	Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }

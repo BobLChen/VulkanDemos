@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+class SlateApplication;
+
 class Engine
 {
 public:
@@ -31,7 +33,11 @@ public:
 
 	std::shared_ptr<VulkanDevice> GetVulkanDevice();
 
+	std::shared_ptr<SlateApplication> GetApplication();
+
 	VkDevice GetDeviceHandle();
+
+	const char* GetTitle();
 
 	const std::string& GetAssetsPath() const;
 
@@ -49,11 +55,12 @@ public:
     
 protected:
 
-	static Engine* g_Instance;
-	
-	std::shared_ptr<VulkanRHI> m_VulkanRHI;
-	std::string m_AssetsPath;
-	bool m_IsRequestingExit;
-    
-    float m_DeltaTime;
+	static Engine*						g_Instance;
+
+	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
+	std::shared_ptr<SlateApplication>	m_SlateApplication;
+
+	std::string							m_AssetsPath;
+	bool								m_IsRequestingExit;
+    float								m_DeltaTime;
 };

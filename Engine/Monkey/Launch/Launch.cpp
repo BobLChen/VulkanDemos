@@ -33,7 +33,8 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 
 int32 EngineInit()
 {
-	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), SlateApplication::Get().GetPlatformApplication(), SlateApplication::Get().GetPlatformApplication()->GetWindow());
+	
+	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), GameEngine->GetApplication()->GetPlatformApplication(), GameEngine->GetApplication()->GetPlatformApplication()->GetWindow());
 	if (!AppMode->Init()) {
 		return FailedInitAppModule;
 	}

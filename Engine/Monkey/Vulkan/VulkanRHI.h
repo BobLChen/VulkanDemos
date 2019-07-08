@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Common/Common.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
 #include "RHIDefinitions.h"
+
 #include <string>
 
 class VulkanDevice;

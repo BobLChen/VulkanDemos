@@ -190,6 +190,7 @@ public:
 	virtual void Exist() = 0;
 
 protected:
+
 	std::vector<VkFence>				m_Fences;
 	VkSemaphore 						m_RenderComplete;
 	VkSemaphore							m_PresentComplete;
@@ -199,6 +200,7 @@ protected:
 
 	int32								m_FrameWidth;
 	int32								m_FrameHeight;
+
 private:
 	int32 								m_Width;
 	int32 								m_Height;
@@ -207,5 +209,4 @@ private:
 	std::shared_ptr<VulkanRHI> 			m_VulkanRHI;
 	std::shared_ptr<GenericApplication> m_Application;
 	std::shared_ptr<GenericWindow> 		m_Window;
-
 };
