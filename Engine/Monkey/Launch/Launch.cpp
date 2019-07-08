@@ -20,15 +20,17 @@ std::shared_ptr<AppModuleBase> AppMode;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
+    int32 width  = AppMode->GetWidth();
+    int32 height = AppMode->GetHeight();
+    const char* title = AppMode->GetTitle().c_str();
+    
+    int32 errorLevel = GameEngine->PreInit(cmdLine, width, height, title);
+    
 	if (!AppMode->PreInit()) {
 		return FailedPreInitAppModule;
 	}
 
-	int32 width  = AppMode->GetWidth();
-	int32 height = AppMode->GetHeight();
-	const char* title = AppMode->GetTitle().c_str();
-	
-	return GameEngine->PreInit(cmdLine, width, height, title);
+    return errorLevel;
 }
 
 int32 EngineInit()

@@ -68,14 +68,15 @@ extern int32 GuardedMain(const std::vector<std::string>& cmdLine);
 
 @end
 
-int main(int argc, const char * argv[]) {
-    for (int32 i = 0; i < argc; ++i)
-    {
+int main(int argc, const char * argv[])
+{
+    for (int32 i = 0; i < argc; ++i) {
         g_CmdLine.push_back(argv[i]);
     }
     
     [NSApplication sharedApplication];
     [NSApp setDelegate:[AppDelegate new]];
     [NSApp run];
+    
     return g_ErrorLevel;
 }

@@ -1,18 +1,20 @@
-#include "SlateApplication.h"
 #include "Engine.h"
+#include "SlateApplication.h"
 
 SlateApplication::SlateApplication()
 	: GenericApplicationMessageHandler()
-	, m_DeltaTime(0.16f)
 	, m_Engine(nullptr)
+    , m_Window(nullptr)
 	, m_Application(nullptr)
 {
-
+    
 }
 
 SlateApplication::~SlateApplication()
 {
-	
+    m_Engine = nullptr;
+    m_Window = nullptr;
+    m_Application = nullptr;
 }
 
 void SlateApplication::Init(Engine* engine)
@@ -27,6 +29,11 @@ std::shared_ptr<GenericApplication> SlateApplication::GetPlatformApplication()
 	return m_Application;
 }
 
+std::shared_ptr<GenericWindow> SlateApplication::GetPlatformWindow()
+{
+    return m_Window;
+}
+
 void SlateApplication::Shutdown(bool shutdownPlatform)
 {
 	if (m_Application)
@@ -38,14 +45,13 @@ void SlateApplication::Shutdown(bool shutdownPlatform)
 
 void SlateApplication::Tick(float detalTime)
 {
-	m_DeltaTime = detalTime;
 	PumpMessages();
 	TickPlatform(detalTime);
 }
 
 void SlateApplication::PumpMessages()
 {
-	m_Application->PumpMessages(m_DeltaTime);
+	m_Application->PumpMessages();
 }
 
 void SlateApplication::OnRequestingExit()
@@ -55,9 +61,9 @@ void SlateApplication::OnRequestingExit()
 
 std::shared_ptr<GenericWindow> SlateApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
-	std::shared_ptr<GenericWindow> newWindow = m_Application->MakeWindow(width, height, title);
-	m_Application->InitializeWindow(newWindow, true);
-	return newWindow;
+	m_Window = m_Application->MakeWindow(width, height, title);
+	m_Application->InitializeWindow(m_Window, true);
+	return m_Window;
 }
 
 void SlateApplication::TickPlatform(float deltaTime)

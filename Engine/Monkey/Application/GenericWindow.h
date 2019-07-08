@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "Vulkan/VulkanPlatform.h"
+
 #include <string>
 
 namespace WindowMode

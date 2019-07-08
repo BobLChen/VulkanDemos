@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common/Common.h"
-#include "Configuration/Platform.h"
 #include "Application/GenericWindow.h"
 
 #include <string>
@@ -82,6 +81,7 @@ public:
 	}
     
 private:
+    
 	MacWindow(int32 width, int32 height, const char* title);
 
 	float GetDPIScaleFactorAtPoint(float X, float Y);

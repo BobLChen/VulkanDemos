@@ -43,6 +43,11 @@ public:
 
 	static Engine* Get();
     
+    const char* GetTitle() const
+    {
+        return m_AppTitle.c_str();
+    }
+    
     void SetDeltaTime(float deltaTime)
     {
         m_DeltaTime = deltaTime;
@@ -54,12 +59,17 @@ public:
     }
     
 protected:
+    
+    void InitAssetsPath(const std::vector<std::string>& cmdLine);
+    
+protected:
 
 	static Engine*						g_Instance;
 
 	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
 	std::shared_ptr<SlateApplication>	m_SlateApplication;
-
+    
+    std::string                         m_AppTitle;
 	std::string							m_AssetsPath;
 	bool								m_IsRequestingExit;
     float								m_DeltaTime;

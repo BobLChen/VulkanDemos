@@ -11,7 +11,7 @@ GenericApplication::~GenericApplication()
 
 }
 
-void GenericApplication::PumpMessages(const float timeDelta)
+void GenericApplication::PumpMessages()
 {
 	
 }

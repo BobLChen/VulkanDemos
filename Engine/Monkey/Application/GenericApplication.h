@@ -13,7 +13,7 @@ public:
 
 	virtual ~GenericApplication();
 
-	virtual void PumpMessages(const float timeDelta);
+	virtual void PumpMessages();
 
 	virtual void Tick(const float timeDelta);
 

@@ -44,6 +44,8 @@ std::shared_ptr<SlateApplication> Engine::GetApplication()
 
 int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)
 {
+    m_AppTitle = title;
+    
 	m_SlateApplication = std::make_shared<SlateApplication>();
 	m_SlateApplication->Init(this);
 	m_SlateApplication->MakeWindow(width, height, title);
@@ -51,6 +53,13 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
 	m_VulkanRHI->Init();
     
+    InitAssetsPath(cmdLine);
+    
+	return 0;
+}
+
+void Engine::InitAssetsPath(const std::vector<std::string>& cmdLine)
+{
     if (cmdLine.size() > 0)
     {
         std::string exePath = cmdLine[0];
@@ -68,9 +77,8 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
         }
         m_AssetsPath = exePath.substr(0, exePath.size() - length);
     }
-	
+    
     MLOG("AssetsPath:%s", m_AssetsPath.c_str());
-	return 0;
 }
 
 const std::string& Engine::GetAssetsPath() const

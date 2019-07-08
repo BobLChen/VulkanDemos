@@ -1,9 +1,9 @@
-#include "MacApplication.h"
 #include "Common/Log.h"
+
 #include "Engine.h"
+#include "MacApplication.h"
 
 #include <memory>
-#include <map>
 #include <string>
 
 #include <Cocoa/Cocoa.h>
@@ -18,18 +18,17 @@ MacApplication::MacApplication()
 
 MacApplication::~MacApplication()
 {
-	if (m_Window != nullptr)
-	{
+	if (m_Window != nullptr) {
 		MLOGE("Window not shutdown.");
 	}
 }
 
-void MacApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void MacApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	GenericApplication::SetMessageHandler(messageHandler);
 }
 
-void MacApplication::PumpMessages(const float deltaTime)
+void MacApplication::PumpMessages()
 {
     while (true)
     {
@@ -37,8 +36,7 @@ void MacApplication::PumpMessages(const float deltaTime)
                                             untilDate:[NSDate distantPast]
                                                inMode:NSDefaultRunLoopMode
                                               dequeue:YES];
-        if (event == nil)
-        {
+        if (event == nil) {
             break;
         }
         
@@ -61,12 +59,11 @@ std::shared_ptr<GenericWindow> MacApplication::GetWindow()
 	return m_Window;
 }
 
-void MacApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void MacApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 	m_Window = std::dynamic_pointer_cast<MacWindow>(window);
 	m_Window->Initialize(this);
-	if (showImmediately)
-	{
+	if (showImmediately) {
 		m_Window->Show();
 	}
 }

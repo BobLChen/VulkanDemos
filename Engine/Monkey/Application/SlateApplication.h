@@ -28,7 +28,9 @@ public:
 	std::shared_ptr<GenericWindow> MakeWindow(int32 width, int32 height, const char* title);
 
 	std::shared_ptr<GenericApplication> GetPlatformApplication();
-
+    
+    std::shared_ptr<GenericWindow> GetPlatformWindow();
+    
 	void SetCursorPos(const Vector2& mouseCoordinate);
 
 public:
@@ -101,9 +103,10 @@ protected:
 
 private:
 
-	typedef std::shared_ptr<GenericApplication> GenericApplicationRef;
-
-	float 					m_DeltaTime;
+	typedef std::shared_ptr<GenericApplication>     GenericApplicationRef;
+    typedef std::shared_ptr<GenericWindow>          GenericWindowRef;
+    
 	Engine*					m_Engine;
+    GenericWindowRef        m_Window;
 	GenericApplicationRef	m_Application;
 };
