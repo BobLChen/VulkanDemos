@@ -1,7 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
-#include "Application/AppModeBase.h"
+#include "Application/AppModuleBase.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
@@ -24,11 +24,11 @@ typedef std::shared_ptr<Renderable>		RenderablePtr;
 typedef std::shared_ptr<Shader>			ShaderPtr;
 typedef std::shared_ptr<Material>		MaterialPtr;
 
-class PipelinesMode : public AppModeBase
+class PipelinesMode : public AppModuleBase
 {
 public:
     PipelinesMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: AppModeBase(width, height, title)
+		: AppModuleBase(width, height, title)
 		, m_Ready(false)
 		, m_ImageIndex(0)
     {
@@ -278,7 +278,7 @@ private:
     uint32							m_ImageIndex;
 };
 
-AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
     return new PipelinesMode(1120, 840, "Pipelines", cmdLine);
 }

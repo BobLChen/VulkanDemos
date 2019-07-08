@@ -1,5 +1,4 @@
 #include "Configuration/Platform.h"
-#include "Core/PixelFormat.h"
 
 #include "Engine.h"
 #include "Launch.h"
@@ -8,12 +7,22 @@
 #include <vector>
 #include <chrono>
 
-Engine* GameEngine = nullptr;
-AppModeBase* AppMode = nullptr;
+enum LaunchErrorType
+{
+	OK = 0,
+	FailedCreateAppModule	= -1,
+	FailedPreInitAppModule	= -2,
+	FailedInitAppModule		= -3,
+};
+
+std::shared_ptr<Engine> GameEngine;
+std::shared_ptr<AppModuleBase> AppMode;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
-	AppMode->PreInit();
+	if (!AppMode->PreInit()) {
+		return FailedPreInitAppModule;
+	}
 
 	int32 width  = AppMode->GetWidth();
 	int32 height = AppMode->GetHeight();
@@ -25,7 +34,9 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 int32 EngineInit()
 {
 	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), SlateApplication::Get().GetPlatformApplication(), SlateApplication::Get().GetPlatformApplication()->GetWindow());
-	AppMode->Init();
+	if (!AppMode->Init()) {
+		return FailedInitAppModule;
+	}
 
 	return GameEngine->Init();
 }
@@ -55,24 +66,24 @@ void EngineExit()
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-    GameEngine = new Engine();
-    
+    GameEngine = std::make_shared<Engine>();
+
 	AppMode = CreateAppMode(cmdLine);
-	if (AppMode == nullptr)
-	{
-		return -1;
+	if (!AppMode) {
+		return FailedCreateAppModule;
 	}
 	
 	int32 errorLevel = EnginePreInit(cmdLine);
-	if (errorLevel != 0) 
-	{
+	if (errorLevel) {
 		return errorLevel;
 	}
 
 	errorLevel = EngineInit();
+	if (errorLevel) {
+		return errorLevel;
+	}
 
-	while (!GameEngine->IsRequestingExit())
-	{
+	while (!GameEngine->IsRequestingExit()) {
 		EngineLoop();
 	}
 

@@ -33,7 +33,7 @@ set(Monkey_Application_HDRS
 	Monkey/Application/GenericApplication.h
 	Monkey/Application/GenericApplicationMessageHandler.h
 	Monkey/Application/SlateApplication.h
-	Monkey/Application/AppModeBase.h
+	Monkey/Application/AppModuleBase.h
 )
 set(Monkey_Application_SRCS
 	Monkey/Application/GenericWindow.cpp

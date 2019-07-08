@@ -789,7 +789,7 @@ VkPipeline Material::GetPipeline(const VertexInputDeclareInfo& inputDeclareInfo,
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
-#include "Application/AppModeBase.h"
+#include "Application/AppModuleBase.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
@@ -811,11 +811,11 @@ typedef std::shared_ptr<Mesh>		MeshPtr;
 typedef std::shared_ptr<Shader>		ShaderPtr;
 typedef std::shared_ptr<Material>	MaterialPtr;
 
-class Pipelines : public AppModeBase
+class Pipelines : public AppModuleBase
 {
 public:
     Pipelines(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: AppModeBase(width, height, title)
+		: AppModuleBase(width, height, title)
 		, m_Ready(false)
 		, m_CurrentBackBuffer(0)
         , m_RenderComplete(VK_NULL_HANDLE)
@@ -1088,7 +1088,7 @@ private:
     std::vector<VulkanFence*>     m_Fences;
 };
 
-AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
     return new Pipelines(1120, 840, "Pipelines", cmdLine);
 }

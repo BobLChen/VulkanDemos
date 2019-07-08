@@ -1,7 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
-#include "Application/AppModeBase.h"
+#include "Application/AppModuleBase.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
@@ -26,11 +26,11 @@
 #include <fstream>
 #include <istream>
 
-class OBJLoaderMode : public AppModeBase
+class OBJLoaderMode : public AppModuleBase
 {
 public:
 	OBJLoaderMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: AppModeBase(width, height, title)
+		: AppModuleBase(width, height, title)
 		, m_Ready(false)
 		, m_ImageIndex(0)
 	{
@@ -42,12 +42,12 @@ public:
 
 	}
 
-	virtual void PreInit() override
+	virtual bool PreInit() override
 	{
-		
+		return true;
 	}
 
-	virtual void Init() override
+	virtual bool Init() override
 	{
 		Prepare();
 
@@ -63,6 +63,8 @@ public:
 		InitShaderParams();
 		LoadAssets();
 		m_Ready = true;
+
+		return true;
 	}
 
 	virtual void Exist() override
@@ -252,7 +254,7 @@ private:
 	uint32 							    m_ImageIndex;
 };
 
-AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return new OBJLoaderMode(800, 600, "OBJLoader", cmdLine);
+	return std::make_shared<OBJLoaderMode>(800, 600, "OBJLoader", cmdLine);
 }

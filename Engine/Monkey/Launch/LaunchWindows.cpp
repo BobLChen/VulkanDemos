@@ -5,13 +5,10 @@
 #include "Application/Windows/WinWindow.h"
 
 #include <stdio.h>
-#include <comdef.h>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include <windows.h>
-#include <io.h>
 
 std::vector<std::string> g_CmdLine;
 

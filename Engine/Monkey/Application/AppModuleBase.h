@@ -2,18 +2,21 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
+
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanSwapChain.h"
 #include "Vulkan/VulkanDevice.h"
+
 #include "GenericWindow.h"
 #include "GenericApplication.h"
 #include "Engine.h"
+
 #include <string>
 
-class AppModeBase
+class AppModuleBase
 {
 public:
-	AppModeBase(int32 width, int32 height, const char* title)
+	AppModuleBase(int32 width, int32 height, const char* title)
 		: m_Width(width)
 		, m_Height(height)
 		, m_Title(title)
@@ -25,77 +28,77 @@ public:
 		
 	}
 
-	virtual ~AppModeBase()
+	virtual ~AppModuleBase()
 	{
 
 	}
 
-	FORCEINLINE const Engine& GetEngine() const
+	inline const Engine& GetEngine() const
 	{
 		return *m_Engine;
 	}
 
-	FORCEINLINE std::shared_ptr<VulkanRHI> GetVulkanRHI() const
+	inline std::shared_ptr<VulkanRHI> GetVulkanRHI() const
 	{
 		return m_VulkanRHI;
 	}
 
-	FORCEINLINE std::shared_ptr<GenericApplication> GetApplication() const
+	inline std::shared_ptr<GenericApplication> GetApplication() const
 	{
 		return m_Application;
 	}
 
-	FORCEINLINE std::shared_ptr<GenericWindow> GetWindow() const
+	inline std::shared_ptr<GenericWindow> GetWindow() const
 	{
 		return m_Window;
 	}
     
-    FORCEINLINE VkDevice GetDevice()
+    inline VkDevice GetDevice()
     {
         return m_VulkanRHI->GetDevice()->GetInstanceHandle();
     }
     
-    FORCEINLINE int32 GetFrameWidth() const
+    inline int32 GetFrameWidth() const
     {
         return m_VulkanRHI->GetSwapChain()->GetWidth();
     }
     
-    FORCEINLINE int32 GetFrameHeight() const
+    inline int32 GetFrameHeight() const
     {
         return m_VulkanRHI->GetSwapChain()->GetHeight();
     }
     
-	FORCEINLINE int32 GetWidth() const
+	inline int32 GetWidth() const
 	{
 		return m_Width;
 	}
     
-    FORCEINLINE void SetWidth(int32 width)
+    inline void SetWidth(int32 width)
     {
         m_Width = width;
     }
     
-	FORCEINLINE int32 GetHeight() const
+	inline int32 GetHeight() const
 	{
 		return m_Height;
 	}
     
-    FORCEINLINE void SetHeight(int32 height)
+    inline void SetHeight(int32 height)
     {
         m_Height = height;
     }
     
-    FORCEINLINE int32 GetFrameCount()
+    inline int32 GetFrameCount()
     {
         return GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
     }
     
-	FORCEINLINE const std::string& GetTitle()
+	inline const std::string& GetTitle()
 	{
 		return m_Title;
 	}
 
-	FORCEINLINE void Setup(Engine* engine, std::shared_ptr<VulkanRHI> vulkanRHI, std::shared_ptr<GenericApplication> application, std::shared_ptr<GenericWindow> window)
+	inline void Setup(std::shared_ptr<Engine> engine, std::shared_ptr<VulkanRHI> vulkanRHI, std::shared_ptr<GenericApplication> application, std::shared_ptr<GenericWindow> window)
 	{
 		m_Engine      = engine;
 		m_Window      = window;
@@ -103,12 +106,12 @@ public:
 		m_Application = application;
 	}
 	
-	FORCEINLINE int AcquireImageIndex()
+	inline int AcquireImageIndex()
 	{
 		return GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_PresentComplete);
 	}
 
-	FORCEINLINE void WaitFences(int index)
+	inline void WaitFences(int index)
 	{
 		VERIFYVULKANRESULT(vkWaitForFences(GetDevice(), 1, &(m_Fences[index]), VK_TRUE, MAX_uint64));
 		VERIFYVULKANRESULT(vkResetFences(GetDevice(), 1, &(m_Fences[index])));
@@ -178,9 +181,9 @@ public:
 		vkDestroySemaphore(GetDevice(), m_RenderComplete, VULKAN_CPU_ALLOCATOR);
 	}
 
-	virtual void PreInit() = 0;
+	virtual bool PreInit() = 0;
 	
-	virtual void Init() = 0;
+	virtual bool Init() = 0;
 
 	virtual void Loop() = 0;
 
@@ -200,7 +203,7 @@ private:
 	int32 								m_Width;
 	int32 								m_Height;
 	std::string 						m_Title;
-	Engine* 							m_Engine;
+	std::shared_ptr<Engine> 			m_Engine;
 	std::shared_ptr<VulkanRHI> 			m_VulkanRHI;
 	std::shared_ptr<GenericApplication> m_Application;
 	std::shared_ptr<GenericWindow> 		m_Window;

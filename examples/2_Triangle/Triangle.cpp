@@ -1,7 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
-#include "Application/AppModeBase.h"
+#include "Application/AppModuleBase.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "File/FileManager.h"
@@ -12,11 +12,11 @@
 #include <vector>
 #include <fstream>
 
-class TriangleMode : public AppModeBase
+class TriangleMode : public AppModuleBase
 {
 public:
 	TriangleMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: AppModeBase(width, height, title)
+		: AppModuleBase(width, height, title)
 		, m_Ready(false)
 		, m_PresentComplete(VK_NULL_HANDLE)
 		, m_RenderComplete(VK_NULL_HANDLE)
@@ -678,7 +678,7 @@ private:
 	uint32 						m_CurrentBackBuffer;
 };
 
-AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
 	return new TriangleMode(800, 600, "Triangle", cmdLine);
 }

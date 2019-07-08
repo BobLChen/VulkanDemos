@@ -28,7 +28,7 @@ void SlateApplication::Create(Engine* engine)
 	Create(GenericApplication::Create(), engine);
 }
 
-std::shared_ptr<SlateApplication> SlateApplication::Create(const std::shared_ptr<GenericApplication>& platformApplication, Engine* engine)
+std::shared_ptr<SlateApplication> SlateApplication::Create(const std::shared_ptr<GenericApplication> platformApplication, Engine* engine)
 {
 	m_CurrentApplication = std::shared_ptr<SlateApplication>(new SlateApplication());
 	m_CurrentApplication->SetUpEngine(engine);
@@ -101,7 +101,7 @@ void SlateApplication::DrawWindows()
 
 }
 
-bool SlateApplication::ShouldProcessUserInputMessages(const std::shared_ptr<GenericWindow>& platformWindow) const
+bool SlateApplication::ShouldProcessUserInputMessages(const std::shared_ptr<GenericWindow> platformWindow) const
 {
 	return false;
 }
@@ -121,12 +121,12 @@ bool SlateApplication::OnKeyUp(const int32 keyCode, const uint32 characterCode, 
 	return true;
 }
 
-bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button)
+bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow> platformWindow, const MouseButtons::Type button)
 {
 	return true;
 }
 
-bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
+bool SlateApplication::OnMouseDown(const std::shared_ptr<GenericWindow> platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -141,12 +141,12 @@ bool SlateApplication::OnMouseUp(const MouseButtons::Type button, const Vector2 
 	return true;
 }
 
-bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button)
+bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow> platformWindow, const MouseButtons::Type button)
 {
 	return true;
 }
 
-bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow>& platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
+bool SlateApplication::OnMouseDoubleClick(const std::shared_ptr<GenericWindow> platformWindow, const MouseButtons::Type button, const Vector2 cursorPos)
 {
 	return true;
 }
@@ -176,7 +176,7 @@ bool SlateApplication::OnCursorSet()
 	return true;
 }
 
-bool SlateApplication::OnTouchStarted(const std::shared_ptr<GenericWindow>& platformWindow, const Vector2& location, float force, int32 touchIndex, int32 controllerId)
+bool SlateApplication::OnTouchStarted(const std::shared_ptr<GenericWindow> platformWindow, const Vector2& location, float force, int32 touchIndex, int32 controllerId)
 {
 	return true;
 }
@@ -201,52 +201,52 @@ bool SlateApplication::OnTouchFirstMove(const Vector2& location, float force, in
 	return true;
 }
 
-bool SlateApplication::OnSizeChanged(const std::shared_ptr<GenericWindow>& window, const int32 width, const int32 height, bool wasMinimized)
+bool SlateApplication::OnSizeChanged(const std::shared_ptr<GenericWindow> window, const int32 width, const int32 height, bool wasMinimized)
 {
 	return true;
 }
 
-void SlateApplication::OnOSPaint(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::OnOSPaint(const std::shared_ptr<GenericWindow> window)
 {
 	return;
 }
 
-WindowSizeLimits SlateApplication::GetSizeLimitsForWindow(const std::shared_ptr<GenericWindow>& window) const
+WindowSizeLimits SlateApplication::GetSizeLimitsForWindow(const std::shared_ptr<GenericWindow> window) const
 {
 	return WindowSizeLimits();
 }
 
-void SlateApplication::OnResizingWindow(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::OnResizingWindow(const std::shared_ptr<GenericWindow> window)
 {
 
 }
 
-bool SlateApplication::BeginReshapingWindow(const std::shared_ptr<GenericWindow>& window)
+bool SlateApplication::BeginReshapingWindow(const std::shared_ptr<GenericWindow> window)
 {
 	return true;
 }
 
-void SlateApplication::FinishedReshapingWindow(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::FinishedReshapingWindow(const std::shared_ptr<GenericWindow> window)
 {
 
 }
 
-void SlateApplication::SignalSystemDPIChanged(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::SignalSystemDPIChanged(const std::shared_ptr<GenericWindow> window)
 {
 
 }
 
-void SlateApplication::HandleDPIScaleChanged(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::HandleDPIScaleChanged(const std::shared_ptr<GenericWindow> window)
 {
 
 }
 
-void SlateApplication::OnMovedWindow(const std::shared_ptr<GenericWindow>& window, const int32 x, const int32 y)
+void SlateApplication::OnMovedWindow(const std::shared_ptr<GenericWindow> window, const int32 x, const int32 y)
 {
 
 }
 
-void SlateApplication::OnWindowClose(const std::shared_ptr<GenericWindow>& window)
+void SlateApplication::OnWindowClose(const std::shared_ptr<GenericWindow> window)
 {
 
 }

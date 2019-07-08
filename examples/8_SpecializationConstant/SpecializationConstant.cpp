@@ -1,7 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Configuration/Platform.h"
-#include "Application/AppModeBase.h"
+#include "Application/AppModuleBase.h"
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
@@ -22,11 +22,11 @@
 #include "Utils/Alignment.h"
 #include <vector>
 
-class SpeciallizationConstantMode : public AppModeBase
+class SpeciallizationConstantMode : public AppModuleBase
 {
 public:
     SpeciallizationConstantMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-    : AppModeBase(width, height, title)
+    : AppModuleBase(width, height, title)
     , m_Ready(false)
     , m_ImageIndex(0)
     {
@@ -449,7 +449,7 @@ private:
     uint32                          m_ImageIndex;
 };
 
-AppModeBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)
 {
     return new SpeciallizationConstantMode(1120, 840, "SpeciallizationConstantMode", cmdLine);
 }
