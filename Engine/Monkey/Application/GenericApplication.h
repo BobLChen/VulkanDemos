@@ -15,7 +15,7 @@ public:
 
 	virtual void PumpMessages();
 
-	virtual void Tick(const float timeDelta);
+	virtual void Tick(float time, float delta);
 
 	virtual void Destroy();
 

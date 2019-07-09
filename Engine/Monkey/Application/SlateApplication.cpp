@@ -43,10 +43,10 @@ void SlateApplication::Shutdown(bool shutdownPlatform)
 	}
 }
 
-void SlateApplication::Tick(float detalTime)
+void SlateApplication::Tick(float time, float delta)
 {
 	PumpMessages();
-	TickPlatform(detalTime);
+	TickPlatform(time, delta);
 }
 
 void SlateApplication::PumpMessages()
@@ -66,9 +66,9 @@ std::shared_ptr<GenericWindow> SlateApplication::MakeWindow(int32 width, int32 h
 	return m_Window;
 }
 
-void SlateApplication::TickPlatform(float deltaTime)
+void SlateApplication::TickPlatform(float time, float delta)
 {
-	m_Application->Tick(deltaTime);
+	m_Application->Tick(time, delta);
 }
 
 void SlateApplication::SetCursorPos(const Vector2& mouseCoordinate)

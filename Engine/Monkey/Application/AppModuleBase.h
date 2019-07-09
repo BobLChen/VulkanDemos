@@ -185,7 +185,7 @@ public:
 	
 	virtual bool Init() = 0;
 
-	virtual void Loop() = 0;
+	virtual void Loop(float time, float delta) = 0;
 
 	virtual void Exist() = 0;
 

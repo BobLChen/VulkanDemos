@@ -7,7 +7,6 @@ Engine* Engine::g_Instance = nullptr;
 Engine::Engine()
     : m_VulkanRHI(nullptr)
 	, m_IsRequestingExit(false)
-    , m_DeltaTime(0.0f)
 {
 	Engine::g_Instance = this;
 }
@@ -32,11 +31,6 @@ VkDevice Engine::GetDeviceHandle()
 	return GetVulkanDevice()->GetInstanceHandle();
 }
 
-const char* Engine::GetTitle()
-{
-	return m_SlateApplication->GetPlatformApplication()->GetWindow()->GetTitle();
-}
-
 std::shared_ptr<SlateApplication> Engine::GetApplication()
 {
 	return m_SlateApplication;
@@ -53,12 +47,12 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
 	m_VulkanRHI->Init();
     
-    InitAssetsPath(cmdLine);
+    ParseAssetsPath(cmdLine);
     
 	return 0;
 }
 
-void Engine::InitAssetsPath(const std::vector<std::string>& cmdLine)
+void Engine::ParseAssetsPath(const std::vector<std::string>& cmdLine)
 {
     if (cmdLine.size() > 0)
     {
@@ -100,9 +94,9 @@ void Engine::Exist()
 	m_SlateApplication->Shutdown(true);
 }
 
-void Engine::Tick()
+void Engine::Tick(float time, float delta)
 {
-	m_SlateApplication->Tick(0.016f);
+	m_SlateApplication->Tick(time, delta);
 }
 
 void Engine::PumpMessage()

@@ -74,11 +74,10 @@ public:
         DestroyAssets();
 	}
     
-	virtual void Loop() override
+	virtual void Loop(float time, float delta) override
 	{
-		if (m_Ready)
-		{
-			Draw();
+		if (m_Ready) {
+			Draw(time, delta);
 		}
 	}
 
@@ -91,9 +90,9 @@ private:
 		Matrix4x4 projection;
 	};
 
-	void Draw()
+	void Draw(float time, float delta)
 	{
-		UpdateShaderParams();
+		UpdateShaderParams(time, delta);
 
 		m_ImageIndex = GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_AcquiredSemaphore);
 
@@ -162,15 +161,13 @@ private:
         vkCmdEndRenderPass(vkCmdBuffer);
 	}
     
-	void UpdateShaderParams()
+	void UpdateShaderParams(float time, float delta)
 	{
-        float deltaTime = Engine::Get()->GetDeltaTime();
-        
 		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
 		{
 			Vector3 position = m_MVPDatas[i].model.GetOrigin();
 
-			m_MVPDatas[i].model.AppendRotation(90.0f * deltaTime, Vector3::UpVector, &position);
+			m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector, &position);
 			m_Materials[i]->SetParam("uboMVP", &(m_MVPDatas[i]), sizeof(UBOData));
 		}
 	}

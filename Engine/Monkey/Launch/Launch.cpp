@@ -15,18 +15,23 @@ enum LaunchErrorType
 	FailedInitAppModule		= -3,
 };
 
-std::shared_ptr<Engine> GameEngine;
-std::shared_ptr<AppModuleBase> AppMode;
+std::shared_ptr<Engine> g_GameEngine;
+std::shared_ptr<AppModuleBase> g_AppModule;
+std::chrono::time_point<std::chrono::steady_clock> g_LastTime;
+float g_CurrTime = 0.0f;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
-    int32 width  = AppMode->GetWidth();
-    int32 height = AppMode->GetHeight();
-    const char* title = AppMode->GetTitle().c_str();
+    int32 width  = g_AppModule->GetWidth();
+    int32 height = g_AppModule->GetHeight();
+    const char* title = g_AppModule->GetTitle().c_str();
     
-    int32 errorLevel = GameEngine->PreInit(cmdLine, width, height, title);
+    int32 errorLevel = g_GameEngine->PreInit(cmdLine, width, height, title);
+	if (errorLevel) {
+		return errorLevel;
+	}
     
-	if (!AppMode->PreInit()) {
+	if (!g_AppModule->PreInit()) {
 		return FailedPreInitAppModule;
 	}
 
@@ -35,44 +40,46 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 
 int32 EngineInit()
 {
+	int32 errorLevel = g_GameEngine->Init();
+	if (errorLevel) {
+		return errorLevel;
+	}
+
+	g_AppModule->Setup(g_GameEngine, g_GameEngine->GetVulkanRHI(), g_GameEngine->GetApplication()->GetPlatformApplication(), g_GameEngine->GetApplication()->GetPlatformApplication()->GetWindow());
 	
-	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), GameEngine->GetApplication()->GetPlatformApplication(), GameEngine->GetApplication()->GetPlatformApplication()->GetWindow());
-	if (!AppMode->Init()) {
+	if (!g_AppModule->Init()) {
 		return FailedInitAppModule;
 	}
 
-	return GameEngine->Init();
+	return errorLevel;
 }
 
 void EngineLoop()
 {
-	auto tStart = std::chrono::high_resolution_clock::now();
-
-	GameEngine->PumpMessage();
-	if (GameEngine->IsRequestingExit())
-	{
-		return;
-	}
-	GameEngine->Tick();
-	AppMode->Loop();
-    
-    auto tEnd  = std::chrono::high_resolution_clock::now();
-    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    GameEngine->SetDeltaTime((float)tDiff / 1000.0f);
+	auto tNow   = std::chrono::high_resolution_clock::now();
+	auto tDiff  = std::chrono::duration<double, std::milli>(g_LastTime - tNow).count();
+	float delta = (float)tDiff / 1000.0f;
+	
+	g_AppModule->Loop(g_CurrTime, delta);
+	g_GameEngine->Tick(g_CurrTime, delta);
+	
+	g_LastTime = tNow;
+	g_CurrTime = g_CurrTime + delta;
 }
 
 void EngineExit()
 {
-	AppMode->Exist();
-	GameEngine->Exist();
+	g_AppModule->Exist();
+	g_GameEngine->Exist();
 }
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-    GameEngine = std::make_shared<Engine>();
+	g_LastTime   = std::chrono::high_resolution_clock::now();
+    g_GameEngine = std::make_shared<Engine>();
 
-	AppMode = CreateAppMode(cmdLine);
-	if (!AppMode) {
+	g_AppModule = CreateAppMode(cmdLine);
+	if (!g_AppModule) {
 		return FailedCreateAppModule;
 	}
 	
@@ -86,7 +93,7 @@ int32 GuardedMain(const std::vector<std::string>& cmdLine)
 		return errorLevel;
 	}
 
-	while (!GameEngine->IsRequestingExit()) {
+	while (!g_GameEngine->IsRequestingExit()) {
 		EngineLoop();
 	}
 

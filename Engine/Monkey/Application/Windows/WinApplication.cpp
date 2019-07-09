@@ -71,7 +71,7 @@ void WinApplication::SetMessageHandler(GenericApplicationMessageHandler* message
 	GenericApplication::SetMessageHandler(messageHandler);
 }
 
-void WinApplication::PumpMessages(const float deltaTime)
+void WinApplication::PumpMessages()
 {
 	MSG msg = {};
 	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -85,7 +85,7 @@ void WinApplication::PumpMessages(const float deltaTime)
 	}
 }
 
-void WinApplication::Tick(const float deltaTime)
+void WinApplication::Tick(float time, float delta)
 {
 
 }

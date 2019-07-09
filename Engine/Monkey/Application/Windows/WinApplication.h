@@ -15,9 +15,9 @@ public:
 
 	virtual ~WinApplication();
 
-	virtual void PumpMessages(const float timeDelta) override;
+	virtual void PumpMessages() override;
 
-	virtual void Tick(const float timeDelta) override;
+	virtual void Tick(float time, float delta) override;
 
 	virtual void Destroy() override;
 

@@ -16,7 +16,7 @@ void GenericApplication::PumpMessages()
 	
 }
 
-void GenericApplication::Tick(const float timeDelta)
+void GenericApplication::Tick(float time, float delta)
 {
 
 }

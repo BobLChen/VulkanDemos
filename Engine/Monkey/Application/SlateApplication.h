@@ -17,7 +17,7 @@ public:
 
 	virtual ~SlateApplication();
 
-	void Tick(float detalTime);
+	void Tick(float time, float delta);
 
 	void PumpMessages();
 	
@@ -99,7 +99,7 @@ public:
 
 protected:
 
-	void TickPlatform(float deltaTime);
+	void TickPlatform(float time, float delta);
 
 private:
 

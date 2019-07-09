@@ -21,7 +21,7 @@ public:
 
 	void Exist();
 
-	void Tick();
+	void Tick(float time, float delta);
 
 	void PumpMessage();
 
@@ -37,8 +37,6 @@ public:
 
 	VkDevice GetDeviceHandle();
 
-	const char* GetTitle();
-
 	const std::string& GetAssetsPath() const;
 
 	static Engine* Get();
@@ -48,19 +46,9 @@ public:
         return m_AppTitle.c_str();
     }
     
-    void SetDeltaTime(float deltaTime)
-    {
-        m_DeltaTime = deltaTime;
-    }
-    
-    float GetDeltaTime()
-    {
-        return m_DeltaTime;
-    }
-    
 protected:
     
-    void InitAssetsPath(const std::vector<std::string>& cmdLine);
+    void ParseAssetsPath(const std::vector<std::string>& cmdLine);
     
 protected:
 
@@ -72,5 +60,4 @@ protected:
     std::string                         m_AppTitle;
 	std::string							m_AssetsPath;
 	bool								m_IsRequestingExit;
-    float								m_DeltaTime;
 };
