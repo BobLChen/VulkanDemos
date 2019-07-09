@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Application/GenericApplication.h"
 #include "Application/GenericWindow.h"
+#include "Application/GenericApplication.h"
 
 #include "WinWindow.h"
 

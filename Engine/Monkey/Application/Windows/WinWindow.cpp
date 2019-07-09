@@ -35,8 +35,7 @@ WinWindow::WinWindow(int32 width, int32 height, const char* title)
 
 WinWindow::~WinWindow()
 {
-	if (m_Window != nullptr)
-	{
+	if (m_Window != nullptr) {
 		m_Window = nullptr;
 	}
 }
@@ -117,7 +116,7 @@ void WinWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newH
 {
 	m_X = newX;
 	m_Y = newY;
-	m_Width = newWidth;
+	m_Width  = newWidth;
 	m_Height = newHeight;
 }
 

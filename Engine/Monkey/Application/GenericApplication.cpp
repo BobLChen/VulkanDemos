@@ -23,11 +23,13 @@ void GenericApplication::Tick(float time, float delta)
 
 std::shared_ptr<GenericWindow> GenericApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
+
 	return nullptr;
 }
 
 std::shared_ptr<GenericWindow> GenericApplication::GetWindow()
 {
+
 	return nullptr;
 }
 

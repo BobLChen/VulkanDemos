@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common/Common.h"
-#include "Configuration/Platform.h"
 #include "Application/GenericWindow.h"
 
 #include <Windows.h>
@@ -88,6 +87,7 @@ public:
 	}
 
 private:
+
 	WinWindow(int32 width, int32 height, const char* title);
 
 	float GetDPIScaleFactorAtPoint(float X, float Y);

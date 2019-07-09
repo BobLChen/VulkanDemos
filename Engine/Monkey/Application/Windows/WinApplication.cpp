@@ -1,6 +1,7 @@
-#include "WinApplication.h"
 #include "Common/Log.h"
+
 #include "Engine.h"
+#include "WinApplication.h"
 
 #include <memory>
 #include <map>
@@ -24,8 +25,7 @@ WinApplication::WinApplication()
 
 WinApplication::~WinApplication()
 {
-	if (m_Window != nullptr)
-	{
+	if (m_Window != nullptr) {
 		MLOGE("Window not shutdown.");
 	}
 }
@@ -74,13 +74,11 @@ void WinApplication::SetMessageHandler(GenericApplicationMessageHandler* message
 void WinApplication::PumpMessages()
 {
 	MSG msg = {};
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-	{
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	if (msg.message == WM_QUIT)
-	{
+	if (msg.message == WM_QUIT) {
 		Engine::Get()->RequestExit(true);
 	}
 }
@@ -104,8 +102,7 @@ void WinApplication::InitializeWindow(const std::shared_ptr<GenericWindow> windo
 {
 	m_Window = std::dynamic_pointer_cast<WinWindow>(window);
 	m_Window->Initialize(this);
-	if (showImmediately)
-	{
+	if (showImmediately) {
 		m_Window->Show();
 	}
 }
