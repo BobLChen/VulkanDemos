@@ -217,8 +217,7 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 	EnumerateInstanceExtensionProperties(nullptr, globalLayerExtensions[0]);
 
 	std::vector<std::string> foundUniqueExtensions;
-	for (int32 i = 0; i < globalLayerExtensions[0].extensionProps.size(); ++i) 
-	{
+	for (int32 i = 0; i < globalLayerExtensions[0].extensionProps.size(); ++i) {
 		StringUtils::AddUnique(foundUniqueExtensions, globalLayerExtensions[0].extensionProps[i].extensionName);
 	}
 	
@@ -238,13 +237,11 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 		globalLayerExtensions.push_back(layer);
 	}
 
-	for (const std::string& name : foundUniqueLayers) 
-	{
+	for (const std::string& name : foundUniqueLayers) {
 		MLOG("- Found instance layer %s", name.c_str());
 	}
 
-	for (const std::string& name : foundUniqueExtensions) 
-	{
+	for (const std::string& name : foundUniqueExtensions) {
 		MLOG("- Found instance extension %s", name.c_str());
 	}
 	
@@ -253,78 +250,63 @@ void VulkanRHI::GetInstanceLayersAndExtensions(std::vector<const char*>& outInst
 	{
 		const char* currValidationLayer = G_ValidationLayersInstance[i];
 		bool found = FindLayerInList(globalLayerExtensions, currValidationLayer);
-		if (found) 
-		{
+		if (found) {
 			outInstanceLayers.push_back(currValidationLayer);
-		}
-		else 
-		{
+		} 
+		else {
 			MLOG("Unable to find Vulkan instance validation layer '%s'", currValidationLayer);
 		}
 	}
 
     const char* foundDebugUtilsLayer = nullptr;
     outDebugUtils = FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME, foundDebugUtilsLayer);
-    if (outDebugUtils && *foundDebugUtilsLayer)
-    {
+    if (outDebugUtils && *foundDebugUtilsLayer) {
         outInstanceLayers.push_back(foundDebugUtilsLayer);
     }
 
-    if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
-    {
+    if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_UTILS_EXTENSION_NAME)) {
         outInstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 #endif // MONKEY_DEBUG
 
-	if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME))
-	{
+	if (outDebugUtils && FindLayerExtensionInList(globalLayerExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 		outInstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 	}
 	
 	std::vector<const char*> platformExtensions;
 	VulkanPlatform::GetInstanceExtensions(platformExtensions);
 
-	for (const char* extension : platformExtensions) 
-	{
-		if (FindLayerExtensionInList(globalLayerExtensions, extension))
-		{
+	for (const char* extension : platformExtensions) {
+		if (FindLayerExtensionInList(globalLayerExtensions, extension)) {
 			outInstanceExtensions.push_back(extension);
 		}
 	}
 
-	for (int32 i = 0; G_InstanceExtensions[i] != nullptr; ++i)
-	{
-		if (FindLayerExtensionInList(globalLayerExtensions, G_InstanceExtensions[i]))
-		{
+	for (int32 i = 0; G_InstanceExtensions[i] != nullptr; ++i) {
+		if (FindLayerExtensionInList(globalLayerExtensions, G_InstanceExtensions[i])) {
 			outInstanceExtensions.push_back(G_InstanceExtensions[i]);
 		}
 	}
     
 	TrimDuplicates(outInstanceLayers);
-	if (outInstanceLayers.size() > 0)
-	{
+	if (outInstanceLayers.size() > 0) {
 		MLOG("Using instance layers");
-		for (const char* layer : outInstanceLayers)
-		{
+		for (const char* layer : outInstanceLayers) {
 			MLOG("* %s", layer);
 		}
 	}
-	else
-	{
+	else {
 		MLOG("Not using instance layers");
 	}
 
 	TrimDuplicates(outInstanceExtensions);
-	if (outInstanceExtensions.size() > 0)
-	{
+	if (outInstanceExtensions.size() > 0) {
 		MLOG("Using instance extensions");
-		for (const char* extension : outInstanceExtensions)
-		{
+		for (const char* extension : outInstanceExtensions) {
 			MLOG("* %s", extension);
 		}
 	}
-	else
-	{
+	else {
 		MLOG("Not using instance extensions");
 	}
 }

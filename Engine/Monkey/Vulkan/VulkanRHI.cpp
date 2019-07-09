@@ -23,15 +23,12 @@ VulkanRHI::VulkanRHI()
 	, m_DepthStencilView(VK_NULL_HANDLE)
 	, m_DepthStencilMemory(VK_NULL_HANDLE)
 	, m_RenderPass(VK_NULL_HANDLE)
-	, m_PipelineCache(VK_NULL_HANDLE)
 	, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
-	, m_CommandPool(VK_NULL_HANDLE)
-	, m_SubmitPipelineStages(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
     , m_PixelFormat(PF_B8G8R8A8)
     , m_DepthFormat(PF_D24)
 	, m_SupportsDebugUtilsExt(false)
 {
-								;
+	
 }
 
 VulkanRHI::~VulkanRHI()
@@ -57,11 +54,8 @@ void VulkanRHI::PostInit()
 void VulkanRHI::Shutdown()
 {
 	DestroyFrameBuffer();
-    DestoryPipelineCache();
     DestoryRenderPass();
     DestoryDepthStencil();
-    DestoryCommandBuffers();
-    DestoryCommandPool();
     DestorySwapChain();
     
     m_Device->Destroy();
@@ -84,11 +78,8 @@ void VulkanRHI::InitInstance()
 
     SelectAndInitDevice();
     RecreateSwapChain();
-    CreateCommandPool();
-    CreateCommandBuffers();
     CreateDepthStencil();
     CreateRenderPass();
-    CreatePipelineCache();
 	CreateFrameBuffer();
 }
 
@@ -122,18 +113,6 @@ void VulkanRHI::DestroyFrameBuffer()
 	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) {
 		vkDestroyFramebuffer(m_Device->GetInstanceHandle(), m_FrameBuffers[i], VULKAN_CPU_ALLOCATOR);
 	}
-}
-
-void VulkanRHI::CreatePipelineCache()
-{
-    VkPipelineCacheCreateInfo createInfo;
-    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
-    VERIFYVULKANRESULT(vkCreatePipelineCache(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineCache));
-}
-
-void VulkanRHI::DestoryPipelineCache()
-{
-    vkDestroyPipelineCache(m_Device->GetInstanceHandle(), m_PipelineCache, VULKAN_CPU_ALLOCATOR);
 }
 
 void VulkanRHI::CreateRenderPass()
@@ -210,26 +189,12 @@ void VulkanRHI::DestoryRenderPass()
     vkDestroyRenderPass(m_Device->GetInstanceHandle(), m_RenderPass, VULKAN_CPU_ALLOCATOR);
 }
 
-void VulkanRHI::CreateCommandPool()
-{
-    VkCommandPoolCreateInfo createInfo;
-    ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-    createInfo.queueFamilyIndex = m_Device->GetGraphicsQueue()->GetFamilyIndex();
-    createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    VERIFYVULKANRESULT(vkCreateCommandPool(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_CommandPool));
-}
-
-void VulkanRHI::DestoryCommandPool()
-{
-    vkDestroyCommandPool(m_Device->GetInstanceHandle(), m_CommandPool, VULKAN_CPU_ALLOCATOR);
-}
-
 void VulkanRHI::RecreateSwapChain()
 {
     uint32 desiredNumBackBuffers = 3;
-	
-    int32 width  = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetWidth();
-    int32 height = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetHeight();
+    int32 width  = Engine::Get()->GetPlatformWindow()->GetWidth();
+    int32 height = Engine::Get()->GetPlatformWindow()->GetHeight();
+
     m_SwapChain  = std::shared_ptr<VulkanSwapChain>(new VulkanSwapChain(m_Instance, m_Device, m_PixelFormat, width, height, &desiredNumBackBuffers, m_FrameImages, 1));
     
     m_FrameImageViews.resize(m_FrameImages.size());
@@ -257,23 +222,6 @@ void VulkanRHI::DestorySwapChain()
         vkDestroyImageView(m_Device->GetInstanceHandle(), m_FrameImageViews[i], VULKAN_CPU_ALLOCATOR);
     }
     m_SwapChain = nullptr;
-}
-
-void VulkanRHI::CreateCommandBuffers()
-{
-    m_CommandBuffers.resize(m_FrameImageViews.size());
-
-    VkCommandBufferAllocateInfo allocateInfo;
-    ZeroVulkanStruct(allocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-    allocateInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocateInfo.commandPool        = m_CommandPool;
-    allocateInfo.commandBufferCount = uint32_t(m_FrameImageViews.size());
-    VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device->GetInstanceHandle(), &allocateInfo, m_CommandBuffers.data()));
-}
-
-void VulkanRHI::DestoryCommandBuffers()
-{
-    vkFreeCommandBuffers(m_Device->GetInstanceHandle(), m_CommandPool, uint32_t(m_FrameImageViews.size()), m_CommandBuffers.data());
 }
 
 void VulkanRHI::CreateDepthStencil()
@@ -354,8 +302,7 @@ void VulkanRHI::CreateInstance()
 	instanceCreateInfo.ppEnabledLayerNames     = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
 
 	VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);
-	if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
-	{
+	if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
 		MLOG("%s", "Cannot find a compatible Vulkan driver (ICD).");
 	}
 	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)
@@ -385,19 +332,12 @@ void VulkanRHI::CreateInstance()
 
 		MLOG("Vulkan driver doesn't contain specified extensions:\n%s", missingExtensions.c_str());
 	}
-	else if (result != VK_SUCCESS)
-	{
+	else if (result != VK_SUCCESS) {
 		MLOG("Vulkan failed to create instance.");
 	}
-	else
-	{
+	else {
 		MLOG("Vulkan successed to create instance.");
 	}
-    
-    if (result != VK_SUCCESS)
-    {
-
-    }
 }
 
 void VulkanRHI::SelectAndInitDevice()
@@ -405,14 +345,12 @@ void VulkanRHI::SelectAndInitDevice()
     uint32 gpuCount = 0;
     VkResult result = vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
 
-    if (result == VK_ERROR_INITIALIZATION_FAILED)
-    {
+    if (result == VK_ERROR_INITIALIZATION_FAILED) {
         MLOG("%s\n", "Cannot find a compatible Vulkan device or driver. Try updating your video driver to a more recent version and make sure your video card supports Vulkan.");
         return;
     }
     
-    if (gpuCount == 0)
-    {
+    if (gpuCount == 0) {
         MLOG("%s\n", "Couldn't enumerate physical devices! Make sure your drivers are up to date and that you are not pending a reboot.");
         return;
     }
@@ -442,8 +380,7 @@ void VulkanRHI::SelectAndInitDevice()
         }
 	}
     
-    for (int32 index = 0; index < integratedDevices.size(); ++index)
-    {
+    for (int32 index = 0; index < integratedDevices.size(); ++index) {
         discreteDevices.push_back(integratedDevices[index]);
     }
     

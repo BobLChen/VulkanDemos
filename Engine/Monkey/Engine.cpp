@@ -28,12 +28,22 @@ std::shared_ptr<VulkanDevice> Engine::GetVulkanDevice()
 
 VkDevice Engine::GetDeviceHandle()
 {
-	return GetVulkanDevice()->GetInstanceHandle();
+	return m_VulkanRHI->GetDevice()->GetInstanceHandle();
 }
 
 std::shared_ptr<SlateApplication> Engine::GetApplication()
 {
 	return m_SlateApplication;
+}
+
+std::shared_ptr<GenericApplication> Engine::GetPlatformApplication()
+{
+	return m_SlateApplication->GetPlatformApplication();
+}
+
+std::shared_ptr<GenericWindow> Engine::GetPlatformWindow()
+{
+	return m_SlateApplication->GetPlatformWindow();
 }
 
 int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)

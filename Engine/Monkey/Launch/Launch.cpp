@@ -45,7 +45,7 @@ int32 EngineInit()
 		return errorLevel;
 	}
 
-	g_AppModule->Setup(g_GameEngine, g_GameEngine->GetVulkanRHI(), g_GameEngine->GetApplication()->GetPlatformApplication(), g_GameEngine->GetApplication()->GetPlatformApplication()->GetWindow());
+	g_AppModule->Setup(g_GameEngine);
 	
 	if (!g_AppModule->Init()) {
 		return FailedInitAppModule;

@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+class GenericWindow;
+class GenericApplication;
 class SlateApplication;
 
 class Engine
@@ -31,9 +33,13 @@ public:
 
 	std::shared_ptr<VulkanRHI> GetVulkanRHI();
 
-	std::shared_ptr<VulkanDevice> GetVulkanDevice();
-
 	std::shared_ptr<SlateApplication> GetApplication();
+
+	std::shared_ptr<GenericApplication> GetPlatformApplication();
+
+	std::shared_ptr<GenericWindow> GetPlatformWindow();
+
+	std::shared_ptr<VulkanDevice> GetVulkanDevice();
 
 	VkDevice GetDeviceHandle();
 

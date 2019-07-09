@@ -56,21 +56,17 @@ void VulkanRHI::SetupDebugLayerCallback()
     
     auto func    = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(m_Instance, VK_CREATE_DEBUG_REPORT_CALLBACK_EXT_NAME);
     bool success = true;
-    if (func != nullptr)
-    {
+    if (func != nullptr) {
         success = func(m_Instance, &debugInfo, nullptr, &m_MsgCallback) == VK_SUCCESS;
     }
-    else
-    {
+    else {
         success = false;
     }
     
-    if (success)
-    {
+    if (success) {
         MLOG("Setup debug callback success.");
     }
-    else
-    {
+    else {
         MLOG("Setup debug callback failed.")
     }
 }

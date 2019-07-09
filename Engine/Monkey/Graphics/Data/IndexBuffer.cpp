@@ -3,6 +3,7 @@
 
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanDevice.h"
+#include "Vulkan/VulkanCommandBuffer.h"
 
 #include "Engine.h"
 #include "IndexBuffer.h"
@@ -98,51 +99,18 @@ void IndexBuffer::CreateBuffer()
 	VERIFYVULKANRESULT(vkBindBufferMemory(device, m_Buffer, m_Memory, 0));
 
 	// TODO:延迟的专用队列拷贝
-	// 创建Command，将Host数据拷贝到Local端
-	VkCommandBuffer xferCmdBuffer;
-	VkCommandBufferAllocateInfo xferCmdBufferInfo;
-	ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-	xferCmdBufferInfo.commandPool        = vulkanRHI->GetCommandPool();
-	xferCmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	xferCmdBufferInfo.commandBufferCount = 1;
-	VERIFYVULKANRESULT(vkAllocateCommandBuffers(device, &xferCmdBufferInfo, &xferCmdBuffer));
+	VulkanCommandListContextImmediate& context = Engine::Get()->GetVulkanDevice()->GetImmediateContext();
+	VulkanCmdBuffer* cmdBuffer = context.GetCommandBufferManager()->GetUploadCmdBuffer();
     
-	// 开始录制命令
-	VkCommandBufferBeginInfo cmdBufferBeginInfo;
-	ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-	VERIFYVULKANRESULT(vkBeginCommandBuffer(xferCmdBuffer, &cmdBufferBeginInfo));
-
 	// 将Host Buffer拷贝至LocalDevice Buffer
 	VkBufferCopy copyRegion = {};
 	copyRegion.size = m_AllocationSize;
-	vkCmdCopyBuffer(xferCmdBuffer, hostBuffer, m_Buffer, 1, &copyRegion);
+	vkCmdCopyBuffer(cmdBuffer->GetHandle(), hostBuffer, m_Buffer, 1, &copyRegion);
 
-	// 结束录制
-	VERIFYVULKANRESULT(vkEndCommandBuffer(xferCmdBuffer));
-
-	// 准备CommitInfo
-	VkSubmitInfo submitInfo;
-	ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers    = &xferCmdBuffer;
-    
-	// 准备同步对象
-	VkFenceCreateInfo fenceInfo;
-	ZeroVulkanStruct(fenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-	fenceInfo.flags = 0;
-    
-	// 创建Fence同步对象
-	VkFence fence;
-	VERIFYVULKANRESULT(vkCreateFence(device, &fenceInfo, VULKAN_CPU_ALLOCATOR, &fence));
-
-	// 提交Command命令
-	VERIFYVULKANRESULT(vkQueueSubmit(vulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence));
-	// 等待执行完毕
-	VERIFYVULKANRESULT(vkWaitForFences(device, 1, &fence, VK_TRUE, MAX_int64));
+	// 提交
+	context.GetCommandBufferManager()->SubmitUploadCmdBuffer();
 
 	// 销毁Host端数据、Command、同步对象
-	vkDestroyFence(device, fence, VULKAN_CPU_ALLOCATOR);
-	vkFreeCommandBuffers(device, vulkanRHI->GetCommandPool(), 1, &xferCmdBuffer);
 	vkDestroyBuffer(device, hostBuffer, VULKAN_CPU_ALLOCATOR);
 	vkFreeMemory(device, hostMemory, VULKAN_CPU_ALLOCATOR);
 }

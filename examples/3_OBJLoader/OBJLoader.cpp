@@ -1,7 +1,6 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Configuration/Platform.h"
-#include "Application/AppModuleBase.h"
+
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
@@ -10,8 +9,8 @@
 #include "Vulkan/VulkanCommandBuffer.h"
 #include "Vulkan/VulkanContext.h"
 #include "Vulkan/VulkanFence.h"
-#include "Math/Vector4.h"
-#include "Math/Matrix4x4.h"
+#include "Vulkan/VulkanCommandBuffer.h"
+
 #include "Graphics/Data/VertexBuffer.h"
 #include "Graphics/Data/IndexBuffer.h"
 #include "Graphics/Data/VulkanBuffer.h"
@@ -19,8 +18,13 @@
 #include "Graphics/Material/Material.h"
 #include "Graphics/Renderer/Renderable.h"
 #include "Graphics/Command/DrawCommand.h"
+
+#include "Math/Vector4.h"
+#include "Math/Matrix4x4.h"
+
 #include "File/FileManager.h"
 #include "Loader/MeshLoader.h"
+#include "Application/AppModuleBase.h"
 
 #include <vector>
 #include <fstream>
@@ -50,27 +54,17 @@ public:
 	virtual bool Init() override
 	{
 		Prepare();
-
-		for (int32 i = 0; i < GetFrameCount(); ++i)
-		{
-			VkSemaphore semaphore;
-			VkSemaphoreCreateInfo createInfo;
-			ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-			vkCreateSemaphore(GetDevice(), &createInfo, VULKAN_CPU_ALLOCATOR, &semaphore);
-			m_RenderingDoneSemaphores.push_back(semaphore);
-		}
-
+		InitFences();
 		InitShaderParams();
 		LoadAssets();
 		m_Ready = true;
-
 		return true;
 	}
 
 	virtual void Exist() override
 	{
-		WaitFences(m_ImageIndex);
 		Release();
+		DestroyFences();
         DestroyAssets();
 	}
     
@@ -118,43 +112,47 @@ private:
 	
 	void RecordCommandBuffers(VulkanCommandListContextImmediate& cmdContext, VulkanCmdBuffer* cmdBuffer)
 	{
+		VkRenderPass renderPass   = GetVulkanRHI()->GetRenderPass();
+		int32 frameWidth          = GetVulkanRHI()->GetSwapChain()->GetWidth();
+		int32 frameHeight         = GetVulkanRHI()->GetSwapChain()->GetHeight();
+		VkFramebuffer frameBuffer = GetVulkanRHI()->GetFrameBuffers()[m_ImageIndex];
+
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
         
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.renderPass      = m_RenderPass;
+		renderPassBeginInfo.renderPass      = renderPass;
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
-		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
+		renderPassBeginInfo.renderArea.extent.width  = frameWidth;
+		renderPassBeginInfo.renderArea.extent.height = frameHeight;
 		
 		VkViewport viewport = {};
 		viewport.x = 0;
-		viewport.y = m_FrameHeight;
-		viewport.width  =  (float)m_FrameWidth;
-		viewport.height = -(float)m_FrameHeight;
+		viewport.y = frameHeight;
+		viewport.width  =  (float)frameWidth;
+		viewport.height = -(float)frameHeight;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
-		scissor.extent.width  = (uint32)m_FrameWidth;
-		scissor.extent.height = (uint32)m_FrameHeight;
+		scissor.extent.width  = (uint32)frameWidth;
+		scissor.extent.height = (uint32)frameHeight;
 		scissor.offset.x      = 0;
 		scissor.offset.y      = 0;
         
         VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
         
-        renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];
+        renderPassBeginInfo.framebuffer = frameBuffer;
         vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
         vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);
 
-		for (int32 i = 0; i < m_DrawCommands.size(); ++i)
-		{
+		for (int32 i = 0; i < m_DrawCommands.size(); ++i) {
 			m_DrawCommands[i]->Prepare(cmdBuffer, &cmdContext);
 		}
         
@@ -178,6 +176,8 @@ private:
 
 		float tx = 0;
 		float ty = 0;
+		float fw = GetVulkanRHI()->GetSwapChain()->GetWidth();
+		float fh = GetVulkanRHI()->GetSwapChain()->GetHeight();
 
 		for (int32 row = 0; row < 25; ++row)
 		{
@@ -197,8 +197,33 @@ private:
 				m_MVPDatas[index].view.SetInverse();
         
 				m_MVPDatas[index].projection.SetIdentity();
-				m_MVPDatas[index].projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
+				m_MVPDatas[index].projection.Perspective(MMath::DegreesToRadians(60.0f), fw, fh, 0.01f, 3000.0f);
 			}
+		}
+
+	}
+
+	void DestroyFences()
+	{
+		VkDevice vkDevice = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+		for (int32 i = 0; i < m_RenderingDoneSemaphores.size(); ++i) {
+			vkDestroySemaphore(vkDevice, m_RenderingDoneSemaphores[i], VULKAN_CPU_ALLOCATOR);
+		}
+		m_RenderingDoneSemaphores.clear();
+	}
+
+	void InitFences()
+	{
+		int32 bufferCount = GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
+		VkDevice vkDevice = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+
+		for (int32 i = 0; i < bufferCount; ++i)
+		{
+			VkSemaphore semaphore;
+			VkSemaphoreCreateInfo createInfo;
+			ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+			vkCreateSemaphore(vkDevice, &createInfo, VULKAN_CPU_ALLOCATOR, &semaphore);
+			m_RenderingDoneSemaphores.push_back(semaphore);
 		}
 	}
 
@@ -217,6 +242,7 @@ private:
 
 		m_Materials.resize(m_MVPDatas.size());
 		m_DrawCommands.resize(m_MVPDatas.size());
+
 		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
 		{
 			m_Materials[i] = std::make_shared<Material>(m_Shader);
