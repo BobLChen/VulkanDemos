@@ -35,6 +35,5 @@ private:
     VkQueue         m_Queue;
     uint32          m_FamilyIndex;
 	VulkanDevice*   m_Device;
-    uint64          m_SubmitCounter;
 };
 

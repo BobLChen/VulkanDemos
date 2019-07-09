@@ -1,3 +1,11 @@
+# demo
+set(Monkey_Demo_HDRS
+	Monkey/Demo/VulkanUtils.h
+)
+set(Monkey_Demo_SRCS
+	
+)
+
 set(Monkey_Configuration_HDRS
 	Monkey/Configuration/PerPlatformCppDefines.h
 	Monkey/Configuration/Platform.h
@@ -68,7 +76,6 @@ set(Monkey_Utils_SRCS
 	Monkey/Utils/Alignment.h
 	Monkey/Utils/SecureHash.h
 	Monkey/Utils/Crc.h
-	Monkey/Utils/VulkanUtils.h
 )
 set(Monkey_Utils_HDRS
 	Monkey/Utils/SecureHash.cpp
@@ -390,6 +397,10 @@ elseif (UNIX)
 endif ()
 
 add_library(Monkey STATIC
+	# demo
+	${Monkey_Demo_HDRS}
+	${Monkey_Demo_SRCS}
+
 	${Monkey_Configuration_HDRS}
 	${Monkey_Configuration_SRCS}
 
@@ -482,6 +493,10 @@ add_library(Monkey STATIC
 	${Monkey_Graphics_Command_SRCS}
 )
 
+# demo
+source_group(Monkey\\Demo FILES ${Monkey_Demo_HDRS} ${Monkey_Demo_SRCS})
+
+# engine
 source_group(Monkey FILES ${Monkey_App_HDRS} ${Monkey_App_SRCS})
 source_group(Monkey\\Core FILES ${Monkey_Core_HDRS} ${Monkey_Core_SRCS})
 

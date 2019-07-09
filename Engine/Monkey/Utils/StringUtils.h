@@ -186,7 +186,7 @@ struct StringUtils
 		}
 		return numBytes;
 	}
-
+    
 };
 
 

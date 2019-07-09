@@ -173,9 +173,7 @@ private:
 	void InitShaderParams()
 	{
 		m_MVPDatas.resize(25 * 25);
-
-		float tx = 0;
-		float ty = 0;
+        
 		float fw = GetVulkanRHI()->GetSwapChain()->GetWidth();
 		float fh = GetVulkanRHI()->GetSwapChain()->GetHeight();
 

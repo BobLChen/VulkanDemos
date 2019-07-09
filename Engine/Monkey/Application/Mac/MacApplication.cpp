@@ -44,7 +44,7 @@ void MacApplication::PumpMessages()
     }
 }
 
-void MacApplication::Tick(const float deltaTime)
+void MacApplication::Tick(float time, float delta)
 {
     
 }

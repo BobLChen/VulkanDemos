@@ -101,7 +101,6 @@ bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material,
 	for (int32 i = 0; i < ubParams.size(); ++i)
 	{
 		int32 set     = ubParams[i].set;
-		int32 binding = ubParams[i].binding;
 		int32 ubSize  = ubParams[i].buffer->GetContentSize();
 		uint64 ringOffset = uniformBufferUploader->AllocateMemory(ubSize, uboAlignment);
 		

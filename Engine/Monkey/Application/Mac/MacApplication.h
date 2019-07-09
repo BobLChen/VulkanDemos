@@ -17,7 +17,7 @@ public:
 
 	virtual void PumpMessages() override;
 
-	virtual void Tick(const float timeDelta) override;
+	virtual void Tick(float time, float delta) override;
 
 	virtual void Destroy() override;
 

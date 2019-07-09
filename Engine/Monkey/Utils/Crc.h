@@ -2,8 +2,8 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
+
 #include <string>
-#include <unordered_map>
 
 struct Crc
 {
@@ -21,7 +21,7 @@ struct Crc
 		std::hash<T> hasher;
 		seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 	}
-
+    
 	static uint32 MakeHashCode(uint32 a, uint32 b)
 	{
 		uint32 seed = 0;

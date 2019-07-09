@@ -5,7 +5,6 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 
-#include <map>
 #include <string>
 
 class MD5

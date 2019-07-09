@@ -325,7 +325,7 @@ void VulkanCommandBufferManager::SubmitActiveCmdBuffer(VulkanSemaphore* signalSe
 
 void VulkanCommandBufferManager::WaitForCmdBuffer(VulkanCmdBuffer* cmdBuffer, float timeInSecondsToWait)
 {
-	bool success = m_Device->GetFenceManager().WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
+	m_Device->GetFenceManager().WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
 	cmdBuffer->RefreshFenceStatus();
 }
 
