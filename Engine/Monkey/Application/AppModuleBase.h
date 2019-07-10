@@ -151,7 +151,6 @@ protected:
 		imageViewCreateInfo.subresourceRange.levelCount     = 1;
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewCreateInfo.subresourceRange.layerCount     = 1;
-		VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
 		
 		VkMemoryRequirements memRequire;
 		vkGetImageMemoryRequirements(device, imageViewCreateInfo.image, &memRequire);
@@ -164,6 +163,8 @@ protected:
 		memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
 		vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);
 		vkBindImageMemory(device, m_DepthStencilImage, m_DepthStencilMemory, 0);
+
+		VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
 	}
 
 	void CreateRenderPass()

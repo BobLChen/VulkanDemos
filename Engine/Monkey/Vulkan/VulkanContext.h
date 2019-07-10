@@ -13,8 +13,9 @@ class VulkanRHI;
 class VulkanDevice;
 class VulkanQueue;
 class VulkanGfxLayout;
-class VulkanPipelineStateInfo;
 class VulkanCommandBufferManager;
+
+struct VulkanPipelineStateInfo;
 
 class VulkanCommandListContext
 {
@@ -51,7 +52,7 @@ public:
 
 public:
 
-	VkRenderPass GetRenderPass(const class VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* layout);
+	VkRenderPass GetRenderPass(const struct VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* layout);
 
 protected:
 

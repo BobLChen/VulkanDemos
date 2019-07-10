@@ -419,20 +419,23 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
 
 void VulkanDevice::Destroy()
 {
-    m_ResourceHeapManager->Destory();
-	m_FenceManager->Destory();
-    m_MemoryManager->Destory();
-	m_PipelineStateManager->Destory();
-    m_DescriptorPoolsManager->Destroy();
-    
-    delete m_ResourceHeapManager;
-    delete m_FenceManager;
-    delete m_MemoryManager;
-    delete m_PipelineStateManager;
+	m_DescriptorPoolsManager->Destroy();
     delete m_DescriptorPoolsManager;
-    
+
+	m_PipelineStateManager->Destory();
+	delete m_PipelineStateManager;
+
     delete m_ImmediateContext;
-    
+
+	m_FenceManager->Destory();
+	delete m_FenceManager;
+
+	m_ResourceHeapManager->Destory();
+	delete m_ResourceHeapManager;
+
+	m_MemoryManager->Destory();
+	delete m_MemoryManager;
+
 	vkDestroyDevice(m_Device, VULKAN_CPU_ALLOCATOR);
 	m_Device = VK_NULL_HANDLE;
 }

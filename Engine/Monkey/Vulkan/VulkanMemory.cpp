@@ -207,8 +207,7 @@ VulkanDeviceMemoryAllocation* VulkanDeviceMemoryManager::Alloc(bool canFail, VkD
     
     m_NumAllocations     += 1;
     m_PeakNumAllocations = MMath::Max(m_NumAllocations, m_PeakNumAllocations);
-    if (m_NumAllocations == m_Device->GetLimits().maxMemoryAllocationCount)
-    {
+    if (m_NumAllocations == m_Device->GetLimits().maxMemoryAllocationCount) {
         MLOGE("Hit Maximum # of allocations (%d) reported by device!", m_NumAllocations);
     }
     
@@ -774,9 +773,10 @@ VulkanSubBufferAllocator::~VulkanSubBufferAllocator()
     }
 }
 
-void VulkanSubBufferAllocator::Destroy(VulkanDevice* Device)
+void VulkanSubBufferAllocator::Destroy(VulkanDevice* device)
 {
-    
+    vkDestroyBuffer(device->GetInstanceHandle(), m_Buffer, VULKAN_CPU_ALLOCATOR);
+	m_Buffer = VK_NULL_HANDLE;
 }
 
 VulkanResourceSubAllocation* VulkanSubBufferAllocator::CreateSubAllocation(uint32 size, uint32 alignedOffset, uint32 allocatedSize, uint32 allocatedOffset)

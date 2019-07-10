@@ -30,7 +30,8 @@ VulkanCommandListContext::VulkanCommandListContext(VulkanDevice* inDevice, std::
 VulkanCommandListContext::~VulkanCommandListContext()
 {
 	delete m_UniformUploader;
-
+	delete m_CommandBufferManager;
+	
 	VkDevice device = m_Device->GetInstanceHandle();
 	if (m_RenderPass != VK_NULL_HANDLE) {
 		vkDestroyRenderPass(device, m_RenderPass, VULKAN_CPU_ALLOCATOR);
@@ -38,7 +39,7 @@ VulkanCommandListContext::~VulkanCommandListContext()
 	}
 }
 
-VkRenderPass VulkanCommandListContext::GetRenderPass(const class VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* layout)
+VkRenderPass VulkanCommandListContext::GetRenderPass(const struct VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* layout)
 {
 	if (m_RenderPass != VK_NULL_HANDLE) {
 		return m_RenderPass;

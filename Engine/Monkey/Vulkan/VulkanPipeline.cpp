@@ -160,6 +160,18 @@ void VulkanPipelineStateManager::Destory()
 		vkDestroyDescriptorSetLayout(device, it->second, VULKAN_CPU_ALLOCATOR);
 	}
 	m_DescriptorSetLayoutCache.clear();
+
+	for (auto it = m_GfxLayoutCache.begin(); it != m_GfxLayoutCache.end(); ++it) {
+		VulkanGfxLayout* gfxLayout = it->second;
+		delete gfxLayout;
+	}
+	m_GfxLayoutCache.clear();
+
+	for (auto it = m_GfxPipelineCache.begin(); it != m_GfxPipelineCache.end(); ++it) {
+		VulkanGfxPipeline* pipeline = it->second;
+		delete pipeline;
+	}
+	m_GfxPipelineCache.clear();
     
     if (m_PipelineCache != VK_NULL_HANDLE) {
         vkDestroyPipelineCache(device, m_PipelineCache, VULKAN_CPU_ALLOCATOR);
