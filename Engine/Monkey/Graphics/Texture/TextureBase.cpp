@@ -1,5 +1,6 @@
-#include "TextureBase.h"
 #include "Engine.h"
+#include "TextureBase.h"
+
 #include "Vulkan/VulkanDevice.h"
 
 TextureBase::TextureBase()

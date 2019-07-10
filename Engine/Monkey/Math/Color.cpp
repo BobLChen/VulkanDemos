@@ -218,8 +218,10 @@ LinearColor LinearColor::Desaturate(float desaturation) const
 
 LinearColor Color::FromRGBE() const
 {
-	if (a == 0)
+	if (a == 0) 
+	{
 		return LinearColor::Black;
+	}
 	else
 	{
 		const float scale = ldexp(1 / 255.0, a - 128);
@@ -296,12 +298,10 @@ LinearColor LinearColor::LerpUsingHSV(const LinearColor& from, const LinearColor
 
 	if (MMath::Abs(fromHue - toHue) > 180.0f)
 	{
-		if (toHue > fromHue)
-		{
+		if (toHue > fromHue) {
 			fromHue += 360.0f;
 		}
-		else
-		{
+		else {
 			toHue += 360.0f;
 		}
 	}
@@ -309,8 +309,7 @@ LinearColor LinearColor::LerpUsingHSV(const LinearColor& from, const LinearColor
 	float newHue = MMath::Lerp(fromHue, toHue, progress);
 
 	newHue = MMath::Fmod(newHue, 360.0f);
-	if (newHue < 0.0f)
-	{
+	if (newHue < 0.0f) {
 		newHue += 360.0f;
 	}
 

@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Common/Common.h"
+
 #include "HAL/ThreadSafeCounter.h"
 #include "Utils/Crc.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanResources.h"
 #include "VulkanMemory.h"
@@ -25,12 +27,12 @@ struct VulkanDescriptorSetWriteContainer
 
 struct VulkanDescriptorSetLayoutInfo
 {
-	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
 	uint32 set;
 	uint32 hash;
     uint32 numImagesInfo;
     uint32 numBuffersInfo;
     uint32 numTypes;
+	std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
     
 	inline void Compile()
 	{
@@ -70,24 +72,20 @@ struct VulkanDescriptorSetLayoutInfo
 
 	inline bool operator == (const VulkanDescriptorSetLayoutInfo& info)
 	{
-		if (info.hash != hash)
-		{
+		if (info.hash != hash) {
 			return false;
 		}
 
 		const int size = layoutBindings.size();
-		if (info.layoutBindings.size() != size)
-		{
+		if (info.layoutBindings.size() != size) {
 			return false;
 		}
 
-		if (size == 0)
-		{
+		if (size == 0) {
 			return true;
 		}
 
-		if (memcmp(info.layoutBindings.data(), layoutBindings.data(), size * sizeof(VkDescriptorSetLayoutBinding)) != 0)
-		{
+		if (memcmp(info.layoutBindings.data(), layoutBindings.data(), size * sizeof(VkDescriptorSetLayoutBinding)) != 0) {
 			return false;
 		}
 
@@ -397,8 +395,7 @@ public:
 
 	void SetDescriptorSet(VkDescriptorSet descriptorSet)
 	{
-		for (uint32 i = 0; i < m_NumWrites; ++i)
-		{
+		for (uint32 i = 0; i < m_NumWrites; ++i) {
 			m_WriteDescriptorSet[i].dstSet = descriptorSet;
 		}
 	}
@@ -422,8 +419,7 @@ protected:
 		bufferInfo->offset = offset;
 		bufferInfo->range  = range;
 
-		if (DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
-		{
+		if (DescriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
 			const uint8 dynamicOffsetIndex = m_BindingToDynamicOffsetMap[descriptorIndex];
 			m_DynamicOffsets[dynamicOffsetIndex] = dynamicOffset;
 		}

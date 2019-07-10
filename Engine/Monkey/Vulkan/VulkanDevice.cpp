@@ -88,20 +88,16 @@ void VulkanDevice::CreateDevice()
 		auto GetQueueInfoString = [](const VkQueueFamilyProperties& Props) -> std::string
 		{
 			std::string info;
-			if ((Props.queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT)
-			{
+			if ((Props.queueFlags & VK_QUEUE_GRAPHICS_BIT) == VK_QUEUE_GRAPHICS_BIT) {
 				info += " Gfx";
 			}
-			if ((Props.queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT)
-			{
+			if ((Props.queueFlags & VK_QUEUE_COMPUTE_BIT) == VK_QUEUE_COMPUTE_BIT) {
 				info += " Compute";
 			}
-			if ((Props.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT)
-			{
+			if ((Props.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT) {
 				info += " Xfer";
 			}
-			if ((Props.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) == VK_QUEUE_SPARSE_BINDING_BIT)
-			{
+			if ((Props.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT) == VK_QUEUE_SPARSE_BINDING_BIT) {
 				info += " Sparse";
 			}
 			return info;
@@ -130,8 +126,7 @@ void VulkanDevice::CreateDevice()
 		VkDeviceQueueCreateInfo& currQueue = queueFamilyInfos[index];
 		currQueue.pQueuePriorities = CurrentPriority;
 		const VkQueueFamilyProperties& currProps = m_QueueFamilyProps[currQueue.queueFamilyIndex];
-		for (int32 queueIndex = 0; queueIndex < (int32)currProps.queueCount; ++queueIndex)
-		{
+		for (int32 queueIndex = 0; queueIndex < (int32)currProps.queueCount; ++queueIndex) {
 			*CurrentPriority++ = 1.0f;
 		}
 	}
@@ -149,14 +144,12 @@ void VulkanDevice::CreateDevice()
 
 	m_GfxQueue = std::make_shared<VulkanQueue>(this, gfxQueueFamilyIndex);
 
-	if (computeQueueFamilyIndex == -1)
-	{
+	if (computeQueueFamilyIndex == -1) {
 		computeQueueFamilyIndex = gfxQueueFamilyIndex;
 	}
 	m_ComputeQueue = std::make_shared<VulkanQueue>(this, computeQueueFamilyIndex);
 
-	if (transferQueueFamilyIndex == -1)
-	{
+	if (transferQueueFamilyIndex == -1) {
 		transferQueueFamilyIndex = computeQueueFamilyIndex;
 	}
 	m_TransferQueue = std::make_shared<VulkanQueue>(this, transferQueueFamilyIndex);
@@ -205,8 +198,7 @@ void VulkanDevice::SetupFormats()
         if (!G_PixelFormats[PF_DepthStencil].supported)
         {
             MapFormatSupport(PF_DepthStencil, VK_FORMAT_D16_UNORM_S8_UINT);
-            if (!G_PixelFormats[PF_DepthStencil].supported)
-            {
+            if (!G_PixelFormats[PF_DepthStencil].supported) {
                 MLOG("No stencil texture format supported!");
             }
         }
@@ -259,8 +251,7 @@ void VulkanDevice::SetupFormats()
 				if (!G_PixelFormats[PF_D24].supported)
 				{
 					MapFormatSupport(PF_D24, VK_FORMAT_D16_UNORM);
-                    if (!G_PixelFormats[PF_D24].supported)
-                    {
+                    if (!G_PixelFormats[PF_D24].supported) {
                         MLOG("%s", "No Depth texture format supported!");
                     }
 				}
@@ -333,8 +324,7 @@ void VulkanDevice::MapFormatSupport(PixelFormat format, VkFormat vkFormat)
 	formatInfo.platformFormat   = vkFormat;
 	formatInfo.supported        = IsFormatSupported(vkFormat);
 
-	if (!formatInfo.supported)
-	{
+	if (!formatInfo.supported) {
 		MLOG("PixelFormat(%d) is not supported with Vk format %d", (int32)format, (int32)vkFormat);
 	}
 }
@@ -449,7 +439,7 @@ void VulkanDevice::Destroy()
 
 bool VulkanDevice::IsFormatSupported(VkFormat format)
 {
-	auto ArePropertiesSupported = [](const VkFormatProperties& prop) -> bool
+	auto ArePropertiesSupported = [](const VkFormatProperties& prop) -> bool 
 	{
 		return (prop.bufferFeatures != 0) || (prop.linearTilingFeatures != 0) || (prop.optimalTilingFeatures != 0);
 	};

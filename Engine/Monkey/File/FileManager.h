@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Configuration/Platform.h"
 #include "Common/Common.h"
-#include "Common/Log.h"
+
 #include <string>
 
 class FileManager

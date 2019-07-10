@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanResources.h"
 
@@ -47,6 +48,7 @@ public:
 	}
 
 protected:
+
 	VulkanCommandListContext*		m_Immediate;
 	VulkanDevice*					m_Device;
 	std::shared_ptr<VulkanQueue>    m_Queue;

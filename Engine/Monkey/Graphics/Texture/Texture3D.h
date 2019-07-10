@@ -13,5 +13,4 @@ public:
 	virtual ~Texture3D();
 
 	void LoadFromBuffer(uint8* data, int32 width, int32 height, int32 depth, VkFormat format);
-    
 };

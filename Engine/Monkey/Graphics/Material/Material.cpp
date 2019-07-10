@@ -1,7 +1,11 @@
 ﻿#include "Material.h"
 #include "Engine.h"
+
 #include "Vulkan/VulkanDevice.h"
+
 #include "Utils/Alignment.h"
+#include "Graphics/Shader/Shader.h"
+
 #include <vector>
 #include <cstring>
 #include <unordered_map>
@@ -24,8 +28,7 @@ void Material::SetParam(const std::string& name, const void* data, uint32 size)
 	for (int32 i = 0; i < m_UniformBufferParams.size(); ++i)
 	{
 		UniformBufferParam& ubParam = m_UniformBufferParams[i];
-		if (ubParam.name == name)
-		{
+		if (ubParam.name == name) {
 			ubParam.buffer->UpdateConstantData(data, size);
 			return;
 		}
@@ -35,6 +38,7 @@ void Material::SetParam(const std::string& name, const void* data, uint32 size)
 void Material::GenerateShaderParams()
 {
 	const std::vector<ShaderParamInfo> params = m_Shader->GetParams();
+
 	for (int32 i = 0; i < params.size(); ++i)
 	{
 		const ShaderParamInfo& param = params[i];

@@ -2,24 +2,22 @@
 #include "Engine.h"
 #include "spirv_cross.hpp"
 
+#include "File/FileManager.h"
+
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"
 #include "Vulkan/VulkanDevice.h"
-
-#include "File/FileManager.h"
 
 std::unordered_map<std::string, std::shared_ptr<ShaderModule>> Shader::g_ShaderModules;
 
 ShaderModule::~ShaderModule()
 {
-	if (m_ShaderModule != VK_NULL_HANDLE)
-	{
+	if (m_ShaderModule != VK_NULL_HANDLE) {
 		vkDestroyShaderModule(Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle(), m_ShaderModule, VULKAN_CPU_ALLOCATOR);
 		m_ShaderModule = VK_NULL_HANDLE;
 	}
     
-    if (m_Data)
-    {
+    if (m_Data) {
         delete[] m_Data;
         m_Data = nullptr;
     }
@@ -33,15 +31,13 @@ std::shared_ptr<ShaderModule> Shader::LoadSPIPVShader(const std::string& filenam
 std::shared_ptr<ShaderModule> Shader::LoadSPIPVShader(const char* filename, VkShaderStageFlagBits stageFlags)
 {
 	auto it = g_ShaderModules.find(filename);
-	if (it != g_ShaderModules.end())
-	{
+	if (it != g_ShaderModules.end()) {
 		return it->second;
 	}
 
 	uint32 dataSize = 0;
 	uint8* dataPtr  = nullptr;
-	if (!FileManager::ReadFile(filename, dataPtr, dataSize))
-	{
+	if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
 		return nullptr;
 	}
 

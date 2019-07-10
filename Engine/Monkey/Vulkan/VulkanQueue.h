@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VulkanPlatform.h"
+
 #include <memory>
 
 class VulkanDevice;

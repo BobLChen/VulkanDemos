@@ -6,6 +6,7 @@
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/RHIDefinitions.h"
 #include "Vulkan/VulkanResources.h"
+
 #include <vector>
 
 class VertexBuffer
@@ -26,27 +27,21 @@ public:
 	inline int32 GetStreamIndex(VertexAttribute attribute) const
     {
         uint32 channelMask = 1 << attribute;
-        for (int32 i = 0; i < m_Streams.size(); ++i)
-        {
-            if (m_Streams[i].channelMask & channelMask)
-            {
+        for (int32 i = 0; i < m_Streams.size(); ++i) {
+            if (m_Streams[i].channelMask & channelMask) {
                 return i;
             }
         }
-
         return -1;
     }
 
 	inline int32 GetChannelIndex(VertexAttribute attribute) const
 	{
-		for (int32 i = 0; i < m_Channels.size(); ++i)
-		{
-			if (m_Channels[i].attribute == attribute)
-			{
+		for (int32 i = 0; i < m_Channels.size(); ++i) {
+			if (m_Channels[i].attribute == attribute) {
 				return i;
 			}
 		}
-
 		return -1;
 	}
 
@@ -119,8 +114,7 @@ public:
 
     inline void UpdateResources()
     {
-        if (m_Invalid)
-        {
+        if (m_Invalid) {
             CreateBuffer();
             UpdateVertexInputState();
         }

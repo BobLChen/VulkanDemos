@@ -2,6 +2,7 @@
 
 #include "Core/PixelFormat.h"
 #include "Common/Log.h"
+
 #include <string>
 
 enum ShaderFrequency
@@ -656,52 +657,40 @@ FORCEINLINE const char* GetShaderFrequencyString(ShaderFrequency frequency, bool
 
 FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
 {
-	if (strcmp(name, "inPosition") == 0)
-	{
+	if (strcmp(name, "inPosition") == 0) {
 		return VertexAttribute::VA_Position;
 	}
-	else if (strcmp(name, "inUV0") == 0)
-	{
+	else if (strcmp(name, "inUV0") == 0) {
 		return VertexAttribute::VA_UV0;
 	}
-	else if (strcmp(name, "inUV1") == 0)
-	{
+	else if (strcmp(name, "inUV1") == 0) {
 		return VertexAttribute::VA_UV1;
 	}
-	else if (strcmp(name, "inNormal") == 0)
-	{
+	else if (strcmp(name, "inNormal") == 0) {
 		return VertexAttribute::VA_Normal;
 	}
-	else if (strcmp(name, "inTangent") == 0)
-	{
+	else if (strcmp(name, "inTangent") == 0) {
 		return VertexAttribute::VA_Tangent;
 	}
-	else if (strcmp(name, "inColor") == 0)
-	{
+	else if (strcmp(name, "inColor") == 0) {
 		return VertexAttribute::VA_Color;
 	}
-	else if (strcmp(name, "inSkinWeight") == 0)
-	{
+	else if (strcmp(name, "inSkinWeight") == 0) {
 		return VertexAttribute::VA_SkinWeight;
 	}
-	else if (strcmp(name, "inSkinIndex") == 0)
-	{
+	else if (strcmp(name, "inSkinIndex") == 0) {
 		return VertexAttribute::VA_SkinIndex;
 	}
-	else if (strcmp(name, "inCustom0") == 0)
-	{
+	else if (strcmp(name, "inCustom0") == 0) {
 		return VertexAttribute::VA_Custom0;
 	}
-	else if (strcmp(name, "inCustom1") == 0)
-	{
+	else if (strcmp(name, "inCustom1") == 0) {
 		return VertexAttribute::VA_Custom1;
 	}
-	else if (strcmp(name, "inCustom2") == 0)
-	{
+	else if (strcmp(name, "inCustom2") == 0) {
 		return VertexAttribute::VA_Custom2;
 	}
-	else if (strcmp(name, "inCustom3") == 0)
-	{
+	else if (strcmp(name, "inCustom3") == 0) {
 		return VertexAttribute::VA_Custom3;
 	}
 

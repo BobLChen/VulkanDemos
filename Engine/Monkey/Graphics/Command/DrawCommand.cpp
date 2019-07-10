@@ -1,10 +1,14 @@
-#include "DrawCommand.h"
 #include "Engine.h"
+#include "DrawCommand.h"
 
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanDescriptorInfo.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanCommandBuffer.h"
+
+#include "Graphics/Material/Material.h"
+#include "Graphics/Renderer/Renderable.h"
+#include "Graphics/Shader/Shader.h"
 
 #include "Utils/Crc.h"
 

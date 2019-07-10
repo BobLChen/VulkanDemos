@@ -30,8 +30,7 @@ public:
 
     virtual ~MResource()
     {
-        if (m_NumRef.GetValue() != 0)
-        {
+        if (m_NumRef.GetValue() != 0) {
             MLOGE("Can't release resources.");
         }
     }
@@ -47,12 +46,10 @@ public:
         int32 newValue = m_NumRef.Decrement();
         if (newValue == 0)
         {
-            if (!DeferDelete())
-            {
+            if (!DeferDelete()) {
                 delete this;
             }
-            else 
-            {
+            else {
                 m_MarkedForDelete = true;
                 m_PendingDeletes.push_back(const_cast<MResource*>(this));
             }
@@ -70,7 +67,6 @@ public:
     {
         return !m_DoNotDeferDelete;
     }
-
 
     inline bool IsValid() const
     {
@@ -144,29 +140,25 @@ public:
 	{
 		uint32 tempHash = constantBufferSize << 16;
 		
-		for (int32 i = 0; i < resources.size(); ++i)
-		{
+		for (int32 i = 0; i < resources.size(); ++i) {
 			tempHash ^= resources[i].memberOffset;
 		}
 
 		uint32 num = resources.size();
 		
-		while (num >= 4)
-		{
+		while (num >= 4) {
 			tempHash ^= (resources[--num].memberType << 0);
 			tempHash ^= (resources[--num].memberType << 8);
 			tempHash ^= (resources[--num].memberType << 16);
 			tempHash ^= (resources[--num].memberType << 24);
 		}
 
-		while (num >= 2)
-		{
+		while (num >= 2) {
 			tempHash ^= resources[--num].memberType << 0;
 			tempHash ^= resources[--num].memberType << 16;
 		}
 
-		while (num > 0)
-		{
+		while (num > 0) {
 			tempHash ^= resources[--num].memberType;
 		}
         
@@ -239,8 +231,8 @@ public:
 	{
 		alignment = MMath::Max(alignment, m_MinAlignment);
 		uint64 allocationOffset = Align<uint64>(m_BufferOffset, alignment);
-		if (allocationOffset + size <= m_BufferSize)
-		{
+
+		if (allocationOffset + size <= m_BufferSize) {
 			m_BufferOffset = allocationOffset + size;
 			return allocationOffset;
 		}
@@ -394,8 +386,7 @@ public:
         }
         for (int32 i = 0; i < m_Bindings.size(); ++i)
         {
-            if (m_Bindings[i].binding == attributeDescription.binding)
-            {
+            if (m_Bindings[i].binding == attributeDescription.binding) {
                 outBinding = m_Bindings[i];
                 return true;
             }
@@ -474,8 +465,7 @@ public:
     {
         for (int32 i = 0; i < m_Attributes.size(); ++i)
         {
-            if (m_Attributes[i] == attribute)
-            {
+            if (m_Attributes[i] == attribute) {
                 return m_Locations[i];
             }
         }

@@ -1,5 +1,4 @@
 #include "VulkanContext.h"
-
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"

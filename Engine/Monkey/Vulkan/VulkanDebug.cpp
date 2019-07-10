@@ -17,28 +17,23 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallBack(
     void* userData)
 {
     std::string prefix("");
-    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-    {
+    if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT) {
         prefix += "ERROR:";
     }
 
-    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-    {
+    if (flags & VK_DEBUG_REPORT_WARNING_BIT_EXT) {
         prefix += "WARNING:";
     }
 
-    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-    {
+    if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT) {
         prefix += "PERFORMANCE:";
     }
 
-    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-    {
+    if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT) {
         prefix += "INFO:";
     }
     
-    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-    {
+    if (flags & VK_DEBUG_REPORT_DEBUG_BIT_EXT) {
         prefix += "DEBUG:";
     }
 

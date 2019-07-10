@@ -161,11 +161,9 @@ set(Monkey_Graphics_Material_SRCS
 
 set(Monkey_Graphics_Renderer_HDRS
 	Monkey/Graphics/Renderer/Renderable.h
-	Monkey/Graphics/Renderer/Mesh.h
 )
 set(Monkey_Graphics_Renderer_SRCS
 	Monkey/Graphics/Renderer/Renderable.cpp
-	Monkey/Graphics/Renderer/Mesh.cpp
 )
 
 set(Monkey_Graphics_Texture_HDRS

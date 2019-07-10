@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "Utils/Crc.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanResources.h"
 #include "VulkanDescriptorInfo.h"

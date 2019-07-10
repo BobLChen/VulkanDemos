@@ -1,10 +1,11 @@
+#include "MeshLoader.h"
+
+#include "File/FileManager.h"
+
 #include <assimp/Importer.hpp> 
 #include <assimp/scene.h>     
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
-
-#include "File/FileManager.h"
-#include "MeshLoader.h"
 
 std::vector<std::shared_ptr<Renderable>> MeshLoader::LoadFromFile(const std::string& filename)
 {

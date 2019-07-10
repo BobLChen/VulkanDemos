@@ -2,13 +2,14 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
+
+#include "Utils/Crc.h"
+
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanMemory.h"
 #include "Vulkan/VulkanDescriptorInfo.h"
 #include "Vulkan/VulkanResources.h"
-
-#include "Utils/Crc.h"
 
 #include <vector>
 #include <memory>
@@ -39,27 +40,27 @@ public:
         m_Hash = Crc::MemCrc32(dataPtr, dataSize);
 	}
     
-	FORCEINLINE const VkShaderModule& GetHandle() const
+	inline const VkShaderModule& GetHandle() const
 	{
 		return m_ShaderModule;
 	}
     
-    FORCEINLINE const uint32* GetData() const
+    inline const uint32* GetData() const
     {
         return m_Data;
     }
     
-    FORCEINLINE const uint32 GetDataSize() const
+    inline const uint32 GetDataSize() const
     {
         return m_DataSize;
     }
     
-    FORCEINLINE const uint32 GetHash() const
+    inline const uint32 GetHash() const
     {
         return m_Hash;
     }
 
-	FORCEINLINE const VkShaderStageFlagBits GetStageFlags() const
+	inline const VkShaderStageFlagBits GetStageFlags() const
 	{
 		return m_StageFlags;
 	}
@@ -67,6 +68,7 @@ public:
 	virtual ~ShaderModule();
     
 protected:
+
 	VkShaderStageFlagBits	m_StageFlags;
 	VkShaderModule			m_ShaderModule;
     uint32*					m_Data;

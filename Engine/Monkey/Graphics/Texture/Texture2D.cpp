@@ -41,8 +41,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	for (int32 i = 0; i < filenames.size(); ++i) {
 		uint32 dataSize = 0;
 		uint8* dataPtr  = nullptr;
-		if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize))
-		{
+		if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize)) {
 			return;
 		}
 
@@ -53,8 +52,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		dataSize = -1;
 		dataPtr  = nullptr;
 
-		if (!imageInfo.data)
-		{
+		if (!imageInfo.data) {
 			return;
 		}
 
@@ -66,12 +64,10 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 			{
 				uint32 idx1 = i * 4;
 				uint32 idx0 = i * imageInfo.comp;
-				for (int j = 0; j < imageInfo.comp; ++j) 
-				{
+				for (int j = 0; j < imageInfo.comp; ++j) {
 					temp[idx1 + j] = imageInfo.data[idx0 + j];
 				}
-				for (int j = imageInfo.comp; j < 4; ++j) 
-				{
+				for (int j = imageInfo.comp; j < 4; ++j) {
 					temp[idx1 + j] = j == 3 ? 255 : 0;
 				}
 			}
@@ -251,8 +247,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     // 加载PNG图片数据
 	uint32 dataSize = 0;
 	uint8* dataPtr  = nullptr;
-	if (!FileManager::ReadFile(filename, dataPtr, dataSize))
-	{
+	if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
 		return;
 	}
     
@@ -262,8 +257,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     int32 comp   = 0;
     uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
     
-    if (rgbaData == nullptr)
-    {
+    if (rgbaData == nullptr) {
         MLOGE("Failed load image : %s", filename.c_str());
         return;
     }

@@ -235,8 +235,7 @@ FORCEINLINE Rotator Rotator::Clamp() const
 FORCEINLINE float Rotator::ClampAxis(float angle)
 {
 	angle = MMath::Fmod(angle, 360.f);
-	if (angle < 0.f)
-	{
+	if (angle < 0.f) {
 		angle += 360.f;
 	}
 	return angle;
@@ -245,8 +244,7 @@ FORCEINLINE float Rotator::ClampAxis(float angle)
 FORCEINLINE float Rotator::NormalizeAxis(float angle)
 {
 	angle = ClampAxis(angle);
-	if (angle > 180.f)
-	{
+	if (angle > 180.f) {
 		angle -= 360.f;
 	}
 	return angle;
@@ -388,8 +386,7 @@ FORCEINLINE void Rotator::SetClosestToMe(Rotator& makeClosest) const
 	Rotator otherChoice = makeClosest.GetEquivalentRotator();
 	float firstDiff  = GetManhattanDistance(makeClosest);
 	float secondDiff = GetManhattanDistance(otherChoice);
-	if (secondDiff < firstDiff)
-	{
+	if (secondDiff < firstDiff) {
 		makeClosest = otherChoice;
 	}
 }

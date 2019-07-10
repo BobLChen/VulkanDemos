@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common/Common.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"

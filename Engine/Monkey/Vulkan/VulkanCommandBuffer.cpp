@@ -8,15 +8,14 @@
 
 // VulkanCmdBuffer
 VulkanCmdBuffer::VulkanCmdBuffer(VulkanDevice* inDevice, VulkanCommandBufferPool* inCommandBufferPool, bool inIsUploadOnly)
-	: m_StencilRef(0)
-	, m_State(State::NotAllocated)
+	: m_State(State::NotAllocated)
 	, m_IsUploadOnly(inIsUploadOnly)
 	, m_FenceSignaledCounter(0)
 	, m_SubmittedFenceCounter(0)
 	, m_CommandBufferPool(inCommandBufferPool)
-	, m_VulkanDevice(inDevice)
 	, m_Handle(VK_NULL_HANDLE)
 	, m_Fence(nullptr)
+	, m_VulkanDevice(inDevice)
 	, m_DescriptorPoolSetContainer(nullptr)
 {
 	AllocMemory();
@@ -26,19 +25,16 @@ VulkanCmdBuffer::VulkanCmdBuffer(VulkanDevice* inDevice, VulkanCommandBufferPool
 VulkanCmdBuffer::~VulkanCmdBuffer()
 {
 	VulkanFenceManager& fenceManager = m_VulkanDevice->GetFenceManager();
-	if (m_State == State::Submitted)
-	{
+	if (m_State == State::Submitted) {
 		// 33ms
 		uint64 waitForCmdBufferInNanoSeconds = 33 * 1000 * 1000LL;
 		fenceManager.WaitAndReleaseFence(m_Fence, waitForCmdBufferInNanoSeconds);
 	}
-	else 
-	{
+	else {
 		fenceManager.ReleaseFence(m_Fence);
 	}
 
-	if (m_State != State::NotAllocated)
-	{
+	if (m_State != State::NotAllocated) {
 		FreeMemory();
 	}
 }
@@ -109,10 +105,6 @@ void VulkanCmdBuffer::RefreshFenceStatus()
 		{
 			m_SubmittedWaitSemaphores.clear();
 
-			memset(&m_Viewport, 0, sizeof(m_Viewport));
-			memset(&m_Scissor,  0, sizeof(m_Scissor));
-			m_StencilRef = 0;
-
 			vkResetCommandBuffer(m_Handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 			m_Fence->GetOwner()->ResetFence(m_Fence);
 
@@ -137,9 +129,6 @@ void VulkanCmdBuffer::AcquirePoolSetContainer()
 
 void VulkanCmdBuffer::AllocMemory()
 {
-	memset(&m_Viewport, 0, sizeof(m_Viewport));
-	memset(&m_Scissor,  0, sizeof(m_Scissor));
-
 	VkCommandBufferAllocateInfo cmdBufferInfo;
 	ZeroVulkanStruct(cmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
 	cmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -200,8 +189,7 @@ void VulkanCommandBufferPool::RefreshFenceStatus(VulkanCmdBuffer* skipCmdBuffer)
 	for (int32 i = 0; i < m_UsedCmdBuffers.size(); ++i)
 	{
 		VulkanCmdBuffer* cmdBuffer = m_UsedCmdBuffers[i];
-		if (cmdBuffer != skipCmdBuffer)
-		{
+		if (cmdBuffer != skipCmdBuffer) {
 			cmdBuffer->RefreshFenceStatus();
 		}
 	}
@@ -311,12 +299,10 @@ void VulkanCommandBufferManager::SubmitActiveCmdBuffer(VulkanSemaphore* signalSe
 	if (!m_ActiveCmdBuffer->IsSubmitted() && m_ActiveCmdBuffer->HasBegun())
 	{
 		m_ActiveCmdBuffer->End();
-		if (signalSemaphore) 
-		{
+		if (signalSemaphore) {
 			m_Queue->Submit(m_ActiveCmdBuffer, signalSemaphore->GetHandle());
 		}
-		else 
-		{
+		else {
 			m_Queue->Submit(m_ActiveCmdBuffer);
 		}
 	}

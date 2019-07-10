@@ -2,12 +2,15 @@
 
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Vulkan/VulkanPlatform.h"
+
 #include "Vulkan/VulkanRHI.h"
+#include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanPipeline.h"
 #include "Vulkan/VulkanResources.h"
-#include "Graphics/Shader/Shader.h"
+
 #include <memory>
+
+class Shader;
 
 class Material
 {
@@ -41,8 +44,7 @@ public:
 
 	inline void SetTopology(VkPrimitiveTopology topology)
 	{
-		if (m_StateInfo.inputAssemblyState.topology == topology)
-		{
+		if (m_StateInfo.inputAssemblyState.topology == topology) {
 			return;
 		}
 		m_StateInfo.inputAssemblyState.topology = topology;
@@ -58,8 +60,7 @@ public:
 
 	inline void SetpolygonMode(VkPolygonMode polygonMode)
 	{
-		if (m_StateInfo.rasterizationState.polygonMode == polygonMode) 
-		{
+		if (m_StateInfo.rasterizationState.polygonMode == polygonMode) {
 			return;
 		}
 		m_StateInfo.rasterizationState.polygonMode = polygonMode;
@@ -73,8 +74,7 @@ public:
     
 	inline void SetCullMode(VkCullModeFlags cullMode)
 	{
-		if (m_StateInfo.rasterizationState.cullMode == cullMode)
-		{
+		if (m_StateInfo.rasterizationState.cullMode == cullMode) {
 			return;
 		}
 		m_StateInfo.rasterizationState.cullMode = cullMode;
@@ -88,8 +88,7 @@ public:
 
 	inline void SetFrontFace(VkFrontFace frontFace)
 	{
-		if (m_StateInfo.rasterizationState.frontFace == frontFace)
-		{
+		if (m_StateInfo.rasterizationState.frontFace == frontFace) {
 			return;
 		}
 		m_StateInfo.rasterizationState.frontFace = frontFace;
@@ -103,8 +102,7 @@ public:
 
 	inline void SetDepthClampEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.rasterizationState.depthClampEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.depthClampEnable == enable) {
 			return;
 		}
 		m_StateInfo.rasterizationState.depthClampEnable = enable;
@@ -118,8 +116,7 @@ public:
 
 	inline void SetDiscardEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.rasterizationState.rasterizerDiscardEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.rasterizerDiscardEnable == enable) {
 			return;
 		}
 		m_StateInfo.rasterizationState.rasterizerDiscardEnable = enable;
@@ -133,8 +130,7 @@ public:
 
 	inline void SetDepthBiasEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.rasterizationState.depthBiasEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.depthBiasEnable == enable) {
 			return;
 		}
 		m_StateInfo.rasterizationState.depthBiasEnable = enable;
@@ -148,8 +144,7 @@ public:
 
 	inline void SetLineWidth(float width)
 	{
-		if (m_StateInfo.rasterizationState.lineWidth == width)
-		{
+		if (m_StateInfo.rasterizationState.lineWidth == width) {
 			return;
 		}
 		m_StateInfo.rasterizationState.lineWidth = width;
@@ -165,8 +160,7 @@ public:
 
 	inline void SetColorWriteMask(VkColorComponentFlags mask)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.colorWriteMask == mask)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.colorWriteMask == mask) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.colorWriteMask = mask;
@@ -180,8 +174,7 @@ public:
 
 	inline void SetBlendEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.blendEnable == enable)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.blendEnable == enable) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.blendEnable = enable;
@@ -195,8 +188,7 @@ public:
 
 	inline void SetSrcColorBlendFactor(VkBlendFactor op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor = op;
@@ -210,8 +202,7 @@ public:
 
 	inline void SetDstColorBlendFactor(VkBlendFactor op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor = op;
@@ -225,8 +216,7 @@ public:
 
 	inline void SetColorBlendOp(VkBlendOp op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.colorBlendOp == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.colorBlendOp == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.colorBlendOp = op;
@@ -240,8 +230,7 @@ public:
 
 	inline void SetSrcAlphaBlendFactor(VkBlendFactor op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor = op;
@@ -255,8 +244,7 @@ public:
 
 	inline void SetDstAlphaBlendFactor(VkBlendFactor op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor = op;
@@ -270,8 +258,7 @@ public:
 
 	inline void SetAlphaBlendOp(VkBlendOp op)
 	{
-		if (m_StateInfo.colorBlendAttachmentState.alphaBlendOp == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.alphaBlendOp == op) {
 			return;
 		}
 		m_StateInfo.colorBlendAttachmentState.alphaBlendOp = op;
@@ -287,8 +274,7 @@ public:
 
 	inline void SetDepthTestEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.depthStencilState.depthTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthTestEnable == enable) {
 			return;
 		}
 		m_StateInfo.depthStencilState.depthTestEnable = enable;
@@ -302,8 +288,7 @@ public:
 
 	inline void SetDepthWriteEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.depthStencilState.depthWriteEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthWriteEnable == enable) {
 			return;
 		}
 		m_StateInfo.depthStencilState.depthWriteEnable = enable;
@@ -317,8 +302,7 @@ public:
 
 	inline void SetDepthCompareOp(VkCompareOp op)
 	{
-		if (m_StateInfo.depthStencilState.depthCompareOp == op)
-		{
+		if (m_StateInfo.depthStencilState.depthCompareOp == op) {
 			return;
 		}
 		m_StateInfo.depthStencilState.depthCompareOp = op;
@@ -332,8 +316,7 @@ public:
 
 	inline void SetDepthBoundsTestEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.depthStencilState.depthBoundsTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthBoundsTestEnable == enable) {
 			return;
 		}
 		m_StateInfo.depthStencilState.depthBoundsTestEnable = enable;
@@ -347,8 +330,7 @@ public:
 
 	inline void SetStencilTestEnable(VkBool32 enable)
 	{
-		if (m_StateInfo.depthStencilState.depthTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthTestEnable == enable) {
 			return;
 		}
 		m_StateInfo.depthStencilState.depthTestEnable = enable;
@@ -362,18 +344,16 @@ public:
 
 	inline void SetDepthStencilCompareMask(bool front, uint32 mask)
 	{
-		if (front)
+		if (front) 
 		{
-			if (m_StateInfo.depthStencilState.front.compareMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.front.compareMask == mask) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.compareMask = mask;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.compareMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.back.compareMask == mask) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.compareMask = mask;
@@ -390,16 +370,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.compareOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.compareOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.compareOp = op;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.compareOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.compareOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.compareOp = op;
@@ -416,16 +394,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.failOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.failOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.failOp = op;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.failOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.failOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.failOp = op;
@@ -442,16 +418,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.passOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.passOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.passOp = op;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.passOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.passOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.passOp = op;
@@ -468,16 +442,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.depthFailOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.depthFailOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.depthFailOp = op;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.depthFailOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.depthFailOp == op) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.depthFailOp = op;
@@ -494,16 +466,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.writeMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.front.writeMask == mask) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.writeMask = mask;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.writeMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.back.writeMask == mask) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.writeMask = mask;
@@ -520,16 +490,14 @@ public:
 	{
 		if (front)
 		{
-			if (m_StateInfo.depthStencilState.front.reference == ref)
-			{
+			if (m_StateInfo.depthStencilState.front.reference == ref) {
 				return;
 			}
 			m_StateInfo.depthStencilState.front.reference = ref;
 		}
 		else
 		{
-			if (m_StateInfo.depthStencilState.back.reference == ref)
-			{
+			if (m_StateInfo.depthStencilState.back.reference == ref) {
 				return;
 			}
 			m_StateInfo.depthStencilState.back.reference = ref;
@@ -544,8 +512,7 @@ public:
 
 	inline void SetMinDepthBounds(float value)
 	{
-		if (m_StateInfo.depthStencilState.minDepthBounds == value)
-		{
+		if (m_StateInfo.depthStencilState.minDepthBounds == value) {
 			return;
 		}
 		m_StateInfo.depthStencilState.minDepthBounds = value;
@@ -559,8 +526,7 @@ public:
 
 	inline void SetMaxDepthBounds(float value)
 	{
-		if (m_StateInfo.depthStencilState.maxDepthBounds == value)
-		{
+		if (m_StateInfo.depthStencilState.maxDepthBounds == value) {
 			return;
 		}
 		m_StateInfo.depthStencilState.maxDepthBounds = value;
@@ -581,8 +547,12 @@ public:
         return m_StateInfo.hash;
 	}
     
-	inline const VulkanPipelineStateInfo& GetPipelineStateInfo() const
+	inline const VulkanPipelineStateInfo& GetPipelineStateInfo()
 	{
+		if (m_InvalidStateInfo) {
+			m_InvalidStateInfo = false;
+			m_StateInfo.GenerateHash();
+		}
 		return m_StateInfo;
 	}
 

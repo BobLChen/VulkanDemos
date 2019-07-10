@@ -135,8 +135,7 @@ static inline int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>
 {
 	for (int32 i = 0; i < layers.size(); ++i) 
 	{
-		if (strcmp(layers[i].layerProps.layerName, layerName) == 0) 
-		{
+		if (strcmp(layers[i].layerProps.layerName, layerName) == 0) {
 			return i;
 		}
 	}
@@ -195,16 +194,14 @@ VulkanLayerExtension::VulkanLayerExtension()
 
 void VulkanLayerExtension::AddUniqueExtensionNames(std::vector<std::string>& outExtensions)
 {
-	for (int32 i = 0; i < extensionProps.size(); ++i) 
-	{
+	for (int32 i = 0; i < extensionProps.size(); ++i) {
 		StringUtils::AddUnique(outExtensions, extensionProps[i].extensionName);
 	}
 }
 
 void VulkanLayerExtension::AddUniqueExtensionNames(std::vector<const char*>& outExtensions)
 {
-	for (int32 i = 0; i < extensionProps.size(); ++i) 
-	{
+	for (int32 i = 0; i < extensionProps.size(); ++i) {
 		StringUtils::AddUnique(outExtensions, extensionProps[i].extensionName);
 	}
 }
@@ -329,12 +326,10 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     std::vector<std::string> foundUniqueExtensions;
     for (int32 index = 0; index < deviceLayerExtensions.size(); ++index)
     {
-        if (index == 0)
-        {
+        if (index == 0) {
             EnumerateDeviceExtensionProperties(m_PhysicalDevice, nullptr, deviceLayerExtensions[index]);
         }
-        else
-        {
+        else {
             StringUtils::AddUnique(foundUniqueLayers, deviceLayerExtensions[index].layerProps.layerName);
             EnumerateDeviceExtensionProperties(m_PhysicalDevice, deviceLayerExtensions[index].layerProps.layerName, deviceLayerExtensions[index]);
         }
@@ -342,13 +337,11 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
         deviceLayerExtensions[index].AddUniqueExtensionNames(foundUniqueExtensions);
     }
     
-    for (const std::string& name : foundUniqueLayers)
-    {
+    for (const std::string& name : foundUniqueLayers) {
         MLOG("- Found device layer %s", name.c_str());
     }
     
-    for (const std::string& name : foundUniqueExtensions)
-    {
+    for (const std::string& name : foundUniqueExtensions) {
         MLOG("- Found device extension %s", name.c_str());
     }
 
@@ -367,16 +360,14 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
             }
         }
         
-        if (!bValidationFound)
-        {
+        if (!bValidationFound) {
             MLOG("Unable to find Vulkan device validation layer '%s'", currValidationLayer);
         }
     }
 #endif
     
     std::vector<const char*> availableExtensions;
-    for (int32 extIndex = 0; extIndex < deviceLayerExtensions[0].extensionProps.size(); ++extIndex)
-    {
+    for (int32 extIndex = 0; extIndex < deviceLayerExtensions[0].extensionProps.size(); ++extIndex) {
         availableExtensions.push_back(deviceLayerExtensions[0].extensionProps[extIndex].extensionName);
     }
     
@@ -385,14 +376,12 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
         int32 findLayerIndex;
         for (findLayerIndex = 1; findLayerIndex < deviceLayerExtensions.size(); ++findLayerIndex)
         {
-            if (strcmp(deviceLayerExtensions[findLayerIndex].layerProps.layerName, outDeviceLayers[layerIndex]) == 0)
-            {
+            if (strcmp(deviceLayerExtensions[findLayerIndex].layerProps.layerName, outDeviceLayers[layerIndex]) == 0) {
                 break;
             }
         }
         
-        if (findLayerIndex < deviceLayerExtensions.size())
-        {
+        if (findLayerIndex < deviceLayerExtensions.size()) {
             deviceLayerExtensions[findLayerIndex].AddUniqueExtensionNames(availableExtensions);
         }
     }
@@ -403,8 +392,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     {
         for (const char* element : arr)
         {
-            if (strcmp(element, name) == 0)
-            {
+            if (strcmp(element, name) == 0) {
                 return true;
             }
         }
@@ -424,8 +412,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     
     for (uint32 index = 0; G_DeviceExtensions[index] != nullptr; ++index)
     {
-        if (ListContains(availableExtensions, G_DeviceExtensions[index]))
-        {
+        if (ListContains(availableExtensions, G_DeviceExtensions[index])) {
             outDeviceExtensions.push_back(G_DeviceExtensions[index]);
         }
     }
@@ -433,8 +420,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     if (outDeviceExtensions.size() > 0)
     {
         MLOG("Using device extensions");
-        for (const char* extension : outDeviceExtensions)
-        {
+        for (const char* extension : outDeviceExtensions) {
             MLOG("* %s", extension);
         }
     }
@@ -442,8 +428,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
     if (outDeviceLayers.size() > 0)
     {
         MLOG("Using device layers");
-        for (const char* layer : outDeviceLayers)
-        {
+        for (const char* layer : outDeviceLayers) {
             MLOG("* %s", layer);
         }
     }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Common/Common.h"
+
 #include "HAL/GenericPlatformAtomics.h"
+
 #include <intrin.h>
 
 struct WindowsPlatformAtomics : public GenericPlatformAtomics
@@ -31,11 +33,10 @@ struct WindowsPlatformAtomics : public GenericPlatformAtomics
 #if PLATFORM_64BITS
 		return (int64)::_InterlockedIncrement64((long long*)value);
 #else
-		for (;;)
+		while (true)
 		{
 			int64 oldValue = *value;
-			if (_InterlockedCompareExchange64(value, oldValue + 1, oldValue) == oldValue)
-			{
+			if (_InterlockedCompareExchange64(value, oldValue + 1, oldValue) == oldValue) {
 				return oldValue + 1;
 			}
 		}
@@ -62,11 +63,10 @@ struct WindowsPlatformAtomics : public GenericPlatformAtomics
 #if PLATFORM_64BITS
 		return (int64)::_InterlockedDecrement64((long long*)value);
 #else
-		for (;;)
+		while (true)
 		{
 			int64 oldValue = *value;
-			if (_InterlockedCompareExchange64(value, oldValue - 1, oldValue) == oldValue)
-			{
+			if (_InterlockedCompareExchange64(value, oldValue - 1, oldValue) == oldValue) {
 				return oldValue - 1;
 			}
 		}
@@ -93,11 +93,10 @@ struct WindowsPlatformAtomics : public GenericPlatformAtomics
 #if PLATFORM_64BITS
 		return (int64)::_InterlockedExchangeAdd64((int64*)value, (int64)amount);
 #else
-		for (;;)
+		while (true)
 		{
 			int64 oldValue = *value;
-			if (_InterlockedCompareExchange64(value, oldValue + amount, oldValue) == oldValue)
-			{
+			if (_InterlockedCompareExchange64(value, oldValue + amount, oldValue) == oldValue) {
 				return oldValue + amount;
 			}
 		}
@@ -124,11 +123,10 @@ struct WindowsPlatformAtomics : public GenericPlatformAtomics
 #if PLATFORM_64BITS
 		return (int64)::_InterlockedExchange64((long long*)value, (long long)exchange);
 #else
-		for (;;)
+		while (true)
 		{
 			int64 oldValue = *value;
-			if (_InterlockedCompareExchange64(value, exchange, oldValue) == oldValue)
-			{
+			if (_InterlockedCompareExchange64(value, exchange, oldValue) == oldValue) {
 				return oldValue;
 			}
 		}

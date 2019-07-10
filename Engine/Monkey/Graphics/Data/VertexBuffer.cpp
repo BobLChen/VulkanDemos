@@ -1,3 +1,6 @@
+#include "Engine.h"
+#include "VertexBuffer.h"
+
 #include "Math/Math.h"
 #include "Utils/Crc.h"
 
@@ -5,9 +8,6 @@
 #include "Vulkan/VulkanResources.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanCommandBuffer.h"
-
-#include "Engine.h"
-#include "VertexBuffer.h"
 
 #include <string>
 #include <cstring>
@@ -24,8 +24,7 @@ VertexBuffer::VertexBuffer()
 
 VertexBuffer::~VertexBuffer()
 {
-	for (int32 i = 0; i < m_Streams.size(); ++i)
-	{
+	for (int32 i = 0; i < m_Streams.size(); ++i) {
 		delete[] m_Datas[i];
 	}
     
@@ -79,8 +78,7 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 	// 一次性加完，未检测创建好Buffer之后还继续添加的情况
 	// 计算出顶点数据的长度
 	int32 stride = 0;
-	for (int32 i = 0; i < channels.size(); ++i)
-	{
+	for (int32 i = 0; i < channels.size(); ++i) {
 		stride += ElementTypeToSize(channels[i].format);
 	}
 	
@@ -88,8 +86,7 @@ void VertexBuffer::AddStream(const VertexStreamInfo& streamInfo, const std::vect
 	if (m_VertexCount != 0)
 	{
 		int32 newVertexCount = streamInfo.size / stride;
-		if (m_VertexCount != newVertexCount)
-		{
+		if (m_VertexCount != newVertexCount) {
 			MLOGE("Vertex data not match : Size=%d, NewSize=%d", m_VertexCount, newVertexCount);
 			return;
 		}

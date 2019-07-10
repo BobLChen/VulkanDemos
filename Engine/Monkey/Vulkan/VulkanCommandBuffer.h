@@ -7,24 +7,24 @@
 #include <vector>
 #include <map>
 
-class VulkanCommandListContext;
 class VulkanDevice;
 class VulkanQueue;
 class VulkanFence;
-class VulkanDescriptorPoolSetContainer;
+class VulkanSemaphore;
+class VulkanCommandListContext;
 class VulkanCommandBufferPool;
 class VulkanCommandBufferManager;
-class VulkanSemaphore;
 class VulkanDescriptorSetsLayout;
 class VulkanTypedDescriptorPoolSet;
+class VulkanDescriptorPoolSetContainer;
 
 class VulkanCmdBuffer
 {
 protected:
-	friend class VulkanCommandBufferManager;
-	friend class VulkanCommandBufferPool;
 	friend class VulkanQueue;
-
+	friend class VulkanCommandBufferPool;
+	friend class VulkanCommandBufferManager;
+	
 	VulkanCmdBuffer(VulkanDevice* inDevice, VulkanCommandBufferPool* inCommandBufferPool, bool inIsUploadOnly);
 
 	~VulkanCmdBuffer();
@@ -98,21 +98,6 @@ public:
 		return m_VulkanDevice;
 	}
 
-	inline const VkViewport GetViewport() const
-	{
-		return m_Viewport;
-	}
-
-	inline const VkRect2D GetScissor() const
-	{
-		return m_Scissor;
-	}
-
-	inline const uint32 GetStencilRef() const
-	{
-		return m_StencilRef;
-	}
-
 	inline const State GetState() const
 	{
 		return m_State;
@@ -157,28 +142,27 @@ protected:
     
 protected:
 
-	VkViewport					m_Viewport;
-	VkRect2D					m_Scissor;
-	uint32						m_StencilRef;
+	typedef std::map<uint32, VulkanTypedDescriptorPoolSet*> VulkanTypedDescriptorPoolSetMap;
+
 	State						m_State;
 	bool						m_IsUploadOnly;
+	
 	uint64						m_FenceSignaledCounter;
 	uint64						m_SubmittedFenceCounter;
 
 	VulkanCommandBufferPool*	m_CommandBufferPool;
 
-	VulkanDevice*				m_VulkanDevice;
 	VkCommandBuffer				m_Handle;
-
 	VulkanFence*				m_Fence;
-
+	VulkanDevice*				m_VulkanDevice;
+	
 	VulkanDescriptorPoolSetContainer*   m_DescriptorPoolSetContainer;
 
 	std::vector<VkPipelineStageFlags>	m_WaitFlags;
 	std::vector<VkSemaphore>			m_WaitSemaphores;
 	std::vector<VkSemaphore>			m_SubmittedWaitSemaphores;
 
-	std::map<uint32, VulkanTypedDescriptorPoolSet*> m_TypedDescriptorPoolSets;
+	VulkanTypedDescriptorPoolSetMap		m_TypedDescriptorPoolSets;
 };
 
 class VulkanCommandBufferPool

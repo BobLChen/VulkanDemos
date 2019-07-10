@@ -101,8 +101,7 @@ void VulkanRHI::CreateFrameBuffer()
 	frameBufferCreateInfo.layers		  = 1;
 
 	m_FrameBuffers.resize(m_FrameImageViews.size());
-	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i)
-	{
+	for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) {
 		attachments[0] = m_FrameImageViews[i];
 		VERIFYVULKANRESULT(vkCreateFramebuffer(m_Device->GetInstanceHandle(), &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
 	}
@@ -217,8 +216,7 @@ void VulkanRHI::RecreateSwapChain()
 
 void VulkanRHI::DestorySwapChain()
 {
-    for (int32 i = 0; i < m_FrameImageViews.size(); ++i)
-    {
+    for (int32 i = 0; i < m_FrameImageViews.size(); ++i) {
         vkDestroyImageView(m_Device->GetInstanceHandle(), m_FrameImageViews[i], VULKAN_CPU_ALLOCATOR);
     }
     m_SwapChain = nullptr;
@@ -302,7 +300,8 @@ void VulkanRHI::CreateInstance()
 	instanceCreateInfo.ppEnabledLayerNames     = m_InstanceLayers.size() > 0 ? m_InstanceLayers.data() : nullptr;
 
 	VkResult result = vkCreateInstance(&instanceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Instance);
-	if (result == VK_ERROR_INCOMPATIBLE_DRIVER) {
+	if (result == VK_ERROR_INCOMPATIBLE_DRIVER) 
+	{
 		MLOG("%s", "Cannot find a compatible Vulkan driver (ICD).");
 	}
 	else if (result == VK_ERROR_EXTENSION_NOT_PRESENT)

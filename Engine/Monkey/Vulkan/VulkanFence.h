@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
+
 #include "VulkanPlatform.h"
 
 #include <memory>
@@ -68,8 +69,7 @@ public:
 
 	inline bool IsFenceSignaled(VulkanFence* fence)
 	{
-		if (fence->IsSignaled())
-		{
+		if (fence->IsSignaled()) {
 			return true;
 		}
 		return CheckFenceState(fence);

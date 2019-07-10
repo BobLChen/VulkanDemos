@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
+
 #include "VulkanPlatform.h"
 
 #include <memory>
@@ -26,8 +27,7 @@ public:
 
 	virtual ~RefCount()
 	{
-		if (m_Counter.GetValue() != 0) 
-		{
+		if (m_Counter.GetValue() != 0) {
 			MLOGE("Ref > 0");
 		}
 	}
@@ -41,8 +41,7 @@ public:
 	inline int32 Release()
 	{
 		int32 newValue = m_Counter.Decrement();
-		if (newValue == 0)
-		{
+		if (newValue == 0) {
 			delete this;
 		}
 		return newValue;

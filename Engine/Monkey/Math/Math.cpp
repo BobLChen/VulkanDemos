@@ -278,13 +278,10 @@ bool MMath::LineSphereIntersection(const Vector3& start, const Vector3& dir, flo
 	if (disc >= 0.0f)
 	{
 		const float	time = (v - Sqrt(disc)) / length;
-
-		if (time >= 0.0f && time <= 1.0f)
-		{
+		if (time >= 0.0f && time <= 1.0f) {
 			return 1;
 		}
-		else
-		{
+		else {
 			return 0;
 		}
 	}
@@ -297,8 +294,7 @@ bool MMath::LineSphereIntersection(const Vector3& start, const Vector3& dir, flo
 float MMath::InterpConstantTo(float current, float target, float deltaTime, float interpSpeed)
 {
 	const float dist = target - current;
-	if (MMath::Square(dist) < SMALL_NUMBER)
-	{
+	if (MMath::Square(dist) < SMALL_NUMBER) {
 		return target;
 	}
 	const float step = interpSpeed * deltaTime;
@@ -307,14 +303,12 @@ float MMath::InterpConstantTo(float current, float target, float deltaTime, floa
 
 float MMath::InterpTo(float current, float target, float deltaTime, float interpSpeed)
 {
-	if (interpSpeed <= 0.f)
-	{
+	if (interpSpeed <= 0.f) {
 		return target;
 	}
 
 	const float dist = target - current;
-	if (MMath::Square(dist) < SMALL_NUMBER)
-	{
+	if (MMath::Square(dist) < SMALL_NUMBER) {
 		return target;
 	}
 
@@ -326,8 +320,7 @@ void MMath::WindRelativeAnglesDegrees(float inAngle0, float& inOutAngle1)
 {
 	const float diff = inAngle0 - inOutAngle1;
 	const float absDiff = Abs(diff);
-	if (absDiff > 180.0f)
-	{
+	if (absDiff > 180.0f) {
 		inOutAngle1 += 360.0f * Sign(diff) * FloorToFloat((absDiff / 360.0f) + 0.5f);
 	}
 }
@@ -336,12 +329,10 @@ float MMath::TruncateToHalfIfClose(float value)
 {
 	float valueToFudgeIntegralPart = 0.0f;
 	float valueToFudgeFractionalPart = MMath::Modf(value, &valueToFudgeIntegralPart);
-	if (value < 0.0f)
-	{
+	if (value < 0.0f) {
 		return valueToFudgeIntegralPart + ((MMath::IsNearlyEqual(valueToFudgeFractionalPart, -0.5f)) ? -0.5f : valueToFudgeFractionalPart);
 	}
-	else
-	{
+	else {
 		return valueToFudgeIntegralPart + ((MMath::IsNearlyEqual(valueToFudgeFractionalPart, 0.5f)) ? 0.5f : valueToFudgeFractionalPart);
 	}
 }
@@ -350,12 +341,10 @@ double MMath::TruncateToHalfIfClose(double value)
 {
 	double valueToFudgeIntegralPart = 0.0;
 	double valueToFudgeFractionalPart = MMath::Modf(value, &valueToFudgeIntegralPart);
-	if (value < 0.0)
-	{
+	if (value < 0.0) {
 		return valueToFudgeIntegralPart + ((MMath::IsNearlyEqual(valueToFudgeFractionalPart, -0.5)) ? -0.5 : valueToFudgeFractionalPart);
 	}
-	else
-	{
+	else {
 		return valueToFudgeIntegralPart + ((MMath::IsNearlyEqual(valueToFudgeFractionalPart, 0.5)) ? 0.5 : valueToFudgeFractionalPart);
 	}
 }
@@ -366,12 +355,10 @@ float MMath::RoundHalfToEven(float value)
 
 	const bool bIsNegative = value < 0.0f;
 	const bool bValueIsEven = static_cast<uint32>(FloorToFloat(((bIsNegative) ? -value : value))) % 2 == 0;
-	if (bValueIsEven)
-	{
+	if (bValueIsEven) {
 		return (bIsNegative) ? FloorToFloat(value + 0.5f) : CeilToFloat(value - 0.5f);
 	}
-	else
-	{
+	else {
 		return (bIsNegative) ? CeilToFloat(value - 0.5f) : FloorToFloat(value + 0.5f);
 	}
 }
@@ -382,12 +369,10 @@ double MMath::RoundHalfToEven(double value)
 
 	const bool bIsNegative = value < 0.0f;
 	const bool bValueIsEven = static_cast<uint32>(FloorToFloat(((bIsNegative) ? -value : value))) % 2 == 0;
-	if (bValueIsEven)
-	{
+	if (bValueIsEven) {
 		return (bIsNegative) ? FloorToFloat(value + 0.5f) : CeilToFloat(value - 0.5f);
 	}
-	else
-	{
+	else {
 		return (bIsNegative) ? CeilToFloat(value - 0.5f) : FloorToFloat(value + 0.5f);
 	}
 }
@@ -432,18 +417,14 @@ float MMath::PerlinNoise1D(const float value)
 		for (i = 0; i < b; i++)
 		{
 			p[i] = i;
-
 			const int32 Random1 = MMath::RandRange(0, 0x3fffffff);
-
 			g[i] = (float)((Random1 % (b + b)) - b) / b;
 		}
 
 		while (--i)
 		{
 			const int32 k = p[i];
-
 			const int32 Random = MMath::RandRange(0, 0x3fffffff);
-
 			const int32 j = Random % b;
 			p[i] = p[j];
 			p[j] = k;
@@ -488,12 +469,10 @@ void Quat::ToSwingTwist(const Vector3& inTwistAxis, Quat& outSwing, Quat& outTwi
 
 	outTwist = Quat(projection.x, projection.y, projection.z, w);
 
-	if (outTwist.SizeSquared() == 0.0f)
-	{
+	if (outTwist.SizeSquared() == 0.0f) {
 		outTwist = Quat::Identity;
 	}
-	else
-	{
+	else {
 		outTwist.Normalize();
 	}
 
@@ -550,8 +529,7 @@ Quat Quat::SlerpFullPathNotNormalized(const Quat &quat1, const Quat &quat2, floa
 	const float cosAngle = MMath::Clamp(quat1 | quat2, -1.f, 1.f);
 	const float angle = MMath::Acos(cosAngle);
 
-	if (MMath::Abs(angle) < KINDA_SMALL_NUMBER)
-	{
+	if (MMath::Abs(angle) < KINDA_SMALL_NUMBER) {
 		return quat1;
 	}
 
@@ -787,8 +765,7 @@ Plane Plane::TransformByUsingAdjointT(const Matrix4x4& m, float detM, const Matr
 {
 	Vector3 newNorm = ta.TransformVector(*this).GetSafeNormal();
 
-	if (detM < 0.f)
-	{
+	if (detM < 0.f) {
 		newNorm *= -1.0f;
 	}
 

@@ -238,8 +238,7 @@ void VulkanDescriptorPool::TrackRemoveUsage(const VulkanDescriptorSetsLayout& in
     
 void VulkanDescriptorPool::Reset()
 {
-	if (m_DescriptorPool != VK_NULL_HANDLE)
-	{
+	if (m_DescriptorPool != VK_NULL_HANDLE) {
 		vkResetDescriptorPool(m_Device->GetInstanceHandle(), m_DescriptorPool, 0);
 	}
 
@@ -266,8 +265,7 @@ VulkanTypedDescriptorPoolSet::VulkanTypedDescriptorPoolSet(VulkanDevice* inDevic
 
 VulkanTypedDescriptorPoolSet::~VulkanTypedDescriptorPoolSet()
 {
-	for (int32 i = 0; i < m_PoolsList.size(); ++i)
-	{
+	for (int32 i = 0; i < m_PoolsList.size(); ++i) {
 		delete m_PoolsList[i];
 	}
 	m_PoolsList.clear();
@@ -280,8 +278,7 @@ bool VulkanTypedDescriptorPoolSet::AllocateDescriptorSets(const VulkanDescriptor
 
 	if (layoutHandles.size() > 0)
 	{
-		while (!(m_PoolsList[m_CurrentPool]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets)))
-		{
+		while (!(m_PoolsList[m_CurrentPool]->AllocateDescriptorSets(inLayout.GetAllocateInfo(), outSets))) {
 			GetFreePool(true);
 		}
 		m_PoolsList[m_CurrentPool]->TrackAddUsage(inLayout);
@@ -292,8 +289,7 @@ bool VulkanTypedDescriptorPoolSet::AllocateDescriptorSets(const VulkanDescriptor
 
 void VulkanTypedDescriptorPoolSet::Reset()
 {
-	for (int32 i = 0; i < m_PoolsList.size(); ++i)
-	{
+	for (int32 i = 0; i < m_PoolsList.size(); ++i) {
 		m_PoolsList[i]->Reset();
 	}
 	m_CurrentPool = 0;
@@ -301,8 +297,7 @@ void VulkanTypedDescriptorPoolSet::Reset()
 
 VulkanDescriptorPool* VulkanTypedDescriptorPoolSet::GetFreePool(bool forceNewPool)
 {
-	if (!forceNewPool)
-	{
+	if (!forceNewPool) {
 		return m_PoolsList[m_CurrentPool];
 	}
 
@@ -403,8 +398,7 @@ void VulkanDescriptorPoolsManager::GC()
     
 void VulkanDescriptorPoolsManager::Destroy()
 {
-	for (int32 i = 0; i < m_PoolSets.size(); ++i)
-	{
+	for (int32 i = 0; i < m_PoolSets.size(); ++i) {
 		delete m_PoolSets[i];
 	}
 	m_PoolSets.clear();

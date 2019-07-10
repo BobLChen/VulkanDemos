@@ -73,8 +73,7 @@ public:
     
     inline void UpdateResources()
     {
-        if (m_Invalid)
-        {
+        if (m_Invalid) {
             CreateBuffer();
         }
     }

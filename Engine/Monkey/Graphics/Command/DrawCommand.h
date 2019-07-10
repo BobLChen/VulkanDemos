@@ -3,17 +3,17 @@
 #include "Common/Common.h"
 #include "HAL/ThreadSafeCounter.h"
 #include "Utils/Crc.h"
+
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanResources.h"
-
-#include "Graphics/Material/Material.h"
-#include "Graphics/Renderer/Renderable.h"
 
 #include <memory>
 #include <vector>
 
 class VulkanCommandListContext;
 class VulkanCmdBuffer;
+class Material;
+class Renderable;
 
 class MeshDrawCommand
 {

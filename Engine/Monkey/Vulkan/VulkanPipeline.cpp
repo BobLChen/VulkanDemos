@@ -111,8 +111,7 @@ bool VulkanGfxPipeline::UpdateDescriptorSets(std::shared_ptr<Material> material,
 
 	if (cmdBuffer->AcquirePoolSetAndDescriptorsIfNeeded(m_Layout->GetSetsLayout(), m_DescriptorSetHandles.data()))
 	{
-		for (int32 i = 0; i < setsLayout.size(); ++i)
-		{
+		for (int32 i = 0; i < setsLayout.size(); ++i) {
 			m_DSWriter[i].SetDescriptorSet(m_DescriptorSetHandles[i]);
 		}
 
@@ -156,14 +155,12 @@ void VulkanPipelineStateManager::Init(VulkanDevice* device)
 void VulkanPipelineStateManager::Destory()
 {
     VkDevice device = m_VulkanDevice->GetInstanceHandle();
-	for (auto it = m_DescriptorSetLayoutCache.begin(); it != m_DescriptorSetLayoutCache.end(); ++it)
-	{
+	for (auto it = m_DescriptorSetLayoutCache.begin(); it != m_DescriptorSetLayoutCache.end(); ++it) {
 		vkDestroyDescriptorSetLayout(device, it->second, VULKAN_CPU_ALLOCATOR);
 	}
 	m_DescriptorSetLayoutCache.clear();
     
-    if (m_PipelineCache != VK_NULL_HANDLE)
-    {
+    if (m_PipelineCache != VK_NULL_HANDLE) {
         vkDestroyPipelineCache(device, m_PipelineCache, VULKAN_CPU_ALLOCATOR);
     }
 }
@@ -229,14 +226,12 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 		VertexAttribute attribute = attributes[i];
 		int32 location            = inputBindingInfo.GetLocation(attribute);
 		
-		if (!inputInfo.GetAttributeDescription(attribute, attrDesc)) 
-		{
+		if (!inputInfo.GetAttributeDescription(attribute, attrDesc)) {
 			MLOGE("Attribute not found in vertex streaming. %d", attribute);
 			return VK_NULL_HANDLE;
 		}
 
-		if (!inputInfo.GetBindingDescription(attribute, bindDesc))
-		{
+		if (!inputInfo.GetBindingDescription(attribute, bindDesc)) {
 			MLOGE("Attribute not found in vertex streaming. %d", attribute);
 			return VK_NULL_HANDLE;
 		}

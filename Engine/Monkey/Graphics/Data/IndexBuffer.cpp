@@ -58,7 +58,7 @@ void IndexBuffer::CreateBuffer()
 	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	VERIFYVULKANRESULT(vkCreateBuffer(device, &bufferCreateInfo, VULKAN_CPU_ALLOCATOR, &hostBuffer));
 
-	// 获取需要分配的内心信息
+	// 获取需要分配的信息
 	VkMemoryRequirements memReqInfo;
 	vkGetBufferMemoryRequirements(device, hostBuffer, &memReqInfo);
 	uint32 memoryTypeIndex = 0;

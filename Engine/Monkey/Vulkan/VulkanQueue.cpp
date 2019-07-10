@@ -32,10 +32,10 @@ void VulkanQueue::Submit(VulkanCmdBuffer* cmdBuffer, uint32 numSignalSemaphores,
     if (cmdBuffer->GetWaitSemaphores().size() > 0)
     {
         waitSemaphores.resize(cmdBuffer->GetWaitSemaphores().size());
-        for (int32 i = 0; i < cmdBuffer->GetWaitSemaphores().size(); ++i)
-        {
+        for (int32 i = 0; i < cmdBuffer->GetWaitSemaphores().size(); ++i) {
 			waitSemaphores[i] = cmdBuffer->GetWaitSemaphores()[i];
         }
+
         submitInfo.waitSemaphoreCount = waitSemaphores.size();
         submitInfo.pWaitSemaphores    = waitSemaphores.data();
         submitInfo.pWaitDstStageMask  = cmdBuffer->GetWaitFlags().data();

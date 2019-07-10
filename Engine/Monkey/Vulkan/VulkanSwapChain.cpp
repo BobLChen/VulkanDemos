@@ -133,16 +133,13 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
     }
     
     VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    if (foundPresentModeImmediate && !m_LockToVsync)
-    {
+    if (foundPresentModeImmediate && !m_LockToVsync) {
         presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     }
-    else if (foundPresentModeMailbox)
-    {
+    else if (foundPresentModeMailbox) {
         presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
     }
-    else if (foundPresentModeFIFO)
-    {
+    else if (foundPresentModeFIFO) {
         presentMode = VK_PRESENT_MODE_FIFO_KHR;
     }
     else
@@ -162,18 +159,15 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
     );
     
 	VkSurfaceTransformFlagBitsKHR preTransform;
-	if (surfProperties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
-	{
+	if (surfProperties.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR) {
 		preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 	}
-	else
-	{
+	else {
 		preTransform = surfProperties.currentTransform;
 	}
 
 	VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-	if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
-	{
+	if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
 		compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	}
 	
@@ -199,20 +193,17 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	
 	*outDesiredNumBackBuffers			= desiredNumBuffers;
 
-	if (m_SwapChainInfo.imageExtent.width == 0)
-	{
+	if (m_SwapChainInfo.imageExtent.width == 0) {
 		m_SwapChainInfo.imageExtent.width = width;
 	}
-	if (m_SwapChainInfo.imageExtent.height == 0)
-	{
+	if (m_SwapChainInfo.imageExtent.height == 0) {
 		m_SwapChainInfo.imageExtent.height = height;
 	}
 
 	// 检测是否支持present
 	VkBool32 supportsPresent;
 	VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(m_Device->GetPhysicalHandle(), m_Device->GetPresentQueue()->GetFamilyIndex(), m_Surface, &supportsPresent));
-    if (!supportsPresent)
-    {
+    if (!supportsPresent) {
         MLOGE("Present queue not support.")
     }
 
@@ -243,8 +234,7 @@ VulkanSwapChain::~VulkanSwapChain()
 {
 	VkDevice device = m_Device->GetInstanceHandle();
 
-	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index)
-	{
+	for (int32 index = 0; index < m_ImageAcquiredSemaphore.size(); ++index) {
 		vkDestroySemaphore(m_Device->GetInstanceHandle(), m_ImageAcquiredSemaphore[index], VULKAN_CPU_ALLOCATOR);
 	}
     
@@ -261,14 +251,12 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	m_SemaphoreIndex  = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
 	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, MAX_int64, m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR)
-	{
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_SemaphoreIndex = prev;
 		return (int32)SwapStatus::OutOfDate;
 	}
 
-	if (result == VK_ERROR_SURFACE_LOST_KHR)
-	{
+	if (result == VK_ERROR_SURFACE_LOST_KHR) {
 		m_SemaphoreIndex = prev;
 		return (int32)SwapStatus::SurfaceLost;
 	}
@@ -282,8 +270,7 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 
 VulkanSwapChain::SwapStatus VulkanSwapChain::Present(std::shared_ptr<VulkanQueue> gfxQueue, std::shared_ptr<VulkanQueue> presentQueue, VkSemaphore* doneSemaphore)
 {
-	if (m_CurrentImageIndex == -1)
-	{
+	if (m_CurrentImageIndex == -1) {
 		return SwapStatus::Healthy;
 	}
 
@@ -299,18 +286,15 @@ VulkanSwapChain::SwapStatus VulkanSwapChain::Present(std::shared_ptr<VulkanQueue
     
 	VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &createInfo);
 
-	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
-	{
+	if (presentResult == VK_ERROR_OUT_OF_DATE_KHR) {
 		return SwapStatus::OutOfDate;
 	}
 
-	if (presentResult == VK_ERROR_SURFACE_LOST_KHR)
-	{
+	if (presentResult == VK_ERROR_SURFACE_LOST_KHR) {
 		return SwapStatus::SurfaceLost;
 	}
 
-	if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR)
-	{
+	if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR) {
 		VERIFYVULKANRESULT(presentResult);
 	}
 
@@ -321,8 +305,7 @@ VulkanSwapChain::SwapStatus VulkanSwapChain::Present(std::shared_ptr<VulkanQueue
 
 void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)
 {
-	if (m_PresentQueue)
-	{
+	if (m_PresentQueue) {
 		return;
 	}
 
@@ -331,24 +314,20 @@ void VulkanDevice::SetupPresentQueue(VkSurfaceKHR surface)
 		VkBool32 supportsPresent = VK_FALSE;
 		const uint32 familyIndex = queue->GetFamilyIndex();
 		VERIFYVULKANRESULT(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, familyIndex, surface, &supportsPresent));
-		if (supportsPresent)
-		{
+		if (supportsPresent) {
 			MLOG("Queue Family %d: Supports Present", familyIndex);
 		}
 		return (supportsPresent == VK_TRUE);
 	};
 
 	bool compute = SupportsPresent(m_PhysicalDevice, m_ComputeQueue);
-	if (m_TransferQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && m_TransferQueue->GetFamilyIndex() != m_ComputeQueue->GetFamilyIndex())
-	{
+	if (m_TransferQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && m_TransferQueue->GetFamilyIndex() != m_ComputeQueue->GetFamilyIndex()) {
 		SupportsPresent(m_PhysicalDevice, m_TransferQueue);
 	}
-	if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && compute)
-	{
+	if (m_ComputeQueue->GetFamilyIndex() != m_GfxQueue->GetFamilyIndex() && compute) {
 		m_PresentQueue = m_ComputeQueue;
 	}
-	else
-	{
+	else {
 		m_PresentQueue = m_GfxQueue;
 	}
 }

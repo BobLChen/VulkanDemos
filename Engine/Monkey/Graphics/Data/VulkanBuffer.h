@@ -3,10 +3,12 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 
+#include "Utils/Crc.h"
+
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/RHIDefinitions.h"
 #include "Vulkan/VulkanDevice.h"
-#include "Utils/Crc.h"
+
 #include <vector>
 
 class VulkanBuffer
