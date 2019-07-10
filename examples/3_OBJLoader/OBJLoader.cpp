@@ -112,25 +112,24 @@ private:
 	
 	void RecordCommandBuffers(VulkanCommandListContextImmediate& cmdContext, VulkanCmdBuffer* cmdBuffer)
 	{
-		VkRenderPass renderPass   = GetVulkanRHI()->GetRenderPass();
-		int32 frameWidth          = GetVulkanRHI()->GetSwapChain()->GetWidth();
-		int32 frameHeight         = GetVulkanRHI()->GetSwapChain()->GetHeight();
-		VkFramebuffer frameBuffer = GetVulkanRHI()->GetFrameBuffers()[m_ImageIndex];
-
+		int32 frameWidth  = GetVulkanRHI()->GetSwapChain()->GetWidth();
+		int32 frameHeight = GetVulkanRHI()->GetSwapChain()->GetHeight();
+		
 		VkClearValue clearValues[2];
 		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
 		clearValues[1].depthStencil = { 1.0f, 0 };
         
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.renderPass      = renderPass;
+		renderPassBeginInfo.renderPass      = m_RenderPass;
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
 		renderPassBeginInfo.renderArea.extent.width  = frameWidth;
 		renderPassBeginInfo.renderArea.extent.height = frameHeight;
-		
+		renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];;
+
 		VkViewport viewport = {};
 		viewport.x = 0;
 		viewport.y = frameHeight;
@@ -147,7 +146,6 @@ private:
         
         VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
         
-        renderPassBeginInfo.framebuffer = frameBuffer;
         vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
         vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);

@@ -118,6 +118,8 @@ protected:
     
 protected:
 	VkPipeline     							m_Pipeline;
+	VkRenderPass							m_RenderPass;
+
 	VulkanLayout*  							m_Layout;
 
 	std::vector<VkDescriptorSet>			m_DescriptorSetHandles;
@@ -166,7 +168,7 @@ public:
 
 private:
 
-    VkPipeline GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
+    VkPipeline GetVulkanGfxPipeline(const VulkanGfxPipeline* pipeline, const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo);
 
 private:
     VulkanDevice*	m_VulkanDevice;

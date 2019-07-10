@@ -12,6 +12,8 @@
 class VulkanRHI;
 class VulkanDevice;
 class VulkanQueue;
+class VulkanGfxLayout;
+class VulkanPipelineStateInfo;
 class VulkanCommandBufferManager;
 
 class VulkanCommandListContext
@@ -47,7 +49,13 @@ public:
 		return m_Device;
 	}
 
+public:
+
+	VkRenderPass GetRenderPass(const class VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* layout);
+
 protected:
+
+	VkRenderPass					m_RenderPass;
 
 	VulkanCommandListContext*		m_Immediate;
 	VulkanDevice*					m_Device;

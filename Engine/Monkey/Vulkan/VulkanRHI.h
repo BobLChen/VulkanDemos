@@ -50,34 +50,14 @@ public:
 		return m_SwapChain;
 	}
 
-	inline const std::vector<VkImage>& GetFrameImages() const
+	inline const std::vector<VkImage>& GetBackbufferImages() const
 	{
-		return m_FrameImages;
+		return m_BackbufferImages;
 	}
 
-	inline const std::vector<VkImageView>& GetFrameImageViews() const
+	inline const std::vector<VkImageView>& GetBackbufferViews() const
 	{
-		return m_FrameImageViews;
-	}
-
-	inline const std::vector<VkFramebuffer>& GetFrameBuffers() const
-	{
-		return m_FrameBuffers;
-	}
-
-	inline const VkImage& GetDepthStencilImage() const
-	{
-		return m_DepthStencilImage;
-	}
-
-	inline const VkImageView& GetDepthStencilView() const
-	{
-		return m_DepthStencilView;
-	}
-
-	inline const VkDeviceMemory& GetDepthStencilMemory() const
-	{
-		return m_DepthStencilMemory;
+		return m_BackbufferViews;
 	}
 
 	inline const PixelFormat& GetPixelFormat() const
@@ -85,26 +65,11 @@ public:
 		return m_PixelFormat;
 	}
 
-	inline const PixelFormat& GetDepthFormat() const
-	{
-		return m_DepthFormat;
-	}
-
-	inline const VkRenderPass& GetRenderPass() const
-	{
-		return m_RenderPass;
-	}
-
 	inline bool SupportsDebugUtilsExt() const
 	{
 		return m_SupportsDebugUtilsExt;
 	}
 	
-    inline const VkSampleCountFlagBits& GetSampleCount() const
-    {
-        return m_SampleCount;
-    }
-    
 	inline const char* GetName()
 	{ 
 		return "Vulkan";
@@ -130,18 +95,6 @@ protected:
 
 	void DestorySwapChain();
 
-	void CreateDepthStencil();
-
-	void DestoryDepthStencil();
-
-	void CreateRenderPass();
-
-	void DestoryRenderPass();
-
-	void CreateFrameBuffer();
-
-	void DestroyFrameBuffer();
-    
 protected:
 
 #if MONKEY_DEBUG
@@ -153,21 +106,11 @@ protected:
     std::vector<const char*>			m_InstanceExtensions;
     
     std::shared_ptr<VulkanDevice>		m_Device;
+
     std::shared_ptr<VulkanSwapChain>	m_SwapChain;
-
-    std::vector<VkImage>				m_FrameImages;
-    std::vector<VkImageView>			m_FrameImageViews;
-	std::vector<VkFramebuffer>			m_FrameBuffers;
-    
-    VkImage								m_DepthStencilImage;
-    VkImageView							m_DepthStencilView;
-    VkDeviceMemory						m_DepthStencilMemory;
-
-	VkRenderPass						m_RenderPass;
-	VkSampleCountFlagBits				m_SampleCount;
-
-    PixelFormat							m_PixelFormat;
-    PixelFormat							m_DepthFormat;
+	PixelFormat							m_PixelFormat;
+	std::vector<VkImage>				m_BackbufferImages;
+	std::vector<VkImageView>			m_BackbufferViews;
 
 	bool								m_SupportsDebugUtilsExt;
 };

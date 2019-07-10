@@ -1,14 +1,18 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Configuration/Platform.h"
+
 #include "Application/AppModuleBase.h"
+
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
+
 #include "File/FileManager.h"
+
 #include "Vulkan/VulkanPlatform.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanQueue.h"
 #include "Vulkan/VulkanSwapChain.h"
+
 #include <vector>
 #include <fstream>
 
@@ -38,18 +42,20 @@ public:
 
 	}
 
-	virtual void PreInit() override
+	virtual bool PreInit() override
 	{
 
+		return true;
 	}
 
-	virtual void Init() override
+	virtual bool Init() override
 	{
 		m_VulkanRHI = GetVulkanRHI();
-		m_Device    = GetDevice();
+		m_Device    = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 
 		CreateSemaphores();
 		CreateFences();
+		CreateCommandBuffers();
 		CreateMeshBuffers();
 		CreateUniformBuffers();
         CreateDescriptorPool();
@@ -59,6 +65,8 @@ public:
 		SetupCommandBuffers();
 
 		m_Ready = true;
+
+		return true;
 	}
 
 	virtual void Exist() override
@@ -66,6 +74,7 @@ public:
 		// 等待所有渲染指令执行完毕
 		VERIFYVULKANRESULT(vkWaitForFences(m_Device, (uint32_t)m_Fences.size(), m_Fences.data(), VK_TRUE, UINT64_MAX));
 		
+		DestroyCommandBuffers();
         DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
@@ -75,10 +84,9 @@ public:
 		DestroyFences();
 	}
 
-	virtual void Loop() override
+	virtual void Loop(float time, float delta) override
 	{
-		if (!m_Ready)
-		{
+		if (!m_Ready) {
 			return;
 		}
 		Draw();
@@ -415,6 +423,17 @@ private:
 		pipeLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 	}
+
+	void CreateCommandBuffers()
+	{
+		VkCommandPoolCreateInfo cmdPoolInfo;
+		ZeroVulkanStruct(cmdPoolInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+		cmdPoolInfo.queueFamilyIndex = GetVulkanRHI()->GetDevice()->GetPresentQueue()->GetFamilyIndex();
+		cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VERIFYVULKANRESULT(vkCreateCommandPool(m_Device, &cmdPoolInfo, VULKAN_CPU_ALLOCATOR, &m_CommandPool));
+
+
+	}
     
 	void DestroyDescriptorSetLayout()
 	{
@@ -652,30 +671,33 @@ private:
 	}
 
 private:
-	bool 						m_Ready;
+	bool 							m_Ready;
 
-	std::vector<VkFence> 		m_Fences;
-	VkSemaphore 				m_PresentComplete;
-	VkSemaphore 				m_RenderComplete;
+	VkCommandPool					m_CommandPool;
+	std::vector<VkCommandBuffer>	m_CommandBuffers;
 
-	std::shared_ptr<VulkanRHI> 	m_VulkanRHI;
+	std::vector<VkFence> 			m_Fences;
+	VkSemaphore 					m_PresentComplete;
+	VkSemaphore 					m_RenderComplete;
 
-	VkDevice 					m_Device;
+	std::shared_ptr<VulkanRHI> 		m_VulkanRHI;
 
-	VertexBuffer 				m_VertexBuffer;
-	IndexBuffer 				m_IndicesBuffer;
-	UBOBuffer 					m_MVPBuffer;
-	UBOData 					m_MVPData;
+	VkDevice 						m_Device;
 
-	VkDescriptorBufferInfo 		m_MVPDescriptor;
-	VkDescriptorSetLayout 		m_DescriptorSetLayout;
-	VkDescriptorSet 			m_DescriptorSet;
-	VkPipelineLayout 			m_PipelineLayout;
-	VkPipeline 					m_Pipeline;
-	VkDescriptorPool 			m_DescriptorPool;
+	VertexBuffer 					m_VertexBuffer;
+	IndexBuffer 					m_IndicesBuffer;
+	UBOBuffer 						m_MVPBuffer;
+	UBOData 						m_MVPData;
 
-	uint32 						m_IndicesCount;
-	uint32 						m_CurrentBackBuffer;
+	VkDescriptorBufferInfo 			m_MVPDescriptor;
+	VkDescriptorSetLayout 			m_DescriptorSetLayout;
+	VkDescriptorSet 				m_DescriptorSet;
+	VkPipelineLayout 				m_PipelineLayout;
+	VkPipeline 						m_Pipeline;
+	VkDescriptorPool 				m_DescriptorPool;
+
+	uint32 							m_IndicesCount;
+	uint32 							m_CurrentBackBuffer;
 };
 
 AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)

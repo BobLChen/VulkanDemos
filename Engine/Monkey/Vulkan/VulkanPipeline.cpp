@@ -12,6 +12,7 @@
 // VulkanPipeline
 VulkanPipeline::VulkanPipeline()
 	: m_Pipeline(VK_NULL_HANDLE)
+	, m_RenderPass(VK_NULL_HANDLE)
 	, m_Layout(nullptr)
 {
 
@@ -190,7 +191,8 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(std::shared_ptr<Ma
 {
 	const VulkanPipelineStateInfo& pipelineStateInfo = material->GetPipelineStateInfo();
 	const VertexInputDeclareInfo& inputInfo          = renderable->GetVertexBuffer()->GetVertexInputStateInfo();
-	uint32 key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), material->GetShader()->GetHash());
+	uint32 key = 0;
+	key = Crc::MemCrc32(&(pipelineStateInfo.hash), sizeof(pipelineStateInfo.hash), material->GetShader()->GetHash());
 	key = Crc::MemCrc32(&key, sizeof(uint32), inputInfo.GetHash());
 	
 	auto it = m_GfxPipelineCache.find(key);
@@ -201,7 +203,8 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(std::shared_ptr<Ma
     VulkanGfxLayout* layout = GetGfxLayout(material->GetShader());
     VulkanGfxPipeline* pipeline = new VulkanGfxPipeline();
     pipeline->m_Layout     = layout;
-    pipeline->m_Pipeline   = GetVulkanGfxPipeline(pipelineStateInfo, layout, material->GetShader(), inputInfo);
+	pipeline->m_RenderPass = m_VulkanDevice->GetImmediateContext().GetRenderPass(pipelineStateInfo, layout);
+    pipeline->m_Pipeline   = GetVulkanGfxPipeline(pipeline, pipelineStateInfo, layout, material->GetShader(), inputInfo);
     pipeline->CreateDescriptorWriteInfos();
     
 	MLOG("CreateGraphicsPipeline [%ud]", key);
@@ -210,7 +213,7 @@ VulkanGfxPipeline* VulkanPipelineStateManager::GetGfxPipeline(std::shared_ptr<Ma
 	return pipeline;
 }
 
-VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
+VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanGfxPipeline* pipeline, const VulkanPipelineStateInfo& pipelineStateInfo, const VulkanGfxLayout* gfxLayout, std::shared_ptr<Shader> shader, const VertexInputDeclareInfo& inputInfo)
 {
 	const VertexInputBindingInfo& inputBindingInfo = shader->GetVertexInputBindingInfo();
 	const std::vector<VertexAttribute>& attributes = inputBindingInfo.GetAttributes();
@@ -296,7 +299,7 @@ VkPipeline VulkanPipelineStateManager::GetVulkanGfxPipeline(const VulkanPipeline
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 	ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 	pipelineCreateInfo.layout 				= gfxLayout->GetPipelineLayout();
-	pipelineCreateInfo.renderPass 			= Engine::Get()->GetVulkanRHI()->GetRenderPass();
+	pipelineCreateInfo.renderPass 			= pipeline->m_RenderPass;
     pipelineCreateInfo.stageCount 			= shaderStageInfo.size();
     pipelineCreateInfo.pStages 				= shaderStageInfo.data();
 	pipelineCreateInfo.pVertexInputState 	= &vertexInputCreateInfo;
