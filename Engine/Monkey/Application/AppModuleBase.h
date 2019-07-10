@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -88,7 +88,7 @@ public:
 
 	virtual void Exist() = 0;
 
-protected:
+private:
 
 	void CreateFrameBuffers()
 	{
@@ -285,7 +285,6 @@ protected:
 	int32 						m_Height;
 	std::string 				m_Title;
 	std::shared_ptr<Engine> 	m_Engine;
-
     
 	std::vector<VkFramebuffer>	m_FrameBuffers;
     

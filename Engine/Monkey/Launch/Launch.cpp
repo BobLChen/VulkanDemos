@@ -70,7 +70,10 @@ void EngineLoop()
 void EngineExit()
 {
 	g_AppModule->Exist();
+    g_AppModule = nullptr;
+    
 	g_GameEngine->Exist();
+    g_GameEngine = nullptr;
 }
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
