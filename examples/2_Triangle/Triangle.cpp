@@ -582,7 +582,9 @@ private:
     
 	void DestroyPipelines()
 	{
-		vkDestroyPipeline(GetVulkanRHI()->GetDevice()->GetInstanceHandle(), m_Pipeline, VULKAN_CPU_ALLOCATOR);
+		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+		vkDestroyPipeline(device, m_Pipeline, VULKAN_CPU_ALLOCATOR);
+		vkDestroyPipelineCache(device, m_PipelineCache, VULKAN_CPU_ALLOCATOR);
 	}
 	
 	void CreateDescriptorSetLayout()
@@ -615,6 +617,8 @@ private:
         for (int32 i = 0; i < m_CommandBuffers.size(); ++i) {
             vkFreeCommandBuffers(device, m_CommandPool, 1, &(m_CommandBuffers[i]));
         }
+
+		vkDestroyCommandPool(device, m_CommandPool, VULKAN_CPU_ALLOCATOR);
     }
     
 	void CreateCommandBuffers()
