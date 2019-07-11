@@ -6,9 +6,9 @@
 #include "Application/SlateApplication.h"
 #include "Application/GenericApplication.h"
 
+#include "RHIDefinitions.h"
 #include "VulkanRHI.h"
 #include "VulkanPlatform.h"
-#include "VulkanCommon.h"
 #include "VulkanDevice.h"
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
