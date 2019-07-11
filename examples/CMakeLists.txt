@@ -84,6 +84,21 @@ SETUP_SAMPLE_START(2_Triangle)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(2_Triangle)
 
+SETUP_SAMPLE_START(3_DemoBase)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/3_DemoBase/Triangle.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(3_DemoBase)
+
 SETUP_SAMPLE_START(3_OBJLoader)
 	SET(SOURCE_FILES
 		${MainLaunch}
