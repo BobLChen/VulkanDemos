@@ -24,6 +24,7 @@
 
 #define CUBE_SIZE  5
 #define CUBE_COUNT CUBE_SIZE * CUBE_SIZE * CUBE_SIZE
+#define MATERIAL_COUT 2
 
 class DynamicUniformBufferMode : public AppModuleBase
 {
@@ -80,9 +81,14 @@ public:
     
 private:
     
-    struct UBOData
+    struct ModelUBOData
     {
         Matrix4x4 model;
+    };
+
+    struct MaterialUBOData
+    {
+        Vector4 color;
         Matrix4x4 view;
         Matrix4x4 projection;
     };
@@ -128,11 +134,15 @@ private:
         scissor.offset.y      = 0;
         
         VkDeviceSize offsets[1] = { 0 };
-        uint32 align = Align(sizeof(UBOData), GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment);
+        
+        uint32 bufferAlign = GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment;
+        uint32 modelAlign  = Align(sizeof(ModelUBOData), bufferAlign);
+        uint32 vpAlign     = Align(sizeof(MaterialUBOData), bufferAlign);
 
         for (int32 i = 0; i < m_DrawCmdBuffers.size(); ++i)
         {
             renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
+
             VERIFYVULKANRESULT(vkBeginCommandBuffer(m_DrawCmdBuffers[i], &cmdBeginInfo));
             vkCmdBeginRenderPass(m_DrawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdSetViewport(m_DrawCmdBuffers[i], 0, 1, &viewport);
@@ -143,8 +153,17 @@ private:
             
 			for (int32 j = 0; j < CUBE_COUNT; ++j)
 			{
-				uint32 dynamicOffset = j * align;
-				vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &(m_DescriptorSets[i]), 1, &dynamicOffset);
+                std::vector<uint32> dynamicOffsets(2);
+                dynamicOffsets[0] = j * modelAlign;
+                if (j < CUBE_COUNT / 2) 
+                {
+                    dynamicOffsets[1] = 0;
+                }
+                else
+                {
+                    dynamicOffsets[1] = vpAlign * 1;
+                }
+				vkCmdBindDescriptorSets(m_DrawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &(m_DescriptorSets[i]), dynamicOffsets.size(), dynamicOffsets.data());
 				vkCmdDrawIndexed(m_DrawCmdBuffers[i], m_Renderable->GetIndexBuffer()->GetIndexCount(), 1, 0, 0, 0);
 			}
 
@@ -286,14 +305,23 @@ private:
             allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
             VERIFYVULKANRESULT(vkAllocateDescriptorSets(GetDevice(), &allocInfo, &(m_DescriptorSets[i])));
             
-            VkWriteDescriptorSet writeDescriptorSet;
-            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-            writeDescriptorSet.dstSet          = m_DescriptorSets[i];
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-            writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->GetDescriptorBufferInfo());
-            writeDescriptorSet.dstBinding      = 0;
-            vkUpdateDescriptorSets(GetDevice(), 1, &writeDescriptorSet, 0, nullptr);
+            VkWriteDescriptorSet writeDescriptorSet0;
+            ZeroVulkanStruct(writeDescriptorSet0, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            writeDescriptorSet0.dstSet          = m_DescriptorSets[i];
+            writeDescriptorSet0.descriptorCount = 1;
+            writeDescriptorSet0.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            writeDescriptorSet0.pBufferInfo     = &(m_ModelBuffers[i]->GetDescriptorBufferInfo());
+            writeDescriptorSet0.dstBinding      = 0;
+            vkUpdateDescriptorSets(GetDevice(), 1, &writeDescriptorSet0, 0, nullptr);
+
+            VkWriteDescriptorSet writeDescriptorSet1;
+            ZeroVulkanStruct(writeDescriptorSet1, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            writeDescriptorSet1.dstSet          = m_DescriptorSets[i];
+            writeDescriptorSet1.descriptorCount = 1;
+            writeDescriptorSet1.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+            writeDescriptorSet1.pBufferInfo     = &(m_ViewProjectionBuffers[i]->GetDescriptorBufferInfo());
+            writeDescriptorSet1.dstBinding      = 1;
+            vkUpdateDescriptorSets(GetDevice(), 1, &writeDescriptorSet1, 0, nullptr);
         }
     }
 
@@ -305,22 +333,29 @@ private:
 
 	void CreateDescriptorLayout()
 	{
-		VkDescriptorSetLayoutBinding setLayoutBinding = {};
-		setLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		setLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		setLayoutBinding.binding = 0;
-		setLayoutBinding.descriptorCount = 1;
+        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings;
+        setLayoutBindings.resize(2);
+
+		setLayoutBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		setLayoutBindings[0].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+		setLayoutBindings[0].binding         = 0;
+		setLayoutBindings[0].descriptorCount = 1;
+
+        setLayoutBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		setLayoutBindings[1].stageFlags      = VK_SHADER_STAGE_VERTEX_BIT;
+		setLayoutBindings[1].binding         = 1;
+		setLayoutBindings[1].descriptorCount = 1;
 
 		VkDescriptorSetLayoutCreateInfo setLayoutCreateInfo;
 		ZeroVulkanStruct(setLayoutCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		setLayoutCreateInfo.pBindings = &setLayoutBinding;
-		setLayoutCreateInfo.bindingCount = 1;
+		setLayoutCreateInfo.pBindings    = setLayoutBindings.data();
+		setLayoutCreateInfo.bindingCount = setLayoutBindings.size();
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(GetDevice(), &setLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
 		
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo;
 		ZeroVulkanStruct(pipelineLayoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 		pipelineLayoutCreateInfo.setLayoutCount = 1;
-		pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
+		pipelineLayoutCreateInfo.pSetLayouts    = &m_DescriptorSetLayout;
 
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(GetDevice(), &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 	}
@@ -329,7 +364,7 @@ private:
     {
 		VkDescriptorPoolSize poolSize;
 		poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		poolSize.descriptorCount = 1;
+		poolSize.descriptorCount = 2;
 
         VkDescriptorPoolCreateInfo descriptorPoolInfo;
         ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -346,33 +381,71 @@ private:
     
     void CreateUniformBuffers()
     {
-		uint32 align = Align(sizeof(UBOData), GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment);
-		uint32 size  = align * CUBE_COUNT;
+        uint32 bufferAlignment = GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment;
 
-        m_MVPBuffers.resize(GetFrameCount());
-        for (int32 i = 0; i < m_MVPBuffers.size(); ++i) 
+        // model matrix dynamic uniform buffer
+		uint32 modelAlign = Align(sizeof(ModelUBOData), bufferAlignment);
+		uint32 modelSize  = modelAlign * CUBE_COUNT;
+        m_ModelBuffers.resize(GetFrameCount());
+        for (int32 i = 0; i < GetFrameCount(); ++i) 
 		{
-            m_MVPBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, size);
+            m_ModelBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, modelSize);
+        }
+
+        m_ModelUBODataDatas.resize(modelSize);
+        for (int32 i = 0; i < CUBE_COUNT; ++i)
+		{
+			uint8* dataPtr = m_ModelUBODataDatas.data() + i * modelAlign;
+			ModelUBOData* modelMatrix = (ModelUBOData*)dataPtr;
+            
+            modelMatrix->model.SetIdentity();
+            
+			dataPtr += modelAlign;
+		}
+
+        // material dynamic uniform buffer
+        // simulate two material
+        uint32 vpAlign    = Align(sizeof(MaterialUBOData), bufferAlignment);
+        uint32 vpSize     = vpAlign * MATERIAL_COUT;
+        m_ViewProjectionBuffers.resize(GetFrameCount());
+        for (int32 i = 0; i < GetFrameCount(); ++i) 
+		{
+            m_ViewProjectionBuffers[i] = VulkanBuffer::CreateBuffer(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, vpSize);
         }
         
-		m_MVPDatas.resize(size);
-		for (int32 i = 0; i < CUBE_COUNT; ++i)
+        m_MaterialUBODataDatas.resize(vpSize);
+		for (int32 i = 0; i < MATERIAL_COUT; ++i)
 		{
-			uint8* dataPtr = m_MVPDatas.data() + i * align;
-			UBOData* mvp = (UBOData*)dataPtr;
-			
-			mvp->model.SetIdentity();
+			uint8* dataPtr = m_MaterialUBODataDatas.data() + i * vpAlign;
+			MaterialUBOData* viewProjection = (MaterialUBOData*)dataPtr;
 
-			mvp->view.SetIdentity();
-			mvp->view.SetOrigin(Vector4(5, 5, -300.0f));
-			mvp->view.AppendRotation(30.0f, Vector3::RightVector);
-			mvp->view.SetInverse();
+            if (i == 0) 
+            {
+                viewProjection->color.Set(1.0f, 0.0f, 0.0f, 1.0f);
+            } 
+            else 
+            {
+                viewProjection->color.Set(0.0f, 1.0f, 0.0f, 1.0f);
+            }
+            
+			viewProjection->view.SetIdentity();
+			viewProjection->view.SetOrigin(Vector4(5, 5, -300.0f));
+			viewProjection->view.AppendRotation(30.0f, Vector3::RightVector);
+			viewProjection->view.SetInverse();
 
-			mvp->projection.SetIdentity();
-			mvp->projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
+			viewProjection->projection.SetIdentity();
+			viewProjection->projection.Perspective(MMath::DegreesToRadians(60.0f), (float)GetFrameWidth(), (float)GetFrameHeight(), 0.01f, 3000.0f);
 
-			dataPtr += align;
+			dataPtr += vpAlign;
 		}
+
+        for (int32 i = 0; i < m_ViewProjectionBuffers.size(); ++i)
+        {
+            m_ViewProjectionBuffers[i]->Map();
+            m_ViewProjectionBuffers[i]->CopyTo(m_MaterialUBODataDatas.data(), m_MaterialUBODataDatas.size());
+		    m_ViewProjectionBuffers[i]->Flush(vpSize, 0);
+            m_ViewProjectionBuffers[i]->Unmap();
+        }
 
         UpdateUniformBuffers();
     }
@@ -388,21 +461,31 @@ private:
     
     void DestroyUniformBuffers()
     {
-        for (int32 i = 0; i < m_MVPBuffers.size(); ++i)
+        for (int32 i = 0; i < m_ModelBuffers.size(); ++i)
         {
-            m_MVPBuffers[i]->Destroy();
-            delete m_MVPBuffers[i];
+            m_ModelBuffers[i]->Destroy();
+            delete m_ModelBuffers[i];
         }
-        m_MVPBuffers.clear();
+        m_ModelBuffers.clear();
+
+        for (int32 i = 0; i < m_ViewProjectionBuffers.size(); ++i)
+        {
+            m_ViewProjectionBuffers[i]->Destroy();
+            delete m_ViewProjectionBuffers[i];
+        }
+        m_ViewProjectionBuffers.clear();
     }
     
     void UpdateUniformBuffers()
     {
-		uint32 align = Align(sizeof(UBOData), GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment);
-		uint32 size  = align * CUBE_COUNT;
         float delta  = Engine::Get()->GetDeltaTime();
 
-        m_MVPBuffers[m_ImageIndex]->Map();
+        uint32 bufferAlignment = GetVulkanRHI()->GetDevice()->GetLimits().minUniformBufferOffsetAlignment;
+
+        uint32 modelAlign = Align(sizeof(ModelUBOData), bufferAlignment);
+        uint32 modelSize  = modelAlign * CUBE_COUNT;
+
+        m_ModelBuffers[m_ImageIndex]->Map();
 
 		Vector3 offset(50.0f);
 
@@ -412,25 +495,25 @@ private:
             {
                 for (uint32 z = 0; z < CUBE_SIZE; ++z)
                 {
-					uint32 index   = x * CUBE_SIZE * CUBE_SIZE + y * CUBE_SIZE + z;
-                    uint8* dataPtr = m_MVPDatas.data() + index * align;
-					UBOData* mvp   = (UBOData*)dataPtr;
-					Vector3 pos    = Vector3(
+					uint32 index    = x * CUBE_SIZE * CUBE_SIZE + y * CUBE_SIZE + z;
+                    uint8* dataPtr  = m_ModelUBODataDatas.data() + index * modelAlign;
+					ModelUBOData* model = (ModelUBOData*)dataPtr;
+					Vector3 pos     = Vector3(
 						-((CUBE_SIZE * offset.x) / 2.0f) + offset.x / 2.0f + x * offset.x, 
 						-((CUBE_SIZE * offset.y) / 2.0f) + offset.y / 2.0f + y * offset.y, 
 						-((CUBE_SIZE * offset.z) / 2.0f) + offset.z / 2.0f + z * offset.z
 					);
-					mvp->model.SetOrigin(pos);
-					mvp->model.AppendRotation(90.0f * delta, Vector3::UpVector);
-					mvp->model.AppendRotation(index * delta, Vector3::RightVector);
-					mvp->model.AppendRotation(index * delta, Vector3::ForwardVector);
+					model->model.SetOrigin(pos);
+					model->model.AppendRotation(90.0f * delta, Vector3::UpVector);
+					model->model.AppendRotation(index * delta, Vector3::RightVector);
+					model->model.AppendRotation(index * delta, Vector3::ForwardVector);
                 }
             }
         }
         
-        m_MVPBuffers[m_ImageIndex]->CopyTo(m_MVPDatas.data(), m_MVPDatas.size());
-		m_MVPBuffers[m_ImageIndex]->Flush(size, 0);
-        m_MVPBuffers[m_ImageIndex]->Unmap();
+        m_ModelBuffers[m_ImageIndex]->CopyTo(m_ModelUBODataDatas.data(), m_ModelUBODataDatas.size());
+		m_ModelBuffers[m_ImageIndex]->Flush(modelSize, 0);
+        m_ModelBuffers[m_ImageIndex]->Unmap();
     }
     
     void LoadAssets()
@@ -448,8 +531,11 @@ private:
     std::shared_ptr<Material>       m_Material;
     std::shared_ptr<Renderable>     m_Renderable;
     
-    std::vector<uint8>				m_MVPDatas;
-    std::vector<VulkanBuffer*>      m_MVPBuffers;
+    std::vector<uint8>              m_ModelUBODataDatas;
+    std::vector<VulkanBuffer*>      m_ModelBuffers;
+
+    std::vector<uint8>              m_MaterialUBODataDatas;
+    std::vector<VulkanBuffer*>      m_ViewProjectionBuffers;
     
     std::vector<VkDescriptorSet>    m_DescriptorSets;
     VkDescriptorPool                m_DescriptorPool;

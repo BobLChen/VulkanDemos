@@ -16,6 +16,9 @@ if "win32" == sys.platform:
 elif "linux" == sys.platform:
 	exepath = exepath + "external/vulkan/linux/bin/glslangValidator"
 	pass
+elif "linux2" == sys.platform:
+	exepath = exepath + "external/vulkan/linux/bin/glslangValidator"
+	pass
 elif "darwin" == sys.platform:
 	exepath = exepath + "external/vulkan/macos/bin/glslangValidator"
 	pass
