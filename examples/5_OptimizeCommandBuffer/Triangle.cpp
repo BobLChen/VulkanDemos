@@ -3,7 +3,8 @@
 
 #include "Demo/DemoBase.h"
 #include "Demo/DVKBuffer.h"
-#include "Demo/DKVCommand.h"
+#include "Demo/DVkCommand.h"
+#include "Demo/DVKUtils.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -84,24 +85,6 @@ private:
 		Matrix4x4 projection;
 	};
 
-	VkShaderModule LoadSPIPVShader(const std::string& filepath)
-	{
-		uint8* dataPtr  = nullptr;
-		uint32 dataSize = 0;
-		FileManager::ReadFile(filepath, dataPtr, dataSize);
-
-		VkShaderModuleCreateInfo moduleCreateInfo;
-		ZeroVulkanStruct(moduleCreateInfo, VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-		moduleCreateInfo.codeSize = dataSize;
-		moduleCreateInfo.pCode    = (uint32_t*)dataPtr;
-
-		VkShaderModule shaderModule;
-		VERIFYVULKANRESULT(vkCreateShaderModule(m_Device, &moduleCreateInfo, VULKAN_CPU_ALLOCATOR, &shaderModule));
-		delete[] dataPtr;
-		
-		return shaderModule;
-	}
-    
 	void Draw(float time, float delta)
 	{
 		UpdateUniformBuffers(time, delta);
@@ -297,10 +280,10 @@ private:
 		ZeroVulkanStruct(shaderStages[0], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		ZeroVulkanStruct(shaderStages[1], VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 		shaderStages[0].stage  = VK_SHADER_STAGE_VERTEX_BIT;
-		shaderStages[0].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.vert.spv");
+        shaderStages[0].module = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/2_Triangle/triangle.vert.spv");
 		shaderStages[0].pName  = "main";
 		shaderStages[1].stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shaderStages[1].module = LoadSPIPVShader("assets/shaders/2_Triangle/triangle.frag.spv");
+        shaderStages[1].module = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/2_Triangle/triangle.frag.spv");
 		shaderStages[1].pName  = "main";
         
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
