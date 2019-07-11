@@ -8,6 +8,7 @@ namespace vk_demo
 	DVKBuffer* DVKBuffer::CreateBuffer(std::shared_ptr<VulkanDevice> vulkanDevice, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data)
 	{
 		DVKBuffer* dvkBuffer = new DVKBuffer();
+		dvkBuffer->device = vulkanDevice->GetInstanceHandle();
 		
 		VkDevice vkDevice = vulkanDevice->GetInstanceHandle();
 		

@@ -154,8 +154,8 @@ private:
 
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, &m_VertexBuffer.buffer, offsets);
-			vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindVertexBuffers(m_CommandBuffers[i], 0, 1, &(m_VertexBuffer->buffer), offsets);
+			vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffer->buffer, 0, VK_INDEX_TYPE_UINT16);
 			vkCmdDrawIndexed(m_CommandBuffers[i], m_IndicesCount, 1, 0, 0, 0);
 			
 			vkCmdEndRenderPass(m_CommandBuffers[i]);
@@ -178,7 +178,7 @@ private:
 		writeDescriptorSet.dstSet          = m_DescriptorSet;
 		writeDescriptorSet.descriptorCount = 1;
 		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSet.pBufferInfo     = &m_MVPDescriptor;
+		writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
 		writeDescriptorSet.dstBinding      = 0;
 		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
@@ -358,34 +358,12 @@ private:
 	void UpdateUniformBuffers(float time, float delta)
 	{
 		m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-		uint8_t *pData = nullptr;
-		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
-		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
-		vkUnmapMemory(m_Device, m_MVPBuffer.memory);
+
+		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(UBOData));
 	}
 
 	void CreateUniformBuffers()
 	{
-		VkBufferCreateInfo bufferInfo;
-		ZeroVulkanStruct(bufferInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
-		bufferInfo.size  = sizeof(UBOData);
-		bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		VERIFYVULKANRESULT(vkCreateBuffer(m_Device, &bufferInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.buffer));
-        
-		VkMemoryRequirements memReqInfo;
-		vkGetBufferMemoryRequirements(m_Device, m_MVPBuffer.buffer, &memReqInfo);
-		
-		VkMemoryAllocateInfo allocInfo;
-		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-		allocInfo.allocationSize  = memReqInfo.size;
-		allocInfo.memoryTypeIndex = GetMemoryTypeFromProperties(memReqInfo.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-		VERIFYVULKANRESULT(vkAllocateMemory(m_Device, &allocInfo, VULKAN_CPU_ALLOCATOR, &m_MVPBuffer.memory));
-		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_MVPBuffer.buffer, m_MVPBuffer.memory, 0));
-        
-		m_MVPDescriptor.buffer = m_MVPBuffer.buffer;
-		m_MVPDescriptor.offset = 0;
-		m_MVPDescriptor.range  = sizeof(UBOData);
-        
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
         
@@ -395,10 +373,20 @@ private:
         
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+
+		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(UBOData),
+			&m_MVPData
+		);
+		m_MVPBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
 	{
+		m_MVPBuffer->UnMap();
 		m_MVPBuffer->Destroy();
 		delete m_MVPBuffer;
 	}
@@ -441,7 +429,7 @@ private:
 
 		m_IndexBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			indices.size() * sizeof(uint16)
 		);
@@ -511,8 +499,6 @@ private:
 	vk_demo::DVKBuffer*				m_VertexBuffer = nullptr;
 	vk_demo::DVKBuffer*				m_MVPBuffer = nullptr;
 
-	VkDescriptorBufferInfo 			m_MVPDescriptor;
-	
     VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSet 				m_DescriptorSet = VK_NULL_HANDLE;
 	VkPipelineLayout 				m_PipelineLayout = VK_NULL_HANDLE;
