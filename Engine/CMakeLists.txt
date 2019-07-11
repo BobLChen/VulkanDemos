@@ -27,6 +27,13 @@ set(Monkey_Common_SRCS
 	
 )
 
+set(Monkey_UI_HDRS
+	Monkey/UI/ImageGUIContext.h
+)
+set(Monkey_UI_SRCS
+	Monkey/UI/ImageGUIContext.cpp
+)
+
 set(Monkey_App_HDRS
 	Monkey/Engine.h
 )
@@ -492,6 +499,9 @@ add_library(Monkey STATIC
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
 
+	${Monkey_UI_HDRS}
+	${Monkey_UI_SRCS}
+
 	${Monkey_Graphics_Data_HDRS}
 	${Monkey_Graphics_Data_SRCS}
 	${Monkey_Graphics_Texture_HDRS}
@@ -553,6 +563,7 @@ source_group(Monkey\\HAL\\Android FILES ${Monkey_HAL_Android_SRCS} ${Monkey_HAL_
 source_group(Monkey\\GenericPlatform FILES ${Monkey_GenericPlatform_HDRS} ${Monkey_GenericPlatform_SRCS})
 
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
+source_group(Monkey\\UI FILES ${Monkey_UI_HDRS} ${Monkey_UI_SRCS})
 
 source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})
 source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})

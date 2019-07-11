@@ -129,6 +129,21 @@ SETUP_SAMPLE_START(5_OptimizeCommandBuffer)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(5_OptimizeCommandBuffer)
 
+SETUP_SAMPLE_START(6_ImageGUI)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/6_ImageGUI/Triangle.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(6_ImageGUI)
+
 # SETUP_SAMPLE_START(3_OBJLoader)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
