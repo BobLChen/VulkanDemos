@@ -66,27 +66,3 @@ Vulkan Examples
 - https://github.com/BobLChen/VulkanTutorials/blob/master/examples/2_Triangle/Triangle.md
 
 ![Triangle](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/2_Triangle.jpg)
-
-### OBJ
-![OBJLoader](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/3_OBJLoader.jpg)
-
-### Pipelines
-![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/4_Pipelines.jpg)
-
-### Texture
-![Texture](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/5_Texture.jpg)
-
-### DynamicUniformBuffer
-![DynamicUniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/6_DynamicUniformBuffer.jpg)
-
-### PushConstants
-![PushConstants](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/7_PushConstants.jpg)
-
-### SpeciallizationConstant
-![SpeciallizationConstant](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/8_SpecializationConstants.jpg)
-
-### TextureArray
-![TextureArray](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/9_TextureArray.jpg)
-
-### Texture3D
-![Texture3D](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/10_Texture3D.jpg)
