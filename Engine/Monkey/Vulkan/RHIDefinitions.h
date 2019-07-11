@@ -4,6 +4,7 @@
 #include "Common/Log.h"
 
 #include <string>
+#include <cstring>
 
 enum ShaderFrequency
 {
