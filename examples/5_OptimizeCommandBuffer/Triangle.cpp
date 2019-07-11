@@ -3,6 +3,7 @@
 
 #include "Demo/DemoBase.h"
 #include "Demo/DVKBuffer.h"
+#include "Demo/DKVCommand.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -433,48 +434,20 @@ private:
 			indices.size() * sizeof(uint16)
 		);
 
-		VkCommandBuffer xferCmdBuffer;
-		// gfx queue自带transfer功能，为了优化需要使用专有的xfer queue。这里为了简单，先将就用。
-		VkCommandBufferAllocateInfo xferCmdBufferInfo;
-		ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-        xferCmdBufferInfo.commandPool        = m_CommandPool;
-		xferCmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		xferCmdBufferInfo.commandBufferCount = 1;
-		VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, &xferCmdBufferInfo, &xferCmdBuffer));
-        
-		// 开始录制命令
-		VkCommandBufferBeginInfo cmdBufferBeginInfo;
-		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-		VERIFYVULKANRESULT(vkBeginCommandBuffer(xferCmdBuffer, &cmdBufferBeginInfo));
-		
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::CreateCommandBuffer(m_VulkanDevice, m_CommandPool);
+		cmdBuffer->Begin();
+
 		VkBufferCopy copyRegion = {};
 		copyRegion.size = vertices.size() * sizeof(Vertex);
-		vkCmdCopyBuffer(xferCmdBuffer, vertStaging->buffer, m_VertexBuffer->buffer, 1, &copyRegion);
-		
-		copyRegion.size = indices.size() * sizeof(uint16);
-		vkCmdCopyBuffer(xferCmdBuffer, idexStaging->buffer, m_IndexBuffer->buffer, 1, &copyRegion);
-        
-		// 结束录制
-		VERIFYVULKANRESULT(vkEndCommandBuffer(xferCmdBuffer));
-		
-		// 提交命令，并且等待命令执行完毕。
-		VkSubmitInfo submitInfo;
-		ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers    = &xferCmdBuffer;
+		vkCmdCopyBuffer(cmdBuffer->cmdBuffer, vertStaging->buffer, m_VertexBuffer->buffer, 1, &copyRegion);
 
-		VkFenceCreateInfo fenceInfo;
-		ZeroVulkanStruct(fenceInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-		fenceInfo.flags = 0;
+		copyRegion.size = indices.size() * sizeof(uint16);
+		vkCmdCopyBuffer(cmdBuffer->cmdBuffer, idexStaging->buffer, m_IndexBuffer->buffer, 1, &copyRegion);
         
-		VkFence fence = VK_NULL_HANDLE;
-		VERIFYVULKANRESULT(vkCreateFence(m_Device, &fenceInfo, VULKAN_CPU_ALLOCATOR, &fence));
-		VERIFYVULKANRESULT(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, fence));
-		VERIFYVULKANRESULT(vkWaitForFences(m_Device, 1, &fence, VK_TRUE, MAX_int64));
+		cmdBuffer->End();
+		cmdBuffer->Submit();
         
-		vkDestroyFence(m_Device, fence, VULKAN_CPU_ALLOCATOR);
-		vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &xferCmdBuffer);
-        
+		delete cmdBuffer;
 		delete vertStaging;
 		delete idexStaging;
 	}

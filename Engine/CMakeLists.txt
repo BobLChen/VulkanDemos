@@ -3,10 +3,12 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKUtils.h
 	Monkey/Demo/DemoBase.h
 	Monkey/Demo/DVKBuffer.h
+	Monkey/Demo/DKVCommand.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
 	Monkey/Demo/DVKBuffer.cpp
+	Monkey/Demo/DKVCommand.cpp
 )
 
 set(Monkey_Configuration_HDRS

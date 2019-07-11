@@ -108,16 +108,4 @@ namespace vk_demo
 		return vkInvalidateMappedMemoryRanges(device, 1, &mappedRange);
 	}
 
-	void DVKBuffer::Destroy()
-	{
-		if (buffer != VK_NULL_HANDLE) {
-			vkDestroyBuffer(device, buffer, nullptr);
-			buffer = VK_NULL_HANDLE;
-		}
-		if (memory != VK_NULL_HANDLE) {
-			vkFreeMemory(device, memory, nullptr);
-			memory = VK_NULL_HANDLE;
-		}
-	}
-
 }

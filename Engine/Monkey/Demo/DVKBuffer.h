@@ -19,18 +19,23 @@ namespace vk_demo
 	
 	class DVKBuffer
 	{
-	public:
-		~DVKBuffer()
-		{
-
-		}
-
 	private:
 		DVKBuffer()
 		{
 
 		}
-
+	public:
+		~DVKBuffer()
+		{
+			if (buffer != VK_NULL_HANDLE) {
+				vkDestroyBuffer(device, buffer, nullptr);
+				buffer = VK_NULL_HANDLE;
+			}
+			if (memory != VK_NULL_HANDLE) {
+				vkFreeMemory(device, memory, nullptr);
+				memory = VK_NULL_HANDLE;
+			}
+		}
 	public:
 
 		VkDevice				device = VK_NULL_HANDLE;
@@ -65,8 +70,6 @@ namespace vk_demo
 		VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
 		VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-
-		void Destroy();
 	};
 
 };
