@@ -16,10 +16,10 @@
 #include <vector>
 #include <fstream>
 
-class TriangleMode : public AppModuleBase
+class TriangleModule : public AppModuleBase
 {
 public:
-	TriangleMode(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	TriangleModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: AppModuleBase(width, height, title)
 		, m_Ready(false)
 		, m_IndicesCount(0)
@@ -27,7 +27,7 @@ public:
         
 	}
     
-	virtual ~TriangleMode()
+	virtual ~TriangleModule()
 	{
 
 	}
@@ -925,5 +925,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<TriangleMode>(1400, 900, "Triangle", cmdLine);
+	return std::make_shared<TriangleModule>(1400, 900, "Triangle", cmdLine);
 }
