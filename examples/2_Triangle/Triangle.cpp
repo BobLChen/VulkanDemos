@@ -34,7 +34,6 @@ public:
 
 	virtual bool PreInit() override
 	{
-
 		return true;
 	}
 
@@ -154,6 +153,7 @@ private:
 		submitInfo.commandBufferCount 	= 1;												
 		
 		// 提交绘制命令
+        vkResetFences(device, 1, &(m_Fences[backBufferIndex]));
 		VERIFYVULKANRESULT(vkQueueSubmit(queue, 1, &submitInfo, m_Fences[backBufferIndex]));
         vkWaitForFences(device, 1, &(m_Fences[backBufferIndex]), true, 200 * 1000 * 1000);
         
@@ -886,24 +886,24 @@ private:
 	}
 
 private:
-	bool 							m_Ready;
+	bool 							m_Ready = false;
     
     std::vector<VkFramebuffer>      m_FrameBuffers;
     
-    VkImage                         m_DepthStencilImage;
-    VkImageView                     m_DepthStencilView;
-    VkDeviceMemory                  m_DepthStencilMemory;
+    VkImage                         m_DepthStencilImage = VK_NULL_HANDLE;
+    VkImageView                     m_DepthStencilView = VK_NULL_HANDLE;
+    VkDeviceMemory                  m_DepthStencilMemory = VK_NULL_HANDLE;
     
-    VkRenderPass                    m_RenderPass;
+    VkRenderPass                    m_RenderPass = VK_NULL_HANDLE;
     VkSampleCountFlagBits           m_SampleCount = VK_SAMPLE_COUNT_1_BIT;
     PixelFormat                     m_DepthFormat = PF_D24;
     
-	VkCommandPool					m_CommandPool;
+	VkCommandPool					m_CommandPool = VK_NULL_HANDLE;
 	std::vector<VkCommandBuffer>	m_CommandBuffers;
 
 	std::vector<VkFence> 			m_Fences;
-	VkSemaphore 					m_PresentComplete;
-	VkSemaphore 					m_RenderComplete;
+	VkSemaphore 					m_PresentComplete = VK_NULL_HANDLE;
+	VkSemaphore 					m_RenderComplete = VK_NULL_HANDLE;
 
 	VertexBuffer 					m_VertexBuffer;
 	IndexBuffer 					m_IndicesBuffer;
@@ -912,18 +912,18 @@ private:
 
 	VkDescriptorBufferInfo 			m_MVPDescriptor;
 	
-    VkDescriptorSetLayout 			m_DescriptorSetLayout;
-	VkDescriptorSet 				m_DescriptorSet;
-	VkPipelineLayout 				m_PipelineLayout;
-	VkDescriptorPool                m_DescriptorPool;
+    VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
+	VkDescriptorSet 				m_DescriptorSet = VK_NULL_HANDLE;
+	VkPipelineLayout 				m_PipelineLayout = VK_NULL_HANDLE;
+	VkDescriptorPool                m_DescriptorPool = VK_NULL_HANDLE;
     
-    VkPipeline 						m_Pipeline;
-    VkPipelineCache                 m_PipelineCache;
+    VkPipeline 						m_Pipeline = VK_NULL_HANDLE;
+    VkPipelineCache                 m_PipelineCache = VK_NULL_HANDLE;
 	
-	uint32 							m_IndicesCount;
+	uint32 							m_IndicesCount = 0;
 };
 
-AppModuleBase* CreateAppMode(const std::vector<std::string>& cmdLine)
+std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return new TriangleMode(800, 600, "Triangle", cmdLine);
+	return std::make_shared<TriangleMode>(1400, 900, "Triangle", cmdLine);
 }
