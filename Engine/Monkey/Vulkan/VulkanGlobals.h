@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string.h>
+
 #include "Common/Log.h"
 
 #define VULKAN_CPU_ALLOCATOR nullptr

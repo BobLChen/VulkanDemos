@@ -217,8 +217,7 @@ FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
 {
 	for (uint32 RowIndex = 0; (RowIndex < NumRows) && (RowIndex < 4); RowIndex++)
 	{
-		for (uint32 ColumnIndex = 0; (ColumnIndex < NumColumns) && (ColumnIndex < 4); ColumnIndex++)
-		{
+		for (uint32 ColumnIndex = 0; (ColumnIndex < NumColumns) && (ColumnIndex < 4); ColumnIndex++) {
 			m[RowIndex][ColumnIndex] = InMatrix.m[RowIndex][ColumnIndex];
 		}
 	}
@@ -314,12 +313,10 @@ FORCEINLINE void Matrix4x4::AppendRotation(const Rotator& rotator, const Vector3
 FORCEINLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
 {
 	Matrix4x4 matrix;
-	if (pivot)
-	{
+	if (pivot) {
 		GetAxisRotation(axis.x, axis.y, axis.z, pivot->x, pivot->y, pivot->z, degrees, matrix);
 	}
-	else
-	{
+	else {
 		GetAxisRotation(axis.x, axis.y, axis.z, 0, 0, 0, degrees, matrix);
 	}
 	Prepend(matrix);
@@ -328,12 +325,10 @@ FORCEINLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& 
 FORCEINLINE void Matrix4x4::AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
 {
 	Matrix4x4 matrix;
-	if (pivot)
-	{
+	if (pivot) {
 		GetAxisRotation(axis.x, axis.y, axis.z, pivot->x, pivot->y, pivot->z, degrees, matrix);
 	}
-	else
-	{
+	else {
 		GetAxisRotation(axis.x, axis.y, axis.z, 0, 0, 0, degrees, matrix);
 	}
 	Append(matrix);
@@ -566,8 +561,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::operator+(const Matrix4x4& other) const
 
 	for (int32 x = 0; x < 4; x++)
 	{
-		for (int32 y = 0; y < 4; y++)
-		{
+		for (int32 y = 0; y < 4; y++) {
 			resultMat.m[x][y] = m[x][y] + other.m[x][y];
 		}
 	}
@@ -586,8 +580,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::operator*(float other) const
 
 	for (int32 x = 0; x < 4; x++)
 	{
-		for (int32 y = 0; y < 4; y++)
-		{
+		for (int32 y = 0; y < 4; y++) {
 			resultMat.m[x][y] = m[x][y] * other;
 		}
 	}
@@ -606,8 +599,7 @@ FORCEINLINE bool Matrix4x4::operator==(const Matrix4x4& other) const
 	{
 		for (int32 y = 0; y < 4; y++)
 		{
-			if (m[x][y] != other.m[x][y])
-			{
+			if (m[x][y] != other.m[x][y]) {
 				return false;
 			}
 		}
@@ -622,8 +614,7 @@ FORCEINLINE bool Matrix4x4::Equals(const Matrix4x4& other, float tolerance) cons
 	{
 		for (int32 y = 0; y < 4; y++)
 		{
-			if (MMath::Abs(m[x][y] - other.m[x][y]) > tolerance)
-			{
+			if (MMath::Abs(m[x][y] - other.m[x][y]) > tolerance) {
 				return false;
 			}
 		}
@@ -765,12 +756,10 @@ FORCEINLINE Matrix4x4 Matrix4x4::Inverse() const
 	{
 		const float	Det = Determinant();
 
-		if (Det == 0.0f)
-		{
+		if (Det == 0.0f) {
 			result = Matrix4x4::Identity;
 		}
-		else
-		{
+		else {
 			MMath::VectorMatrixInverse(&result, this);
 		}
 	}
@@ -891,12 +880,10 @@ FORCEINLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
 	for (int32 i = 0; i < 3; i++)
 	{
 		const float SquareSum = (m[i][0] * m[i][0]) + (m[i][1] * m[i][1]) + (m[i][2] * m[i][2]);
-		if (SquareSum > tolerance)
-		{
+		if (SquareSum > tolerance) {
 			scale3D[i] = MMath::Sqrt(SquareSum);
 		}
-		else
-		{
+		else {
 			scale3D[i] = 0.f;
 		}
 	}
@@ -947,8 +934,7 @@ FORCEINLINE bool Matrix4x4::ContainsNaN() const
 	{
 		for (int32 j = 0; j < 4; j++)
 		{
-			if (!MMath::IsFinite(m[i][j]))
-			{
+			if (!MMath::IsFinite(m[i][j])) {
 				return true;
 			}
 		}

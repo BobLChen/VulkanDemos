@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Common/Common.h"
 #include "IntPoint.h"
+
+#include "Common/Common.h"
 
 struct Vector2
 {
@@ -122,7 +123,6 @@ public:
 
 	FORCEINLINE void DiagnosticCheckNaN() 
 	{
-
 	}
 
 	FORCEINLINE bool ContainsNaN() const

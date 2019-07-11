@@ -1,6 +1,7 @@
-#include "WinApplication.h"
 #include "Common/Log.h"
+
 #include "Engine.h"
+#include "WinApplication.h"
 
 #include <memory>
 #include <map>
@@ -24,8 +25,7 @@ WinApplication::WinApplication()
 
 WinApplication::~WinApplication()
 {
-	if (m_Window != nullptr)
-	{
+	if (m_Window != nullptr) {
 		MLOGE("Window not shutdown.");
 	}
 }
@@ -66,26 +66,24 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-void WinApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void WinApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	GenericApplication::SetMessageHandler(messageHandler);
 }
 
-void WinApplication::PumpMessages(const float deltaTime)
+void WinApplication::PumpMessages()
 {
 	MSG msg = {};
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-	{
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
-	if (msg.message == WM_QUIT)
-	{
+	if (msg.message == WM_QUIT) {
 		Engine::Get()->RequestExit(true);
 	}
 }
 
-void WinApplication::Tick(const float deltaTime)
+void WinApplication::Tick(float time, float delta)
 {
 
 }
@@ -100,12 +98,11 @@ std::shared_ptr<GenericWindow> WinApplication::GetWindow()
 	return m_Window;
 }
 
-void WinApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void WinApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 	m_Window = std::dynamic_pointer_cast<WinWindow>(window);
 	m_Window->Initialize(this);
-	if (showImmediately)
-	{
+	if (showImmediately) {
 		m_Window->Show();
 	}
 }

@@ -15,9 +15,9 @@ public:
 
 	virtual ~MacApplication();
 
-	virtual void PumpMessages(const float timeDelta) override;
+	virtual void PumpMessages() override;
 
-	virtual void Tick(const float timeDelta) override;
+	virtual void Tick(float time, float delta) override;
 
 	virtual void Destroy() override;
 
@@ -25,13 +25,11 @@ public:
 
 	virtual std::shared_ptr<GenericWindow> GetWindow() override;
 
-	virtual void SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler) override;
+	virtual void SetMessageHandler(GenericApplicationMessageHandler* messageHandler) override;
 
-	virtual void InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately) override;
-
-protected:
-	
-
+	virtual void InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately) override;
+    
 private:
-	std::shared_ptr<MacWindow> m_Window;
+	
+    std::shared_ptr<MacWindow> m_Window;
 };

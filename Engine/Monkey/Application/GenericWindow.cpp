@@ -22,7 +22,7 @@ void GenericWindow::ReshapeWindow(int32 x, int32 y, int32 width, int32 height)
 
 bool GenericWindow::GetFullScreenInfo(int32& x, int32& y, int32& width, int32& height) const
 {
-	MLOG("GetFullScreenInfo is not expected to be called on this platform");
+
 	return false;
 }
 
@@ -73,19 +73,21 @@ void GenericWindow::SetWindowMode(WindowMode::Type newWindowMode)
 
 WindowMode::Type GenericWindow::GetWindowMode() const
 {
+
 	return WindowMode::Windowed;
 }
 
 bool GenericWindow::IsMaximized() const
 {
+
 	return true;
 }
 
 bool GenericWindow::IsMinimized() const
 {
+
 	return false;
 }
-
 
 bool GenericWindow::IsVisible() const
 {
@@ -94,7 +96,7 @@ bool GenericWindow::IsVisible() const
 
 bool GenericWindow::GetRestoredDimensions(int32& x, int32& y, int32& width, int32& height)
 {
-	MLOG("GetRestoredDimensions is not expected to be called on this platform");
+
 	return false;
 }
 
@@ -156,10 +158,12 @@ bool GenericWindow::IsForegroundWindow() const
 void GenericWindow::SetText(const char* const text)
 {
 
+
 }
 
 float GenericWindow::GetDPIScaleFactor() const
 {
+
 	return 1.0f;
 }
 
@@ -181,5 +185,6 @@ void GenericWindow::SetManualManageDPIChanges(const bool autoHandle)
 
 const char* GenericWindow::GetTitle() const
 {
+
     return "GenericWindow";
 }

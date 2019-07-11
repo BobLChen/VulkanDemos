@@ -1,592 +1,584 @@
-﻿#pragma once
+#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
-#include "Vulkan/VulkanPlatform.h"
+
 #include "Vulkan/VulkanRHI.h"
-#include "Graphics/Shader/Shader.h"
-#include "Graphics/Data/VertexBuffer.h"
+#include "Vulkan/VulkanPlatform.h"
+#include "Vulkan/VulkanPipeline.h"
+#include "Vulkan/VulkanResources.h"
+
 #include <memory>
+
+class Shader;
 
 class Material
 {
+public:
+	struct UniformBufferParam
+	{
+		std::string				name;
+		uint32					set;
+		uint32					binding;
+		VulkanUniformBuffer*	buffer;
+		int32					descriptorIndex;
+	};
+
 public:
     Material(std::shared_ptr<Shader> shader);
 
     virtual ~Material();
     
-    static void DestroyCache();
-
-	VkPipeline GetPipeline(const VertexInputDeclareInfo& inputStateInfo);
-
-	FORCEINLINE void SetShader(std::shared_ptr<Shader> shader)
+	inline void SetShader(std::shared_ptr<Shader> shader)
 	{
 		m_Shader = shader;
+		GenerateShaderParams();
 	}
 
-	FORCEINLINE std::shared_ptr<Shader> GetShader() const
+	inline std::shared_ptr<Shader> GetShader() const
 	{
 		return m_Shader;
 	}
 
     // ----------------------------------- VkPipelineInputAssemblyStateCreateInfo -----------------------------------
 
-	FORCEINLINE void SetTopology(VkPrimitiveTopology topology)
+	inline void SetTopology(VkPrimitiveTopology topology)
 	{
-		if (m_InputAssemblyState.topology == topology)
-		{
+		if (m_StateInfo.inputAssemblyState.topology == topology) {
 			return;
 		}
-		m_InputAssemblyState.topology = topology;
-		InvalidPipeline();
+		m_StateInfo.inputAssemblyState.topology = topology;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkPrimitiveTopology GetTopology() const
+	inline VkPrimitiveTopology GetTopology() const
 	{
-		return m_InputAssemblyState.topology;
+		return m_StateInfo.inputAssemblyState.topology;
 	}
 
     // ----------------------------------- VkPipelineRasterizationStateCreateInfo -----------------------------------
 
-	FORCEINLINE void SetpolygonMode(VkPolygonMode polygonMode)
+	inline void SetpolygonMode(VkPolygonMode polygonMode)
 	{
-		if (m_RasterizationState.polygonMode == polygonMode) 
-		{
+		if (m_StateInfo.rasterizationState.polygonMode == polygonMode) {
 			return;
 		}
-		m_RasterizationState.polygonMode = polygonMode;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.polygonMode = polygonMode;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkPolygonMode GetPolygonMode() const
+	inline VkPolygonMode GetPolygonMode() const
 	{
-		return m_RasterizationState.polygonMode;
+		return m_StateInfo.rasterizationState.polygonMode;
 	}
     
-	FORCEINLINE void SetCullMode(VkCullModeFlags cullMode)
+	inline void SetCullMode(VkCullModeFlags cullMode)
 	{
-		if (m_RasterizationState.cullMode == cullMode)
-		{
+		if (m_StateInfo.rasterizationState.cullMode == cullMode) {
 			return;
 		}
-		m_RasterizationState.cullMode = cullMode;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.cullMode = cullMode;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkCullModeFlags GetCullMode() const
+	inline VkCullModeFlags GetCullMode() const
 	{
-		return m_RasterizationState.cullMode;
+		return m_StateInfo.rasterizationState.cullMode;
 	}
 
-	FORCEINLINE void SetFrontFace(VkFrontFace frontFace)
+	inline void SetFrontFace(VkFrontFace frontFace)
 	{
-		if (m_RasterizationState.frontFace == frontFace)
-		{
+		if (m_StateInfo.rasterizationState.frontFace == frontFace) {
 			return;
 		}
-		m_RasterizationState.frontFace = frontFace;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.frontFace = frontFace;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkFrontFace GetFrontFace() const
+	inline VkFrontFace GetFrontFace() const
 	{
-		return m_RasterizationState.frontFace;
+		return m_StateInfo.rasterizationState.frontFace;
 	}
 
-	FORCEINLINE void SetDepthClampEnable(VkBool32 enable)
+	inline void SetDepthClampEnable(VkBool32 enable)
 	{
-		if (m_RasterizationState.depthClampEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.depthClampEnable == enable) {
 			return;
 		}
-		m_RasterizationState.depthClampEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.depthClampEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDepthClampEnable() const
+	inline VkBool32 GetDepthClampEnable() const
 	{
-		return m_RasterizationState.depthClampEnable;
+		return m_StateInfo.rasterizationState.depthClampEnable;
 	}
 
-	FORCEINLINE void SetDiscardEnable(VkBool32 enable)
+	inline void SetDiscardEnable(VkBool32 enable)
 	{
-		if (m_RasterizationState.rasterizerDiscardEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.rasterizerDiscardEnable == enable) {
 			return;
 		}
-		m_RasterizationState.rasterizerDiscardEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.rasterizerDiscardEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDiscardEnable() const
+	inline VkBool32 GetDiscardEnable() const
 	{
-		return m_RasterizationState.rasterizerDiscardEnable;
+		return m_StateInfo.rasterizationState.rasterizerDiscardEnable;
 	}
 
-	FORCEINLINE void SetDepthBiasEnable(VkBool32 enable)
+	inline void SetDepthBiasEnable(VkBool32 enable)
 	{
-		if (m_RasterizationState.depthBiasEnable == enable)
-		{
+		if (m_StateInfo.rasterizationState.depthBiasEnable == enable) {
 			return;
 		}
-		m_RasterizationState.depthBiasEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.depthBiasEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDepthBiasEnable() const
+	inline VkBool32 GetDepthBiasEnable() const
 	{
-		return m_RasterizationState.depthBiasEnable;
+		return m_StateInfo.rasterizationState.depthBiasEnable;
 	}
 
-	FORCEINLINE void SetLineWidth(float width)
+	inline void SetLineWidth(float width)
 	{
-		if (m_RasterizationState.lineWidth == width)
-		{
+		if (m_StateInfo.rasterizationState.lineWidth == width) {
 			return;
 		}
-		m_RasterizationState.lineWidth = width;
-		InvalidPipeline();
+		m_StateInfo.rasterizationState.lineWidth = width;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE float GetLineWidth() const
+	inline float GetLineWidth() const
 	{
-		return m_RasterizationState.lineWidth;
+		return m_StateInfo.rasterizationState.lineWidth;
 	}
 
     // ----------------------------------- VkPipelineColorBlendAttachmentState -----------------------------------
 
-	FORCEINLINE void SetColorWriteMask(VkColorComponentFlags mask)
+	inline void SetColorWriteMask(VkColorComponentFlags mask)
 	{
-		if (m_ColorBlendAttachmentState.colorWriteMask == mask)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.colorWriteMask == mask) {
 			return;
 		}
-		m_ColorBlendAttachmentState.colorWriteMask = mask;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.colorWriteMask = mask;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkColorComponentFlags GetColorWriteMask() const
+	inline VkColorComponentFlags GetColorWriteMask() const
 	{
-		return m_ColorBlendAttachmentState.colorWriteMask;
+		return m_StateInfo.colorBlendAttachmentState.colorWriteMask;
 	}
 
-	FORCEINLINE void SetBlendEnable(VkBool32 enable)
+	inline void SetBlendEnable(VkBool32 enable)
 	{
-		if (m_ColorBlendAttachmentState.blendEnable == enable)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.blendEnable == enable) {
 			return;
 		}
-		m_ColorBlendAttachmentState.blendEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.blendEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetBlendEnable() const
+	inline VkBool32 GetBlendEnable() const
 	{
-		return m_ColorBlendAttachmentState.blendEnable;
+		return m_StateInfo.colorBlendAttachmentState.blendEnable;
 	}
 
-	FORCEINLINE void SetSrcColorBlendFactor(VkBlendFactor op)
+	inline void SetSrcColorBlendFactor(VkBlendFactor op)
 	{
-		if (m_ColorBlendAttachmentState.srcColorBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.srcColorBlendFactor = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendFactor GetSrcColorBlendFactor() const
+	inline VkBlendFactor GetSrcColorBlendFactor() const
 	{
-		return m_ColorBlendAttachmentState.srcColorBlendFactor;
+		return m_StateInfo.colorBlendAttachmentState.srcColorBlendFactor;
 	}
 
-	FORCEINLINE void SetDstColorBlendFactor(VkBlendFactor op)
+	inline void SetDstColorBlendFactor(VkBlendFactor op)
 	{
-		if (m_ColorBlendAttachmentState.dstColorBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.dstColorBlendFactor = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendFactor GetDstColorBlendFactor() const
+	inline VkBlendFactor GetDstColorBlendFactor() const
 	{
-		return m_ColorBlendAttachmentState.dstColorBlendFactor;
+		return m_StateInfo.colorBlendAttachmentState.dstColorBlendFactor;
 	}
 
-	FORCEINLINE void SetColorBlendOp(VkBlendOp op)
+	inline void SetColorBlendOp(VkBlendOp op)
 	{
-		if (m_ColorBlendAttachmentState.colorBlendOp == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.colorBlendOp == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.colorBlendOp = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.colorBlendOp = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendOp GetColorBlendOp() const
+	inline VkBlendOp GetColorBlendOp() const
 	{
-		return m_ColorBlendAttachmentState.colorBlendOp;
+		return m_StateInfo.colorBlendAttachmentState.colorBlendOp;
 	}
 
-	FORCEINLINE void SetSrcAlphaBlendFactor(VkBlendFactor op)
+	inline void SetSrcAlphaBlendFactor(VkBlendFactor op)
 	{
-		if (m_ColorBlendAttachmentState.srcAlphaBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.srcAlphaBlendFactor = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendFactor GetSrcAlphaBlendFactor() const
+	inline VkBlendFactor GetSrcAlphaBlendFactor() const
 	{
-		return m_ColorBlendAttachmentState.srcAlphaBlendFactor;
+		return m_StateInfo.colorBlendAttachmentState.srcAlphaBlendFactor;
 	}
 
-	FORCEINLINE void SetDstAlphaBlendFactor(VkBlendFactor op)
+	inline void SetDstAlphaBlendFactor(VkBlendFactor op)
 	{
-		if (m_ColorBlendAttachmentState.dstAlphaBlendFactor == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.dstAlphaBlendFactor = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendFactor GetDstAlphaBlendFactor() const
+	inline VkBlendFactor GetDstAlphaBlendFactor() const
 	{
-		return m_ColorBlendAttachmentState.dstAlphaBlendFactor;
+		return m_StateInfo.colorBlendAttachmentState.dstAlphaBlendFactor;
 	}
 
-	FORCEINLINE void SetAlphaBlendOp(VkBlendOp op)
+	inline void SetAlphaBlendOp(VkBlendOp op)
 	{
-		if (m_ColorBlendAttachmentState.alphaBlendOp == op)
-		{
+		if (m_StateInfo.colorBlendAttachmentState.alphaBlendOp == op) {
 			return;
 		}
-		m_ColorBlendAttachmentState.alphaBlendOp = op;
-		InvalidPipeline();
+		m_StateInfo.colorBlendAttachmentState.alphaBlendOp = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBlendOp GetAlphaBlendOp() const
+	inline VkBlendOp GetAlphaBlendOp() const
 	{
-		return m_ColorBlendAttachmentState.alphaBlendOp;
+		return m_StateInfo.colorBlendAttachmentState.alphaBlendOp;
 	}
 
     // ----------------------------------- VkPipelineDepthStencilStateCreateInfo -----------------------------------
 
-	FORCEINLINE void SetDepthTestEnable(VkBool32 enable)
+	inline void SetDepthTestEnable(VkBool32 enable)
 	{
-		if (m_DepthStencilState.depthTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthTestEnable == enable) {
 			return;
 		}
-		m_DepthStencilState.depthTestEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.depthTestEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDepthTestEnable() const
+	inline VkBool32 GetDepthTestEnable() const
 	{
-		return m_DepthStencilState.depthTestEnable;
+		return m_StateInfo.depthStencilState.depthTestEnable;
 	}
 
-	FORCEINLINE void SetDepthWriteEnable(VkBool32 enable)
+	inline void SetDepthWriteEnable(VkBool32 enable)
 	{
-		if (m_DepthStencilState.depthWriteEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthWriteEnable == enable) {
 			return;
 		}
-		m_DepthStencilState.depthWriteEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.depthWriteEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDepthWriteEnable() const
+	inline VkBool32 GetDepthWriteEnable() const
 	{
-		return m_DepthStencilState.depthWriteEnable;
+		return m_StateInfo.depthStencilState.depthWriteEnable;
 	}
 
-	FORCEINLINE void SetDepthCompareOp(VkCompareOp op)
+	inline void SetDepthCompareOp(VkCompareOp op)
 	{
-		if (m_DepthStencilState.depthCompareOp == op)
-		{
+		if (m_StateInfo.depthStencilState.depthCompareOp == op) {
 			return;
 		}
-		m_DepthStencilState.depthCompareOp = op;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.depthCompareOp = op;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkCompareOp GetDepthCompareOp() const
+	inline VkCompareOp GetDepthCompareOp() const
 	{
-		return m_DepthStencilState.depthCompareOp;
+		return m_StateInfo.depthStencilState.depthCompareOp;
 	}
 
-	FORCEINLINE void SetDepthBoundsTestEnable(VkBool32 enable)
+	inline void SetDepthBoundsTestEnable(VkBool32 enable)
 	{
-		if (m_DepthStencilState.depthBoundsTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthBoundsTestEnable == enable) {
 			return;
 		}
-		m_DepthStencilState.depthBoundsTestEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.depthBoundsTestEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetDepthBoundsTestEnable() const
+	inline VkBool32 GetDepthBoundsTestEnable() const
 	{
-		return m_DepthStencilState.depthBoundsTestEnable;
+		return m_StateInfo.depthStencilState.depthBoundsTestEnable;
 	}
 
-	FORCEINLINE void SetStencilTestEnable(VkBool32 enable)
+	inline void SetStencilTestEnable(VkBool32 enable)
 	{
-		if (m_DepthStencilState.depthTestEnable == enable)
-		{
+		if (m_StateInfo.depthStencilState.depthTestEnable == enable) {
 			return;
 		}
-		m_DepthStencilState.depthTestEnable = enable;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.depthTestEnable = enable;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkBool32 GetStencilTestEnable() const
+	inline VkBool32 GetStencilTestEnable() const
 	{
-		return m_DepthStencilState.depthTestEnable;
+		return m_StateInfo.depthStencilState.depthTestEnable;
 	}
 
-	FORCEINLINE void SetDepthStencilCompareMask(bool front, uint32 mask)
+	inline void SetDepthStencilCompareMask(bool front, uint32 mask)
 	{
-		if (front)
+		if (front) 
 		{
-			if (m_DepthStencilState.front.compareMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.front.compareMask == mask) {
 				return;
 			}
-			m_DepthStencilState.front.compareMask = mask;
+			m_StateInfo.depthStencilState.front.compareMask = mask;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.compareMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.back.compareMask == mask) {
 				return;
 			}
-			m_DepthStencilState.back.compareMask = mask;
+			m_StateInfo.depthStencilState.back.compareMask = mask;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE uint32 GetDepthStencilCompareMask(bool front) const
+	inline uint32 GetDepthStencilCompareMask(bool front) const
 	{
-		return front ? m_DepthStencilState.front.compareMask : m_DepthStencilState.back.compareMask;
+		return front ? m_StateInfo.depthStencilState.front.compareMask : m_StateInfo.depthStencilState.back.compareMask;
 	}
 
-	FORCEINLINE void SetDepthStencilCompareOp(bool front, VkCompareOp op)
+	inline void SetDepthStencilCompareOp(bool front, VkCompareOp op)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.compareOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.compareOp == op) {
 				return;
 			}
-			m_DepthStencilState.front.compareOp = op;
+			m_StateInfo.depthStencilState.front.compareOp = op;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.compareOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.compareOp == op) {
 				return;
 			}
-			m_DepthStencilState.back.compareOp = op;
+			m_StateInfo.depthStencilState.back.compareOp = op;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkCompareOp GetDepthStencilCompareOp(bool front) const
+	inline VkCompareOp GetDepthStencilCompareOp(bool front) const
 	{
-		return front ? m_DepthStencilState.front.compareOp : m_DepthStencilState.back.compareOp;
+		return front ? m_StateInfo.depthStencilState.front.compareOp : m_StateInfo.depthStencilState.back.compareOp;
 	}
 
-	FORCEINLINE void SetStencilFailOp(bool front, VkStencilOp op)
+	inline void SetStencilFailOp(bool front, VkStencilOp op)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.failOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.failOp == op) {
 				return;
 			}
-			m_DepthStencilState.front.failOp = op;
+			m_StateInfo.depthStencilState.front.failOp = op;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.failOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.failOp == op) {
 				return;
 			}
-			m_DepthStencilState.back.failOp = op;
+			m_StateInfo.depthStencilState.back.failOp = op;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkStencilOp GetStencilFailOp(bool front) const
+	inline VkStencilOp GetStencilFailOp(bool front) const
 	{
-		return front ? m_DepthStencilState.front.failOp : m_DepthStencilState.back.failOp;
+		return front ? m_StateInfo.depthStencilState.front.failOp : m_StateInfo.depthStencilState.back.failOp;
 	}
 
-	FORCEINLINE void SetStencilPassOp(bool front, VkStencilOp op)
+	inline void SetStencilPassOp(bool front, VkStencilOp op)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.passOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.passOp == op) {
 				return;
 			}
-			m_DepthStencilState.front.passOp = op;
+			m_StateInfo.depthStencilState.front.passOp = op;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.passOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.passOp == op) {
 				return;
 			}
-			m_DepthStencilState.front.passOp = op;
+			m_StateInfo.depthStencilState.front.passOp = op;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkStencilOp GetStencilPassOp(bool front) const
+	inline VkStencilOp GetStencilPassOp(bool front) const
 	{
-		return front ? m_DepthStencilState.front.passOp : m_DepthStencilState.back.passOp;
+		return front ? m_StateInfo.depthStencilState.front.passOp : m_StateInfo.depthStencilState.back.passOp;
 	}
 
-	FORCEINLINE void SetDepthFailOp(bool front, VkStencilOp op)
+	inline void SetDepthFailOp(bool front, VkStencilOp op)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.depthFailOp == op)
-			{
+			if (m_StateInfo.depthStencilState.front.depthFailOp == op) {
 				return;
 			}
-			m_DepthStencilState.front.depthFailOp = op;
+			m_StateInfo.depthStencilState.front.depthFailOp = op;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.depthFailOp == op)
-			{
+			if (m_StateInfo.depthStencilState.back.depthFailOp == op) {
 				return;
 			}
-			m_DepthStencilState.back.depthFailOp = op;
+			m_StateInfo.depthStencilState.back.depthFailOp = op;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE VkStencilOp GetDepthFailOp(bool front) const
+	inline VkStencilOp GetDepthFailOp(bool front) const
 	{
-		return front ? m_DepthStencilState.front.depthFailOp : m_DepthStencilState.back.depthFailOp;
+		return front ? m_StateInfo.depthStencilState.front.depthFailOp : m_StateInfo.depthStencilState.back.depthFailOp;
 	}
 
-	FORCEINLINE void SetStencilWriteMask(bool front, uint32 mask)
+	inline void SetStencilWriteMask(bool front, uint32 mask)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.writeMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.front.writeMask == mask) {
 				return;
 			}
-			m_DepthStencilState.front.writeMask = mask;
+			m_StateInfo.depthStencilState.front.writeMask = mask;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.writeMask == mask)
-			{
+			if (m_StateInfo.depthStencilState.back.writeMask == mask) {
 				return;
 			}
-			m_DepthStencilState.back.writeMask = mask;
+			m_StateInfo.depthStencilState.back.writeMask = mask;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE uint32 GetStencilWriteMask(bool front) const
+	inline uint32 GetStencilWriteMask(bool front) const
 	{
-		return front ? m_DepthStencilState.front.writeMask : m_DepthStencilState.back.writeMask;
+		return front ? m_StateInfo.depthStencilState.front.writeMask : m_StateInfo.depthStencilState.back.writeMask;
 	}
 
-	FORCEINLINE void SetStencilReference(bool front, uint32 ref)
+	inline void SetStencilReference(bool front, uint32 ref)
 	{
 		if (front)
 		{
-			if (m_DepthStencilState.front.reference == ref)
-			{
+			if (m_StateInfo.depthStencilState.front.reference == ref) {
 				return;
 			}
-			m_DepthStencilState.front.reference = ref;
+			m_StateInfo.depthStencilState.front.reference = ref;
 		}
 		else
 		{
-			if (m_DepthStencilState.back.reference == ref)
-			{
+			if (m_StateInfo.depthStencilState.back.reference == ref) {
 				return;
 			}
-			m_DepthStencilState.back.reference = ref;
+			m_StateInfo.depthStencilState.back.reference = ref;
 		}
-		InvalidPipeline();
+		MarkStateDirty();
 	}
 
-	FORCEINLINE uint32 GetStencilReference(bool front)
+	inline uint32 GetStencilReference(bool front)
 	{
-		return front ? m_DepthStencilState.front.reference : m_DepthStencilState.back.reference;
+		return front ? m_StateInfo.depthStencilState.front.reference : m_StateInfo.depthStencilState.back.reference;
 	}
 
-	FORCEINLINE void SetMinDepthBounds(float value)
+	inline void SetMinDepthBounds(float value)
 	{
-		if (m_DepthStencilState.minDepthBounds == value)
-		{
+		if (m_StateInfo.depthStencilState.minDepthBounds == value) {
 			return;
 		}
-		m_DepthStencilState.minDepthBounds = value;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.minDepthBounds = value;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE float GetMinDepthBounds(float value) const
+	inline float GetMinDepthBounds(float value) const
 	{
-		return m_DepthStencilState.minDepthBounds;
+		return m_StateInfo.depthStencilState.minDepthBounds;
 	}
 
-	FORCEINLINE void SetMaxDepthBounds(float value)
+	inline void SetMaxDepthBounds(float value)
 	{
-		if (m_DepthStencilState.maxDepthBounds == value)
-		{
+		if (m_StateInfo.depthStencilState.maxDepthBounds == value) {
 			return;
 		}
-		m_DepthStencilState.maxDepthBounds = value;
-		InvalidPipeline();
+		m_StateInfo.depthStencilState.maxDepthBounds = value;
+		MarkStateDirty();
 	}
 
-	FORCEINLINE float GetMaxDepthBounds() const
+	inline float GetMaxDepthBounds() const
 	{
-		return m_DepthStencilState.maxDepthBounds;
+		return m_StateInfo.depthStencilState.maxDepthBounds;
+	}
+
+	inline uint32 GetStateHash()
+	{
+		if (m_InvalidStateInfo) {
+			m_InvalidStateInfo = false;
+			m_StateInfo.GenerateHash();
+		}
+        return m_StateInfo.hash;
+	}
+    
+	inline const VulkanPipelineStateInfo& GetPipelineStateInfo()
+	{
+		if (m_InvalidStateInfo) {
+			m_InvalidStateInfo = false;
+			m_StateInfo.GenerateHash();
+		}
+		return m_StateInfo;
+	}
+
+	inline const std::vector<UniformBufferParam>& GetUniformBufferParams() const
+	{
+		return m_UniformBufferParams;
+	}
+
+	void SetParam(const std::string& name, const void* data, uint32 size);
+
+protected:
+
+	void GenerateShaderParams();
+
+	inline void MarkStateDirty()
+	{
+		m_InvalidStateInfo = true;
 	}
 
 protected:
 
-	virtual void InitState();
+	uint32								m_Hash;
+	bool								m_InvalidStateInfo;
+	VulkanPipelineStateInfo				m_StateInfo;
+	std::shared_ptr<Shader>				m_Shader;
 
-	FORCEINLINE void InvalidPipeline()
-	{
-		m_InvalidPipeline = true;
-	}
+	std::vector<UniformBufferParam>		m_UniformBufferParams;
 
-private:
-
-	VkPipelineInputAssemblyStateCreateInfo	m_InputAssemblyState;
-	VkPipelineRasterizationStateCreateInfo	m_RasterizationState;
-	VkPipelineColorBlendAttachmentState		m_ColorBlendAttachmentState;
-	VkPipelineViewportStateCreateInfo		m_ViewportState;
-	VkPipelineDepthStencilStateCreateInfo	m_DepthStencilState;
-	VkPipelineMultisampleStateCreateInfo	m_MultisampleState;
-
-protected:
-
-	uint32 m_Hash;
-	bool   m_InvalidPipeline;
-	std::shared_ptr<Shader> m_Shader;
 };
-
-

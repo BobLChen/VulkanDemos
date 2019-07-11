@@ -2,6 +2,7 @@
 
 #include "Common/Common.h"
 #include "Vulkan/VulkanPlatform.h"
+
 #include <string>
 
 namespace WindowMode
@@ -115,6 +116,16 @@ public:
 	virtual bool IsManualManageDPIChanges() const;
 
 	virtual void SetManualManageDPIChanges(const bool autoHandle);
+
+	virtual int32 GetX() const
+	{
+		return m_X;
+	}
+
+	virtual int32 GetY() const
+	{
+		return m_Y;
+	}
 
     virtual int32 GetWidth() const
     {

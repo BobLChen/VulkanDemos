@@ -185,7 +185,7 @@ Quat::Quat(const Matrix4x4& m)
 		return;
 	}
 
-	float	s;
+	float s;
 
 	const float tr = m.m[0][0] + m.m[1][1] + m.m[2][2];
 
@@ -203,12 +203,14 @@ Quat::Quat(const Matrix4x4& m)
 	{
 		int32 i = 0;
 
-		if (m.m[1][1] > m.m[0][0])
+		if (m.m[1][1] > m.m[0][0]) {
 			i = 1;
+		}
 
-		if (m.m[2][2] > m.m[i][i])
+		if (m.m[2][2] > m.m[i][i]) {
 			i = 2;
-
+		}
+		
 		static const int32 nxt[3] = { 1, 2, 0 };
 		const int32 j = nxt[i];
 		const int32 k = nxt[j];
@@ -461,8 +463,7 @@ FORCEINLINE void Quat::ToAxisAndAngle(Vector3& axis, float& angle) const
 FORCEINLINE Vector3 Quat::GetRotationAxis() const
 {
 	const float s = MMath::Sqrt(MMath::Max(1.f - (w * w), 0.f));
-	if (s >= 0.0001f)
-	{
+	if (s >= 0.0001f) {
 		return Vector3(x / s, y / s, z / s);
 	}
 	return Vector3(1.f, 0.f, 0.f);

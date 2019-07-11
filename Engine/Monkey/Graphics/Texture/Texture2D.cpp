@@ -1,23 +1,19 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
+
 #include "Engine.h"
 #include "Texture2D.h"
+
 #include "Math/Math.h"
 #include "File/FileManager.h"
+
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanDevice.h"
 #include "Vulkan/VulkanMemory.h"
-#include "Utils/VulkanUtils.h"
+#include "Vulkan/VulkanCommandBuffer.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "Loader/stb_image.h"
-
-#define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "Loader/stb_image_resize.h"
-
-#define STB_IMAGE_WRITE_STATIC
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "Loader/stb_image_write.h"
 
 Texture2D::Texture2D()
 {
@@ -45,8 +41,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 	for (int32 i = 0; i < filenames.size(); ++i) {
 		uint32 dataSize = 0;
 		uint8* dataPtr  = nullptr;
-		if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize))
-		{
+		if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize)) {
 			return;
 		}
 
@@ -57,8 +52,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		dataSize = -1;
 		dataPtr  = nullptr;
 
-		if (!imageInfo.data)
-		{
+		if (!imageInfo.data) {
 			return;
 		}
 
@@ -70,12 +64,10 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 			{
 				uint32 idx1 = i * 4;
 				uint32 idx0 = i * imageInfo.comp;
-				for (int j = 0; j < imageInfo.comp; ++j) 
-				{
+				for (int j = 0; j < imageInfo.comp; ++j) {
 					temp[idx1 + j] = imageInfo.data[idx0 + j];
 				}
-				for (int j = imageInfo.comp; j < 4; ++j) 
-				{
+				for (int j = imageInfo.comp; j < 4; ++j) {
 					temp[idx1 + j] = j == 3 ? 255 : 0;
 				}
 			}
@@ -156,7 +148,8 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_ImageMemory));
     VERIFYVULKANRESULT(vkBindImageMemory(device, m_Image, m_ImageMemory, 0));
 
-	VkCommandBuffer copyCmd = vk_demo_util::CreateCommandBuffer(vulkanRHI->GetCommandPool(), VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+	VulkanCommandListContextImmediate& context = Engine::Get()->GetVulkanDevice()->GetImmediateContext();
+	VulkanCmdBuffer* cmdBuffer = context.GetCommandBufferManager()->GetUploadCmdBuffer();
 
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -173,7 +166,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
-		vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
 
 	std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -193,7 +186,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		offset += m_Width * m_Height * 4;
 	}
 	
-	vkCmdCopyBufferToImage(copyCmd, stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
+	vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
 
 	{
 		VkImageMemoryBarrier imageMemoryBarrier;
@@ -204,10 +197,10 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
-		vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
 
-	vk_demo_util::FlushCommandBuffer(copyCmd, vulkanRHI->GetCommandPool(), vulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), true);
+	context.GetCommandBufferManager()->SubmitUploadCmdBuffer();
 
 	vkFreeMemory(device, stagingMemory, VULKAN_CPU_ALLOCATOR);
 	vkDestroyBuffer(device, stagingBuffer, VULKAN_CPU_ALLOCATOR);
@@ -254,8 +247,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     // 加载PNG图片数据
 	uint32 dataSize = 0;
 	uint8* dataPtr  = nullptr;
-	if (!FileManager::ReadFile(filename, dataPtr, dataSize))
-	{
+	if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
 		return;
 	}
     
@@ -265,8 +257,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     int32 comp   = 0;
     uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
     
-    if (rgbaData == nullptr)
-    {
+    if (rgbaData == nullptr) {
         MLOGE("Failed load image : %s", filename.c_str());
         return;
     }
@@ -336,7 +327,8 @@ void Texture2D::LoadFromFile(const std::string& filename)
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &m_ImageMemory));
     VERIFYVULKANRESULT(vkBindImageMemory(device, m_Image, m_ImageMemory, 0));
 
-	VkCommandBuffer copyCmd = vk_demo_util::CreateCommandBuffer(vulkanRHI->GetCommandPool(), VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+	VulkanCommandListContextImmediate& context = Engine::Get()->GetVulkanDevice()->GetImmediateContext();
+	VulkanCmdBuffer* cmdBuffer = context.GetCommandBufferManager()->GetUploadCmdBuffer();
 
 	VkImageSubresourceRange subresourceRange = {};
 	subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -352,7 +344,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
-		vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
 
 	VkBufferImageCopy bufferCopyRegion = {};
@@ -364,7 +356,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
 	bufferCopyRegion.imageExtent.height = m_Height;
 	bufferCopyRegion.imageExtent.depth  = m_Depth;
 
-	vkCmdCopyBufferToImage(copyCmd, stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
+	vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), stagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
 
 	{
 		VkImageMemoryBarrier imageMemoryBarrier;
@@ -375,17 +367,13 @@ void Texture2D::LoadFromFile(const std::string& filename)
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
-		vkCmdPipelineBarrier(copyCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
-
-	vk_demo_util::FlushCommandBuffer(copyCmd, vulkanRHI->GetCommandPool(), vulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), true);
 
 	vkFreeMemory(device, stagingMemory, VULKAN_CPU_ALLOCATOR);
 	vkDestroyBuffer(device, stagingBuffer, VULKAN_CPU_ALLOCATOR);
 
 	// Generate the mip chain
-	VkCommandBuffer blitCmd = vk_demo_util::CreateCommandBuffer(vulkanRHI->GetCommandPool(), VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
-
 	for (uint32_t i = 1; i < m_MipLevels; i++) {
 		VkImageBlit imageBlit = {};
 
@@ -418,10 +406,10 @@ void Texture2D::LoadFromFile(const std::string& filename)
 			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 			imageMemoryBarrier.image = m_Image;
 			imageMemoryBarrier.subresourceRange = mipSubRange;
-			vkCmdPipelineBarrier(blitCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+			vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
 
-		vkCmdBlitImage(blitCmd, m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+		vkCmdBlitImage(cmdBuffer->GetHandle(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
 		{
 			VkImageMemoryBarrier imageMemoryBarrier;
@@ -432,7 +420,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
 			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 			imageMemoryBarrier.image = m_Image;
 			imageMemoryBarrier.subresourceRange = mipSubRange;
-			vkCmdPipelineBarrier(blitCmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+			vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
 	}
 
@@ -447,10 +435,10 @@ void Texture2D::LoadFromFile(const std::string& filename)
 		imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
-		vkCmdPipelineBarrier(blitCmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 	}
 
-	vk_demo_util::FlushCommandBuffer(blitCmd, vulkanRHI->GetCommandPool(), vulkanRHI->GetDevice()->GetGraphicsQueue()->GetHandle(), true);
+	context.GetCommandBufferManager()->SubmitUploadCmdBuffer();
 
 	VkSamplerCreateInfo samplerInfo;
 	ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);

@@ -269,13 +269,17 @@ FORCEINLINE Vector3::Vector3()
 }
 
 FORCEINLINE Vector3::Vector3(float inF)
-	: x(inF), y(inF), z(inF)
+	: x(inF)
+	, y(inF)
+	, z(inF)
 {
 	DiagnosticCheckNaN();
 }
 
 FORCEINLINE Vector3::Vector3(float inX, float inY, float inZ)
-	: x(inX), y(inY), z(inZ)
+	: x(inX)
+	, y(inY)
+	, z(inZ)
 {
 	DiagnosticCheckNaN();
 }
@@ -305,30 +309,24 @@ FORCEINLINE float ComputeSquaredDistanceFromBoxToPoint(const Vector3& mins, cons
 {
 	float distSquared = 0.f;
 
-	if (point.x < mins.x)
-	{
+	if (point.x < mins.x) {
 		distSquared += MMath::Square(point.x - mins.x);
 	}
-	else if (point.x > maxs.x)
-	{
+	else if (point.x > maxs.x) {
 		distSquared += MMath::Square(point.x - maxs.x);
 	}
 
-	if (point.y < mins.y)
-	{
+	if (point.y < mins.y) {
 		distSquared += MMath::Square(point.y - mins.y);
 	}
-	else if (point.y > maxs.y)
-	{
+	else if (point.y > maxs.y) {
 		distSquared += MMath::Square(point.y - maxs.y);
 	}
 
-	if (point.z < mins.z)
-	{
+	if (point.z < mins.z) {
 		distSquared += MMath::Square(point.z - mins.z);
 	}
-	else if (point.z > maxs.z)
-	{
+	else if (point.z > maxs.z) {
 		distSquared += MMath::Square(point.z - maxs.z);
 	}
 
@@ -366,13 +364,11 @@ FORCEINLINE void Vector3::CreateOrthonormalBasis(Vector3& xAxis, Vector3& yAxis,
 	xAxis -= (xAxis | zAxis) / (zAxis | zAxis) * zAxis;
 	yAxis -= (yAxis | zAxis) / (zAxis | zAxis) * zAxis;
 
-	if (xAxis.SizeSquared() < DELTA * DELTA)
-	{
+	if (xAxis.SizeSquared() < DELTA * DELTA) {
 		xAxis = yAxis ^ zAxis;
 	}
 
-	if (yAxis.SizeSquared() < DELTA * DELTA)
-	{
+	if (yAxis.SizeSquared() < DELTA * DELTA) {
 		yAxis = xAxis ^ zAxis;
 	}
 
@@ -449,9 +445,15 @@ FORCEINLINE bool Vector3::Orthogonal(const Vector3& normal1, const Vector3& norm
 
 FORCEINLINE bool Vector3::Coplanar(const Vector3 &Base1, const Vector3 &normal1, const Vector3 &Base2, const Vector3 &normal2, float parallelCosineThreshold)
 {
-	if (!Vector3::Parallel(normal1, normal2, parallelCosineThreshold)) return false;
-	else if (Vector3::PointPlaneDist(Base2, Base1, normal1) > THRESH_POINT_ON_PLANE) return false;
-	else return true;
+	if (!Vector3::Parallel(normal1, normal2, parallelCosineThreshold)) {
+		return false;
+	}
+	else if (Vector3::PointPlaneDist(Base2, Base1, normal1) > THRESH_POINT_ON_PLANE) {
+		return false;
+	}
+	else {
+		return true;
+	}
 }
 
 FORCEINLINE float Vector3::Triple(const Vector3& x, const Vector3& y, const Vector3& z)
@@ -460,7 +462,7 @@ FORCEINLINE float Vector3::Triple(const Vector3& x, const Vector3& y, const Vect
 		(x.x * (y.y * z.z - y.z * z.y)) +
 		(x.y * (y.z * z.x - y.x * z.z)) +
 		(x.z * (y.x * z.y - y.y * z.x))
-		);
+	);
 }
 
 FORCEINLINE float Vector3::EvaluateBezier(const Vector3* controlPoints, int32 numPoints, std::vector<Vector3>& outPoints)
@@ -605,21 +607,27 @@ FORCEINLINE Vector3 Vector3::operator-() const
 
 FORCEINLINE Vector3 Vector3::operator+=(const Vector3& v)
 {
-	x += v.x; y += v.y; z += v.z;
+	x += v.x; 
+	y += v.y; 
+	z += v.z;
 	DiagnosticCheckNaN();
 	return *this;
 }
 
 FORCEINLINE Vector3 Vector3::operator-=(const Vector3& v)
 {
-	x -= v.x; y -= v.y; z -= v.z;
+	x -= v.x; 
+	y -= v.y; 
+	z -= v.z;
 	DiagnosticCheckNaN();
 	return *this;
 }
 
 FORCEINLINE Vector3 Vector3::operator*=(float scale)
 {
-	x *= scale; y *= scale; z *= scale;
+	x *= scale; 
+	y *= scale; 
+	z *= scale;
 	DiagnosticCheckNaN();
 	return *this;
 }
@@ -627,53 +635,53 @@ FORCEINLINE Vector3 Vector3::operator*=(float scale)
 FORCEINLINE Vector3 Vector3::operator/=(float v)
 {
 	const float RV = 1.f / v;
-	x *= RV; y *= RV; z *= RV;
+	x *= RV; 
+	y *= RV; 
+	z *= RV;
 	DiagnosticCheckNaN();
 	return *this;
 }
 
 FORCEINLINE Vector3 Vector3::operator*=(const Vector3& v)
 {
-	x *= v.x; y *= v.y; z *= v.z;
+	x *= v.x; 
+	y *= v.y; 
+	z *= v.z;
 	DiagnosticCheckNaN();
 	return *this;
 }
 
 FORCEINLINE Vector3 Vector3::operator/=(const Vector3& v)
 {
-	x /= v.x; y /= v.y; z /= v.z;
+	x /= v.x; 
+	y /= v.y; 
+	z /= v.z;
 	DiagnosticCheckNaN();
 	return *this;
 }
 
 FORCEINLINE float& Vector3::operator[](int32 index)
 {
-	if (index == 0)
-	{
+	if (index == 0) {
 		return x;
 	}
-	else if (index == 1)
-	{
+	else if (index == 1) {
 		return y;
 	}
-	else
-	{
+	else {
 		return z;
 	}
 }
 
 FORCEINLINE float Vector3::operator[](int32 index)const
 {
-	if (index == 0)
-	{
+	if (index == 0) {
 		return x;
 	}
-	else if (index == 1)
-	{
+	else if (index == 1) {
 		return y;
 	}
-	else
-	{
+	else {
 		return z;
 	}
 }
@@ -744,9 +752,9 @@ FORCEINLINE float Vector3::SizeSquared2D() const
 FORCEINLINE bool Vector3::IsNearlyZero(float tolerance) const
 {
 	return
-		MMath::Abs(x) <= tolerance
-		&& MMath::Abs(y) <= tolerance
-		&& MMath::Abs(z) <= tolerance;
+		MMath::Abs(x) <= tolerance && 
+		MMath::Abs(y) <= tolerance && 
+		MMath::Abs(z) <= tolerance;
 }
 
 FORCEINLINE bool Vector3::IsZero() const
@@ -760,7 +768,9 @@ FORCEINLINE bool Vector3::Normalize(float tolerance)
 	if (squareSum > tolerance)
 	{
 		const float scale = MMath::InvSqrt(squareSum);
-		x *= scale; y *= scale; z *= scale;
+		x *= scale; 
+		y *= scale; 
+		z *= scale;
 		return true;
 	}
 	return false;
@@ -798,24 +808,27 @@ FORCEINLINE Vector3 Vector3::GetSignVector() const
 FORCEINLINE Vector3 Vector3::Projection() const
 {
 	const float rz = 1.f / z;
-	return Vector3(x*rz, y*rz, 1);
+	return Vector3(x * rz, y * rz, 1);
 }
 
 FORCEINLINE Vector3 Vector3::GetUnsafeNormal() const
 {
 	const float scale = MMath::InvSqrt(x*x + y * y + z * z);
-	return Vector3(x*scale, y*scale, z*scale);
+	return Vector3(x * scale, y * scale, z * scale);
 }
 
 FORCEINLINE Vector3 Vector3::GridSnap(const float& gridSz) const
 {
-	return Vector3(MMath::GridSnap(x, gridSz), MMath::GridSnap(y, gridSz), MMath::GridSnap(z, gridSz));
+	return Vector3 (
+		MMath::GridSnap(x, gridSz), 
+		MMath::GridSnap(y, gridSz), 
+		MMath::GridSnap(z, gridSz)
+	);
 }
 
 FORCEINLINE Vector3 Vector3::BoundToCube(float radius) const
 {
-	return Vector3
-	(
+	return Vector3 (
 		MMath::Clamp(x, -radius, radius),
 		MMath::Clamp(y, -radius, radius),
 		MMath::Clamp(z, -radius, radius)
@@ -836,9 +849,7 @@ FORCEINLINE Vector3 Vector3::GetClampedToSize(float min, float max) const
 {
 	float VecSize = Size();
 	const Vector3 VecDir = (VecSize > SMALL_NUMBER) ? (*this / VecSize) : Vector3::ZeroVector;
-
 	VecSize = MMath::Clamp(VecSize, min, max);
-
 	return VecSize * VecDir;
 }
 
@@ -846,46 +857,38 @@ FORCEINLINE Vector3 Vector3::GetClampedToSize2D(float min, float max) const
 {
 	float VecSize2D = Size2D();
 	const Vector3 VecDir = (VecSize2D > SMALL_NUMBER) ? (*this / VecSize2D) : Vector3::ZeroVector;
-
 	VecSize2D = MMath::Clamp(VecSize2D, min, max);
-
 	return Vector3(VecSize2D * VecDir.x, VecSize2D * VecDir.y, z);
 }
 
 FORCEINLINE Vector3 Vector3::GetClampedToMaxSize(float maxSize) const
 {
-	if (maxSize < KINDA_SMALL_NUMBER)
-	{
+	if (maxSize < KINDA_SMALL_NUMBER) {
 		return Vector3::ZeroVector;
 	}
 
 	const float VSq = SizeSquared();
-	if (VSq > MMath::Square(maxSize))
-	{
+	if (VSq > MMath::Square(maxSize)) {
 		const float scale = maxSize * MMath::InvSqrt(VSq);
 		return Vector3(x*scale, y*scale, z*scale);
 	}
-	else
-	{
+	else {
 		return *this;
 	}
 }
 
 FORCEINLINE Vector3 Vector3::GetClampedToMaxSize2D(float maxSize) const
 {
-	if (maxSize < KINDA_SMALL_NUMBER)
-	{
+	if (maxSize < KINDA_SMALL_NUMBER) {
 		return Vector3(0.f, 0.f, z);
 	}
 
 	const float VSq2D = SizeSquared2D();
-	if (VSq2D > MMath::Square(maxSize))
-	{
+	if (VSq2D > MMath::Square(maxSize)) {
 		const float scale = maxSize * MMath::InvSqrt(VSq2D);
 		return Vector3(x*scale, y*scale, z);
 	}
-	else
-	{
+	else {
 		return *this;
 	}
 }
@@ -934,7 +937,6 @@ FORCEINLINE void Vector3::SetComponentForAxis(Axis::Type axis, float component)
 		z = component;
 		break;
     case Axis::Axis_None:
-        
         break;
 	}
 }
@@ -942,28 +944,24 @@ FORCEINLINE void Vector3::SetComponentForAxis(Axis::Type axis, float component)
 FORCEINLINE Vector3 Vector3::Reciprocal() const
 {
 	Vector3 recVector;
-	if (x != 0.f)
-	{
+	if (x != 0.f) {
 		recVector.x = 1.f / x;
 	}
-	else
-	{
+	else {
 		recVector.x = BIG_NUMBER;
 	}
-	if (y != 0.f)
-	{
+
+	if (y != 0.f) {
 		recVector.y = 1.f / y;
 	}
-	else
-	{
+	else {
 		recVector.y = BIG_NUMBER;
 	}
-	if (z != 0.f)
-	{
+
+	if (z != 0.f) {
 		recVector.z = 1.f / z;
 	}
-	else
-	{
+	else {
 		recVector.z = BIG_NUMBER;
 	}
 
@@ -990,33 +988,29 @@ FORCEINLINE Vector3 Vector3::MirrorByVector(const Vector3& mirrorNormal) const
 FORCEINLINE Vector3 Vector3::GetSafeNormal(float tolerance) const
 {
 	const float squareSum = x * x + y * y + z * z;
-	if (squareSum == 1.f)
-	{
+	if (squareSum == 1.f) {
 		return *this;
 	}
-	else if (squareSum < tolerance)
-	{
+	else if (squareSum < tolerance) {
 		return Vector3::ZeroVector;
 	}
 	const float scale = MMath::InvSqrt(squareSum);
-	return Vector3(x*scale, y*scale, z*scale);
+	return Vector3(x * scale, y * scale, z * scale);
 }
 
 FORCEINLINE Vector3 Vector3::GetSafeNormal2D(float tolerance) const
 {
 	const float squareSum = x * x + y * y;
-	if (squareSum == 1.f)
+	if (squareSum == 1.f) 
 	{
-		if (z == 0.f)
-		{
+		if (z == 0.f) {
 			return *this;
 		}
-		else
-		{
+		else {
 			return Vector3(x, y, 0.f);
 		}
 	}
-	else if (squareSum < tolerance)
+	else if (squareSum < tolerance) 
 	{
 		return Vector3::ZeroVector;
 	}
@@ -1027,7 +1021,7 @@ FORCEINLINE Vector3 Vector3::GetSafeNormal2D(float tolerance) const
 FORCEINLINE Vector3 Vector3::GetUnsafeNormal2D() const
 {
 	const float scale = MMath::InvSqrt(x * x + y * y);
-	return Vector3(x*scale, y*scale, 0.f);
+	return Vector3(x * scale, y * scale, 0.f);
 }
 
 FORCEINLINE float Vector3::CosineAngle2D(Vector3 b) const
@@ -1052,9 +1046,11 @@ FORCEINLINE Vector3 Vector3::ProjectOnToNormal(const Vector3& normal) const
 
 FORCEINLINE bool Vector3::ContainsNaN() const
 {
-	return (!MMath::IsFinite(x) ||
+	return (
+		!MMath::IsFinite(x) || 
 		!MMath::IsFinite(y) ||
-		!MMath::IsFinite(z));
+		!MMath::IsFinite(z)
+	);
 }
 
 FORCEINLINE bool Vector3::IsUnit(float lengthSquaredTolerance) const
@@ -1080,8 +1076,7 @@ FORCEINLINE float Vector3::HeadingAngle() const
 	planeDir.z = 0.f;
 	planeDir = planeDir.GetSafeNormal();
 	float angle = MMath::Acos(planeDir.x);
-	if (planeDir.y < 0.0f)
-	{
+	if (planeDir.y < 0.0f) {
 		angle *= -1.0f;
 	}
 	return angle;
@@ -1127,12 +1122,10 @@ FORCEINLINE void Vector3::FindBestAxisVectors(Vector3& axis1, Vector3& axis2) co
 	const float ny = MMath::Abs(y);
 	const float nz = MMath::Abs(z);
 
-	if (nz > nx && nz > ny)
-	{
+	if (nz > nx && nz > ny) {
 		axis1 = Vector3(1, 0, 0);
 	}
-	else
-	{
+	else {
 		axis1 = Vector3(0, 0, 1);
 	}
 	

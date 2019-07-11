@@ -12,7 +12,8 @@ public:
 
 	virtual ~TextureBase();
 
-	bool IsValid() const {
+	bool IsValid() const 
+	{
 		return !m_Invalid;
 	}
     
@@ -22,9 +23,11 @@ public:
     }
     
 protected:
+
 	friend class Texture2D;
 
 protected:
+
 	VkImage						m_Image;
 	VkImageLayout				m_ImageLayout;
 	VkDeviceMemory				m_ImageMemory;

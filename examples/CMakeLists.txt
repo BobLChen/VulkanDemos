@@ -84,12 +84,12 @@ SETUP_SAMPLE_START(2_Triangle)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(2_Triangle)
 
-SETUP_SAMPLE_START(3_OBJLoader)
+SETUP_SAMPLE_START(3_DemoBase)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/3_DemoBase/Triangle.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/3_OBJLoader/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -97,14 +97,14 @@ SETUP_SAMPLE_START(3_OBJLoader)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(3_OBJLoader)
+SETUP_SAMPLE_END(3_DemoBase)
 
-SETUP_SAMPLE_START(4_Pipelines)
+SETUP_SAMPLE_START(4_OptimizeBuffer)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/4_OptimizeBuffer/Triangle.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/4_Pipelines/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -112,14 +112,14 @@ SETUP_SAMPLE_START(4_Pipelines)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(4_Pipelines)
+SETUP_SAMPLE_END(4_OptimizeBuffer)
 
-SETUP_SAMPLE_START(5_Texture)
+SETUP_SAMPLE_START(5_OptimizeCommandBuffer)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/5_Texture/Texture.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/5_OptimizeCommandBuffer/Triangle.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/5_Texture/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/2_Triangle/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -127,79 +127,124 @@ SETUP_SAMPLE_START(5_Texture)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(5_Texture)
+SETUP_SAMPLE_END(5_OptimizeCommandBuffer)
 
-SETUP_SAMPLE_START(6_DynamicUniformBuffer)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/6_DynamicUniformBuffer/DynamicUniformBuffer.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/6_DynamicUniformBuffer/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(6_DynamicUniformBuffer)
+# SETUP_SAMPLE_START(3_OBJLoader)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/3_OBJLoader/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(3_OBJLoader)
 
-SETUP_SAMPLE_START(7_PushConstants)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/7_PushConstants/PushConstants.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/7_PushConstants/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(7_PushConstants)
+# SETUP_SAMPLE_START(4_Pipelines)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/4_Pipelines/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(4_Pipelines)
 
-SETUP_SAMPLE_START(8_SpecializationConstant)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/8_SpecializationConstant/SpecializationConstant.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/8_SpecializationConstant/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(8_SpecializationConstant)
+# SETUP_SAMPLE_START(5_Texture)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/5_Texture/Texture.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/5_Texture/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(5_Texture)
 
-SETUP_SAMPLE_START(9_TextureArray)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/9_TextureArray/TextureArray.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/9_TextureArray/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(9_TextureArray)
+# SETUP_SAMPLE_START(6_DynamicUniformBuffer)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/6_DynamicUniformBuffer/DynamicUniformBuffer.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/6_DynamicUniformBuffer/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(6_DynamicUniformBuffer)
 
-SETUP_SAMPLE_START(10_Texture3D)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/10_Texture3D/Texture3D.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/10_Texture3D/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(10_Texture3D)
+# SETUP_SAMPLE_START(7_PushConstants)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/7_PushConstants/PushConstants.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/7_PushConstants/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(7_PushConstants)
+
+# SETUP_SAMPLE_START(8_SpecializationConstant)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/8_SpecializationConstant/SpecializationConstant.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/8_SpecializationConstant/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(8_SpecializationConstant)
+
+# SETUP_SAMPLE_START(9_TextureArray)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/9_TextureArray/TextureArray.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/9_TextureArray/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(9_TextureArray)
+
+# SETUP_SAMPLE_START(10_Texture3D)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/10_Texture3D/Texture3D.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/10_Texture3D/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(10_Texture3D)

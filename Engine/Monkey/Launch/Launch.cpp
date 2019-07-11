@@ -1,5 +1,4 @@
 #include "Configuration/Platform.h"
-#include "Core/PixelFormat.h"
 
 #include "Engine.h"
 #include "Launch.h"
@@ -8,71 +7,96 @@
 #include <vector>
 #include <chrono>
 
-Engine* GameEngine = nullptr;
-AppModeBase* AppMode = nullptr;
+enum LaunchErrorType
+{
+	OK = 0,
+	FailedCreateAppModule	= -1,
+	FailedPreInitAppModule	= -2,
+	FailedInitAppModule		= -3,
+};
+
+std::shared_ptr<Engine> g_GameEngine;
+std::shared_ptr<AppModuleBase> g_AppModule;
+std::chrono::time_point<std::chrono::steady_clock> g_LastTime;
+float g_CurrTime = 0.0f;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
-	AppMode->PreInit();
+    int32 width  = g_AppModule->GetWidth();
+    int32 height = g_AppModule->GetHeight();
+    const char* title = g_AppModule->GetTitle().c_str();
+    
+    int32 errorLevel = g_GameEngine->PreInit(cmdLine, width, height, title);
+	if (errorLevel) {
+		return errorLevel;
+	}
+    
+	if (!g_AppModule->PreInit()) {
+		return FailedPreInitAppModule;
+	}
 
-	int32 width  = AppMode->GetWidth();
-	int32 height = AppMode->GetHeight();
-	const char* title = AppMode->GetTitle().c_str();
-	
-	return GameEngine->PreInit(cmdLine, width, height, title);
+    return errorLevel;
 }
 
 int32 EngineInit()
 {
-	AppMode->Setup(GameEngine, GameEngine->GetVulkanRHI(), SlateApplication::Get().GetPlatformApplication(), SlateApplication::Get().GetPlatformApplication()->GetWindow());
-	AppMode->Init();
+	int32 errorLevel = g_GameEngine->Init();
+	if (errorLevel) {
+		return errorLevel;
+	}
 
-	return GameEngine->Init();
+	g_AppModule->Setup(g_GameEngine);
+	
+	if (!g_AppModule->Init()) {
+		return FailedInitAppModule;
+	}
+
+	return errorLevel;
 }
 
 void EngineLoop()
 {
-	auto tStart = std::chrono::high_resolution_clock::now();
-
-	GameEngine->PumpMessage();
-	if (GameEngine->IsRequestingExit())
-	{
-		return;
-	}
-	GameEngine->Tick();
-	AppMode->Loop();
-    
-    auto tEnd  = std::chrono::high_resolution_clock::now();
-    auto tDiff = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
-    GameEngine->SetDeltaTime((float)tDiff / 1000.0f);
+	auto tNow   = std::chrono::high_resolution_clock::now();
+	auto tDiff  = std::chrono::duration<double, std::milli>(g_LastTime - tNow).count();
+	float delta = (float)tDiff / 1000.0f;
+	
+	g_AppModule->Loop(g_CurrTime, delta);
+	g_GameEngine->Tick(g_CurrTime, delta);
+	
+	g_LastTime = tNow;
+	g_CurrTime = g_CurrTime + delta;
 }
 
 void EngineExit()
 {
-	AppMode->Exist();
-	GameEngine->Exist();
+	g_AppModule->Exist();
+    g_AppModule = nullptr;
+    
+	g_GameEngine->Exist();
+    g_GameEngine = nullptr;
 }
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-    GameEngine = new Engine();
-    
-	AppMode = CreateAppMode(cmdLine);
-	if (AppMode == nullptr)
-	{
-		return -1;
+	g_LastTime   = std::chrono::high_resolution_clock::now();
+    g_GameEngine = std::make_shared<Engine>();
+
+	g_AppModule = CreateAppMode(cmdLine);
+	if (!g_AppModule) {
+		return FailedCreateAppModule;
 	}
 	
 	int32 errorLevel = EnginePreInit(cmdLine);
-	if (errorLevel != 0) 
-	{
+	if (errorLevel) {
 		return errorLevel;
 	}
 
 	errorLevel = EngineInit();
+	if (errorLevel) {
+		return errorLevel;
+	}
 
-	while (!GameEngine->IsRequestingExit())
-	{
+	while (!g_GameEngine->IsRequestingExit()) {
 		EngineLoop();
 	}
 

@@ -11,23 +11,25 @@ GenericApplication::~GenericApplication()
 
 }
 
-void GenericApplication::PumpMessages(const float timeDelta)
+void GenericApplication::PumpMessages()
 {
 	
 }
 
-void GenericApplication::Tick(const float timeDelta)
+void GenericApplication::Tick(float time, float delta)
 {
 
 }
 
 std::shared_ptr<GenericWindow> GenericApplication::MakeWindow(int32 width, int32 height, const char* title)
 {
+
 	return nullptr;
 }
 
 std::shared_ptr<GenericWindow> GenericApplication::GetWindow()
 {
+
 	return nullptr;
 }
 
@@ -36,12 +38,12 @@ void GenericApplication::Destroy()
 
 }
 
-void GenericApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void GenericApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 
 }
 
-void GenericApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void GenericApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	m_MessageHandler = messageHandler;
 }

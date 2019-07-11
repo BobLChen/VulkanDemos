@@ -111,15 +111,14 @@ struct GenericPlatformMath
 
 	static FORCEINLINE float Fmod(float x, float y)
 	{
-		if (fabsf(y) <= 1.e-8f)
-		{
+		if (fabsf(y) <= 1.e-8f) {
 			return 0.f;
 		}
+
 		const float quotient = TruncToFloat(x / y);
 		float intPortion = y * quotient;
 
-		if (fabsf(intPortion) > fabsf(x))
-		{
+		if (fabsf(intPortion) > fabsf(x)) {
 			intPortion = x;
 		}
 
@@ -242,25 +241,29 @@ struct GenericPlatformMath
 
 	static FORCEINLINE uint32 CountLeadingZeros(uint32 value)
 	{
-		if (value == 0) return 32;
+		if (value == 0) {
+			return 32;
+		}
 		return 31 - FloorLog2(value);
 	}
 
 	static FORCEINLINE uint64 CountLeadingZeros64(uint64 value)
 	{
-		if (value == 0) return 64;
+		if (value == 0) {
+			return 64;
+		}
 		return 63 - FloorLog2_64(value);
 	}
 
 	static FORCEINLINE uint32 CountTrailingZeros(uint32 value)
 	{
-		if (value == 0)
-		{
+		if (value == 0) {
 			return 32;
 		}
+
 		uint32 result = 0;
-		while ((value & 1) == 0)
-		{
+
+		while ((value & 1) == 0) {
 			value >>= 1;
 			++result;
 		}
@@ -269,13 +272,11 @@ struct GenericPlatformMath
 
 	static FORCEINLINE uint64 CountTrailingZeros64(uint64 value)
 	{
-		if (value == 0)
-		{
+		if (value == 0) {
 			return 64;
 		}
 		uint64 result = 0;
-		while ((value & 1) == 0)
-		{
+		while ((value & 1) == 0) {
 			value >>= 1;
 			++result;
 		}
@@ -391,8 +392,7 @@ struct GenericPlatformMath
 	{
 		if (values.size() == 0)
 		{
-			if (minIndex)
-			{
+			if (minIndex) {
 				*minIndex = -1;
 			}
 			return T();
@@ -403,15 +403,13 @@ struct GenericPlatformMath
 		for (int32 v = 1; v < values.size(); ++v)
 		{
 			const T value = values[v];
-			if (value < curMin)
-			{
+			if (value < curMin) {
 				curMin = value;
 				curMinIndex = v;
 			}
 		}
 
-		if (minIndex)
-		{
+		if (minIndex) {
 			*minIndex = curMinIndex;
 		}
 		return curMin;
@@ -422,8 +420,7 @@ struct GenericPlatformMath
 	{
 		if (values.size() == 0)
 		{
-			if (maxIndex)
-			{
+			if (maxIndex) {
 				*maxIndex = -1;
 			}
 			return T();
@@ -434,15 +431,13 @@ struct GenericPlatformMath
 		for (int32 v = 1; v < values.size(); ++v)
 		{
 			const T value = values[v];
-			if (curMax < value)
-			{
+			if (curMax < value) {
 				curMax = value;
 				curMaxIndex = v;
 			}
 		}
 
-		if (maxIndex)
-		{
+		if (maxIndex) {
 			*maxIndex = curMaxIndex;
 		}
 		return curMax;

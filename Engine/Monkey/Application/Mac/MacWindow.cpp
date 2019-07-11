@@ -1,9 +1,9 @@
 #include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
 
+#include "CocoaWindow.h"
 #include "MacWindow.h"
 #include "MacApplication.h"
-#include "CocoaWindow.h"
 
 #include <math.h>
 #include <algorithm>
@@ -102,7 +102,7 @@ void MacWindow::Initialize(MacApplication* const application)
     const NSWindowCollectionBehavior behavior = NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorManaged;
     [window setCollectionBehavior:behavior];
     
-    m_View = view;
+    m_View   = view;
     m_Window = window;
 }
 
@@ -110,7 +110,7 @@ void MacWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newH
 {
 	m_X = newX;
 	m_Y = newY;
-	m_Width = newWidth;
+	m_Width  = newWidth;
 	m_Height = newHeight;
 }
 

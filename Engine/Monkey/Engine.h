@@ -2,8 +2,13 @@
 
 #include "Common/Common.h"
 #include "Vulkan/VulkanRHI.h"
+
 #include <string>
 #include <vector>
+
+class GenericWindow;
+class GenericApplication;
+class SlateApplication;
 
 class Engine
 {
@@ -18,7 +23,7 @@ public:
 
 	void Exist();
 
-	void Tick();
+	void Tick(float time, float delta);
 
 	void PumpMessage();
 
@@ -28,27 +33,37 @@ public:
 
 	std::shared_ptr<VulkanRHI> GetVulkanRHI();
 
+	std::shared_ptr<SlateApplication> GetApplication();
+
+	std::shared_ptr<GenericApplication> GetPlatformApplication();
+
+	std::shared_ptr<GenericWindow> GetPlatformWindow();
+
+	std::shared_ptr<VulkanDevice> GetVulkanDevice();
+
+	VkDevice GetDeviceHandle();
+
 	const std::string& GetAssetsPath() const;
 
 	static Engine* Get();
     
-    void SetDeltaTime(float deltaTime)
+    const char* GetTitle() const
     {
-        m_DeltaTime = deltaTime;
-    }
-    
-    float GetDeltaTime()
-    {
-        return m_DeltaTime;
+        return m_AppTitle.c_str();
     }
     
 protected:
-
-	static Engine* g_Instance;
-	
-	std::shared_ptr<VulkanRHI> m_VulkanRHI;
-	std::string m_AssetsPath;
-	bool m_IsRequestingExit;
     
-    float m_DeltaTime;
+    void ParseAssetsPath(const std::vector<std::string>& cmdLine);
+    
+protected:
+
+	static Engine*						g_Instance;
+
+	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
+	std::shared_ptr<SlateApplication>	m_SlateApplication;
+    
+    std::string                         m_AppTitle;
+	std::string							m_AssetsPath;
+	bool								m_IsRequestingExit;
 };

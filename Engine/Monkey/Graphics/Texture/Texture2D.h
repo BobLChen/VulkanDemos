@@ -15,5 +15,4 @@ public:
 	void LoadFromFile(const std::string& filename);
 
 	void LoadFromFiles(const std::vector<std::string>& filenames);
-    
 };

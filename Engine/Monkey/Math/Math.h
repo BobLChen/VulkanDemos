@@ -135,12 +135,11 @@ public:
 		inv[15] = s0 * s5  * s10 - s0 * s6  * s9 - s4 * s1 * s10 + s4 * s2 * s9 + s8 * s1 * s6 - s8 * s2 * s5;
 
 		double det = s0 * inv[0] + s1 * inv[4] + s2 * inv[8] + s3 * inv[12];
-		if (det != 0.0)
-		{
+		if (det != 0.0) {
 			det = 1.0 / det;
 		}
-		for (int32 i = 0; i < 16; i++)
-		{
+
+		for (int32 i = 0; i < 16; i++) {
 			dst[i] = inv[i] * det;
 		}
 	}
@@ -220,24 +219,20 @@ public:
 
 	static FORCEINLINE float GridSnap(float location, float grid)
 	{
-		if (grid == 0.0f)
-		{
+		if (grid == 0.0f) {
 			return location;
 		}
-		else
-		{
+		else {
 			return FloorToFloat((location + 0.5f * grid) / grid) * grid;
 		}
 	}
 
 	static FORCEINLINE double GridSnap(double location, double grid)
 	{
-		if (grid == 0.0)
-		{
+		if (grid == 0.0) {
 			return location;
 		}
-		else
-		{
+		else {
 			return FloorToDouble((location + 0.5 * grid) / grid) * grid;
 		}
 	}
@@ -271,29 +266,25 @@ public:
 	static FORCEINLINE void SinCos(float* scalarSin, float* scalarCos, float value)
 	{
 		float quotient = (INV_PI * 0.5f) * value;
-		if (value >= 0.0f)
-		{
+		if (value >= 0.0f) {
 			quotient = (float)((int32)(quotient + 0.5f));
 		}
-		else
-		{
+		else {
 			quotient = (float)((int32)(quotient - 0.5f));
 		}
+
 		float y = value - (2.0f * PI) * quotient;
 
 		float sign;
-		if (y > HALF_PI)
-		{
+		if (y > HALF_PI) {
 			y = PI - y;
 			sign = -1.0f;
 		}
-		else if (y < -HALF_PI)
-		{
+		else if (y < -HALF_PI) {
 			y = -PI - y;
 			sign = -1.0f;
 		}
-		else
-		{
+		else {
 			sign = +1.0f;
 		}
 
@@ -312,8 +303,7 @@ public:
 		bool nonnegative = (value >= 0.0f);
 		float x = MMath::Abs(value);
 		float omx = 1.0f - x;
-		if (omx < 0.0f)
-		{
+		if (omx < 0.0f) {
 			omx = 0.0f;
 		}
 		float root = MMath::Sqrt(omx);
@@ -492,12 +482,10 @@ public:
 	{
 		float delta = a2 - a1;
 
-		if (delta > 180.0f)
-		{
+		if (delta > 180.0f) {
 			delta = delta - 360.0f;
 		}
-		else if (delta < -180.0f)
-		{
+		else if (delta < -180.0f) {
 			delta = delta + 360.0f;
 		}
 
@@ -508,12 +496,10 @@ public:
 	{
 		float delta = a2 - a1;
 
-		if (delta > PI)
-		{
+		if (delta > PI) {
 			delta = delta - (PI * 2.0f);
 		}
-		else if (delta < -PI)
-		{
+		else if (delta < -PI) {
 			delta = delta + (PI * 2.0f);
 		}
 
@@ -522,13 +508,11 @@ public:
 
 	static FORCEINLINE float UnwindRadians(float value)
 	{
-		while (value > PI)
-		{
+		while (value > PI) {
 			value -= ((float)PI * 2.0f);
 		}
 
-		while (value < -PI)
-		{
+		while (value < -PI) {
 			value += ((float)PI * 2.0f);
 		}
 
@@ -537,13 +521,11 @@ public:
 
 	static FORCEINLINE float UnwindDegrees(float value)
 	{
-		while (value > 180.f)
-		{
+		while (value > 180.f) {
 			value -= 360.f;
 		}
 
-		while (value < -180.f)
-		{
+		while (value < -180.f) {
 			value += 360.f;
 		}
 
@@ -565,8 +547,7 @@ public:
 	static FORCEINLINE float GetRangePct(float minValue, float maxValue, float value)
 	{
 		const float divisor = maxValue - minValue;
-		if (MMath::IsNearlyZero(divisor))
-		{
+		if (MMath::IsNearlyZero(divisor)) {
 			return (value >= maxValue) ? 1.f : 0.f;
 		}
 
@@ -654,17 +635,17 @@ public:
 	template< class T >
 	static FORCEINLINE T InterpStep(const T& a, const T& b, float alpha, int32 steps)
 	{
-		if (steps <= 1 || alpha <= 0)
-		{
+		if (steps <= 1 || alpha <= 0) {
 			return a;
 		}
-		else if (alpha >= 1)
-		{
+		else if (alpha >= 1) {
 			return b;
 		}
+
 		const float stepsAsFloat = static_cast<float>(steps);
 		const float numIntervals = stepsAsFloat - 1.f;
 		float const modifiedAlpha = FloorToFloat(alpha * stepsAsFloat) / numIntervals;
+
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
@@ -828,12 +809,10 @@ public:
 
 	static FORCEINLINE float SmoothStep(float a, float b, float X)
 	{
-		if (X < a)
-		{
+		if (X < a) {
 			return 0.0f;
 		}
-		else if (X >= b)
-		{
+		else if (X >= b) {
 			return 1.0f;
 		}
 		const float InterpFraction = (X - a) / (b - a);
@@ -853,12 +832,10 @@ public:
 		uint8* bytePtr = ptr + index / 8;
 		uint8 mast = 1 << (index & 0x7);
 
-		if (bset)
-		{
+		if (bset) {
 			*bytePtr |= mast;
 		}
-		else
-		{
+		else {
 			*bytePtr &= ~mast;
 		}
 	}
@@ -877,8 +854,7 @@ public:
 
 	static FORCEINLINE int32 GreatestCommonDivisor(int32 a, int32 b)
 	{
-		while (b != 0)
-		{
+		while (b != 0) {
 			int32 t = b;
 			b = a % b;
 			a = t;

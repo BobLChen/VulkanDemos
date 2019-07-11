@@ -1,9 +1,11 @@
 #pragma once
 
 #include "Common/Common.h"
+
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
 #include "RHIDefinitions.h"
+
 #include <string>
 
 class VulkanDevice;
@@ -23,109 +25,54 @@ public:
 
 	void Shutdown();;
 
-	FORCEINLINE const std::vector<const char*>& GetInstanceExtensions() const
+	inline const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
 	}
 
-	FORCEINLINE const std::vector<const char*>& GetInstanceLayers() const
+	inline const std::vector<const char*>& GetInstanceLayers() const
 	{
 		return m_InstanceLayers;
 	}
 
-	FORCEINLINE VkInstance GetInstance() const
+	inline const VkInstance& GetInstance() const
 	{
 		return m_Instance;
 	}
 
-	FORCEINLINE std::shared_ptr<VulkanDevice> GetDevice()
+	inline std::shared_ptr<VulkanDevice> GetDevice() const
 	{
 		return m_Device;
 	}
-    
-	FORCEINLINE VkCommandPool GetCommandPool()
-	{
-		return m_CommandPool;
-	}
 
-	FORCEINLINE std::vector<VkCommandBuffer>& GetCommandBuffers()
-	{
-		return m_CommandBuffers;
-	}
-
-	FORCEINLINE std::shared_ptr<VulkanSwapChain> GetSwapChain()
+	inline std::shared_ptr<VulkanSwapChain> GetSwapChain() const
 	{
 		return m_SwapChain;
 	}
 
-	FORCEINLINE std::vector<VkImage>& GetFrameImages()
+	inline const std::vector<VkImage>& GetBackbufferImages() const
 	{
-		return m_FrameImages;
+		return m_BackbufferImages;
 	}
 
-	FORCEINLINE std::vector<VkImageView>& GetFrameImageViews()
+	inline const std::vector<VkImageView>& GetBackbufferViews() const
 	{
-		return m_FrameImageViews;
+		return m_BackbufferViews;
 	}
 
-	FORCEINLINE std::vector<VkFramebuffer>& GetFrameBuffers()
-	{
-		return m_FrameBuffers;
-	}
-
-	FORCEINLINE VkImage GetDepthStencilImage()
-	{
-		return m_DepthStencilImage;
-	}
-
-	FORCEINLINE VkImageView GetDepthStencilView()
-	{
-		return m_DepthStencilView;
-	}
-
-	FORCEINLINE VkDeviceMemory GetDepthStencilMemory()
-	{
-		return m_DepthStencilMemory;
-	}
-
-	FORCEINLINE PixelFormat GetPixelFormat()
+	inline const PixelFormat& GetPixelFormat() const
 	{
 		return m_PixelFormat;
 	}
 
-	FORCEINLINE PixelFormat GetDepthFormat()
-	{
-		return m_DepthFormat;
-	}
-
-	FORCEINLINE VkRenderPass GetRenderPass()
-	{
-		return m_RenderPass;
-	}
-
-	FORCEINLINE VkPipelineCache GetPipelineCache()
-	{
-		return m_PipelineCache;
-	}
-
-	FORCEINLINE bool SupportsDebugUtilsExt() const
+	inline bool SupportsDebugUtilsExt() const
 	{
 		return m_SupportsDebugUtilsExt;
 	}
 	
-    FORCEINLINE VkSampleCountFlagBits GetSampleCount() const
-    {
-        return m_SampleCount;
-    }
-    
-	FORCEINLINE const char* GetName()
+	inline const char* GetName()
 	{ 
 		return "Vulkan";
-	}
-
-	FORCEINLINE VkPipelineStageFlags GetStageMask() const
-	{
-		return m_SubmitPipelineStages;
 	}
 
 protected:
@@ -148,30 +95,6 @@ protected:
 
 	void DestorySwapChain();
 
-	void CreateCommandPool();
-
-	void DestoryCommandPool();
-
-	void CreateCommandBuffers();
-
-	void DestoryCommandBuffers();
-
-	void CreateDepthStencil();
-
-	void DestoryDepthStencil();
-
-	void CreateRenderPass();
-
-	void DestoryRenderPass();
-
-	void CreatePipelineCache();
-
-	void DestoryPipelineCache();
-
-	void CreateFrameBuffer();
-
-	void DestroyFrameBuffer();
-    
 protected:
 
 #if MONKEY_DEBUG
@@ -183,31 +106,17 @@ protected:
     std::vector<const char*>			m_InstanceExtensions;
     
     std::shared_ptr<VulkanDevice>		m_Device;
+
     std::shared_ptr<VulkanSwapChain>	m_SwapChain;
-
-    std::vector<VkImage>				m_FrameImages;
-    std::vector<VkImageView>			m_FrameImageViews;
-	std::vector<VkFramebuffer>			m_FrameBuffers;
-    
-    VkImage								m_DepthStencilImage;
-    VkImageView							m_DepthStencilView;
-    VkDeviceMemory						m_DepthStencilMemory;
-
-	VkRenderPass						m_RenderPass;
-	VkPipelineCache						m_PipelineCache;
-	VkSampleCountFlagBits				m_SampleCount;
-	VkCommandPool						m_CommandPool;
-	std::vector<VkCommandBuffer>		m_CommandBuffers;
-	VkPipelineStageFlags				m_SubmitPipelineStages;
-
-    PixelFormat							m_PixelFormat;
-    PixelFormat							m_DepthFormat;
+	PixelFormat							m_PixelFormat;
+	std::vector<VkImage>				m_BackbufferImages;
+	std::vector<VkImageView>			m_BackbufferViews;
 
 	bool								m_SupportsDebugUtilsExt;
 };
 
 
-FORCEINLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
+inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 {
 	VkFormat result = (VkFormat)G_PixelFormats[format].platformFormat;
 	if (bIsSRGB)
@@ -252,7 +161,7 @@ FORCEINLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRG
 	return result;
 }
 
-static FORCEINLINE VkFormat VEToVkFormat(VertexElementType Type)
+static inline VkFormat VEToVkFormat(VertexElementType Type)
 {
 	switch (Type)
 	{
@@ -301,7 +210,7 @@ static FORCEINLINE VkFormat VEToVkFormat(VertexElementType Type)
 	return VK_FORMAT_UNDEFINED;
 }
 
-static FORCEINLINE uint32 ElementTypeToSize(VertexElementType type)
+static inline uint32 ElementTypeToSize(VertexElementType type)
 {
 	switch (type)
 	{
@@ -348,7 +257,7 @@ static FORCEINLINE uint32 ElementTypeToSize(VertexElementType type)
 	};
 }
 
-static FORCEINLINE VkPrimitiveTopology UEToVulkanType(PrimitiveType primitiveType)
+static inline VkPrimitiveTopology UEToVulkanType(PrimitiveType primitiveType)
 {
 	switch (primitiveType)
 	{
@@ -367,7 +276,7 @@ static FORCEINLINE VkPrimitiveTopology UEToVulkanType(PrimitiveType primitiveTyp
 }
 
 
-static FORCEINLINE uint32 IndexTypeToSize(VkIndexType type)
+static inline uint32 IndexTypeToSize(VkIndexType type)
 {
 	switch (type)
 	{
@@ -383,7 +292,7 @@ static FORCEINLINE uint32 IndexTypeToSize(VkIndexType type)
     }
 }
 
-static FORCEINLINE uint32 PrimitiveTypeToSize(PrimitiveType type)
+static inline uint32 PrimitiveTypeToSize(PrimitiveType type)
 {
 	switch (type)
 	{

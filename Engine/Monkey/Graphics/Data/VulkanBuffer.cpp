@@ -1,8 +1,10 @@
+#include "Engine.h"
 #include "VulkanBuffer.h"
+
 #include "Math/Math.h"
+
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanDevice.h"
-#include "Engine.h"
 
 VulkanBuffer::VulkanBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size)
     : m_Buffer(VK_NULL_HANDLE)
@@ -18,8 +20,7 @@ VulkanBuffer::VulkanBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags 
 
 VulkanBuffer::~VulkanBuffer()
 {
-    if (m_Buffer != VK_NULL_HANDLE)
-    {
+    if (m_Buffer != VK_NULL_HANDLE) {
         MLOGE("uniform buffer not destory.");
     }
 }
@@ -39,7 +40,7 @@ VulkanBuffer* VulkanBuffer::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemory
     VkMemoryAllocateInfo memAlloc;
     ZeroVulkanStruct(memAlloc, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
     vkGetBufferMemoryRequirements(device, buffer->m_Buffer, &memReqs);
-    memAlloc.allocationSize  = memReqs.size;
+    memAlloc.allocationSize = memReqs.size;
     Engine::Get()->GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memReqs.memoryTypeBits, memoryPropertyFlags, &memAlloc.memoryTypeIndex);
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAlloc, VULKAN_CPU_ALLOCATOR, &(buffer->m_Memory)));
     
@@ -52,8 +53,7 @@ VulkanBuffer* VulkanBuffer::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemory
     {
         VERIFYVULKANRESULT(buffer->Map());
         memcpy(buffer->m_MapDataPtr, data, size);
-        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
-        {
+        if ((memoryPropertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0) {
             buffer->Flush();
         }
         buffer->Unmap();
@@ -71,8 +71,7 @@ VkResult VulkanBuffer::Map(VkDeviceSize size, VkDeviceSize offset)
 void VulkanBuffer::Unmap()
 {
     VkDevice handle = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-    if (m_MapDataPtr)
-    {
+    if (m_MapDataPtr) {
         vkUnmapMemory(handle, m_Memory);
         m_MapDataPtr = nullptr;
     }
@@ -124,17 +123,15 @@ void VulkanBuffer::Destroy()
 {
     VkDevice handle = Engine::Get()->GetVulkanRHI()->GetDevice()->GetInstanceHandle();
     
-    if (m_Buffer != VK_NULL_HANDLE)
-    {
+    if (m_Buffer != VK_NULL_HANDLE) {
         vkDestroyBuffer(handle, m_Buffer, VULKAN_CPU_ALLOCATOR);
         m_Buffer = VK_NULL_HANDLE;
     }
     
-    if (m_Memory != VK_NULL_HANDLE)
-    {
+    if (m_Memory != VK_NULL_HANDLE) {
         vkFreeMemory(handle, m_Memory, VULKAN_CPU_ALLOCATOR);
         m_Memory = VK_NULL_HANDLE;
     }
-    
+
 }
 
