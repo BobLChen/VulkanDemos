@@ -1,10 +1,12 @@
 # demo
 set(Monkey_Demo_HDRS
-	Monkey/Demo/VulkanUtils.h
+	Monkey/Demo/DVKUtils.h
 	Monkey/Demo/DemoBase.h
+	Monkey/Demo/DVKBuffer.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
+	Monkey/Demo/DVKBuffer.cpp
 )
 
 set(Monkey_Configuration_HDRS

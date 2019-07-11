@@ -12,3 +12,4 @@
 #include "VulkanQueue.h"
 #include "VulkanResources.h"
 #include "VulkanSwapChain.h"
+#include "VulkanGlobals.h"
