@@ -208,6 +208,13 @@ set(Monkey_HAL_SRCS
 	
 )
 
+set(Monkey_GenericPlatform_HDRS
+	Monkey/GenericPlatform/GenericPlatformTime.h
+)
+set(Monkey_GenericPlatform_SRCS
+	
+)
+
 if (WIN32)
 	set(Monkey_Application_Windows_HDRS
 		Monkey/Application/Windows/WinWindow.h
@@ -479,6 +486,9 @@ add_library(Monkey STATIC
 	${Monkey_HAL_Android_HDRS}
 	${Monkey_HAL_Android_SRCS}
 
+	${Monkey_GenericPlatform_SRCS}
+	${Monkey_GenericPlatform_HDRS}
+
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
 
@@ -539,6 +549,8 @@ source_group(Monkey\\HAL\\Mac FILES ${Monkey_HAL_Mac_HDRS} ${Monkey_HAL_Mac_SRCS
 source_group(Monkey\\HAL\\IOS FILES ${Monkey_HAL_IOS_HDRS} ${Monkey_HAL_IOS_SRCS})
 source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linux_HDRS})
 source_group(Monkey\\HAL\\Android FILES ${Monkey_HAL_Android_SRCS} ${Monkey_HAL_Android_HDRS})
+
+source_group(Monkey\\GenericPlatform FILES ${Monkey_GenericPlatform_HDRS} ${Monkey_GenericPlatform_SRCS})
 
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
 

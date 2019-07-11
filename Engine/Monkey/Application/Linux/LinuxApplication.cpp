@@ -22,12 +22,12 @@ LinuxApplication::~LinuxApplication()
 	}
 }
 
-void LinuxApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void LinuxApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	GenericApplication::SetMessageHandler(messageHandler);
 }
 
-void LinuxApplication::PumpMessages(const float deltaTime)
+void LinuxApplication::PumpMessages()
 {
 	xcb_connection_t* connection = m_Window->GetConnection();
 
@@ -53,7 +53,7 @@ void LinuxApplication::PumpMessages(const float deltaTime)
 	}
 }
 
-void LinuxApplication::Tick(const float deltaTime)
+void LinuxApplication::Tick(float time, float delta)
 {
 
 }
@@ -68,7 +68,7 @@ std::shared_ptr<GenericWindow> LinuxApplication::GetWindow()
 	return m_Window;
 }
 
-void LinuxApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void LinuxApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 	m_Window = std::dynamic_pointer_cast<LinuxWindow>(window);
 	m_Window->Initialize(this);

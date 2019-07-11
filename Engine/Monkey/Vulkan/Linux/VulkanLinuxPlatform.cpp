@@ -1,8 +1,11 @@
+#include "Engine.h"
+
 #include "Configuration/Platform.h"
+#include "Application/SlateApplication.h"
+
 #include "Vulkan/Linux/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
-#include "Application/SlateApplication.h"
 
 static PFN_vkGetInstanceProcAddr G_GetInstanceProcAddr = nullptr;
 
@@ -25,7 +28,7 @@ void VulkanLinuxPlatform::FreeVulkanLibrary()
 void VulkanLinuxPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
     uint32_t count;
-    const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    const char** extensions = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
     for (int32 i = 0; i < count; ++i)
     {
         outExtensions.push_back(extensions[i]);
@@ -39,7 +42,7 @@ void VulkanLinuxPlatform::GetDeviceExtensions(std::vector<const char*>& outExten
 
 void VulkanLinuxPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-    SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
+    Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
 
 bool VulkanLinuxPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()

@@ -1,4 +1,5 @@
 #include "Configuration/Platform.h"
+#include "GenericPlatform/GenericPlatformTime.h"
 
 #include "Engine.h"
 #include "Launch.h"
@@ -17,8 +18,9 @@ enum LaunchErrorType
 
 std::shared_ptr<Engine> g_GameEngine;
 std::shared_ptr<AppModuleBase> g_AppModule;
-std::chrono::time_point<std::chrono::steady_clock> g_LastTime;
-float g_CurrTime = 0.0f;
+
+double g_LastTime = 0.0;
+double g_CurrTime = 0.0;
 
 int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 {
@@ -56,14 +58,13 @@ int32 EngineInit()
 
 void EngineLoop()
 {
-	auto tNow   = std::chrono::high_resolution_clock::now();
-	auto tDiff  = std::chrono::duration<double, std::milli>(g_LastTime - tNow).count();
-	float delta = (float)tDiff / 1000.0f;
+	double nowT  = GenericPlatformTime::Seconds();
+	double delta = nowT - g_LastTime;
 	
 	g_AppModule->Loop(g_CurrTime, delta);
 	g_GameEngine->Tick(g_CurrTime, delta);
 	
-	g_LastTime = tNow;
+	g_LastTime = nowT;
 	g_CurrTime = g_CurrTime + delta;
 }
 
@@ -78,7 +79,7 @@ void EngineExit()
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-	g_LastTime   = std::chrono::high_resolution_clock::now();
+	g_LastTime   = GenericPlatformTime::Seconds();
     g_GameEngine = std::make_shared<Engine>();
 
 	g_AppModule = CreateAppMode(cmdLine);

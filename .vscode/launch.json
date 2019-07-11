@@ -33,10 +33,10 @@
             ],
         },
         {
-            "name": "Debug 3_OBJLoader",
+            "name": "Debug 3_DemoBase",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/3_OBJLoader",
+            "program": "${workspaceFolder}/build/Debug/examples/3_DemoBase",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -61,10 +61,10 @@
             ],
         },
         {
-            "name": "Debug 4_Pipelines",
+            "name": "Debug 4_OptimizeBuffer",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/4_Pipelines",
+            "program": "${workspaceFolder}/build/Debug/examples/4_OptimizeBuffer",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -89,10 +89,10 @@
             ],
         },
         {
-            "name": "Debug 5_Texture",
+            "name": "Debug 5_OptimizeCommandBuffer",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/5_Texture",
+            "program": "${workspaceFolder}/build/Debug/examples/5_OptimizeCommandBuffer",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -116,145 +116,145 @@
                 }
             ],
         },
-        {
-            "name": "Debug 6_DynamicUniformBuffer",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/6_DynamicUniformBuffer",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
-        {
-            "name": "Debug 7_PushConstants",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/7_PushConstants",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
-        {
-            "name": "Debug 8_SpecializationConstant",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/8_SpecializationConstant",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
-        {
-            "name": "Debug 9_TextureArray",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/9_TextureArray",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
-        {
-            "name": "Debug 10_Texture3D",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/10_Texture3D",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        }
+        // {
+        //     "name": "Debug 6_DynamicUniformBuffer",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/6_DynamicUniformBuffer",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // },
+        // {
+        //     "name": "Debug 7_PushConstants",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/7_PushConstants",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // },
+        // {
+        //     "name": "Debug 8_SpecializationConstant",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/8_SpecializationConstant",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // },
+        // {
+        //     "name": "Debug 9_TextureArray",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/9_TextureArray",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // },
+        // {
+        //     "name": "Debug 10_Texture3D",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/10_Texture3D",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // }
     ]
 }
