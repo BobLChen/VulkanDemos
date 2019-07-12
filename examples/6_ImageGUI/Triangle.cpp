@@ -3,7 +3,7 @@
 
 #include "Demo/DemoBase.h"
 #include "Demo/DVKBuffer.h"
-#include "Demo/DVkCommand.h"
+#include "Demo/DVKCommand.h"
 #include "Demo/DVKUtils.h"
 
 #include "Math/Vector4.h"
