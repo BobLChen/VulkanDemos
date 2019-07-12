@@ -278,7 +278,7 @@ void ImageGUIContext::CreateLayout()
 	descriptorPoolInfo.maxSets       = 2;
 	VERIFYVULKANRESULT(vkCreateDescriptorPool(device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
 
-	VkDescriptorSetLayoutBinding setLayoutBinding;
+	VkDescriptorSetLayoutBinding setLayoutBinding = {};
 	setLayoutBinding.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	setLayoutBinding.stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT;
 	setLayoutBinding.binding         = 0;
@@ -522,8 +522,8 @@ void ImageGUIContext::CreateImageFont()
 
 	vkCmdPipelineBarrier(
 		cmdBuffer,
-		VK_PIPELINE_STAGE_HOST_BIT,
 		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 		0,
 		0, nullptr,
 		0, nullptr,

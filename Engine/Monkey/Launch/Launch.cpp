@@ -79,7 +79,6 @@ void EngineExit()
 
 int32 GuardedMain(const std::vector<std::string>& cmdLine)
 {
-	g_LastTime   = GenericPlatformTime::Seconds();
     g_GameEngine = std::make_shared<Engine>();
 
 	g_AppModule = CreateAppMode(cmdLine);
@@ -91,6 +90,8 @@ int32 GuardedMain(const std::vector<std::string>& cmdLine)
 	if (errorLevel) {
 		return errorLevel;
 	}
+
+	g_LastTime = GenericPlatformTime::Seconds();
 
 	errorLevel = EngineInit();
 	if (errorLevel) {

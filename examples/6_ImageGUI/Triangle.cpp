@@ -47,6 +47,9 @@ public:
 		CreatePipelines();
 		SetupCommandBuffers();
 
+		m_GUI = new ImageGUIContext();
+		m_GUI->Init("assets/fonts/Roboto-Medium.ttf", m_PipelineCache, m_RenderPass);
+
 		m_Ready = true;
 
 		return true;
@@ -459,6 +462,8 @@ private:
     VkPipeline 						m_Pipeline = VK_NULL_HANDLE;
 	
 	uint32 							m_IndicesCount = 0;
+
+	ImageGUIContext*				m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
