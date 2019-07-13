@@ -1,5 +1,8 @@
 #include "Engine.h"
+
 #include "Application/SlateApplication.h"
+#include "GenericPlatform/GenericPlatformTime.h"
+
 #include "Vulkan/VulkanDevice.h"
 
 Engine* Engine::g_Instance = nullptr;
@@ -58,6 +61,8 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	m_VulkanRHI->Init();
     
     ParseAssetsPath(cmdLine);
+
+	GenericPlatformTime::InitTiming();
     
 	return 0;
 }

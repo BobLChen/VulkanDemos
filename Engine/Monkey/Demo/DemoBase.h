@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Engine.h"
 
@@ -24,13 +24,6 @@ public:
 		, m_PresentQueue(VK_NULL_HANDLE)
 		, m_FrameWidth(0)
 		, m_FrameHeight(0)
-		, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
-		, m_PixelFormat(PF_R8G8B8A8)
-		, m_DepthFormat(PF_D24)
-		, m_DepthStencilImage(VK_NULL_HANDLE)
-		, m_DepthStencilView(VK_NULL_HANDLE)
-		, m_DepthStencilMemory(VK_NULL_HANDLE)
-		, m_RenderPass(VK_NULL_HANDLE)
 		, m_PipelineCache(VK_NULL_HANDLE)
 		, m_PresentComplete(VK_NULL_HANDLE)
 		, m_RenderComplete(VK_NULL_HANDLE)
@@ -75,24 +68,20 @@ public:
 
 	void Setup();
 
-	void Prepare()
+	void Prepare() override
 	{
+        AppModuleBase::Prepare();
 		CreateFences();
 		CreateCommandBuffers();
 		CreatePipelineCache();
-		CreateDepthStencil();
-		CreateRenderPass();
-		CreateFrameBuffers();
 	}
 
-	void Release()
+	void Release() override
 	{
+        AppModuleBase::Release();
 		DestroyFences();
 		DestroyCommandBuffers();
 		DestroyPipelineCache();
-		DestroyFrameBuffers();
-		DestoryRenderPass();
-		DestoryDepthStencil();
 	}
 
 	void Present();
@@ -112,23 +101,11 @@ private:
 	void DestroyPipelineCache();
 
 	void CreatePipelineCache();
-
-	void CreateDepthStencil();
-
-	void CreateRenderPass();
-
-	void CreateFrameBuffers();
-
-	void DestroyFrameBuffers();
-
-	void DestoryRenderPass();
-
-	void DestoryDepthStencil();
-
+    
 protected:
 
 	typedef std::shared_ptr<VulkanSwapChain> VulkanSwapChainRef;
-
+    
 	VkDevice						m_Device;
 	std::shared_ptr<VulkanDevice>	m_VulkanDevice;
 	VkQueue							m_GfxQueue;
@@ -136,30 +113,17 @@ protected:
 
 	int32							m_FrameWidth;
 	int32							m_FrameHeight;
-
-	VkSampleCountFlagBits			m_SampleCount;
-
-	PixelFormat						m_PixelFormat;
-    PixelFormat						m_DepthFormat;
-
-	std::vector<VkFramebuffer>		m_FrameBuffers;
     
-    VkImage							m_DepthStencilImage;
-    VkImageView						m_DepthStencilView;
-    VkDeviceMemory					m_DepthStencilMemory;
-
-	VkRenderPass					m_RenderPass;
-
 	VkPipelineCache                 m_PipelineCache;
-
+    
 	std::vector<VkFence> 			m_Fences;
 	VkSemaphore 					m_PresentComplete;
 	VkSemaphore 					m_RenderComplete;
 
 	VkCommandPool					m_CommandPool;
 	std::vector<VkCommandBuffer>	m_CommandBuffers;
-
+    
 	VkPipelineStageFlags			m_WaitStageMask;
-
+    
 	VulkanSwapChainRef				m_SwapChain;
 };

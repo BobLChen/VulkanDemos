@@ -3,12 +3,12 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKUtils.h
 	Monkey/Demo/DemoBase.h
 	Monkey/Demo/DVKBuffer.h
-	Monkey/Demo/DVkCommand.h
+	Monkey/Demo/DVKCommand.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
 	Monkey/Demo/DVKBuffer.cpp
-	Monkey/Demo/DVkCommand.cpp
+	Monkey/Demo/DVKCommand.cpp
 )
 
 set(Monkey_Configuration_HDRS
@@ -25,6 +25,13 @@ set(Monkey_Common_HDRS
 )
 set(Monkey_Common_SRCS
 	
+)
+
+set(Monkey_UI_HDRS
+	Monkey/UI/ImageGUIContext.h
+)
+set(Monkey_UI_SRCS
+	Monkey/UI/ImageGUIContext.cpp
 )
 
 set(Monkey_App_HDRS
@@ -246,6 +253,13 @@ if (WIN32)
 	set(Monkey_HAL_Windows_SRCS
 
 	)
+
+	set(Monkey_GenericPlatform_Windows_HDRS
+		Monkey/GenericPlatform/Windows/WindowsPlatformTime.h
+	)
+	set(Monkey_GenericPlatform_Windows_SRCS
+		Monkey/GenericPlatform/Windows/WindowsPlatformTime.cpp
+	)
 elseif (IOS)
 	set(Monkey_Application_IOS_HDRS
 		Monkey/Application/IOS/IOSWindow.h
@@ -290,6 +304,13 @@ elseif (IOS)
 	)
 	set(Monkey_HAL_IOS_SRCS
 
+	)
+
+	set(Monkey_GenericPlatform_IOS_HDRS
+		Monkey/GenericPlatform/IOS/IOSPlatformTime.h
+	)
+	set(Monkey_GenericPlatform_IOS_SRCS
+		Monkey/GenericPlatform/IOS/IOSPlatformTime.cpp
 	)
 elseif (APPLE)
 	set(Monkey_Application_Mac_HDRS
@@ -338,6 +359,13 @@ elseif (APPLE)
 	set(Monkey_HAL_Mac_SRCS
 
 	)
+
+	set(Monkey_GenericPlatform_Mac_HDRS
+		Monkey/GenericPlatform/Mac/MacPlatformTime.h
+	)
+	set(Monkey_GenericPlatform_Mac_SRCS
+		Monkey/GenericPlatform/Mac/MacPlatformTime.cpp
+	)
 elseif (ANDROID)
 	set(Monkey_Application_Android_HDRS
 		Monkey/Application/Android/AndroidWindow.h
@@ -368,6 +396,13 @@ elseif (ANDROID)
 	)
 	set(Monkey_HAL_Android_SRCS
 
+	)
+
+	set(Monkey_GenericPlatform_Android_HDRS
+		Monkey/GenericPlatform/Android/AndroidPlatformTime.h
+	)
+	set(Monkey_GenericPlatform_Android_SRCS
+		Monkey/GenericPlatform/Android/AndroidPlatformTime.cpp
 	)
 elseif (UNIX)
 	set(Monkey_Application_Linux_HDRS
@@ -403,6 +438,13 @@ elseif (UNIX)
 	)
 	set(Monkey_HAL_Linux_SRCS
 
+	)
+
+	set(Monkey_GenericPlatform_Linux_HDRS
+		Monkey/GenericPlatform/Linux/LinuxPlatformTime.h
+	)
+	set(Monkey_GenericPlatform_Linux_SRCS
+		Monkey/GenericPlatform/Linux/LinuxPlatformTime.cpp
 	)
 endif ()
 
@@ -488,9 +530,22 @@ add_library(Monkey STATIC
 
 	${Monkey_GenericPlatform_SRCS}
 	${Monkey_GenericPlatform_HDRS}
+	${Monkey_GenericPlatform_Windows_HDRS}
+	${Monkey_GenericPlatform_Windows_SRCS}
+	${Monkey_GenericPlatform_Mac_HDRS}
+	${Monkey_GenericPlatform_Mac_SRCS}
+	${Monkey_GenericPlatform_Linux_HDRS}
+	${Monkey_GenericPlatform_Linux_SRCS}
+	${Monkey_GenericPlatform_IOS_HDRS}
+	${Monkey_GenericPlatform_IOS_SRCS}
+	${Monkey_GenericPlatform_Android_HDRS}
+	${Monkey_GenericPlatform_Android_SRCS}
 
 	${Monkey_Loader_HDRS}
 	${Monkey_Loader_SRCS}
+
+	${Monkey_UI_HDRS}
+	${Monkey_UI_SRCS}
 
 	${Monkey_Graphics_Data_HDRS}
 	${Monkey_Graphics_Data_SRCS}
@@ -551,8 +606,14 @@ source_group(Monkey\\HAL\\Linux FILES ${Monkey_HAL_Linux_SRCS} ${Monkey_HAL_Linu
 source_group(Monkey\\HAL\\Android FILES ${Monkey_HAL_Android_SRCS} ${Monkey_HAL_Android_HDRS})
 
 source_group(Monkey\\GenericPlatform FILES ${Monkey_GenericPlatform_HDRS} ${Monkey_GenericPlatform_SRCS})
+source_group(Monkey\\GenericPlatform\\Windows FILES ${Monkey_GenericPlatform_Windows_HDRS} ${Monkey_GenericPlatform_Windows_SRCS})
+source_group(Monkey\\GenericPlatform\\Mac FILES ${Monkey_GenericPlatform_Mac_HDRS} ${Monkey_GenericPlatform_Mac_SRCS})
+source_group(Monkey\\GenericPlatform\\Linux FILES ${Monkey_GenericPlatform_Linux_HDRS} ${Monkey_GenericPlatform_Linux_SRCS})
+source_group(Monkey\\GenericPlatform\\IOS FILES ${Monkey_GenericPlatform_IOS_HDRS} ${Monkey_GenericPlatform_IOS_SRCS})
+source_group(Monkey\\GenericPlatform\\Android FILES ${Monkey_GenericPlatform_Android_HDRS} ${Monkey_GenericPlatform_Android_SRCS})
 
 source_group(Monkey\\Loader FILES ${Monkey_Loader_HDRS} ${Monkey_Loader_SRCS})
+source_group(Monkey\\UI FILES ${Monkey_UI_HDRS} ${Monkey_UI_SRCS})
 
 source_group(Monkey\\Graphics\\Data FILES ${Monkey_Graphics_Data_HDRS} ${Monkey_Graphics_Data_SRCS})
 source_group(Monkey\\Graphics\\Shader FILES ${Monkey_Graphics_Shader_HDRS} ${Monkey_Graphics_Shader_SRCS})

@@ -2,15 +2,14 @@
 
 #include "Common/Common.h"
 
-#include <sys/time.h>
-#include <cstddef>
-
-struct GenericPlatformTime
-{
-    static FORCEINLINE double Seconds()
-	{
-		struct timeval tv;
-		gettimeofday(&tv, NULL);
-		return ((double) tv.tv_sec) + (((double) tv.tv_usec) / 1000000.0);
-	}
-};
+#if PLATFORM_WINDOWS
+	#include "GenericPlatform/Windows/WindowsPlatformTime.h"
+#elif PLATFORM_MAC
+	#include "GenericPlatform/Mac/MacPlatformTime.h"
+#elif PLATFORM_IOS
+	#include "GenericPlatform/IOS/IOSPlatformTime.h"
+#elif PLATFORM_LINUX
+	#include "GenericPlatform/Linux/LinuxPlatformTime.h"
+#elif PLATFORM_ANDROID
+	#include "GenericPlatform/Android/AndroidPlatformTime.h"
+#endif
