@@ -24,8 +24,6 @@ public:
 		, m_PresentQueue(VK_NULL_HANDLE)
 		, m_FrameWidth(0)
 		, m_FrameHeight(0)
-		, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
-		, m_PixelFormat(PF_R8G8B8A8)
 		, m_PipelineCache(VK_NULL_HANDLE)
 		, m_PresentComplete(VK_NULL_HANDLE)
 		, m_RenderComplete(VK_NULL_HANDLE)
@@ -107,7 +105,7 @@ private:
 protected:
 
 	typedef std::shared_ptr<VulkanSwapChain> VulkanSwapChainRef;
-
+    
 	VkDevice						m_Device;
 	std::shared_ptr<VulkanDevice>	m_VulkanDevice;
 	VkQueue							m_GfxQueue;
@@ -115,13 +113,9 @@ protected:
 
 	int32							m_FrameWidth;
 	int32							m_FrameHeight;
-
-	VkSampleCountFlagBits			m_SampleCount;
-
-	PixelFormat						m_PixelFormat;
     
 	VkPipelineCache                 m_PipelineCache;
-
+    
 	std::vector<VkFence> 			m_Fences;
 	VkSemaphore 					m_PresentComplete;
 	VkSemaphore 					m_RenderComplete;

@@ -11,14 +11,9 @@ void DemoBase::Setup()
 	m_VulkanDevice	= vulkanDevice;
 	m_GfxQueue		= vulkanDevice->GetGraphicsQueue()->GetHandle();
 	m_PresentQueue	= vulkanDevice->GetPresentQueue()->GetHandle();
-
+    
 	m_FrameWidth	= vulkanRHI->GetSwapChain()->GetWidth();
 	m_FrameHeight	= vulkanRHI->GetSwapChain()->GetHeight();
-
-	m_PixelFormat	= vulkanRHI->GetPixelFormat();
-	m_DepthFormat   = PF_D24;
-
-	m_SampleCount   = VK_SAMPLE_COUNT_1_BIT;
 }
 
 void DemoBase::Present()
