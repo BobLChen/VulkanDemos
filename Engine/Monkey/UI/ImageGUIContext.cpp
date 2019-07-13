@@ -634,9 +634,8 @@ bool ImageGUIContext::Update()
 		m_VertexBuffer.Map();
 		updateCmdBuffers = true;
 	}
-
+    
 	// Index buffer
-	VkDeviceSize indexSize = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
 	if ((m_IndexBuffer.buffer == VK_NULL_HANDLE) || (m_IndexCount < imDrawData->TotalIdxCount)) {
 		m_IndexCount = imDrawData->TotalIdxCount;
 		m_IndexBuffer.Unmap();

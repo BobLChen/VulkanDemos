@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Engine.h"
 
@@ -26,11 +26,6 @@ public:
 		, m_FrameHeight(0)
 		, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
 		, m_PixelFormat(PF_R8G8B8A8)
-		, m_DepthFormat(PF_D24)
-		, m_DepthStencilImage(VK_NULL_HANDLE)
-		, m_DepthStencilView(VK_NULL_HANDLE)
-		, m_DepthStencilMemory(VK_NULL_HANDLE)
-		, m_RenderPass(VK_NULL_HANDLE)
 		, m_PipelineCache(VK_NULL_HANDLE)
 		, m_PresentComplete(VK_NULL_HANDLE)
 		, m_RenderComplete(VK_NULL_HANDLE)
@@ -75,24 +70,20 @@ public:
 
 	void Setup();
 
-	void Prepare()
+	void Prepare() override
 	{
+        AppModuleBase::Prepare();
 		CreateFences();
 		CreateCommandBuffers();
 		CreatePipelineCache();
-		CreateDepthStencil();
-		CreateRenderPass();
-		CreateFrameBuffers();
 	}
 
-	void Release()
+	void Release() override
 	{
+        AppModuleBase::Release();
 		DestroyFences();
 		DestroyCommandBuffers();
 		DestroyPipelineCache();
-		DestroyFrameBuffers();
-		DestoryRenderPass();
-		DestoryDepthStencil();
 	}
 
 	void Present();
@@ -112,19 +103,7 @@ private:
 	void DestroyPipelineCache();
 
 	void CreatePipelineCache();
-
-	void CreateDepthStencil();
-
-	void CreateRenderPass();
-
-	void CreateFrameBuffers();
-
-	void DestroyFrameBuffers();
-
-	void DestoryRenderPass();
-
-	void DestoryDepthStencil();
-
+    
 protected:
 
 	typedef std::shared_ptr<VulkanSwapChain> VulkanSwapChainRef;
@@ -140,16 +119,7 @@ protected:
 	VkSampleCountFlagBits			m_SampleCount;
 
 	PixelFormat						m_PixelFormat;
-    PixelFormat						m_DepthFormat;
-
-	std::vector<VkFramebuffer>		m_FrameBuffers;
     
-    VkImage							m_DepthStencilImage;
-    VkImageView						m_DepthStencilView;
-    VkDeviceMemory					m_DepthStencilMemory;
-
-	VkRenderPass					m_RenderPass;
-
 	VkPipelineCache                 m_PipelineCache;
 
 	std::vector<VkFence> 			m_Fences;
@@ -158,8 +128,8 @@ protected:
 
 	VkCommandPool					m_CommandPool;
 	std::vector<VkCommandBuffer>	m_CommandBuffers;
-
+    
 	VkPipelineStageFlags			m_WaitStageMask;
-
+    
 	VulkanSwapChainRef				m_SwapChain;
 };
