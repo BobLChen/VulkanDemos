@@ -39,6 +39,7 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
+		CreateGUI();
 		CreateMeshBuffers();
 		CreateUniformBuffers();
         CreateDescriptorPool();
@@ -46,9 +47,6 @@ public:
         CreateDescriptorSet();
 		CreatePipelines();
 		SetupCommandBuffers();
-
-		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf", m_PipelineCache, m_RenderPass);
 
 		m_Ready = true;
 
@@ -59,6 +57,7 @@ public:
 	{
 		DemoBase::Release();
 
+		DestroyGUI();
         DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
@@ -92,7 +91,46 @@ private:
 	void Draw(float time, float delta)
 	{
 		UpdateUniformBuffers(time, delta);
+		UpdateUI(time, delta);
         DemoBase::Present();
+	}
+
+	void UpdateUI(float time, float delta)
+	{
+		ImGui::NewFrame();
+
+		bool yes = true;
+		{
+			static float f = 0.0f;
+            static int counter = 0;
+
+			ImGui::SetNextWindowPos(ImVec2(0, 0));
+			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
+            ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove); 
+
+            ImGui::Text("This is some useful text.");
+            ImGui::Checkbox("Demo Window", &yes);
+            ImGui::Checkbox("Another Window", &yes);
+
+            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+            ImGui::ColorEdit3("clear color", (float*)&yes);
+
+            if (ImGui::Button("Button")) {
+				counter++;
+			}
+            
+            ImGui::SameLine();
+            ImGui::Text("counter = %d", counter);
+
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+		}
+
+		ImGui::Render();
+
+		if (m_GUI->Update()) {
+			SetupCommandBuffers();
+		}
 	}
 
 	void SetupCommandBuffers()
@@ -146,6 +184,8 @@ private:
 			vkCmdBindIndexBuffer(m_CommandBuffers[i], m_IndexBuffer->buffer, 0, VK_INDEX_TYPE_UINT16);
 			vkCmdDrawIndexed(m_CommandBuffers[i], m_IndicesCount, 1, 0, 0, 0);
 			
+			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
+
 			vkCmdEndRenderPass(m_CommandBuffers[i]);
             
 			VERIFYVULKANRESULT(vkEndCommandBuffer(m_CommandBuffers[i]));
@@ -376,6 +416,18 @@ private:
 	{
 		m_MVPBuffer->UnMap();
 		delete m_MVPBuffer;
+	}
+
+	void CreateGUI()
+	{
+		m_GUI = new ImageGUIContext();
+		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+	}
+
+	void DestroyGUI()
+	{
+		m_GUI->Destroy();
+		delete m_GUI;
 	}
 
 	void CreateMeshBuffers()

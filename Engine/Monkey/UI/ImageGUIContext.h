@@ -86,15 +86,15 @@ protected:
     
 public:
 
-    void Init(const std::string& font, VkPipelineCache pipelineCache, VkRenderPass renderPass);
+    void Init(const std::string& font);
     
     void Destroy();
     
     void Resize(uint32 width, uint32 height);
     
     bool Update();
-    
-    void Draw(const VkCommandBuffer commandBuffer);
+
+    void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass);
     
     bool Header(const char* caption);
     
@@ -114,13 +114,18 @@ public:
     
     void Text(const char* formatstr, ...);
     
+	inline float GetScale() const
+	{
+		return m_Scale;
+	}
+
 protected:
 
-	void CreateImageFont();
+	void PrepareFontResources();
 
-	void CreateLayout();
+	void PreparePipelineResources();
 
-	void CreatePipeline(VkPipelineCache pipelineCache, VkRenderPass renderPass);;
+	void PreparePipeline(VkRenderPass renderPass);;
 
 	void CreateBuffer(UIBuffer& buffer, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size);
 
@@ -141,8 +146,12 @@ protected:
     VkDescriptorSetLayout   m_DescriptorSetLayout;
     VkDescriptorSet         m_DescriptorSet;
     VkPipelineLayout        m_PipelineLayout;
+
+	VkPipelineCache			m_PipelineCache;
     VkPipeline              m_Pipeline;
-    
+
+	VkRenderPass			m_LastRenderPass;
+
     VkDeviceMemory          m_FontMemory;
     VkImage                 m_FontImage;
     VkImageView             m_FontView;
