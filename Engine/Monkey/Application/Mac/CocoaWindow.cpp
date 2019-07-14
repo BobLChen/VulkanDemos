@@ -118,13 +118,13 @@ void EngineExit()
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)Sender;
 {
     printf("applicationShouldTerminate\n");
-    CVDisplayLinkRelease(m_DisplayLink);
-    EngineExit();
     return NSTerminateNow;
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     printf("applicationWillTerminate\n");
+    CVDisplayLinkRelease(m_DisplayLink);
+    EngineExit();
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
@@ -170,6 +170,11 @@ static CVReturn DisplayLinkCallback(
                                     void* target
                                     ) {
     EngineLoop();
+    
+    if (g_GameEngine->IsRequestingExit()) {
+        [NSApp terminate: nil];
+    }
+    
     return kCVReturnSuccess;
 }
 
