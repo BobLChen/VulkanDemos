@@ -46,9 +46,7 @@ int32 EngineInit()
 	if (errorLevel) {
 		return errorLevel;
 	}
-
-	g_AppModule->Setup(g_GameEngine);
-	
+    
 	if (!g_AppModule->Init()) {
 		return FailedInitAppModule;
 	}
@@ -66,6 +64,8 @@ void EngineLoop()
 	
 	g_LastTime = nowT;
 	g_CurrTime = g_CurrTime + delta;
+    
+    InputManager::Reset();
 }
 
 void EngineExit()

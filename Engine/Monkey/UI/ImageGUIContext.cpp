@@ -114,10 +114,10 @@ void ImageGUIContext::Init(const std::string& font)
 	ImGui::CreateContext();
 	ImGui::StyleColorsLight();
 
-	int32 windowWidth  = Engine::Get()->GetPlatformWindow()->GetWidth();
-	int32 windowHeight = Engine::Get()->GetPlatformWindow()->GetHeight();
-	int32 frameWidth   = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetWidth();
-	int32 frameHeight  = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetHeight();
+	float windowWidth  = Engine::Get()->GetPlatformWindow()->GetWidth();
+	float windowHeight = Engine::Get()->GetPlatformWindow()->GetHeight();
+	float frameWidth   = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetWidth();
+	float frameHeight  = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetHeight();
 
 	m_Scale        = frameWidth / windowWidth;
 	m_FontPath     = font;
@@ -125,7 +125,7 @@ void ImageGUIContext::Init(const std::string& font)
 	
 	ImGuiIO& io = ImGui::GetIO();
 	io.DisplaySize = ImVec2((float)(windowWidth), (float)(windowHeight));
-	io.DisplayFramebufferScale = ImVec2((float)(frameWidth / windowWidth), (float)(frameHeight / windowHeight));
+	io.DisplayFramebufferScale = ImVec2(frameWidth / windowWidth, frameHeight / windowHeight);
 	
 	PrepareFontResources();
 	PreparePipelineResources();
@@ -615,7 +615,14 @@ bool ImageGUIContext::Update()
 	if (!imDrawData) { 
 		return false;
 	};
-
+    
+    const Vector2& mousePos = InputManager::GetMousePosition();
+    ImGuiIO& io = ImGui::GetIO();
+    io.MousePos = ImVec2(mousePos.x * io.DisplayFramebufferScale.x, mousePos.y * io.DisplayFramebufferScale.y);
+    io.MouseDown[0] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_LEFT);
+    io.MouseDown[1] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_RIGHT);
+    io.MouseDown[2] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_MIDDLE);
+    
 	// Note: Alignment is done inside buffer creation
 	VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
 	VkDeviceSize indexBufferSize  = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);

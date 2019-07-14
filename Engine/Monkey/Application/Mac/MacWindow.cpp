@@ -1,5 +1,6 @@
 #include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
+#include "Application/GenericApplicationMessageHandler.h"
 
 #include "CocoaWindow.h"
 #include "MacWindow.h"
@@ -22,6 +23,7 @@ MacWindow::MacWindow(int32 width, int32 height, const char* title)
     , m_Window(nullptr)
     , m_View(nullptr)
 	, m_Application(nullptr)
+    , m_MessageHandler(nullptr)
 	, m_Visible(false)
 	, m_AspectRatio(width * 1.0f / height)
 	, m_DPIScaleFactor(1.0f)
@@ -84,26 +86,37 @@ void MacWindow::Initialize(MacApplication* const application)
 {
     m_Application = application;
     
-    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable ;
+    NSUInteger windowStyle =
+        NSWindowStyleMaskTitled |
+        NSWindowStyleMaskClosable |
+        NSWindowStyleMaskResizable |
+        NSWindowStyleMaskMiniaturizable;
+    
     NSRect windowRect = NSMakeRect(0, 0, m_Width, m_Height);
     
     VulkanView* view = [[VulkanView alloc] initWithFrame:windowRect];
     [view setWantsLayer:YES];
-    [view setWantsBestResolutionOpenGLSurface:YES];
     
     VulkanWindow* window = [[VulkanWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
+    
     [window setContentView:view];
-    [window center];
     [window makeFirstResponder:view];
     [window setTitle:[NSString stringWithUTF8String:m_Title.c_str()]];
     [window setAcceptsMouseMovedEvents:YES];
     [window setRestorable:NO];
-    
-    const NSWindowCollectionBehavior behavior = NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorManaged;
-    [window setCollectionBehavior:behavior];
+    [window makeKeyAndOrderFront:nil];
+    [window center];
+    [window orderFrontRegardless];
     
     m_View   = view;
     m_Window = window;
+}
+
+void MacWindow::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
+{
+    m_MessageHandler = messageHandler;
+    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
+    [window SetMessageHandler: messageHandler];
 }
 
 void MacWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)
@@ -133,7 +146,7 @@ void MacWindow::BringToFront(bool force)
 
 void MacWindow::Destroy()
 {
-	
+    
 }
 
 void MacWindow::Minimize()
@@ -159,7 +172,7 @@ void MacWindow::Show()
 	m_Visible = true;
     
     VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
-    (void)window.orderFrontRegardless;
+    [window orderFrontRegardless];
 }
 
 void MacWindow::Hide()

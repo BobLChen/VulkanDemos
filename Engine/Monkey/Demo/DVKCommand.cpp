@@ -1,4 +1,4 @@
-﻿#include "DVKCommand.h"
+#include "DVKCommand.h"
 
 #include "Vulkan/VulkanCommon.h"
 
