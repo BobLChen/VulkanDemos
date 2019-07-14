@@ -49,8 +49,6 @@ int32 EngineInit()
         return errorLevel;
     }
     
-    g_AppModule->Setup(g_GameEngine);
-    
     if (!g_AppModule->Init()) {
         return FailedInitAppModule;
     }

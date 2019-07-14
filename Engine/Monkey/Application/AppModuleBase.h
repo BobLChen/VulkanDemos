@@ -20,7 +20,6 @@ public:
 		: m_Width(width)
 		, m_Height(height)
 		, m_Title(title)
-		, m_Engine(nullptr)
 		, m_DepthStencilImage(VK_NULL_HANDLE)
 		, m_DepthStencilView(VK_NULL_HANDLE)
 		, m_DepthStencilMemory(VK_NULL_HANDLE)
@@ -35,15 +34,10 @@ public:
 	{
 
 	}
-
-	inline std::shared_ptr<Engine> GetEngine() const
-	{
-		return m_Engine;
-	}
-
+    
 	inline std::shared_ptr<VulkanRHI> GetVulkanRHI() const
 	{
-		return m_Engine->GetVulkanRHI();
+		return Engine::Get()->GetVulkanRHI();
 	}
 
 	inline int32 GetWidth() const
@@ -60,12 +54,7 @@ public:
 	{
 		return m_Title;
 	}
-
-	inline void Setup(std::shared_ptr<Engine> engine)
-	{
-		m_Engine = engine;
-	}
-	
+    
 	virtual void Prepare()
 	{		
 		CreateDepthStencil();
@@ -284,7 +273,6 @@ protected:
 	int32 						m_Width;
 	int32 						m_Height;
 	std::string 				m_Title;
-	std::shared_ptr<Engine> 	m_Engine;
     
 	std::vector<VkFramebuffer>	m_FrameBuffers;
     
