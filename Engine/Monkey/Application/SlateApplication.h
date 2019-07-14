@@ -34,67 +34,51 @@ public:
 	void SetCursorPos(const Vector2& mouseCoordinate);
 
 public:
+    
+	virtual bool OnKeyDown(const KeyboardType key) override;
 
-	virtual bool ShouldProcessUserInputMessages(const std::shared_ptr<GenericWindow> window) const override;
+	virtual bool OnKeyUp(const KeyboardType key) override;
+    
+	virtual bool OnMouseDown(const MouseType type, const Vector2& pos) override;
+    
+	virtual bool OnMouseUp(const MouseType type, const Vector2& pos) override;
+    
+	virtual bool OnMouseDoubleClick(const MouseType type, const Vector2& pos) override;
+    
+	virtual bool OnMouseWheel(const float delta, const Vector2& pos) override;
+    
+    virtual bool OnMouseMove(const Vector2& pos) override;
+    
+	virtual bool OnTouchStarted(const std::vector<Vector2>& locations) override;
 
-	virtual bool OnKeyChar(const char character, const bool isRepeat) override;
+	virtual bool OnTouchMoved(const std::vector<Vector2>& locations) override;
 
-	virtual bool OnKeyDown(const int32 keyCode, const uint32 characterCode, const bool isRepeat) override;
+	virtual bool OnTouchEnded(const std::vector<Vector2>& locations) override;
 
-	virtual bool OnKeyUp(const int32 keyCode, const uint32 characterCode, const bool isRepeat) override;
+	virtual bool OnTouchForceChanged(const std::vector<Vector2>& locations) override;
 
-	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow> window, const MouseButtons::Type button) override;
+	virtual bool OnTouchFirstMove(const std::vector<Vector2>& locations) override;
+    
+	virtual bool OnSizeChanged(const int32 width, const int32 height) override;
+    
+	virtual void OnOSPaint() override;
+    
+	virtual WindowSizeLimits GetSizeLimitsForWindow() const override;
+    
+	virtual void OnResizingWindow() override;
+    
+	virtual bool BeginReshapingWindow() override;
 
-	virtual bool OnMouseDown(const std::shared_ptr<GenericWindow> window, const MouseButtons::Type button, const Vector2 cursorPos) override;
+	virtual void FinishedReshapingWindow() override;
 
-	virtual bool OnMouseUp(const MouseButtons::Type button) override;
+	virtual void SignalSystemDPIChanged() override;
+    
+	virtual void HandleDPIScaleChanged() override;
 
-	virtual bool OnMouseUp(const MouseButtons::Type button, const Vector2 cursorPos) override;
+	virtual void OnMovedWindow(const int32 x, const int32 y) override;
 
-	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow> window, const MouseButtons::Type button) override;
-
-	virtual bool OnMouseDoubleClick(const std::shared_ptr<GenericWindow> window, const MouseButtons::Type button, const Vector2 cursorPos) override;
-
-	virtual bool OnMouseWheel(const float delta) override;
-
-	virtual bool OnMouseWheel(const float delta, const Vector2 cursorPos) override;
-
-	virtual bool OnMouseMove() override;
-
-	virtual bool OnRawMouseMove(const int32 x, const int32 y) override;
-
-	virtual bool OnCursorSet() override;
-
-	virtual bool OnTouchStarted(const std::shared_ptr<GenericWindow> window, const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
-
-	virtual bool OnTouchMoved(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
-
-	virtual bool OnTouchEnded(const Vector2& location, int32 touchIndex, int32 controllerId) override;
-
-	virtual bool OnTouchForceChanged(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
-
-	virtual bool OnTouchFirstMove(const Vector2& location, float force, int32 touchIndex, int32 controllerId) override;
-
-	virtual bool OnSizeChanged(const std::shared_ptr<GenericWindow> window, const int32 width, const int32 height, bool wasMinimized = false) override;
-
-	virtual void OnOSPaint(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual WindowSizeLimits GetSizeLimitsForWindow(const std::shared_ptr<GenericWindow> window) const override;
-
-	virtual void OnResizingWindow(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual bool BeginReshapingWindow(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual void FinishedReshapingWindow(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual void SignalSystemDPIChanged(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual void HandleDPIScaleChanged(const std::shared_ptr<GenericWindow> window) override;
-
-	virtual void OnMovedWindow(const std::shared_ptr<GenericWindow> window, const int32 x, const int32 y) override;
-
-	virtual void OnWindowClose(const std::shared_ptr<GenericWindow> window) override;
-
+	virtual void OnWindowClose() override;
+    
 	virtual void OnRequestingExit() override;
 
 protected:

@@ -217,9 +217,12 @@ set(Monkey_HAL_SRCS
 
 set(Monkey_GenericPlatform_HDRS
 	Monkey/GenericPlatform/GenericPlatformTime.h
+	Monkey/GenericPlatform/InputManager.h
+	Monkey/GenericPlatform/KeyboardTypes.h
+	Monkey/GenericPlatform/MouseTypes.h
 )
 set(Monkey_GenericPlatform_SRCS
-	
+	Monkey/GenericPlatform/InputManager.cpp
 )
 
 if (WIN32)
@@ -259,6 +262,7 @@ if (WIN32)
 	)
 	set(Monkey_GenericPlatform_Windows_SRCS
 		Monkey/GenericPlatform/Windows/WindowsPlatformTime.cpp
+		Monkey/GenericPlatform/Windows/InputManagerWindows.cpp
 	)
 elseif (IOS)
 	set(Monkey_Application_IOS_HDRS
@@ -311,6 +315,7 @@ elseif (IOS)
 	)
 	set(Monkey_GenericPlatform_IOS_SRCS
 		Monkey/GenericPlatform/IOS/IOSPlatformTime.cpp
+		Monkey/GenericPlatform/IOS/InputManagerIOS.cpp
 	)
 elseif (APPLE)
 	set(Monkey_Application_Mac_HDRS
@@ -365,6 +370,7 @@ elseif (APPLE)
 	)
 	set(Monkey_GenericPlatform_Mac_SRCS
 		Monkey/GenericPlatform/Mac/MacPlatformTime.cpp
+		Monkey/GenericPlatform/Mac/InputManagerMac.cpp
 	)
 elseif (ANDROID)
 	set(Monkey_Application_Android_HDRS
@@ -403,6 +409,7 @@ elseif (ANDROID)
 	)
 	set(Monkey_GenericPlatform_Android_SRCS
 		Monkey/GenericPlatform/Android/AndroidPlatformTime.cpp
+		Monkey/GenericPlatform/Android/InputManagerAndroid.cpp
 	)
 elseif (UNIX)
 	set(Monkey_Application_Linux_HDRS
@@ -445,6 +452,7 @@ elseif (UNIX)
 	)
 	set(Monkey_GenericPlatform_Linux_SRCS
 		Monkey/GenericPlatform/Linux/LinuxPlatformTime.cpp
+		Monkey/GenericPlatform/Linux/InputManagerLinux.cpp
 	)
 endif ()
 

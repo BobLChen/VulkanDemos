@@ -1,5 +1,6 @@
 #include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
+#include "Application/GenericApplicationMessageHandler.h"
 
 #include "CocoaWindow.h"
 #include "MacWindow.h"
@@ -22,6 +23,7 @@ MacWindow::MacWindow(int32 width, int32 height, const char* title)
     , m_Window(nullptr)
     , m_View(nullptr)
 	, m_Application(nullptr)
+    , m_MessageHandler(nullptr)
 	, m_Visible(false)
 	, m_AspectRatio(width * 1.0f / height)
 	, m_DPIScaleFactor(1.0f)
@@ -110,6 +112,13 @@ void MacWindow::Initialize(MacApplication* const application)
     m_Window = window;
 }
 
+void MacWindow::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
+{
+    m_MessageHandler = messageHandler;
+    VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
+    [window SetMessageHandler: messageHandler];
+}
+
 void MacWindow::ReshapeWindow(int32 newX, int32 newY, int32 newWidth, int32 newHeight)
 {
 	m_X = newX;
@@ -137,7 +146,7 @@ void MacWindow::BringToFront(bool force)
 
 void MacWindow::Destroy()
 {
-	
+    
 }
 
 void MacWindow::Minimize()
@@ -163,7 +172,7 @@ void MacWindow::Show()
 	m_Visible = true;
     
     VulkanWindow* window = static_cast<VulkanWindow*>(m_Window);
-    (void)window.orderFrontRegardless;
+    [window orderFrontRegardless];
 }
 
 void MacWindow::Hide()

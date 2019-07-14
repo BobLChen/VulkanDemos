@@ -99,6 +99,133 @@ void EngineExit()
 
 // ------------------------------ VulkanWindow ------------------------------
 @implementation VulkanWindow
+{
+    GenericApplicationMessageHandler* m_MessageHandler;
+}
+
+-(void)windowDidResize:(NSNotification *)notification
+{
+    const NSRect rect = [self frame];
+    m_MessageHandler->OnSizeChanged(rect.size.width, rect.size.height);
+}
+
+-(void)SetMessageHandler:(GenericApplicationMessageHandler*)messageHandler
+{
+    m_MessageHandler = messageHandler;
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(windowDidResize:) name:NSWindowDidResizeNotification object:nil];
+}
+
+- (void)keyDown:(NSEvent *)event
+{
+    KeyboardType key = InputManager::GetKeyFromKeyCode(event.keyCode);
+    m_MessageHandler->OnKeyDown(key);
+}
+
+- (void)keyUp:(NSEvent *)event
+{
+    KeyboardType key = InputManager::GetKeyFromKeyCode(event.keyCode);
+    m_MessageHandler->OnKeyDown(key);
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    m_MessageHandler->OnMouseDown(MouseType::MOUSE_BUTTON_LEFT, mousePos);
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    m_MessageHandler->OnMouseUp(MouseType::MOUSE_BUTTON_LEFT, mousePos);
+}
+
+- (void)mouseMoved:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    m_MessageHandler->OnMouseMove(mousePos);
+}
+
+- (void)rightMouseDown:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    m_MessageHandler->OnMouseDown(MouseType::MOUSE_BUTTON_RIGHT, mousePos);
+}
+
+- (void)rightMouseUp:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    m_MessageHandler->OnMouseUp(MouseType::MOUSE_BUTTON_RIGHT, mousePos);
+}
+
+- (void)otherMouseDown:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    MouseType mouseType = (MouseType)[event buttonNumber];
+    m_MessageHandler->OnMouseDown(mouseType, mousePos);
+}
+
+- (void)otherMouseUp:(NSEvent *)event
+{
+    const NSRect contentRect     = [self frame];
+    const NSPoint mouseWindowPos = [event locationInWindow];
+    const CGFloat contentHeight  = [self contentRectForFrameRect: self.frame].size.height;
+    const CGFloat titlebarHeight = contentRect.size.height - contentHeight;;
+    
+    Vector2 mousePos;
+    mousePos.x = mouseWindowPos.x;
+    mousePos.y = contentRect.size.height - mouseWindowPos.y - titlebarHeight;
+    
+    MouseType mouseType = (MouseType)[event buttonNumber];
+    m_MessageHandler->OnMouseUp(mouseType, mousePos);
+}
 
 @end
 

@@ -55,6 +55,7 @@ void MacApplication::InitializeWindow(const std::shared_ptr<GenericWindow> windo
 	if (showImmediately) {
 		m_Window->Show();
 	}
+    m_Window->SetMessageHandler(m_MessageHandler);
 }
 
 void MacApplication::Destroy()

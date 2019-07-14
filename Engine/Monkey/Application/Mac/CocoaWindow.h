@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 #include "Application/GenericWindow.h"
+#include "Application/GenericApplicationMessageHandler.h"
 
 #include <Cocoa/Cocoa.h>
 
@@ -13,6 +14,8 @@
 
 // ------------------------------ VulkanWindow ------------------------------
 @interface VulkanWindow : NSWindow <NSWindowDelegate, NSDraggingDestination>
+
+-(void)SetMessageHandler:(GenericApplicationMessageHandler*)messageHandler;
 
 @end
 

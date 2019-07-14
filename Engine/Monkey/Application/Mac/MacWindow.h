@@ -6,6 +6,7 @@
 #include <string>
 
 class MacApplication;
+class GenericApplicationMessageHandler;
 
 class MacWindow : public GenericWindow
 {
@@ -74,7 +75,9 @@ public:
 	virtual void CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface) override;
 
 	virtual const char** GetRequiredInstanceExtensions(uint32_t* count) override;
-
+    
+    void SetMessageHandler(GenericApplicationMessageHandler* messageHandler);
+    
 	virtual WindowMode::Type GetWindowMode() const override
 	{
 		return m_WindowMode;
@@ -87,6 +90,9 @@ private:
 	float GetDPIScaleFactorAtPoint(float X, float Y);
 
 private:
+    
+    typedef GenericApplicationMessageHandler MacMessageHandler;
+    
 	std::string 				m_Title;
 	WindowMode::Type 			m_WindowMode;
     
@@ -94,6 +100,7 @@ private:
     void*                       m_View;
     
 	MacApplication* 			m_Application;
+    MacMessageHandler*          m_MessageHandler;
     
 	bool 						m_Visible;
 	float 						m_AspectRatio;

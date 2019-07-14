@@ -64,6 +64,8 @@ void EngineLoop()
 	
 	g_LastTime = nowT;
 	g_CurrTime = g_CurrTime + delta;
+    
+    InputManager::Reset();
 }
 
 void EngineExit()

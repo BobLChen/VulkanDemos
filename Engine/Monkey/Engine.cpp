@@ -62,6 +62,7 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
     
     ParseAssetsPath(cmdLine);
 
+    InputManager::Init();
 	GenericPlatformTime::InitTiming();
     
 	return 0;
