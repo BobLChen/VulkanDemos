@@ -102,6 +102,7 @@ private:
 		bool yes = true;
 		{
 			static float f = 0.0f;
+            static Vector3 color(0, 0, 0);
             static int counter = 0;
 
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -113,7 +114,7 @@ private:
             ImGui::Checkbox("Another Window", &yes);
 
             ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&yes);
+            ImGui::ColorEdit3("clear color", (float*)&color);
 
             if (ImGui::Button("Button")) {
 				counter++;
