@@ -89,9 +89,12 @@ private:
 private:
 	std::string 				m_Title;
 	WindowMode::Type 			m_WindowMode;
+    
     void*                       m_Window;
     void*                       m_View;
+    
 	MacApplication* 			m_Application;
+    
 	bool 						m_Visible;
 	float 						m_AspectRatio;
 	float 						m_DPIScaleFactor;

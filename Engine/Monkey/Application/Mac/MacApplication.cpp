@@ -30,18 +30,7 @@ void MacApplication::SetMessageHandler(GenericApplicationMessageHandler* message
 
 void MacApplication::PumpMessages()
 {
-    while (true)
-    {
-        NSEvent* event = [NSApp nextEventMatchingMask:NSEventMaskAny
-                                            untilDate:[NSDate distantPast]
-                                               inMode:NSDefaultRunLoopMode
-                                              dequeue:YES];
-        if (event == nil) {
-            break;
-        }
-        
-        [NSApp sendEvent:event];
-    }
+    
 }
 
 void MacApplication::Tick(float time, float delta)

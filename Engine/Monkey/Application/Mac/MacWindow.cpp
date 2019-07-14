@@ -84,23 +84,27 @@ void MacWindow::Initialize(MacApplication* const application)
 {
     m_Application = application;
     
-    NSUInteger windowStyle = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable ;
+    NSUInteger windowStyle =
+        NSWindowStyleMaskTitled |
+        NSWindowStyleMaskClosable |
+        NSWindowStyleMaskResizable |
+        NSWindowStyleMaskMiniaturizable;
+    
     NSRect windowRect = NSMakeRect(0, 0, m_Width, m_Height);
     
     VulkanView* view = [[VulkanView alloc] initWithFrame:windowRect];
     [view setWantsLayer:YES];
-    [view setWantsBestResolutionOpenGLSurface:YES];
     
     VulkanWindow* window = [[VulkanWindow alloc] initWithContentRect:windowRect styleMask:windowStyle backing:NSBackingStoreBuffered defer:NO];
+    
     [window setContentView:view];
-    [window center];
     [window makeFirstResponder:view];
     [window setTitle:[NSString stringWithUTF8String:m_Title.c_str()]];
     [window setAcceptsMouseMovedEvents:YES];
     [window setRestorable:NO];
-    
-    const NSWindowCollectionBehavior behavior = NSWindowCollectionBehaviorFullScreenPrimary | NSWindowCollectionBehaviorManaged;
-    [window setCollectionBehavior:behavior];
+    [window makeKeyAndOrderFront:nil];
+    [window center];
+    [window orderFrontRegardless];
     
     m_View   = view;
     m_Window = window;

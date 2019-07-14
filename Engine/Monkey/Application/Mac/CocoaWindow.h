@@ -6,18 +6,19 @@
 
 #include <Cocoa/Cocoa.h>
 
+// ------------------------------ VulkanView ------------------------------
 @interface VulkanView : NSView
 
 @end
 
+// ------------------------------ VulkanWindow ------------------------------
 @interface VulkanWindow : NSWindow <NSWindowDelegate, NSDraggingDestination>
-{
-    
-}
 
 @end
 
-extern NSString* NSDraggingExited;
-extern NSString* NSDraggingUpdated;
-extern NSString* NSPrepareForDragOperation;
-extern NSString* NSPerformDragOperation;
+// ------------------------------ AppDelegate ------------------------------
+@interface AppDelegate : NSObject <NSApplicationDelegate>
+
+- (void)setCMDLines:(const std::vector<std::string>&)cmdLines;
+
+@end
