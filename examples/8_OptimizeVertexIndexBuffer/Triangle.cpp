@@ -76,61 +76,41 @@ public:
 	}
 
 private:
-
+    
 	struct UBOData
 	{
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
-
+    
 	void Draw(float time, float delta)
 	{
+        UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		UpdateUI(time, delta);
         DemoBase::Present();
 	}
-
+    
 	void UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
-
-		bool yes = true;
+        
 		{
-			static float f = 0.0f;
-            static Vector3 color(0, 0, 0);
-            static int counter = 0;
-
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove); 
-
-            ImGui::Text("This is some useful text.");
-            ImGui::Checkbox("Demo Window", &yes);
-            ImGui::Checkbox("Another Window", &yes);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&color);
-
-            if (ImGui::Button("Button")) {
-				counter++;
-			}
-            
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
+            ImGui::Begin("Vertex Index!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+            ImGui::Text("VertexBuffer And IndexBuffer.");
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
-
-		
+        
 		m_GUI->EndFrame();
-
+        
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
 	}
-
+    
 	void SetupCommandBuffers()
 	{
 		VkCommandBufferBeginInfo cmdBeginInfo;
@@ -167,8 +147,6 @@ private:
             scissor.extent.height = m_FrameHeight;
 			scissor.offset.x      = 0;
 			scissor.offset.y      = 0;
-            
-			VkDeviceSize offsets[1] = { 0 };
             
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBeginInfo));
             
@@ -417,7 +395,6 @@ private:
 		};
         
 		std::vector<uint16> indices = { 0, 1, 2 };
-		m_IndicesCount = (uint32)indices.size();
         
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::CreateCommandBuffer(m_VulkanDevice, m_CommandPool);
 		
@@ -449,8 +426,6 @@ private:
     
     VkPipeline 						m_Pipeline = VK_NULL_HANDLE;
 	
-	uint32 							m_IndicesCount = 0;
-
 	ImageGUIContext*				m_GUI = nullptr;
 };
 
