@@ -67,23 +67,17 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		return 0;
 	}
 	case WM_KEYDOWN:
+	{
+		const int32 keycode = HIWORD(lParam) & 0x1FF;
+		KeyboardType key = InputManager::GetKeyFromKeyCode(keycode);
+		m_MessageHandler->OnKeyDown(key);
+		return 0;
+	}
     case WM_KEYUP:
 	{
-		const int32 keycode  = HIWORD(lParam) & 0x1FF;
-        const int32 scancode = (lParam >> 16) & 0x1ff;
-        const int32 action   = ((lParam >> 31) & 1) ? 0 : 1;
-        const int32 mods     = GetKeyMods();
-
+		const int32 keycode = HIWORD(lParam) & 0x1FF;
 		KeyboardType key = InputManager::GetKeyFromKeyCode(keycode);
-		// key up
-		if (action == 0) {
-			 m_MessageHandler->OnKeyDown(key);
-		}
-		// key down
-		else if (action == 1) {
-			m_MessageHandler->OnKeyUp(key);
-		}
-
+		m_MessageHandler->OnKeyUp(key);
 		return 0;
 	}
 	case WM_LBUTTONDOWN:
@@ -155,7 +149,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
 		Vector2 pos(x, y);
-		m_MessageHandler->OnMouseWheel((SHORT)HIWORD(wParam) / (double)WHEEL_DELTA, pos);
+		m_MessageHandler->OnMouseWheel((float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA, pos);
         return 0;
     }
 	case WM_MOUSEHWHEEL:
@@ -163,7 +157,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
 		Vector2 pos(x, y);
-		m_MessageHandler->OnMouseWheel(-((SHORT)HIWORD(wParam) / (double)WHEEL_DELTA), pos);
+		m_MessageHandler->OnMouseWheel((float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA, pos);
         return 0;
     }
 	case WM_SIZE:
@@ -200,9 +194,6 @@ void WinApplication::PumpMessages()
 	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-	}
-	if (msg.message == WM_QUIT) {
-		Engine::Get()->RequestExit(true);
 	}
 }
 

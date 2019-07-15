@@ -39,8 +39,7 @@ public:
     
     FORCEINLINE static void Reset()
     {
-        s_MouseDelta     = 0;
-        s_IsMoveWheeling = false;
+        s_MouseDelta = 0;
         s_IsMouseMoveing = false;
     }
     
@@ -114,7 +113,6 @@ protected:
 private:
     
     static bool     s_IsMouseMoveing;
-    static bool     s_IsMoveWheeling;
     static float    s_MouseDelta;
     static Vector2  s_MouseLocation;
     

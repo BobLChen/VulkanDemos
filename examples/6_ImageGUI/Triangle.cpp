@@ -97,7 +97,7 @@ private:
 
 	void UpdateUI(float time, float delta)
 	{
-		ImGui::NewFrame();
+		m_GUI->StartFrame();
 
 		bool yes = true;
 		{
@@ -127,7 +127,8 @@ private:
             ImGui::End();
 		}
 
-		ImGui::Render();
+		
+		m_GUI->EndFrame();
 
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();

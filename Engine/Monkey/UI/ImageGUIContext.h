@@ -94,6 +94,10 @@ public:
     
     bool Update();
 
+	void StartFrame();
+
+	void EndFrame();
+
     void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass);
     
     bool Header(const char* caption);

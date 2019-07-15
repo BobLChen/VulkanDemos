@@ -1,8 +1,10 @@
+#include "Common/Common.h"
+#include "Common/Log.h"
+
 #include "InputManager.h"
 
 float InputManager::s_MouseDelta    = 0.0f;
 bool InputManager::s_IsMouseMoveing = false;
-bool InputManager::s_IsMoveWheeling = false;
 
 Vector2 InputManager::s_MouseLocation(0.0f, 0.0f);
 
@@ -40,7 +42,6 @@ void InputManager::OnMouseMove(const Vector2& pos)
 
 void InputManager::OnMouseWheel(const float delta, const Vector2& pos)
 {
-    s_IsMoveWheeling = true;
-    s_MouseDelta     = delta;
+    s_MouseDelta = delta;
     s_MouseLocation.Set(pos.x, pos.y);
 }
