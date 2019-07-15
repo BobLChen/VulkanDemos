@@ -10,7 +10,7 @@ layout (set = 0, binding = 0) uniform UBO
 	mat4 projectionMatrix;
 } uboMVP;
 
-layout (location = 1) out vec2 outUV0;
+layout (location = 0) out vec2 outUV0;
 
 out gl_PerVertex 
 {

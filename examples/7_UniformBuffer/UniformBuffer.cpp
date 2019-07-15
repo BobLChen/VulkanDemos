@@ -15,6 +15,8 @@
 #include <vector>
 #include <fstream>
 
+// https://zhuanlan.zhihu.com/p/56052015
+// https://blog.csdn.net/toughbro/article/details/7391935
 class UniformBufferModule : public DemoBase
 {
 public:
@@ -78,7 +80,7 @@ private:
 	struct Vertex
 	{
 		float position[3];
-		float color[3];
+		float uv[2];
 	};
 
 	struct UBOMVPData
@@ -98,43 +100,29 @@ private:
     
 	void Draw(float time, float delta)
 	{
-		UpdateUniformBuffers(time, delta);
 		UpdateUI(time, delta);
+        UpdateUniformBuffers(time, delta);
         DemoBase::Present();
 	}
 
 	void UpdateUI(float time, float delta)
 	{
 		ImGui::NewFrame();
-
-		bool yes = true;
+        
 		{
-			static float f = 0.0f;
-            static Vector3 color(0, 0, 0);
-            static int counter = 0;
-
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("Hello, world!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove); 
-
-            ImGui::Text("This is some useful text.");
-            ImGui::Checkbox("Demo Window", &yes);
-            ImGui::Checkbox("Another Window", &yes);
-
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&color);
-
-            if (ImGui::Button("Button")) {
-				counter++;
-			}
+            ImGui::Begin("SSS", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
-            ImGui::SameLine();
-            ImGui::Text("counter = %d", counter);
-
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::Text("Simulate Pre-Integrated Texture.");
+            
+            ImGui::SliderFloat("float", &(m_Params.omega),    0.0f, 5.0f);
+            ImGui::SliderFloat("float", &(m_Params.k),        0.0f, 20.0f);
+            ImGui::SliderFloat("float", &(m_Params.cutoff),   0.0f, 5.0f);
+            
             ImGui::End();
 		}
-
+        
 		ImGui::Render();
 
 		if (m_GUI->Update()) {
@@ -210,21 +198,29 @@ private:
 		allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_DescriptorSet));
         
-		VkWriteDescriptorSet writeDescriptorSet;
-		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-		writeDescriptorSet.dstSet          = m_DescriptorSet;
-		writeDescriptorSet.descriptorCount = 1;
-		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
-		writeDescriptorSet.dstBinding      = 0;
-		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets(2);
+		ZeroVulkanStruct(writeDescriptorSets[0], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		writeDescriptorSets[0].dstSet          = m_DescriptorSet;
+		writeDescriptorSets[0].descriptorCount = 1;
+		writeDescriptorSets[0].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSets[0].pBufferInfo     = &(m_MVPBuffer->descriptor);
+		writeDescriptorSets[0].dstBinding      = 0;
+        
+        ZeroVulkanStruct(writeDescriptorSets[1], VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSets[1].dstSet          = m_DescriptorSet;
+        writeDescriptorSets[1].descriptorCount = 1;
+        writeDescriptorSets[1].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSets[1].pBufferInfo     = &(m_ParamsBuffer->descriptor);
+        writeDescriptorSets[1].dstBinding      = 1;
+        
+		vkUpdateDescriptorSets(m_Device, 2, writeDescriptorSets.data(), 0, nullptr);
 	}
     
 	void CreateDescriptorPool()
 	{
 		VkDescriptorPoolSize poolSize = {};
 		poolSize.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = 1;
+		poolSize.descriptorCount = 2;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -307,19 +303,19 @@ private:
 		// vertex input bindding
 		VkVertexInputBindingDescription vertexInputBinding = {};
 		vertexInputBinding.binding   = 0; // Vertex Buffer 0
-		vertexInputBinding.stride    = sizeof(Vertex); // Position + Color
+		vertexInputBinding.stride    = sizeof(Vertex); // Position + uv
 		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs(2);
 		// position
 		vertexInputAttributs[0].binding  = 0;
-        vertexInputAttributs[0].location = 0; // triangle.vert : layout (location = 0)
+        vertexInputAttributs[0].location = 0; // diffuse.vert : layout (location = 0)
 		vertexInputAttributs[0].format   = VK_FORMAT_R32G32B32_SFLOAT;
 		vertexInputAttributs[0].offset   = 0;
-		// color
+		// uv
 		vertexInputAttributs[1].binding  = 0;
-		vertexInputAttributs[1].location = 1; // triangle.vert : layout (location = 1)
-		vertexInputAttributs[1].format   = VK_FORMAT_R32G32B32_SFLOAT;
+		vertexInputAttributs[1].location = 1; // diffuse.vert : layout (location = 1)
+		vertexInputAttributs[1].format   = VK_FORMAT_R32G32_SFLOAT;
 		vertexInputAttributs[1].offset   = 12;
 		
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
@@ -366,17 +362,23 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBinding;
-		layoutBinding.binding 			 = 0;
-		layoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layoutBinding.descriptorCount    = 1;
-		layoutBinding.stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
-		layoutBinding.pImmutableSamplers = nullptr;
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(2);
+		layoutBindings[0].binding 			 = 0;
+		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindings[0].descriptorCount    = 1;
+		layoutBindings[0].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBindings[0].pImmutableSamplers = nullptr;
+        
+        layoutBindings[1].binding            = 1;
+        layoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBindings[1].descriptorCount    = 1;
+        layoutBindings[1].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBindings[1].pImmutableSamplers = nullptr;
         
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 1;
-		descSetLayoutInfo.pBindings    = &layoutBinding;
+		descSetLayoutInfo.bindingCount = 2;
+		descSetLayoutInfo.pBindings    = layoutBindings.data();
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
@@ -394,11 +396,12 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-
-		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(UBOMVPData));
+		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
+		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(UBOMVPData));
+        
+        m_ParamsBuffer->CopyFrom(&m_Params, sizeof(UBOParams));
 	}
-
+    
 	void CreateUniformBuffers()
 	{
 		m_MVPData.model.SetIdentity();
@@ -438,6 +441,9 @@ private:
 	{
 		m_MVPBuffer->UnMap();
 		delete m_MVPBuffer;
+        
+        m_ParamsBuffer->UnMap();
+        delete m_ParamsBuffer;
 	}
 
 	void CreateGUI()
@@ -455,12 +461,13 @@ private:
 	void CreateMeshBuffers()
 	{
 		std::vector<Vertex> vertices = {
-			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-			{ {  0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } }
+			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 0.0f } },
+			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 0.0f } },
+			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 1.0f } },
+            { {  1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f } },
 		};
         
-		std::vector<uint16> indices = { 0, 1, 2 };
+		std::vector<uint16> indices = { 0, 1, 2, 0, 2, 3 };
 		m_IndicesCount = (uint32)indices.size();
         
 		// staging buffer
@@ -471,7 +478,7 @@ private:
 			vertices.size() * sizeof(Vertex), 
 			vertices.data()
 		);
-
+        
 		vk_demo::DVKBuffer* idexStaging = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
