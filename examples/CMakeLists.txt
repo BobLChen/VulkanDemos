@@ -144,6 +144,21 @@ SETUP_SAMPLE_START(6_ImageGUI)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(6_ImageGUI)
 
+SETUP_SAMPLE_START(7_UniformBuffer)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/7_UniformBuffer/UniformBuffer.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/7_UniformBuffer/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(7_UniformBuffer)
+
 # SETUP_SAMPLE_START(3_OBJLoader)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}

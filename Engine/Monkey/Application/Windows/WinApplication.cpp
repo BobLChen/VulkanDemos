@@ -7,6 +7,27 @@
 #include <map>
 #include <string>
 
+#include <Windows.h>
+#include <windowsx.h>
+
+static int GetKeyMods()
+{
+    int mods = 0;
+    if (GetKeyState(VK_SHIFT) & (1 << 31)) {
+		mods |= (int32)KeyboardType::KEY_MOD_SHIFT;
+	}
+    if (GetKeyState(VK_CONTROL) & (1 << 31)) {
+		mods |= (int32)KeyboardType::KEY_MOD_CONTROL;
+	}
+    if (GetKeyState(VK_MENU) & (1 << 31)) {
+		mods |= (int32)KeyboardType::KEY_MOD_ALT;
+	}
+    if ((GetKeyState(VK_LWIN) | GetKeyState(VK_RWIN)) & (1 << 31)) {
+		mods |= (int32)KeyboardType::KEY_MOD_SUPER;
+	}
+    return mods;
+}
+
 std::shared_ptr<WinApplication> G_CurrentPlatformApplication = nullptr;
 
 WinApplication::WinApplication()
@@ -43,21 +64,123 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 	{
 		LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
 		SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
+		return 0;
 	}
-	return 0;
-
 	case WM_KEYDOWN:
-		
-		return 0;
+    case WM_KEYUP:
+	{
+		const int32 keycode  = HIWORD(lParam) & 0x1FF;
+        const int32 scancode = (lParam >> 16) & 0x1ff;
+        const int32 action   = ((lParam >> 31) & 1) ? 0 : 1;
+        const int32 mods     = GetKeyMods();
 
-	case WM_KEYUP:
-		
-		return 0;
+		KeyboardType key = InputManager::GetKeyFromKeyCode(keycode);
+		// key up
+		if (action == 0) {
+			 m_MessageHandler->OnKeyDown(key);
+		}
+		// key down
+		else if (action == 1) {
+			m_MessageHandler->OnKeyUp(key);
+		}
 
+		return 0;
+	}
+	case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_XBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
+    case WM_XBUTTONUP:
+	{
+		MouseType button;
+		int32 action;
+
+		const int x = GET_X_LPARAM(lParam);
+        const int y = GET_Y_LPARAM(lParam);
+		Vector2 pos(x, y);
+
+        if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP) {
+			button = MouseType::MOUSE_BUTTON_LEFT;
+		}
+        else if (msg == WM_RBUTTONDOWN || msg == WM_RBUTTONUP) {
+			button = MouseType::MOUSE_BUTTON_RIGHT;
+		}
+        else if (msg == WM_MBUTTONDOWN || msg == WM_MBUTTONUP) {
+			button = MouseType::MOUSE_BUTTON_MIDDLE;
+		}
+        else if (GET_XBUTTON_WPARAM(wParam) == XBUTTON1) {
+			button = MouseType::MOUSE_BUTTON_4;
+		}
+        else {
+			button = MouseType::MOUSE_BUTTON_5;
+		}
+
+        if (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN || msg == WM_XBUTTONDOWN)
+        {
+			action = 1;
+            SetCapture(hwnd);
+        }
+        else
+        {
+			action = 0;
+            ReleaseCapture();
+        }
+
+		if (action == 1) {
+			m_MessageHandler->OnMouseDown(button, pos);
+		}
+		else {
+			m_MessageHandler->OnMouseUp(button, pos);
+		}
+
+        if (msg == WM_XBUTTONDOWN || msg == WM_XBUTTONUP) {
+			return TRUE;
+		}
+
+        return 0;
+	}
+	case WM_MOUSEMOVE:
+    {
+        const int x = GET_X_LPARAM(lParam);
+        const int y = GET_Y_LPARAM(lParam);
+		Vector2 pos(x, y);
+		m_MessageHandler->OnMouseMove(pos);
+        return 0;
+    }
+	case WM_MOUSEWHEEL:
+    {
+		const int x = GET_X_LPARAM(lParam);
+        const int y = GET_Y_LPARAM(lParam);
+		Vector2 pos(x, y);
+		m_MessageHandler->OnMouseWheel((SHORT)HIWORD(wParam) / (double)WHEEL_DELTA, pos);
+        return 0;
+    }
+	case WM_MOUSEHWHEEL:
+    {
+		const int x = GET_X_LPARAM(lParam);
+        const int y = GET_Y_LPARAM(lParam);
+		Vector2 pos(x, y);
+		m_MessageHandler->OnMouseWheel(-((SHORT)HIWORD(wParam) / (double)WHEEL_DELTA), pos);
+        return 0;
+    }
+	case WM_SIZE:
+	{
+		m_MessageHandler->OnSizeChanged(LOWORD(lParam), HIWORD(lParam));
+		return 0;
+	}
 	case WM_PAINT:
-		
+	{
+		m_MessageHandler->OnOSPaint();
 		return 0;
-
+	}
+	case WM_CLOSE:
+	{
+		m_MessageHandler->OnRequestingExit();
+		return 0;
+	}
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		return 0;
