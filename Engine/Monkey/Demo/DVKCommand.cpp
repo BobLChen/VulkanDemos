@@ -44,6 +44,7 @@ namespace vk_demo
 			submitInfo.pWaitDstStageMask  = waitFlags.data();
 		}
 
+		vkResetFences(vulkanDevice->GetInstanceHandle(), 1, &fence);
 		vkQueueSubmit(vulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence);
 		vkWaitForFences(vulkanDevice->GetInstanceHandle(), 1, &fence, true, MAX_uint64);
 	}
