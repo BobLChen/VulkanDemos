@@ -6,6 +6,7 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKCommand.h
 	Monkey/Demo/DVKVertexBuffer.h
 	Monkey/Demo/DVKIndexBuffer.h
+	Monkey/Demo/DVKModel.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -13,6 +14,7 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKCommand.cpp
 	Monkey/Demo/DVKVertexBuffer.cpp
 	Monkey/Demo/DVKIndexBuffer.cpp
+	Monkey/Demo/DVKModel.cpp
 )
 
 set(Monkey_Configuration_HDRS

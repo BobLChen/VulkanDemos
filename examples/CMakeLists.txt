@@ -174,6 +174,21 @@ SETUP_SAMPLE_START(8_OptimizeVertexIndexBuffer)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(8_OptimizeVertexIndexBuffer)
 
+SETUP_SAMPLE_START(9_LoadMesh)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/9_LoadMesh/9_LoadMesh.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/9_LoadMesh/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(9_LoadMesh)
+
 # SETUP_SAMPLE_START(3_OBJLoader)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
