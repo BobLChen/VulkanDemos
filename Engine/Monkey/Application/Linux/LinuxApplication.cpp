@@ -16,8 +16,7 @@ LinuxApplication::LinuxApplication()
 
 LinuxApplication::~LinuxApplication()
 {
-	if (m_Window != nullptr)
-	{
+	if (m_Window != nullptr) {
 		MLOGE("Window not shutdown.");
 	}
 }
@@ -30,26 +29,89 @@ void LinuxApplication::SetMessageHandler(GenericApplicationMessageHandler* messa
 void LinuxApplication::PumpMessages()
 {
 	xcb_connection_t* connection = m_Window->GetConnection();
+	static Vector2 mousePos(0, 0);
 
-	xcb_generic_event_t *event;
-	while (event)
+	xcb_generic_event_t* event = nullptr;
+	while ((event = xcb_poll_for_event(connection)))
 	{
-		event = xcb_poll_for_event(connection);
-		while (event) 
+		int32 eventType = event->response_type & 0x7f;
+		xcb_intern_atom_reply_t* atomWmDeleteWindow = m_Window->GetAtomWmDeleteWindow();
+
+		switch (eventType)
 		{
-            
-			xcb_intern_atom_reply_t* atomWmDeleteWindow = m_Window->GetAtomWmDeleteWindow();
-			uint8_t eventCode = event->response_type & 0x7f;
-			if (eventCode == XCB_CLIENT_MESSAGE)
+			case XCB_CLIENT_MESSAGE:
 			{
 				if ((*(xcb_client_message_event_t*)event).data.data32[0] == (*atomWmDeleteWindow).atom) {
-					Engine::Get()->RequestExit(true);
+					m_MessageHandler->OnRequestingExit();
 				}
+				break;
 			}
-			
-            free(event);
-            event = xcb_poll_for_event(connection);
-        }
+			case XCB_MOTION_NOTIFY:
+			{
+				xcb_motion_notify_event_t* motion = (xcb_motion_notify_event_t*)event;
+				mousePos.x = (int32_t)motion->event_x;
+				mousePos.y = (int32_t)motion->event_y;
+				m_MessageHandler->OnMouseMove(mousePos);
+				break;
+			}
+			case XCB_BUTTON_PRESS:
+			{
+				xcb_button_press_event_t* press = (xcb_button_press_event_t*)event;
+				if (press->detail == XCB_BUTTON_INDEX_1) {
+					m_MessageHandler->OnMouseDown(MouseType::MOUSE_BUTTON_LEFT, mousePos);
+				}
+				if (press->detail == XCB_BUTTON_INDEX_2) {
+					m_MessageHandler->OnMouseDown(MouseType::MOUSE_BUTTON_MIDDLE, mousePos);
+				}
+				if (press->detail == XCB_BUTTON_INDEX_3) {
+					m_MessageHandler->OnMouseDown(MouseType::MOUSE_BUTTON_RIGHT, mousePos);
+				}
+				break;
+			}
+			case XCB_BUTTON_RELEASE:
+			{
+				xcb_button_press_event_t* press = (xcb_button_press_event_t*)event;
+				if (press->detail == XCB_BUTTON_INDEX_1) {
+					m_MessageHandler->OnMouseUp(MouseType::MOUSE_BUTTON_LEFT, mousePos);
+				}
+				if (press->detail == XCB_BUTTON_INDEX_2) {
+					m_MessageHandler->OnMouseUp(MouseType::MOUSE_BUTTON_MIDDLE, mousePos);
+				}
+				if (press->detail == XCB_BUTTON_INDEX_3) {
+					m_MessageHandler->OnMouseUp(MouseType::MOUSE_BUTTON_RIGHT, mousePos);
+				}
+				break;
+			}
+			case XCB_KEY_PRESS:
+			{
+				const xcb_key_release_event_t* keyEvent = (const xcb_key_release_event_t*)event;
+				KeyboardType key = InputManager::GetKeyFromKeyCode(keyEvent->detail);
+				m_MessageHandler->OnKeyDown(key);
+			}
+			break;	
+			case XCB_KEY_RELEASE:
+			{
+				const xcb_key_release_event_t* keyEvent = (const xcb_key_release_event_t*)event;
+				KeyboardType key = InputManager::GetKeyFromKeyCode(keyEvent->detail);
+				m_MessageHandler->OnKeyUp(key);
+				break;
+			}
+			case XCB_DESTROY_NOTIFY:
+			{
+				m_MessageHandler->OnRequestingExit();
+				break;
+			}
+			case XCB_CONFIGURE_NOTIFY:
+			{
+				const xcb_configure_notify_event_t* cfgEvent = (const xcb_configure_notify_event_t*)event;
+				if (cfgEvent->width != m_Window->GetWidth() || cfgEvent->height != m_Window->GetHeight()) {
+					m_MessageHandler->OnSizeChanged(cfgEvent->width, cfgEvent->height);
+				}
+				break;
+			}
+		}
+		
+		free(event);
 	}
 }
 
@@ -72,8 +134,7 @@ void LinuxApplication::InitializeWindow(const std::shared_ptr<GenericWindow> win
 {
 	m_Window = std::dynamic_pointer_cast<LinuxWindow>(window);
 	m_Window->Initialize(this);
-	if (showImmediately)
-	{
+	if (showImmediately) {
 		m_Window->Show();
 	}
 }
