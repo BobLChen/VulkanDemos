@@ -109,8 +109,6 @@ private:
 	{
 		m_GUI->StartFrame();
 
-		ImGui::ShowDemoWindow();
-        
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
