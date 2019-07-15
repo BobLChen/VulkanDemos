@@ -60,12 +60,14 @@ void EngineLoop()
 	double delta = nowT - g_LastTime;
 	
 	g_AppModule->Loop(g_CurrTime, delta);
+
+	// reset between module and engine
+	InputManager::Reset();
+
 	g_GameEngine->Tick(g_CurrTime, delta);
 	
 	g_LastTime = nowT;
 	g_CurrTime = g_CurrTime + delta;
-    
-    InputManager::Reset();
 }
 
 void EngineExit()

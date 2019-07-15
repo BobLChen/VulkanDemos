@@ -607,6 +607,29 @@ void ImageGUIContext::Resize(uint32 width, uint32 height)
 	io.DisplaySize = ImVec2((float)(width), (float)(height));
 }
 
+void ImageGUIContext::StartFrame()
+{
+	const Vector2& mousePos = InputManager::GetMousePosition();
+    ImGuiIO& io = ImGui::GetIO();
+	io.MouseWheel  += InputManager::GetMouseDelta();
+    io.MousePos     = ImVec2(mousePos.x * io.DisplayFramebufferScale.x, mousePos.y * io.DisplayFramebufferScale.y);
+    io.MouseDown[0] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_LEFT);
+    io.MouseDown[1] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_RIGHT);
+    io.MouseDown[2] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_MIDDLE);
+
+	io.KeyCtrl  = InputManager::IsKeyDown(KeyboardType::KEY_LEFT_CONTROL) || InputManager::IsKeyDown(KeyboardType::KEY_RIGHT_CONTROL);
+	io.KeyShift = InputManager::IsKeyDown(KeyboardType::KEY_LEFT_SHIFT) || InputManager::IsKeyDown(KeyboardType::KEY_RIGHT_SHIFT);
+	io.KeyAlt   = InputManager::IsKeyDown(KeyboardType::KEY_LEFT_ALT) || InputManager::IsKeyDown(KeyboardType::KEY_RIGHT_ALT);
+	io.KeySuper = false;
+
+	ImGui::NewFrame();
+}
+
+void ImageGUIContext::EndFrame()
+{
+	ImGui::Render();
+}
+
 bool ImageGUIContext::Update()
 {
     ImDrawData* imDrawData = ImGui::GetDrawData();
@@ -615,13 +638,6 @@ bool ImageGUIContext::Update()
 	if (!imDrawData) { 
 		return false;
 	};
-    
-    const Vector2& mousePos = InputManager::GetMousePosition();
-    ImGuiIO& io = ImGui::GetIO();
-    io.MousePos = ImVec2(mousePos.x * io.DisplayFramebufferScale.x, mousePos.y * io.DisplayFramebufferScale.y);
-    io.MouseDown[0] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_LEFT);
-    io.MouseDown[1] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_RIGHT);
-    io.MouseDown[2] = InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_MIDDLE);
     
 	// Note: Alignment is done inside buffer creation
 	VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);

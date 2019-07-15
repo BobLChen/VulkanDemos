@@ -107,7 +107,9 @@ private:
 
 	void UpdateUI(float time, float delta)
 	{
-		ImGui::NewFrame();
+		m_GUI->StartFrame();
+
+		ImGui::ShowDemoWindow();
         
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -116,14 +118,14 @@ private:
             
             ImGui::Text("Simulate Pre-Integrated Texture.");
             
-            ImGui::SliderFloat("float", &(m_Params.omega),    0.0f, 5.0f);
-            ImGui::SliderFloat("float", &(m_Params.k),        0.0f, 20.0f);
-            ImGui::SliderFloat("float", &(m_Params.cutoff),   0.0f, 5.0f);
+            ImGui::SliderFloat("float##01", &(m_Params.omega),    0.0f, 5.0f);
+            ImGui::SliderFloat("float##02", &(m_Params.k),        0.0f, 20.0f);
+            ImGui::SliderFloat("float##03", &(m_Params.cutoff),   0.0f, 5.0f);
             
             ImGui::End();
 		}
         
-		ImGui::Render();
+		m_GUI->EndFrame();
 
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
