@@ -189,21 +189,6 @@ SETUP_SAMPLE_START(9_LoadMesh)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(9_LoadMesh)
 
-# SETUP_SAMPLE_START(3_OBJLoader)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/3_OBJLoader/OBJLoader.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/3_OBJLoader/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(3_OBJLoader)
-
 # SETUP_SAMPLE_START(4_Pipelines)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
