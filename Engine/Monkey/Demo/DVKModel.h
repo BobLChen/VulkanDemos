@@ -19,6 +19,8 @@
 #include <vector>
 #include <memory>
 
+class aiNode;
+
 namespace vk_demo
 {
     struct Node;
@@ -161,12 +163,19 @@ namespace vk_demo
             
         }
         
+        static DVKModel* LoadFromFile(const std::string& file, std::shared_ptr<VulkanDevice> vulkanDevice, std::vector<VertexAttribute> attributes);
+        
+    protected:
+        
+        void LoadNode(aiNode* node);
+        
     public:
+        
+        VkDevice                device;
         
         std::vector<Node*>      nodes;
         std::vector<Node*>      linearNodes;
         std::vector<Mesh*>      meshes;
-        
     };
     
 };
