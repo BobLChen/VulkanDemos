@@ -246,8 +246,8 @@ private:
 		VkPipelineRasterizationStateCreateInfo rasterizationState;
 		ZeroVulkanStruct(rasterizationState, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);
 		rasterizationState.polygonMode 			   = VK_POLYGON_MODE_FILL;
-		rasterizationState.cullMode                = VK_CULL_MODE_NONE;
-		rasterizationState.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizationState.cullMode                = VK_CULL_MODE_BACK_BIT;
+		rasterizationState.frontFace               = VK_FRONT_FACE_CLOCKWISE;
 		rasterizationState.depthClampEnable        = VK_FALSE;
 		rasterizationState.rasterizerDiscardEnable = VK_FALSE;
 		rasterizationState.depthBiasEnable         = VK_FALSE;
@@ -261,7 +261,13 @@ private:
             VK_COLOR_COMPONENT_A_BIT
         );
 		blendAttachmentState[0].blendEnable = VK_FALSE;
-        
+		blendAttachmentState[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendAttachmentState[0].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendAttachmentState[0].colorBlendOp        = VK_BLEND_OP_ADD;
+        blendAttachmentState[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		blendAttachmentState[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		blendAttachmentState[0].alphaBlendOp        = VK_BLEND_OP_ADD;
+
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
 		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
 		colorBlendState.attachmentCount = 1;
@@ -275,9 +281,10 @@ private:
 		std::vector<VkDynamicState> dynamicStateEnables;
 		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT);
 		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
 		VkPipelineDynamicStateCreateInfo dynamicState;
 		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
-		dynamicState.dynamicStateCount = (uint32_t)dynamicStateEnables.size();
+		dynamicState.dynamicStateCount = 2;
 		dynamicState.pDynamicStates    = dynamicStateEnables.data();
         
 		VkPipelineDepthStencilStateCreateInfo depthStencilState;
@@ -298,13 +305,13 @@ private:
 		multisampleState.pSampleMask 		  = nullptr;
 		
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes({ VertexAttribute::VA_Position, VertexAttribute::VA_Color });
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
 		vertexInputState.vertexBindingDescriptionCount   = 1;
 		vertexInputState.pVertexBindingDescriptions      = &vertexInputBinding;
-		vertexInputState.vertexAttributeDescriptionCount = 2;
+		vertexInputState.vertexAttributeDescriptionCount = m_Model->attributes.size();
 		vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributs.data();
         
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(2);
@@ -321,7 +328,7 @@ private:
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout 				= m_PipelineLayout;
 		pipelineCreateInfo.renderPass 			= m_RenderPass;
-		pipelineCreateInfo.stageCount 			= (uint32_t)shaderStages.size();
+		pipelineCreateInfo.stageCount 			= shaderStages.size();
 		pipelineCreateInfo.pStages 				= shaderStages.data();
 		pipelineCreateInfo.pVertexInputState 	= &vertexInputState;
 		pipelineCreateInfo.pInputAssemblyState 	= &inputAssemblyState;

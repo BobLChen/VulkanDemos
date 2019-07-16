@@ -189,6 +189,21 @@ SETUP_SAMPLE_START(9_LoadMesh)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(9_LoadMesh)
 
+SETUP_SAMPLE_START(10_Pipelines.cpp)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/10_Pipelines/10_Pipelines.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/10_Pipelines/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(10_Pipelines.cpp)
+
 # SETUP_SAMPLE_START(4_Pipelines)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}

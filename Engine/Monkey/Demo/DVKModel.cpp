@@ -247,19 +247,19 @@ namespace vk_demo
 		return vertexInputBinding;
 	}
 
-	std::vector<VkVertexInputAttributeDescription> DVKModel::GetInputAttributes(const std::vector<VertexAttribute>& shaderInputs)
+	std::vector<VkVertexInputAttributeDescription> DVKModel::GetInputAttributes()
 	{
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;
 		int32 offset = 0;
 
-		for (int32 i = 0; i < shaderInputs.size(); ++i)
+		for (int32 i = 0; i < attributes.size(); ++i)
 		{
 			VkVertexInputAttributeDescription inputAttribute = {};
 			inputAttribute.binding  = 0;
 			inputAttribute.location = i;
-			inputAttribute.format   = VertexAttributeToVkFormat(shaderInputs[i]);
+			inputAttribute.format   = VertexAttributeToVkFormat(attributes[i]);
 			inputAttribute.offset   = offset;
-			offset += VertexAttributeToSize(shaderInputs[i]);
+			offset += VertexAttributeToSize(attributes[i]);
 			vertexInputAttributs.push_back(inputAttribute);
 		}
 

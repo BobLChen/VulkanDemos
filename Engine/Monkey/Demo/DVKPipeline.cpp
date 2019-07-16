@@ -1,0 +1,69 @@
+﻿#include "DVKPipeline.h"
+
+namespace vk_demo
+{
+
+	DVKPipeline* DVKPipeline::Create(
+		std::shared_ptr<VulkanDevice> vulkanDevice,
+		VkPipelineCache pipelineCache,
+		DVKPipelineInfo& pipelineInfo, 
+		const std::vector<VkVertexInputBindingDescription>& inputBindings, 
+		const std::vector<VkVertexInputAttributeDescription>& vertexInputAttributs,
+		VkPipelineLayout pipelineLayout,
+		VkRenderPass renderPass
+	)
+	{
+		DVKPipeline* pipeline   = new DVKPipeline();
+		pipeline->vulkanDevice  = vulkanDevice;
+
+		VkDevice device = vulkanDevice->GetInstanceHandle();
+
+		VkPipelineVertexInputStateCreateInfo vertexInputState;
+		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+		vertexInputState.vertexBindingDescriptionCount   = inputBindings.size();
+		vertexInputState.pVertexBindingDescriptions      = inputBindings.data();
+		vertexInputState.vertexAttributeDescriptionCount = vertexInputAttributs.size();
+		vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributs.data();
+
+		VkPipelineColorBlendStateCreateInfo colorBlendState;
+		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
+		colorBlendState.attachmentCount = 1;
+		colorBlendState.pAttachments    = &(pipelineInfo.blendAttachmentState);
+		
+		VkPipelineViewportStateCreateInfo viewportState;
+		ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount  = 1;
+			
+		std::vector<VkDynamicState> dynamicStateEnables;
+		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+		dynamicStateEnables.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
+		VkPipelineDynamicStateCreateInfo dynamicState;
+		ZeroVulkanStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
+		dynamicState.dynamicStateCount = 2;
+		dynamicState.pDynamicStates    = dynamicStateEnables.data();
+
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+		pipelineInfo.FillShaderStages(shaderStages);
+
+		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
+		pipelineCreateInfo.layout 				= pipelineLayout;
+		pipelineCreateInfo.renderPass 			= renderPass;
+		pipelineCreateInfo.stageCount 			= shaderStages.size();
+		pipelineCreateInfo.pStages 				= shaderStages.data();
+		pipelineCreateInfo.pVertexInputState 	= &vertexInputState;
+		pipelineCreateInfo.pInputAssemblyState 	= &(pipelineInfo.inputAssemblyState);
+		pipelineCreateInfo.pRasterizationState 	= &(pipelineInfo.rasterizationState);
+		pipelineCreateInfo.pColorBlendState 	= &colorBlendState;
+		pipelineCreateInfo.pMultisampleState 	= &(pipelineInfo.multisampleState);
+		pipelineCreateInfo.pViewportState 		= &viewportState;
+		pipelineCreateInfo.pDepthStencilState 	= &(pipelineInfo.depthStencilState);
+		pipelineCreateInfo.pDynamicState 		= &dynamicState;
+		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &(pipeline->pipeline)));
+		
+		return pipeline;
+	}
+
+}
