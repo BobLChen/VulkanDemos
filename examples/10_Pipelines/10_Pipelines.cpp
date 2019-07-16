@@ -12,16 +12,16 @@
 #include <vector>
 #include <fstream>
 
-class LoadMeshModule : public DemoBase
+class PipelinesModule : public DemoBase
 {
 public:
-	LoadMeshModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	PipelinesModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
     
-	virtual ~LoadMeshModule()
+	virtual ~PipelinesModule()
 	{
 
 	}
@@ -454,7 +454,8 @@ private:
 
 	vk_demo::DVKModel*				m_Model = nullptr;
 
-	VkPipeline 						m_Pipeline = VK_NULL_HANDLE;
+	vk_demo::DVKPipeline*			m_Pipeline = nullptr;
+
     VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
 	VkPipelineLayout 				m_PipelineLayout = VK_NULL_HANDLE;
 	VkDescriptorPool                m_DescriptorPool = VK_NULL_HANDLE;
@@ -465,5 +466,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<LoadMeshModule>(1400, 900, "LoadMesh", cmdLine);
+	return std::make_shared<PipelinesModule>(1400, 900, "LoadMesh", cmdLine);
 }

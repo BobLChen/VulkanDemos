@@ -7,3 +7,4 @@
 #include "DVKIndexBuffer.h"
 #include "DVKVertexBuffer.h"
 #include "DVKModel.h"
+#include "DVKPipeline.h"
