@@ -72,3 +72,7 @@ Vulkan Examples
 ### UniformBuffer
 
 ![UniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/7_UniformBuffer.jpg)
+
+### Load Mesh
+
+![LoadMesh](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/9_LoadMesh.jpg)
