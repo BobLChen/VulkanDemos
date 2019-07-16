@@ -52,45 +52,73 @@ namespace vk_demo
     {
         Matrix4x4   model;
     };
-    
-    struct DVKMesh
-    {
-        DVKIndexBuffer*					indexBuffer;
+
+	struct DVKPrimitive
+	{
+		DVKIndexBuffer*					indexBuffer;
         DVKVertexBuffer*				vertexBuffer;
 
 		std::vector<float>				vertices;
 		std::vector<uint16>				indices;
 
-		DVKBoundingBox					bounding;
-
-        DVKNode*						linkNode;
-
-        DVKMesh()
-            : indexBuffer(nullptr)
+		DVKPrimitive()
+			: indexBuffer(nullptr)
 			, vertexBuffer(nullptr)
-            , linkNode(nullptr)
-        {
-            
-        }
+		{
+
+		}
+
+		~DVKPrimitive()
+		{
+			if (indexBuffer) {
+				delete indexBuffer;
+			}
+			if (vertexBuffer) {
+				delete vertexBuffer;
+			}
+			indexBuffer  = nullptr;
+			vertexBuffer = nullptr;
+		}
 
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{
 			vertexBuffer->Bind(cmdBuffer);
 			indexBuffer->BindDraw(cmdBuffer);
 		}
+	};
+    
+    struct DVKMesh
+    {
+		typedef std::vector<DVKPrimitive*> DVKPrimitives;
+
+		DVKPrimitives	primitives;
+		DVKBoundingBox	bounding;
+        DVKNode*		linkNode;
+
+		int32			vertexCount;
+		int32			triangleCount;
+
+        DVKMesh()
+            : linkNode(nullptr)
+			, vertexCount(0)
+			, triangleCount(0)
+        {
+            
+        }
+
+		void BindDrawCmd(VkCommandBuffer cmdBuffer)
+		{
+			for (int i = 0; i < primitives.size(); ++i) {
+				primitives[i]->BindDrawCmd(cmdBuffer);
+			}
+		}
         
         ~DVKMesh()
         {
-			if (vertexBuffer) {
-				delete vertexBuffer;
-				vertexBuffer = nullptr;
+			for (int i = 0; i < primitives.size(); ++i) {
+				delete primitives[i];
 			}
-
-            if (indexBuffer) {
-				delete indexBuffer;
-				indexBuffer = nullptr;
-			}
-            
+            primitives.clear();
             linkNode = nullptr;
         }
     };
@@ -99,7 +127,7 @@ namespace vk_demo
     {
         std::string					name;
 
-		DVKMesh*					mesh;
+		std::vector<DVKMesh*>		meshes;
 
 		DVKNode*					parent;
         std::vector<DVKNode*>		children;
@@ -112,7 +140,6 @@ namespace vk_demo
         
         DVKNode()
             : name("None")
-			, mesh(nullptr)
             , parent(nullptr)
 			, index(-1)
             , invalid(true)
@@ -146,13 +173,26 @@ namespace vk_demo
 			bounds.min.Set(0, 0, 0);
 			bounds.max.Set(0, 0, 0);
 
-			if (mesh) {
-				const Matrix4x4& matrix = GetGlobalMatrix();
-				bounds.min = matrix.TransformPosition(mesh->bounding.min);
-				bounds.max = matrix.TransformPosition(mesh->bounding.max);
+			if (meshes.size() > 0) 
+			{
+				for (int32 i = 0; i < meshes.size(); ++i)
+				{
+					const Matrix4x4& matrix = GetGlobalMatrix();
+					Vector3 mmin = matrix.TransformPosition(meshes[i]->bounding.min);
+					Vector3 mmax = matrix.TransformPosition(meshes[i]->bounding.max);
+
+					bounds.min.x = MMath::Min(bounds.min.x, mmin.x);
+					bounds.min.y = MMath::Min(bounds.min.y, mmin.y);
+					bounds.min.z = MMath::Min(bounds.min.z, mmin.z);
+
+					bounds.max.x = MMath::Max(bounds.max.x, mmax.x);
+					bounds.max.y = MMath::Max(bounds.max.y, mmax.y);
+					bounds.max.z = MMath::Max(bounds.max.z, mmax.z);
+				}
 			}
 
-			for (int32 i = 0; i < children.size(); ++i) {
+			for (int32 i = 0; i < children.size(); ++i) 
+			{
 				DVKBoundingBox childBounds = children[i]->GetBounds();
 				bounds.min.x = MMath::Min(bounds.min.x, childBounds.min.x);
 				bounds.min.y = MMath::Min(bounds.min.y, childBounds.min.y);
@@ -168,10 +208,10 @@ namespace vk_demo
         
         ~DVKNode()
         {
-            if (mesh) {
-                delete mesh;
-                mesh = nullptr;
-            }
+			for (int32 i = 0; i < meshes.size(); ++i) {
+				delete meshes[i];
+			}
+			meshes.clear();
             
             for (int32 i = 0; i < children.size(); ++i) {
                 delete children[i];
