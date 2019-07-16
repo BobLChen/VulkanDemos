@@ -42,8 +42,8 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
+		LoadAssets();
 		CreateGUI();
-		CreateMeshBuffers();
 		CreateUniformBuffers();
         CreateDescriptorPool();
 		CreateDescriptorSetLayout();
@@ -60,12 +60,12 @@ public:
 	{
 		DemoBase::Release();
 
+		DestroyAssets();
 		DestroyGUI();
         DestroyDescriptorSetLayout();
 		DestroyDescriptorPool();
 		DestroyPipelines();
 		DestroyUniformBuffers();
-		DestroyMeshBuffers();
 	}
 
 	virtual void Loop(float time, float delta) override
@@ -110,6 +110,25 @@ private:
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+	}
+
+	void LoadAssets()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		m_Model = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/Vela_Template.fbx",
+			m_VulkanDevice,
+			cmdBuffer,
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }
+		);
+
+		delete cmdBuffer;
+	}
+
+	void DestroyAssets()
+	{
+		delete m_Model;
 	}
     
 	void SetupCommandBuffers()
@@ -158,8 +177,7 @@ private:
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
 			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			
-			m_VertexBuffer->Bind(m_CommandBuffers[i]);
-			m_IndexBuffer->BindDraw(m_CommandBuffers[i]);
+			m_Model->meshes[0]->BindDrawCmd(m_CommandBuffers[i]);
 			
 			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
 
@@ -267,8 +285,8 @@ private:
 		multisampleState.rasterizationSamples = m_SampleCount;
 		multisampleState.pSampleMask 		  = nullptr;
 		
-		VkVertexInputBindingDescription vertexInputBinding = m_VertexBuffer->GetInputBinding();
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_VertexBuffer->GetInputAttributes({ VertexAttribute::VA_Position, VertexAttribute::VA_Color });
+		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes({ VertexAttribute::VA_Position, VertexAttribute::VA_Color });
 		
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
@@ -352,10 +370,15 @@ private:
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
         
+		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		boundCenter.z -= boundSize.Size();
+
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
+		m_MVPData.view.SetOrigin(boundCenter);
 		m_MVPData.view.SetInverse();
-        
+
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 
@@ -387,40 +410,13 @@ private:
 		delete m_GUI;
 	}
 
-	void CreateMeshBuffers()
-	{
-        
-        
-		std::vector<float> vertices = {
-			1.0f,   1.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f,  -1.0f, 0.0f, 0.0f, 0.0f, 1.0f
-		};
-        
-		std::vector<uint16> indices = { 0, 1, 2 };
-        
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::CreateCommandBuffer(m_VulkanDevice, m_CommandPool);
-		
-		m_VertexBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, vertices, { VertexAttribute::VA_Position, VertexAttribute::VA_Color });
-		m_IndexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice, cmdBuffer, indices);
-        
-		delete cmdBuffer;
-	}
-    
-	void DestroyMeshBuffers()
-	{
-		delete m_VertexBuffer;
-		delete m_IndexBuffer;
-	}
-    
 private:
 	bool 							m_Ready = false;
     
 	UBOData 						m_MVPData;
-
-	vk_demo::DVKIndexBuffer*		m_IndexBuffer = nullptr;
-	vk_demo::DVKVertexBuffer*		m_VertexBuffer = nullptr;
 	vk_demo::DVKBuffer*				m_MVPBuffer = nullptr;
+
+	vk_demo::DVKModel*				m_Model = nullptr;
 
     VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
 	VkDescriptorSet 				m_DescriptorSet = VK_NULL_HANDLE;

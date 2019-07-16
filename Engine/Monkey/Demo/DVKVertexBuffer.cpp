@@ -2,67 +2,8 @@
 
 namespace vk_demo
 {
-	int32 VertexAttributeToSize(VertexAttribute attribute)
-	{
-		// count * sizeof(float)
-		if (attribute == VertexAttribute::VA_Position) {
-			return 3 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_UV0) {
-			return 2 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_UV1) {
-			return 2 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_Normal) {
-			return 3 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_Tangent) {
-			return 4 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_Color) {
-			return 3 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_SkinWeight) {
-			return 4 * sizeof(float);
-		}
-		else if (attribute == VertexAttribute::VA_SkinIndex) {
-			return 4 * sizeof(float);
-		}
-		return 0;
-	}
-
-	VkFormat VertexAttributeToVkFormat(VertexAttribute attribute)
-	{
-		VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
-		if (attribute == VertexAttribute::VA_Position) {
-			format = VK_FORMAT_R32G32B32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_UV0) {
-			format = VK_FORMAT_R32G32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_UV1) {
-			format = VK_FORMAT_R32G32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_Normal) {
-			format = VK_FORMAT_R32G32B32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_Tangent) {
-			format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_Color) {
-			format = VK_FORMAT_R32G32B32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_SkinWeight) {
-			format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		}
-		else if (attribute == VertexAttribute::VA_SkinIndex) {
-			format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		}
-		return format;
-	}
-
-	DVKVertexBuffer* DVKVertexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<float> vertices, std::vector<VertexAttribute> attributes)
+	
+	DVKVertexBuffer* DVKVertexBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<float> vertices, const std::vector<VertexAttribute>& attributes)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -99,7 +40,7 @@ namespace vk_demo
 		return vertexBuffer;
 	}
 
-	std::vector<VkVertexInputAttributeDescription> DVKVertexBuffer::GetInputAttributes(std::vector<VertexAttribute> shaderInputs)
+	std::vector<VkVertexInputAttributeDescription> DVKVertexBuffer::GetInputAttributes(const std::vector<VertexAttribute>& shaderInputs)
 	{
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;
 		int32 offset = 0;

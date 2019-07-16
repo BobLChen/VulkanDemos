@@ -396,7 +396,7 @@ private:
         
 		std::vector<uint16> indices = { 0, 1, 2 };
         
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::CreateCommandBuffer(m_VulkanDevice, m_CommandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		
 		m_VertexBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, vertices, { VertexAttribute::VA_Position, VertexAttribute::VA_Color });
 		m_IndexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice, cmdBuffer, indices);

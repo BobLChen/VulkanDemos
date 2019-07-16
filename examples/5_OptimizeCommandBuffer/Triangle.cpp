@@ -417,7 +417,7 @@ private:
 			indices.size() * sizeof(uint16)
 		);
 
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::CreateCommandBuffer(m_VulkanDevice, m_CommandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		cmdBuffer->Begin();
 
 		VkBufferCopy copyRegion = {};

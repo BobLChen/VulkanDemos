@@ -19,25 +19,28 @@
 #include <vector>
 #include <memory>
 
-class aiNode;
+#include <assimp/Importer.hpp> 
+#include <assimp/scene.h>     
+#include <assimp/postprocess.h>
+#include <assimp/cimport.h>
 
 namespace vk_demo
 {
-    struct Node;
+    struct DVKNode;
     
-    struct BoundingBox
+    struct DVKBoundingBox
     {
         Vector3 min;
         Vector3 max;
         
-        BoundingBox()
+        DVKBoundingBox()
             : min(MAX_flt, MAX_flt, MAX_flt)
             , max(MIN_flt, MIN_flt, MIN_flt)
         {
             
         }
         
-        BoundingBox(const Vector3& inMin, const Vector3& inMax)
+        DVKBoundingBox(const Vector3& inMin, const Vector3& inMax)
             : min(inMin)
             , max(inMax)
         {
@@ -45,71 +48,73 @@ namespace vk_demo
         }
     };
     
-    struct SubMesh
-    {
-        uint32 firstIndex;
-        uint32 indexCount;
-        uint32 vertexCount;
-        
-        BoundingBox bounding;
-        
-        SubMesh(uint32 inFirstIndex, uint32 inIndexCount, uint32 inVertexCount)
-            : firstIndex(inFirstIndex)
-            , indexCount(inIndexCount)
-            , vertexCount(inVertexCount)
-        {
-            
-        }
-    };
-    
-    struct MeshUniformBlock
+    struct DVKModelUniformBlock
     {
         Matrix4x4   model;
     };
     
-    struct Mesh
+    struct DVKMesh
     {
-        std::vector<SubMesh*>   subMeshes;
-        BoundingBox             bounding;
-        DVKBuffer*              modelBuffer;
-        DVKIndexBuffer*         indexBuffer;
-        DVKVertexBuffer*        vertexBuffer;
-        Node*                   linkNode;
-        
-        Mesh()
-            : modelBuffer(nullptr)
+        DVKIndexBuffer*					indexBuffer;
+        DVKVertexBuffer*				vertexBuffer;
+
+		std::vector<float>				vertices;
+		std::vector<uint16>				indices;
+
+		DVKBoundingBox					bounding;
+
+        DVKNode*						linkNode;
+
+        DVKMesh()
+            : indexBuffer(nullptr)
+			, vertexBuffer(nullptr)
             , linkNode(nullptr)
         {
             
         }
+
+		void BindDrawCmd(VkCommandBuffer cmdBuffer)
+		{
+			vertexBuffer->Bind(cmdBuffer);
+			indexBuffer->BindDraw(cmdBuffer);
+		}
         
-        ~Mesh()
+        ~DVKMesh()
         {
-            if (modelBuffer) {
-                delete modelBuffer;
-            }
-            modelBuffer = nullptr;
+			if (vertexBuffer) {
+				delete vertexBuffer;
+				vertexBuffer = nullptr;
+			}
+
+            if (indexBuffer) {
+				delete indexBuffer;
+				indexBuffer = nullptr;
+			}
             
             linkNode = nullptr;
         }
     };
     
-    struct Node
+    struct DVKNode
     {
-        std::string         name;
-        int32               index;
-        Node*               parent;
-        std::vector<Node*>  children;
-        Matrix4x4           localMatrix;
-        Matrix4x4           globalMatrix;
-        BoundingBox         bounds;
-        Mesh*               mesh;
-        bool                invalid;
+        std::string					name;
+
+		DVKMesh*					mesh;
+
+		DVKNode*					parent;
+        std::vector<DVKNode*>		children;
+
+        Matrix4x4					localMatrix;
+        Matrix4x4					globalMatrix;
+
+		int32						index;
+        bool						invalid;
         
-        Node()
+        DVKNode()
             : name("None")
+			, mesh(nullptr)
             , parent(nullptr)
-            , mesh(nullptr)
+			, index(-1)
             , invalid(true)
         {
             
@@ -134,8 +139,34 @@ namespace vk_demo
             }
             return globalMatrix;
         }
+
+		DVKBoundingBox GetBounds()
+		{
+			DVKBoundingBox bounds;
+			bounds.min.Set(0, 0, 0);
+			bounds.max.Set(0, 0, 0);
+
+			if (mesh) {
+				const Matrix4x4& matrix = GetGlobalMatrix();
+				bounds.min = matrix.TransformPosition(mesh->bounding.min);
+				bounds.max = matrix.TransformPosition(mesh->bounding.max);
+			}
+
+			for (int32 i = 0; i < children.size(); ++i) {
+				DVKBoundingBox childBounds = children[i]->GetBounds();
+				bounds.min.x = MMath::Min(bounds.min.x, childBounds.min.x);
+				bounds.min.y = MMath::Min(bounds.min.y, childBounds.min.y);
+				bounds.min.z = MMath::Min(bounds.min.z, childBounds.min.z);
+
+				bounds.max.x = MMath::Max(bounds.max.x, childBounds.max.x);
+				bounds.max.y = MMath::Max(bounds.max.y, childBounds.max.y);
+				bounds.max.z = MMath::Max(bounds.max.z, childBounds.max.z);
+			}
+
+			return bounds;
+		}
         
-        ~Node()
+        ~DVKNode()
         {
             if (mesh) {
                 delete mesh;
@@ -153,6 +184,8 @@ namespace vk_demo
     {
     private:
         DVKModel()
+			: device(nullptr)
+			, rootNode(nullptr)
         {
             
         }
@@ -160,22 +193,39 @@ namespace vk_demo
     public:
         ~DVKModel()
         {
-            
+            delete rootNode;
+			rootNode = nullptr;
+			device = nullptr;
+
+			meshes.clear();
+			linearNodes.clear();
         }
+
+		VkVertexInputBindingDescription GetInputBinding();
+
+		std::vector<VkVertexInputAttributeDescription> GetInputAttributes(const std::vector<VertexAttribute>& shaderInputs);
         
-        static DVKModel* LoadFromFile(const std::string& file, std::shared_ptr<VulkanDevice> vulkanDevice, std::vector<VertexAttribute> attributes);
+        static DVKModel* LoadFromFile(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<VertexAttribute>& attributes);
         
     protected:
         
-        void LoadNode(aiNode* node);
+        DVKNode* LoadNode(const aiNode* node, const aiScene* scene);
         
+		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
+
     public:
         
-        VkDevice                device;
+        std::shared_ptr<VulkanDevice>	device;
         
-        std::vector<Node*>      nodes;
-        std::vector<Node*>      linearNodes;
-        std::vector<Mesh*>      meshes;
+        DVKNode*						rootNode;
+        std::vector<DVKNode*>			linearNodes;
+        std::vector<DVKMesh*>			meshes;
+
+		std::vector<VertexAttribute>	attributes;
+
+	private:
+
+		DVKCommandBuffer*				cmdBuffer;
     };
     
 };

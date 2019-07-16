@@ -73,7 +73,7 @@ namespace vk_demo
 		vkEndCommandBuffer(cmdBuffer);
 	}
 
-	DVKCommandBuffer* DVKCommandBuffer::CreateCommandBuffer(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level)
+	DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
