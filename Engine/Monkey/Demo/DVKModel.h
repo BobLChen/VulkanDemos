@@ -243,7 +243,7 @@ namespace vk_demo
 
 		VkVertexInputBindingDescription GetInputBinding();
 
-		std::vector<VkVertexInputAttributeDescription> GetInputAttributes(const std::vector<VertexAttribute>& shaderInputs);
+		std::vector<VkVertexInputAttributeDescription> GetInputAttributes();
         
         static DVKModel* LoadFromFile(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<VertexAttribute>& attributes);
         

@@ -305,7 +305,7 @@ private:
 		multisampleState.pSampleMask 		  = nullptr;
 		
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes({ VertexAttribute::VA_Position, VertexAttribute::VA_Color });
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
