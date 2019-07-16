@@ -32,7 +32,7 @@ namespace vk_demo
 
 		void Submit(VkSemaphore* signalSemaphore = nullptr);
 
-		static DVKCommandBuffer* CreateCommandBuffer(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		static DVKCommandBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 	public:
 		VkCommandBuffer						cmdBuffer = VK_NULL_HANDLE;

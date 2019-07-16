@@ -580,5 +580,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<TriangleModule>(1400, 900, "Triangle-DemoBase", cmdLine);
+	return std::make_shared<TriangleModule>(1400, 900, "DemoBase", cmdLine);
 }

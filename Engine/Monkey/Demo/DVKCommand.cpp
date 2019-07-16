@@ -44,6 +44,7 @@ namespace vk_demo
 			submitInfo.pWaitDstStageMask  = waitFlags.data();
 		}
 
+		vkResetFences(vulkanDevice->GetInstanceHandle(), 1, &fence);
 		vkQueueSubmit(vulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence);
 		vkWaitForFences(vulkanDevice->GetInstanceHandle(), 1, &fence, true, MAX_uint64);
 	}
@@ -72,7 +73,7 @@ namespace vk_demo
 		vkEndCommandBuffer(cmdBuffer);
 	}
 
-	DVKCommandBuffer* DVKCommandBuffer::CreateCommandBuffer(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level)
+	DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 

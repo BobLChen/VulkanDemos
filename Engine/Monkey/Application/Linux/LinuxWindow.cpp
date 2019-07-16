@@ -87,22 +87,19 @@ void LinuxWindow::Initialize(LinuxApplication* const application)
 	int screenp  = 0;
 	m_Connection = xcb_connect(NULL, &screenp);
 
-	if (m_Connection == NULL) 
-	{
+	if (m_Connection == NULL) {
 		printf("Could not find a compatible Vulkan ICD!\n");
 		return;
 	}
-
+	
 	const xcb_setup_t* setup = xcb_get_setup(m_Connection);
 	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
 
-	while (screenp-- > 0)
-	{
+	while (screenp-- > 0) {
 		xcb_screen_next(&iter);
 	}
 
 	m_Screen = iter.data;
-
 
 	uint32_t value_mask = 0;
 	uint32_t value_list[32];

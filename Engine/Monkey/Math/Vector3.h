@@ -731,7 +731,7 @@ FORCEINLINE Vector3 Vector3::GetAbs() const
 
 FORCEINLINE float Vector3::Size() const
 {
-	return MMath::Sqrt(x*x + y * y + z * z);
+	return MMath::Sqrt(x * x + y * y + z * z);
 }
 
 FORCEINLINE float Vector3::SizeSquared() const
