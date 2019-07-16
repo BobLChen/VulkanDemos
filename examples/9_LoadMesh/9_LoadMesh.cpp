@@ -1,13 +1,7 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 
-#include "Demo/DemoBase.h"
-#include "Demo/DVKBuffer.h"
-#include "Demo/DVKCommand.h"
-#include "Demo/DVKUtils.h"
-#include "Demo/DVKIndexBuffer.h"
-#include "Demo/DVKVertexBuffer.h"
-#include "Demo/DVKModel.h"
+#include "Demo/DVKCommon.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
