@@ -8,10 +8,7 @@
 
 #include "File/FileManager.h"
 
-#include "Vulkan/VulkanPlatform.h"
-#include "Vulkan/VulkanDevice.h"
-#include "Vulkan/VulkanQueue.h"
-#include "Vulkan/VulkanSwapChain.h"
+#include "Vulkan/VulkanCommon.h"
 
 #include <vector>
 #include <fstream>
