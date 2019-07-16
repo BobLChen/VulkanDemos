@@ -96,17 +96,8 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("LoadMesh!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("Load mesh from file.");
-
-			for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-			{
-				vk_demo::DVKMesh* mesh = m_Model->meshes[i];
-				ImGui::Text("%-20s Tri:%d", mesh->linkNode->name.c_str(), mesh->triangleCount);
-			}
-
+            ImGui::Begin("Pipelines!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
-            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -423,5 +414,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<PipelinesModule>(1400, 900, "LoadMesh", cmdLine);
+	return std::make_shared<PipelinesModule>(1400, 900, "Pipelines", cmdLine);
 }
