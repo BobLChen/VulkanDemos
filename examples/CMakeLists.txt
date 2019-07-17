@@ -204,20 +204,20 @@ SETUP_SAMPLE_START(10_Pipelines.cpp)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(10_Pipelines.cpp)
 
-# SETUP_SAMPLE_START(4_Pipelines)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/4_Pipelines/Pipelines.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/4_Pipelines/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(4_Pipelines)
+SETUP_SAMPLE_START(11_Texture.cpp)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/11_Texture/11_Texture.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/11_Texture/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(11_Texture.cpp)
 
 # SETUP_SAMPLE_START(5_Texture)
 # 	SET(SOURCE_FILES
