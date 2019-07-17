@@ -112,9 +112,7 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("SSS", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-            
-            ImGui::Text("Simulate Pre-Integrated Texture.");
+            ImGui::Begin("UniformBuffer", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
             ImGui::SliderFloat("omega##01",  &(m_Params.omega),  0.0f, 5.0f);
             ImGui::SliderFloat("k##02",		 &(m_Params.k),      0.0f, 20.0f);
