@@ -127,8 +127,10 @@ private:
 			"assets/models/Vela_Template.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
 		);
+
+		m_Texture = vk_demo::DVKTexture2D::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
 
 		delete cmdBuffer;
 	}
@@ -136,6 +138,7 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
+		delete m_Texture;
 	}
     
 	void SetupCommandBuffers()
@@ -198,15 +201,17 @@ private:
     
 	void CreateDescriptorSet()
 	{
-		VkDescriptorPoolSize poolSize = {};
-		poolSize.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSize.descriptorCount = 2;
+		VkDescriptorPoolSize poolSizes[2];
+		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[0].descriptorCount = 2;
+		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[1].descriptorCount = 1;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-		descriptorPoolInfo.poolSizeCount = 1;
-		descriptorPoolInfo.pPoolSizes    = &poolSize;
-		descriptorPoolInfo.maxSets       = m_Model->meshes.size();
+		descriptorPoolInfo.poolSizeCount = 2;
+		descriptorPoolInfo.pPoolSizes    = poolSizes;
+		descriptorPoolInfo.maxSets       = 1;
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
         
         VkDescriptorSetAllocateInfo allocInfo;
@@ -218,16 +223,13 @@ private:
         
         VkWriteDescriptorSet writeDescriptorSet;
         
-        for (int32 i = 0; i < m_MVPBuffers.size(); ++i)
-        {
-            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-            writeDescriptorSet.dstSet          = m_DescriptorSet;
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->descriptor);
-            writeDescriptorSet.dstBinding      = 0;
-            vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-        }
+        ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
+        writeDescriptorSet.dstBinding      = 0;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
         
         ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
         writeDescriptorSet.dstSet          = m_DescriptorSet;
@@ -235,6 +237,16 @@ private:
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 1;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writeDescriptorSet.pBufferInfo     = nullptr;
+		writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
+        writeDescriptorSet.dstBinding      = 2;
+
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
@@ -244,9 +256,8 @@ private:
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
 		vk_demo::DVKPipelineInfo pipelineInfo(m_VulkanDevice);
-		pipelineInfo.rasterizationState.polygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
-        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.vert.spv");
-		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.frag.spv");
+        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/11_Texture/texture.vert.spv");
+		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/11_Texture/texture.frag.spv");
 		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 	}
     
@@ -258,7 +269,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[2] = { };
+		VkDescriptorSetLayoutBinding layoutBindings[3] = { };
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -270,10 +281,16 @@ private:
 		layoutBindings[1].descriptorCount    = 1;
 		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
+
+		layoutBindings[2].binding 			 = 2;
+		layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutBindings[2].descriptorCount    = 1;
+		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutBindings[2].pImmutableSamplers = nullptr;
         
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 2;
+		descSetLayoutInfo.bindingCount = 3;
 		descSetLayoutInfo.pBindings    = layoutBindings;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
@@ -293,10 +310,8 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
-			m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
-			m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(MVPBlock));
-		}
+		m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
+		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
@@ -308,32 +323,26 @@ private:
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 		boundCenter.z -= boundSize.Size();
 
-		m_MVPDatas.resize(m_Model->meshes.size());
-		m_MVPBuffers.resize(m_Model->meshes.size());
-
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-		{
-			m_MVPDatas[i].model.SetIdentity();
-			m_MVPDatas[i].model.SetOrigin(Vector3(0, 0, 0));
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
         
-			m_MVPDatas[i].view.SetIdentity();
-			m_MVPDatas[i].view.SetOrigin(boundCenter);
-			m_MVPDatas[i].view.SetInverse();
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(boundCenter);
+		m_MVPData.view.SetInverse();
 
-			m_MVPDatas[i].projection.SetIdentity();
-			m_MVPDatas[i].projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 		
-			m_MVPBuffers[i] = vk_demo::DVKBuffer::CreateBuffer(
-				m_VulkanDevice, 
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				sizeof(MVPBlock),
-				&(m_MVPDatas[i])
-			);
-			m_MVPBuffers[i]->Map();
-		}
+		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(MVPBlock),
+			&(m_MVPData)
+		);
+		m_MVPBuffer->Map();
 
-		m_ParamData.intensity = 5.0f;
+		m_ParamData.intensity = 0.0f;
 		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -346,15 +355,9 @@ private:
 	
 	void DestroyUniformBuffers()
 	{
-		m_MVPDatas.clear();
-
-		for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
-			vk_demo::DVKBuffer* buffer = m_MVPBuffers[i];
-			buffer->UnMap();
-			delete buffer;
-		}
-
-		m_MVPBuffers.clear();
+		m_MVPBuffer->UnMap();
+		delete m_MVPBuffer;
+		m_MVPBuffer = nullptr;
 
 		m_ParamBuffer->UnMap();
 		delete m_ParamBuffer;
@@ -374,15 +377,16 @@ private:
 	}
 
 private:
-	typedef std::vector<vk_demo::DVKBuffer*>		DVKBuffers;
 
 	bool 							m_Ready = false;
     
-	std::vector<MVPBlock> 			m_MVPDatas;
-	DVKBuffers						m_MVPBuffers;
+	MVPBlock 						m_MVPData;
+	vk_demo::DVKBuffer*				m_MVPBuffer;
 
 	ParamBlock						m_ParamData;
 	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
+
+	vk_demo::DVKTexture2D*			m_Texture = nullptr;
 	
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 

@@ -10,36 +10,32 @@
 namespace vk_demo
 {
     
-    DVKTexture2D* DVKTexture2D::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::string& filename)
+    DVKTexture2D* DVKTexture2D::Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
     {
-        DVKTexture2D* texture = new DVKTexture2D();
-        texture->vulkanDevice = vulkanDevice;
-        
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
         if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
             MLOGE("Failed load image : %s", filename.c_str());
-            return texture;
+            return nullptr;
         }
-        
-        // png解析
+
         int32 comp   = 0;
         int32 width  = 0;
         int32 height = 0;
         uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
-        
         if (rgbaData == nullptr) {
             MLOGE("Failed load image : %s", filename.c_str());
-            return texture;
+            return nullptr;
         }
         
         VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
         
-        DVKBuffer* stageingBuffer = DVKBuffer::CreateBuffer(vulkanDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, width * height * 4);
-        stageingBuffer->Map();
-        stageingBuffer->CopyFrom(rgbaData, width * height * 4);
+        DVKBuffer* stagingBuffer = DVKBuffer::CreateBuffer(vulkanDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, width * height * 4);
+        stagingBuffer->Map();
+        stagingBuffer->CopyFrom(rgbaData, width * height * 4);
+		stagingBuffer->UnMap();
         
         uint32 memoryTypeIndex = 0;
         VkMemoryRequirements memReqs = {};
@@ -52,7 +48,7 @@ namespace vk_demo
         VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
-        VkDescriptorImageInfo           descriptorInfo;
+		VkDescriptorImageInfo           descriptorInfo = {};
         
         // 创建image
         VkImageCreateInfo imageCreateInfo;
@@ -77,6 +73,9 @@ namespace vk_demo
         VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &imageMemory));
         VERIFYVULKANRESULT(vkBindImageMemory(device, image, imageMemory, 0));
         
+		// start record
+		cmdBuffer->Begin();
+
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         subresourceRange.levelCount = 1;
@@ -91,7 +90,7 @@ namespace vk_demo
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             imageMemoryBarrier.image = image;
             imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
         
         VkBufferImageCopy bufferCopyRegion = {};
@@ -101,9 +100,9 @@ namespace vk_demo
         bufferCopyRegion.imageSubresource.layerCount     = 1;
         bufferCopyRegion.imageExtent.width  = width;
         bufferCopyRegion.imageExtent.height = height;
-        bufferCopyRegion.imageExtent.depth  = 0;
+        bufferCopyRegion.imageExtent.depth  = 1;
         
-        vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stageingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
+        vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
         
         {
             VkImageMemoryBarrier imageMemoryBarrier;
@@ -114,9 +113,9 @@ namespace vk_demo
             imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
             imageMemoryBarrier.image = image;
             imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
         }
-        
+
         // Generate the mip chain
         for (uint32_t i = 1; i < mipLevels; i++) {
             VkImageBlit imageBlit = {};
@@ -124,14 +123,14 @@ namespace vk_demo
             imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             imageBlit.srcSubresource.layerCount = 1;
             imageBlit.srcSubresource.mipLevel   = i - 1;
-            imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+            imageBlit.srcOffsets[1].x = int32_t(width  >> (i - 1));
             imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
             imageBlit.srcOffsets[1].z = 1;
             
             imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             imageBlit.dstSubresource.layerCount = 1;
             imageBlit.dstSubresource.mipLevel   = i;
-            imageBlit.dstOffsets[1].x = int32_t(width >> i);
+            imageBlit.dstOffsets[1].x = int32_t(width  >> i);
             imageBlit.dstOffsets[1].y = int32_t(height >> i);
             imageBlit.dstOffsets[1].z = 1;
             
@@ -167,7 +166,69 @@ namespace vk_demo
                 vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
             }
         }
-        
+
+		subresourceRange.levelCount = mipLevels;
+		
+		{
+			VkImageMemoryBarrier imageMemoryBarrier;
+			ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			imageMemoryBarrier.image = image;
+			imageMemoryBarrier.subresourceRange = subresourceRange;
+			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+		}
+
+		cmdBuffer->End();
+		cmdBuffer->Submit();
+
+		delete stagingBuffer;
+
+		VkSamplerCreateInfo samplerInfo;
+		ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+		samplerInfo.magFilter        = VK_FILTER_LINEAR;
+		samplerInfo.minFilter        = VK_FILTER_LINEAR;
+		samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.compareOp	     = VK_COMPARE_OP_NEVER;
+		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerInfo.maxAnisotropy    = 1.0;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxLod           = (float)mipLevels;
+		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+		
+		VkImageViewCreateInfo viewInfo;
+		ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
+		viewInfo.image      = image;
+		viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format     = format;
+		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.subresourceRange.levelCount = mipLevels;
+		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
+
+		descriptorInfo.sampler     = imageSampler;
+		descriptorInfo.imageView   = imageView;
+		descriptorInfo.imageLayout = imageLayout;
+
+		DVKTexture2D* texture   = new DVKTexture2D();
+		texture->descriptorInfo = descriptorInfo;
+		texture->format         = format;
+		texture->height         = height;
+		texture->image          = image;
+		texture->imageLayout    = imageLayout;
+		texture->imageMemory    = imageMemory;
+		texture->imageSampler   = imageSampler;
+		texture->imageView      = imageView;
+		texture->vulkanDevice   = vulkanDevice;
+		texture->width          = width;
+		texture->mipLevels		= mipLevels;
+
         return texture;
     }
     

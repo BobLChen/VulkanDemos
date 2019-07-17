@@ -46,7 +46,7 @@ namespace vk_demo
             }
         }
         
-        static DVKTexture2D* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::string& filename);
+        static DVKTexture2D* Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
         
     public:
         std::shared_ptr<VulkanDevice>   vulkanDevice = nullptr;
