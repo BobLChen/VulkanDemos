@@ -179,7 +179,7 @@ private:
 
 			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
 			{
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[meshIndex], 0, nullptr);
 				m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
 			}
 			

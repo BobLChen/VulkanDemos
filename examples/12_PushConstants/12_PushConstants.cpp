@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -71,12 +71,16 @@ public:
 
 private:
     
-	struct MVPBlock
+	struct ViewProjectionBlock
 	{
-		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
+    
+    struct ModelPushConstantBlock
+    {
+        Matrix4x4 model;
+    };
 
 	void Draw(float time, float delta)
 	{
@@ -94,13 +98,7 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("PushConstants", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Renderabls");
-
-			for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-			{
-				vk_demo::DVKMesh* mesh = m_Model->meshes[i];
-				ImGui::Text("%-20s Tri:%d", mesh->linkNode->name.c_str(), mesh->triangleCount);
-			}
-
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -175,10 +173,15 @@ private:
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
             
             vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->pipeline);
+            vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
             
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
             {
-                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+                const Matrix4x4& globalMatrix = m_Model->meshes[meshIndex]->linkNode->GetGlobalMatrix();
+                vkCmdPushConstants(
+                    m_CommandBuffers[i], m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT,
+                    0, sizeof(ModelPushConstantBlock), &globalMatrix
+                );
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
 			
@@ -215,7 +218,7 @@ private:
         writeDescriptorSet.dstSet          = m_DescriptorSet;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
+        writeDescriptorSet.pBufferInfo     = &(m_ViewProjBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 0;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
@@ -252,10 +255,17 @@ private:
 		descSetLayoutInfo.pBindings    = layoutBindings;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
+        VkPushConstantRange pushConstantRange = {};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        pushConstantRange.offset     = 0;
+        pushConstantRange.size       = sizeof(ModelPushConstantBlock);
+        
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
 		ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
 		pipeLayoutInfo.setLayoutCount = 1;
 		pipeLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
+        pipeLayoutInfo.pushConstantRangeCount = 1;
+        pipeLayoutInfo.pPushConstantRanges    = &pushConstantRange;
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 	}
     
@@ -268,8 +278,8 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
+        m_Model->rootNode->localMatrix.AppendRotation(10.0f * delta, Vector3::UpVector);
+        SetupCommandBuffers();
 	}
 
 	void CreateUniformBuffers()
@@ -277,35 +287,33 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size() * 0.5f;
-
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+		boundCenter.z -= boundSize.Size() * 0.75f;
         
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
+		m_ViewProjData.view.SetIdentity();
+		m_ViewProjData.view.SetOrigin(boundCenter);
+        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetInverse();
 
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewProjData.projection.SetIdentity();
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 		
-		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(MVPBlock),
-			&(m_MVPData)
+			sizeof(ViewProjectionBlock),
+			&(m_ViewProjData)
 		);
-		m_MVPBuffer->Map();
+		m_ViewProjBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
 	{
-		m_MVPBuffer->UnMap();
-		delete m_MVPBuffer;
-		m_MVPBuffer = nullptr;
+		m_ViewProjBuffer->UnMap();
+		delete m_ViewProjBuffer;
+		m_ViewProjBuffer = nullptr;
 	}
-
+    
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
@@ -322,8 +330,8 @@ private:
 
 	bool 							m_Ready = false;
     
-	MVPBlock 						m_MVPData;
-	vk_demo::DVKBuffer*				m_MVPBuffer;
+	ViewProjectionBlock 			m_ViewProjData;
+	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 
@@ -339,5 +347,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<PushConstantsModule>(1400, 900, "Texture", cmdLine);
+	return std::make_shared<PushConstantsModule>(1400, 900, "PushConstants", cmdLine);
 }

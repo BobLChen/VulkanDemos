@@ -207,7 +207,8 @@ namespace vk_demo
 		vkNode->localMatrix.m[3][1] = aiNode->mTransformation.d2;
 		vkNode->localMatrix.m[3][2] = aiNode->mTransformation.d3;
 		vkNode->localMatrix.m[3][3] = aiNode->mTransformation.d4;
-
+        vkNode->localMatrix.SetTransposed();
+        
 		// mesh
         if (aiNode->mNumMeshes > 0) {
 			for (int i = 0; i < aiNode->mNumMeshes; ++i) 
@@ -227,9 +228,7 @@ namespace vk_demo
 			childNode->parent  = vkNode;
 			vkNode->children.push_back(childNode);
         }
-
-		vkNode->invalid = true;
-
+        
 		return vkNode;
     }
     
