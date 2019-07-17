@@ -75,3 +75,6 @@ Vulkan Examples
 
 ### Pipelines
 ![Pipelines](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/10_Pipelines.jpg)
+
+### Texture
+![Texture](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/11_Texture.jpg)
