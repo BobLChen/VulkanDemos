@@ -219,21 +219,6 @@ SETUP_SAMPLE_START(11_Texture.cpp)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(11_Texture.cpp)
 
-# SETUP_SAMPLE_START(5_Texture)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/5_Texture/Texture.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/5_Texture/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(5_Texture)
-
 # SETUP_SAMPLE_START(6_DynamicUniformBuffer)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
