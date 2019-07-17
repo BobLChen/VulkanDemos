@@ -80,7 +80,15 @@ private:
 
 	struct ParamBlock
 	{
-		float intensity;
+		Vector3 lightDir;
+		float curvature;
+
+		Vector3 lightColor;
+		float exposure;
+
+		Vector2 curvatureScaleBias;
+		float blurredLevel;
+		float padding;
 	};
     
 	void Draw(float time, float delta)
@@ -106,8 +114,15 @@ private:
 				ImGui::Text("%-20s Tri:%d", mesh->linkNode->name.c_str(), mesh->triangleCount);
 			}
 
-			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
-            
+			ImGui::SliderFloat("Curvature", &(m_ParamData.curvature),       0.0f, 10.0f);
+			ImGui::SliderFloat2("CurvatureBias", (float*)&(m_ParamData.curvatureScaleBias), 0.0f, 1.0f);
+
+			ImGui::SliderFloat("BlurredLevel", &(m_ParamData.blurredLevel), 0.0f, 12.0f);
+			ImGui::SliderFloat("Exposure", &(m_ParamData.exposure),         0.0f, 10.0f);
+
+			ImGui::SliderFloat3("LightDirection", (float*)&(m_ParamData.lightDir), -10.0f, 10.0f);
+			ImGui::ColorEdit3("LightColor", (float*)&(m_ParamData.lightColor));
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -124,13 +139,16 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Vela_Template.fbx",
+			"assets/models/head.obj",
 			m_VulkanDevice,
 			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent }
 		);
 
-		m_Texture = vk_demo::DVKTexture2D::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
+		m_TexDiffuse       = vk_demo::DVKTexture2D::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
+		m_TexNormal        = vk_demo::DVKTexture2D::Create("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
+		m_TexCurvature     = vk_demo::DVKTexture2D::Create("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
+		m_TexPreIntegrated = vk_demo::DVKTexture2D::Create("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
 
 		delete cmdBuffer;
 	}
@@ -138,7 +156,11 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
-		delete m_Texture;
+
+		delete m_TexDiffuse;
+		delete m_TexNormal;
+		delete m_TexCurvature;
+		delete m_TexPreIntegrated;
 	}
     
 	void SetupCommandBuffers()
@@ -205,7 +227,7 @@ private:
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 2;
 		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = 1;
+		poolSizes[1].descriptorCount = 4;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -239,15 +261,18 @@ private:
         writeDescriptorSet.dstBinding      = 1;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 
-		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-        writeDescriptorSet.dstSet          = m_DescriptorSet;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        writeDescriptorSet.pBufferInfo     = nullptr;
-		writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
-        writeDescriptorSet.dstBinding      = 2;
-
-        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+		std::vector<vk_demo::DVKTexture2D*> textures = { m_TexDiffuse, m_TexNormal, m_TexCurvature, m_TexPreIntegrated };
+		for (int32 i = 0; i < 4; ++i)
+		{
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = m_DescriptorSet;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptorSet.pBufferInfo     = nullptr;
+			writeDescriptorSet.pImageInfo      = &(textures[i]->descriptorInfo);
+			writeDescriptorSet.dstBinding      = 2 + i;
+			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+		}
 	}
     
 	void CreatePipelines()
@@ -269,7 +294,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[3] = { };
+		VkDescriptorSetLayoutBinding layoutBindings[6] = { };
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -279,18 +304,21 @@ private:
 		layoutBindings[1].binding 			 = 1;
 		layoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[1].descriptorCount    = 1;
-		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
 
-		layoutBindings[2].binding 			 = 2;
-		layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		layoutBindings[2].descriptorCount    = 1;
-		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutBindings[2].pImmutableSamplers = nullptr;
-        
+		for (int32 i = 0; i < 4; ++i)
+		{
+			layoutBindings[2 + i].binding 			 = 2 + i;
+			layoutBindings[2 + i].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			layoutBindings[2 + i].descriptorCount    = 1;
+			layoutBindings[2 + i].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
+			layoutBindings[2 + i].pImmutableSamplers = nullptr;
+		}
+		
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 3;
+		descSetLayoutInfo.bindingCount = 6;
 		descSetLayoutInfo.pBindings    = layoutBindings;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
@@ -310,8 +338,8 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
+		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
+		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
@@ -321,7 +349,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size();
+		boundCenter.z -= boundSize.Size() * 0.5f;
 
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
@@ -342,7 +370,15 @@ private:
 		);
 		m_MVPBuffer->Map();
 
-		m_ParamData.intensity = 0.0f;
+		m_ParamData.blurredLevel = 2.0;
+		m_ParamData.curvature = 3.5;
+		m_ParamData.curvatureScaleBias.x = 0.101;
+		m_ParamData.curvatureScaleBias.y = -0.001;
+		m_ParamData.exposure = 1.0;
+		m_ParamData.lightColor.Set(240.0f / 255.0f, 200.0f / 255.0f, 166.0f / 255.0f);
+		m_ParamData.lightDir.Set(1, 0, -1.0);
+		m_ParamData.lightDir.Normalize();
+		m_ParamData.padding = 0.0;
 		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -386,7 +422,10 @@ private:
 	ParamBlock						m_ParamData;
 	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
 
-	vk_demo::DVKTexture2D*			m_Texture = nullptr;
+	vk_demo::DVKTexture2D*			m_TexDiffuse = nullptr;
+	vk_demo::DVKTexture2D*			m_TexNormal = nullptr;
+	vk_demo::DVKTexture2D*			m_TexCurvature = nullptr;
+	vk_demo::DVKTexture2D*			m_TexPreIntegrated = nullptr;
 	
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 
