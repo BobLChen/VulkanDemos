@@ -69,6 +69,21 @@ elseif (UNIX)
 	)
 endif ()
 
+SETUP_SAMPLE_START(0_SuperDemo)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/0_SuperDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/0_SuperDemo/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(0_SuperDemo)
+
 SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
 		${MainLaunch}
@@ -189,7 +204,7 @@ SETUP_SAMPLE_START(9_LoadMesh)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(9_LoadMesh)
 
-SETUP_SAMPLE_START(10_Pipelines.cpp)
+SETUP_SAMPLE_START(10_Pipelines)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/10_Pipelines/10_Pipelines.cpp
@@ -202,9 +217,9 @@ SETUP_SAMPLE_START(10_Pipelines.cpp)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(10_Pipelines.cpp)
+SETUP_SAMPLE_END(10_Pipelines)
 
-SETUP_SAMPLE_START(11_Texture.cpp)
+SETUP_SAMPLE_START(11_Texture)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/11_Texture/11_Texture.cpp
@@ -217,7 +232,22 @@ SETUP_SAMPLE_START(11_Texture.cpp)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(11_Texture.cpp)
+SETUP_SAMPLE_END(11_Texture)
+
+SETUP_SAMPLE_START(12_PushConstants)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/12_PushConstants/12_PushConstants.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/11_Texture/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(12_PushConstants)
 
 # SETUP_SAMPLE_START(6_DynamicUniformBuffer)
 # 	SET(SOURCE_FILES
