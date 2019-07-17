@@ -96,6 +96,7 @@ namespace vk_demo
 					vertices.push_back(aiMesh->mTangents[i].x);
 					vertices.push_back(aiMesh->mTangents[i].y);
 					vertices.push_back(aiMesh->mTangents[i].z);
+					vertices.push_back(1);
 				}
 				else if (attributes[j] == VertexAttribute::VA_Color) 
 				{
