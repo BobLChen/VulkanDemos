@@ -239,7 +239,7 @@ SETUP_SAMPLE_START(12_PushConstants)
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/12_PushConstants/12_PushConstants.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/11_Texture/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/12_PushConstants/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
