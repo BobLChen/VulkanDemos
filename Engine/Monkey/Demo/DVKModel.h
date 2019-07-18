@@ -85,6 +85,13 @@ namespace vk_demo
 			indexBuffer->BindDraw(cmdBuffer);
 		}
 	};
+
+	struct DVKMaterial
+	{
+		std::string		diffuse;
+		std::string		normalmap;
+		std::string		specular;
+	};
     
     struct DVKMesh
     {
@@ -93,6 +100,8 @@ namespace vk_demo
 		DVKPrimitives	primitives;
 		DVKBoundingBox	bounding;
         DVKNode*		linkNode;
+
+		DVKMaterial		material;
 
 		int32			vertexCount;
 		int32			triangleCount;
