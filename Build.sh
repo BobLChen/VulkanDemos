@@ -8,4 +8,4 @@ else
 fi
 Local_Dir=$(cd "$(dirname "$0")"; pwd)
 echo "Now work at Dir:$Local_Dir"
-make -j64
+make -j4
