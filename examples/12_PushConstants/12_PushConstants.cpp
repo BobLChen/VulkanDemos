@@ -85,7 +85,9 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniformBuffers(time, delta);
+		if (m_AutoRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
     
@@ -99,6 +101,8 @@ private:
             ImGui::Begin("PushConstants", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Renderabls");
             
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -328,6 +332,7 @@ private:
 
 private:
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
 	ViewProjectionBlock 			m_ViewProjData;

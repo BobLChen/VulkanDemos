@@ -90,8 +90,10 @@ private:
 
 	void Draw(float time, float delta)
 	{
-		UpdateUniformBuffers(time, delta);
 		UpdateUI(time, delta);
+		if (m_EnableRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
 
@@ -108,8 +110,9 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("ImGUI!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove); 
-
-            ImGui::Text("This is some useful text.");
+			ImGui::Checkbox("AutoRotate", &m_EnableRotate);
+            
+			ImGui::Text("This is some useful text.");
             ImGui::Checkbox("Demo Window", &yes);
             ImGui::Checkbox("Another Window", &yes);
 
@@ -500,6 +503,7 @@ private:
 	}
     
 private:
+	bool							m_EnableRotate = false;
 	bool 							m_Ready = false;
     
 	UBOData 						m_MVPData;

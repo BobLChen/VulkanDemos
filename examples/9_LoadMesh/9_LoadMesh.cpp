@@ -82,7 +82,9 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniformBuffers(time, delta);
+		if (m_AutoRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
     
@@ -95,6 +97,8 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("LoadMesh!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Load mesh from file.");
+
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
 
 			for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 			{
@@ -447,6 +451,7 @@ private:
 	typedef std::vector<vk_demo::DVKBuffer*>	DVKBuffers;
 	typedef std::vector<VkDescriptorSet>		VkDescriptorSets;
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
 	std::vector<UBOData> 			m_MVPDatas;

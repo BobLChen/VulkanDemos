@@ -85,7 +85,9 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniformBuffers(time, delta);
+		if (m_AutoRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
     
@@ -97,6 +99,9 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Pipelines!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
+			
 			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -391,6 +396,7 @@ private:
 	typedef std::vector<VkDescriptorSet>			VkDescriptorSets;
 	typedef std::vector<vk_demo::DVKPipeline*>		DVKPipelines;
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
 	std::vector<MVPBlock> 			m_MVPDatas;
