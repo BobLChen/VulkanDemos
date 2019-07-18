@@ -82,7 +82,9 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniformBuffers(time, delta);
+		if (m_AutoRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
     
@@ -95,6 +97,8 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("LoadMesh!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Load mesh from file.");
+
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
 
 			for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 			{
@@ -179,7 +183,7 @@ private:
 
 			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
 			{
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[meshIndex], 0, nullptr);
 				m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
 			}
 			
@@ -447,6 +451,7 @@ private:
 	typedef std::vector<vk_demo::DVKBuffer*>	DVKBuffers;
 	typedef std::vector<VkDescriptorSet>		VkDescriptorSets;
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
 	std::vector<UBOData> 			m_MVPDatas;

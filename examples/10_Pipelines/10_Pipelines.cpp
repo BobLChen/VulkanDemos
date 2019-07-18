@@ -85,7 +85,9 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniformBuffers(time, delta);
+		if (m_AutoRotate) {
+			UpdateUniformBuffers(time, delta);
+		}
         DemoBase::Present();
 	}
     
@@ -97,6 +99,9 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Pipelines!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
+			
 			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -177,10 +182,9 @@ private:
 				vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
 
 				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[j]->pipeline);
-
-				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
-				{
-					vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+                
+				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
 					m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
 				}
 			}
@@ -392,6 +396,7 @@ private:
 	typedef std::vector<VkDescriptorSet>			VkDescriptorSets;
 	typedef std::vector<vk_demo::DVKPipeline*>		DVKPipelines;
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
 	std::vector<MVPBlock> 			m_MVPDatas;

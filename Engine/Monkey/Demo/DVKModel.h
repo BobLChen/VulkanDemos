@@ -136,13 +136,11 @@ namespace vk_demo
         Matrix4x4					globalMatrix;
 
 		int32						index;
-        bool						invalid;
         
         DVKNode()
             : name("None")
             , parent(nullptr)
 			, index(-1)
-            , invalid(true)
         {
             
         }
@@ -154,11 +152,6 @@ namespace vk_demo
         
         const Matrix4x4& GetGlobalMatrix()
         {
-            if (!invalid) {
-                return globalMatrix;
-            }
-            invalid = false;
-            
             globalMatrix = localMatrix;
             
             if (parent) {

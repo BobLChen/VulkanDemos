@@ -207,10 +207,9 @@ private:
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
             
             vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->pipeline);
+            vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
             
-            for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
-            {
-                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
+            for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
 			
@@ -340,10 +339,9 @@ private:
 	{
 		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
 		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
-
-		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
+		// m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
-
+    
 	void CreateUniformBuffers()
 	{
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
