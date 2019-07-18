@@ -249,6 +249,21 @@ SETUP_SAMPLE_START(12_PushConstants)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(12_PushConstants)
 
+SETUP_SAMPLE_START(13_DynamicUniformBuffer)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/13_DynamicUniformBuffer/13_DynamicUniformBuffer.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/13_DynamicUniformBuffer/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(13_DynamicUniformBuffer)
+
 # SETUP_SAMPLE_START(6_DynamicUniformBuffer)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
@@ -263,36 +278,6 @@ SETUP_SAMPLE_END(12_PushConstants)
 # 	endforeach()
 # 	SET(RESOURCE_FILES ${ASSETS})
 # SETUP_SAMPLE_END(6_DynamicUniformBuffer)
-
-# SETUP_SAMPLE_START(7_PushConstants)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/7_PushConstants/PushConstants.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/7_PushConstants/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(7_PushConstants)
-
-# SETUP_SAMPLE_START(8_SpecializationConstant)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/8_SpecializationConstant/SpecializationConstant.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/8_SpecializationConstant/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(8_SpecializationConstant)
 
 # SETUP_SAMPLE_START(9_TextureArray)
 # 	SET(SOURCE_FILES

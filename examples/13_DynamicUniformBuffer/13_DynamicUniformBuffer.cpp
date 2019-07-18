@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -13,16 +13,16 @@
 #include <vector>
 #include <fstream>
 
-class TextureModule : public DemoBase
+class DynamicUniformBufferModule : public DemoBase
 {
 public:
-	TextureModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	DynamicUniformBufferModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
     
-	virtual ~TextureModule()
+	virtual ~DynamicUniformBufferModule()
 	{
 
 	}
@@ -71,24 +71,20 @@ public:
 
 private:
     
-	struct MVPBlock
+	struct ModelBlock
 	{
 		Matrix4x4 model;
-		Matrix4x4 view;
-		Matrix4x4 projection;
 	};
 
-	struct ParamBlock
+	struct ColorBlock
 	{
-		Vector3 lightDir;
-		float curvature;
+		Vector4 color;
+	};
 
-		Vector3 lightColor;
-		float exposure;
-
-		Vector2 curvatureScaleBias;
-		float blurredLevel;
-		float padding;
+	struct ViewProjectionBlock
+	{
+		Matrix4x4 view;
+		Matrix4x4 projection;
 	};
     
 	void Draw(float time, float delta)
@@ -105,23 +101,19 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("Texture", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("SSS Demo");
+            ImGui::Begin("DynamicUniformBuffer", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Text("Renderabls");
+            
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
 
-			for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-			{
-				vk_demo::DVKMesh* mesh = m_Model->meshes[i];
-				ImGui::Text("%-20s Tri:%d", mesh->linkNode->name.c_str(), mesh->triangleCount);
+			if (ImGui::SliderFloat("Alpha", &m_GlobalAlpha, 0.0f, 1.0f)) {
+				for (int32 i = 0; i < m_ColorDatas.size(); ++i) {
+					m_ColorDatas[i].color.w = m_GlobalAlpha;
+				}
 			}
 
-			ImGui::SliderFloat("Curvature", &(m_ParamData.curvature),       0.0f, 10.0f);
-			ImGui::SliderFloat2("CurvatureBias", (float*)&(m_ParamData.curvatureScaleBias), 0.0f, 1.0f);
-
-			ImGui::SliderFloat("BlurredLevel", &(m_ParamData.blurredLevel), 0.0f, 12.0f);
-			ImGui::SliderFloat("Exposure", &(m_ParamData.exposure),         0.0f, 10.0f);
-
-			ImGui::SliderFloat3("LightDirection", (float*)&(m_ParamData.lightDir), -10.0f, 10.0f);
-			ImGui::ColorEdit3("LightColor", (float*)&(m_ParamData.lightColor));
+			ImGui::Combo("Select Mesh", &m_Selected, m_MeshNames.data(), m_MeshNames.size());
+			ImGui::ColorEdit4("Mesh Color", (float*)&(m_ColorDatas[m_Selected].color), ImGuiColorEditFlags_AlphaBar);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -139,16 +131,11 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/head.obj",
+			"assets/models/littlesttokyo.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent }
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
 		);
-
-		m_TexDiffuse       = vk_demo::DVKTexture2D::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
-		m_TexNormal        = vk_demo::DVKTexture2D::Create("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
-		m_TexCurvature     = vk_demo::DVKTexture2D::Create("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
-		m_TexPreIntegrated = vk_demo::DVKTexture2D::Create("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
 
 		delete cmdBuffer;
 	}
@@ -156,11 +143,6 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
-
-		delete m_TexDiffuse;
-		delete m_TexNormal;
-		delete m_TexCurvature;
-		delete m_TexPreIntegrated;
 	}
     
 	void SetupCommandBuffers()
@@ -182,6 +164,10 @@ private:
         renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
         renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
         
+		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+		uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
+
 		for (int32 i = 0; i < m_CommandBuffers.size(); ++i)
 		{
             renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
@@ -207,9 +193,14 @@ private:
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
             
             vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->pipeline);
-            vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
             
-            for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
+            for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
+            {
+				uint32 dynamicOffsets[2] = {
+					meshIndex * modelAlign,
+					meshIndex * colorAlign
+				};
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 2, dynamicOffsets);
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
 			
@@ -224,9 +215,9 @@ private:
 	{
 		VkDescriptorPoolSize poolSizes[2];
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 2;
-		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = 4;
+		poolSizes[0].descriptorCount = 1;
+		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes[1].descriptorCount = 2;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -248,30 +239,25 @@ private:
         writeDescriptorSet.dstSet          = m_DescriptorSet;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
+        writeDescriptorSet.pBufferInfo     = &(m_ViewProjBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 0;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-        
-        ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
         writeDescriptorSet.dstSet          = m_DescriptorSet;
         writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        writeDescriptorSet.pBufferInfo     = &(m_ModelBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 1;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 
-		std::vector<vk_demo::DVKTexture2D*> textures = { m_TexDiffuse, m_TexNormal, m_TexCurvature, m_TexPreIntegrated };
-		for (int32 i = 0; i < 4; ++i)
-		{
-			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-			writeDescriptorSet.dstSet          = m_DescriptorSet;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pBufferInfo     = nullptr;
-			writeDescriptorSet.pImageInfo      = &(textures[i]->descriptorInfo);
-			writeDescriptorSet.dstBinding      = 2 + i;
-			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-		}
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        writeDescriptorSet.pBufferInfo     = &(m_ColorBuffer->descriptor);
+        writeDescriptorSet.dstBinding      = 2;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
 	void CreatePipelines()
@@ -280,8 +266,17 @@ private:
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
 		vk_demo::DVKPipelineInfo pipelineInfo(m_VulkanDevice);
-        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/11_Texture/texture.vert.spv");
-		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/11_Texture/texture.frag.spv");
+        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.vert.spv");
+		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.frag.spv");
+		
+		pipelineInfo.blendAttachmentState.blendEnable         = VK_TRUE;
+		pipelineInfo.blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		pipelineInfo.blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipelineInfo.blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
+		pipelineInfo.blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		pipelineInfo.blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipelineInfo.blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
+
 		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 	}
     
@@ -293,7 +288,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[6] = { };
+		VkDescriptorSetLayoutBinding layoutBindings[3] = { };
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -301,23 +296,20 @@ private:
 		layoutBindings[0].pImmutableSamplers = nullptr;
 
 		layoutBindings[1].binding 			 = 1;
-		layoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		layoutBindings[1].descriptorCount    = 1;
-		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
 
-		for (int32 i = 0; i < 4; ++i)
-		{
-			layoutBindings[2 + i].binding 			 = 2 + i;
-			layoutBindings[2 + i].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			layoutBindings[2 + i].descriptorCount    = 1;
-			layoutBindings[2 + i].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
-			layoutBindings[2 + i].pImmutableSamplers = nullptr;
-		}
-		
+		layoutBindings[2].binding 			 = 2;
+		layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		layoutBindings[2].descriptorCount    = 1;
+		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutBindings[2].pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 6;
+		descSetLayoutInfo.bindingCount = 3;
 		descSetLayoutInfo.pBindings    = layoutBindings;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
@@ -337,67 +329,95 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
-		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
+		// for (int32 i = 0; i < m_ModelDatas.size(); ++i) {
+		// 	m_ModelDatas[i].model.AppendRotation(10.0f * delta, Vector3::UpVector);
+		// }
+		// m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
+
+		m_ColorBuffer->CopyFrom(m_ColorDatas.data(), m_ColorBuffer->size);
 	}
-    
+
 	void CreateUniformBuffers()
 	{
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size() * 0.5f;
-
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+		boundCenter.z -= boundSize.Size() * 0.75f;
         
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
+		// world matrix dynamicbuffer
+		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+		m_ModelDatas.resize(m_Model->meshes.size());
+		for (int32 i = 0; i < m_ModelDatas.size(); ++i) {
+			m_ModelDatas[i].model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
+		}
 
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ModelBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			modelAlign * m_Model->meshes.size(),
+			m_ModelDatas.data()
+		);
+		m_ModelBuffer->Map();
+
+		// view projection buffer
+		m_ViewProjData.view.SetIdentity();
+		m_ViewProjData.view.SetOrigin(boundCenter);
+        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetInverse();
+
+		m_ViewProjData.projection.SetIdentity();
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 		
-		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(MVPBlock),
-			&(m_MVPData)
+			sizeof(ViewProjectionBlock),
+			&(m_ViewProjData)
 		);
-		m_MVPBuffer->Map();
+		m_ViewProjBuffer->Map();
 
-		m_ParamData.blurredLevel = 2.0;
-		m_ParamData.curvature = 3.5;
-		m_ParamData.curvatureScaleBias.x = 0.101;
-		m_ParamData.curvatureScaleBias.y = -0.001;
-		m_ParamData.exposure = 1.0;
-		m_ParamData.lightColor.Set(240.0f / 255.0f, 200.0f / 255.0f, 166.0f / 255.0f);
-		m_ParamData.lightDir.Set(1, 0, -1.0);
-		m_ParamData.lightDir.Normalize();
-		m_ParamData.padding = 0.0;
-		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		// color per object
+		uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
+		m_ColorDatas.resize(m_Model->meshes.size());
+		for (int32 i = 0; i < m_ColorDatas.size(); ++i) 
+		{
+			float r = MMath::RandRange(0.0f, 1.0f);
+			float g = MMath::RandRange(0.0f, 1.0f);
+			float b = MMath::RandRange(0.0f, 1.0f);
+			m_ColorDatas[i].color.Set(r, g, b, 1.0f);
+		}
+		m_ColorBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(ParamBlock),
-			&(m_ParamData)
+			colorAlign * m_ColorDatas.size(),
+			m_ColorDatas.data()
 		);
-		m_ParamBuffer->Map();
+		m_ColorBuffer->Map();
+
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
+			m_MeshNames.push_back(m_Model->meshes[i]->linkNode->name.c_str());
+		}
 	}
 	
 	void DestroyUniformBuffers()
 	{
-		m_MVPBuffer->UnMap();
-		delete m_MVPBuffer;
-		m_MVPBuffer = nullptr;
+		m_ViewProjBuffer->UnMap();
+		delete m_ViewProjBuffer;
+		m_ViewProjBuffer = nullptr;
 
-		m_ParamBuffer->UnMap();
-		delete m_ParamBuffer;
-		m_ParamBuffer = nullptr;
+		m_ModelBuffer->UnMap();
+		delete m_ModelBuffer;
+		m_ModelBuffer = nullptr;
+
+		m_ColorBuffer->UnMap();
+		delete m_ColorBuffer;
+		m_ColorBuffer = nullptr;
 	}
-
+    
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
@@ -412,19 +432,24 @@ private:
 
 private:
 
+	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
-	MVPBlock 						m_MVPData;
-	vk_demo::DVKBuffer*				m_MVPBuffer;
-
-	ParamBlock						m_ParamData;
-	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
-
-	vk_demo::DVKTexture2D*			m_TexDiffuse = nullptr;
-	vk_demo::DVKTexture2D*			m_TexNormal = nullptr;
-	vk_demo::DVKTexture2D*			m_TexCurvature = nullptr;
-	vk_demo::DVKTexture2D*			m_TexPreIntegrated = nullptr;
+	int32							m_Alignment;
 	
+	std::vector<ModelBlock> 		m_ModelDatas;
+	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
+
+	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
+	ViewProjectionBlock				m_ViewProjData;
+
+	std::vector<ColorBlock>			m_ColorDatas;
+	vk_demo::DVKBuffer*				m_ColorBuffer = nullptr;
+
+	std::vector<const char*>		m_MeshNames;
+	int32							m_Selected = 0;
+	float							m_GlobalAlpha = 1.0f;
+
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 
 	vk_demo::DVKModel*				m_Model = nullptr;
@@ -439,5 +464,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<TextureModule>(1400, 900, "Texture", cmdLine);
+	return std::make_shared<DynamicUniformBufferModule>(1400, 900, "DynamicUniformBuffer", cmdLine);
 }

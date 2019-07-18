@@ -19,10 +19,9 @@
 #include <vector>
 #include <memory>
 
-#include <assimp/Importer.hpp> 
-#include <assimp/scene.h>     
-#include <assimp/postprocess.h>
-#include <assimp/cimport.h>
+struct aiMesh;
+struct aiScene;
+struct aiNode;
 
 namespace vk_demo
 {
@@ -86,6 +85,13 @@ namespace vk_demo
 			indexBuffer->BindDraw(cmdBuffer);
 		}
 	};
+
+	struct DVKMaterial
+	{
+		std::string		diffuse;
+		std::string		normalmap;
+		std::string		specular;
+	};
     
     struct DVKMesh
     {
@@ -94,6 +100,8 @@ namespace vk_demo
 		DVKPrimitives	primitives;
 		DVKBoundingBox	bounding;
         DVKNode*		linkNode;
+
+		DVKMaterial		material;
 
 		int32			vertexCount;
 		int32			triangleCount;

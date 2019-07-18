@@ -2,8 +2,49 @@
 
 #include "File/FileManager.h"
 
+#include <assimp/Importer.hpp> 
+#include <assimp/scene.h>     
+#include <assimp/postprocess.h>
+#include <assimp/cimport.h>
+
 namespace vk_demo
 {
+	void SimplifyTexturePath(std::string& path)
+	{
+		const size_t lastSlashIdx = path.find_last_of("\\/");
+		if (std::string::npos != lastSlashIdx) {
+			path.erase(0, lastSlashIdx + 1);
+		}
+
+		const size_t periodIdx = path.rfind('.');
+		if (std::string::npos != periodIdx) {
+			path.erase(periodIdx);
+		}
+	}
+
+	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterial& material)
+	{
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE)) {
+			aiString texturePath;
+			aiMaterial->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texturePath);
+			material.diffuse = texturePath.C_Str();
+			SimplifyTexturePath(material.diffuse);
+		}
+		
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_NORMALS)) {
+			aiString texturePath;
+			aiMaterial->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &texturePath);
+			material.normalmap = texturePath.C_Str();
+			SimplifyTexturePath(material.normalmap);
+		}
+
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_SPECULAR)) {
+			aiString texturePath;
+			aiMaterial->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &texturePath);
+			material.specular = texturePath.C_Str();
+			SimplifyTexturePath(material.specular);
+		}
+	}
 
 	DVKModel* DVKModel::LoadFromFile(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<VertexAttribute>& attributes)
     {
@@ -53,6 +94,14 @@ namespace vk_demo
 
 		std::vector<float>  vertices;
 		std::vector<uint32> indices;
+
+		aiMaterial* material = aiScene->mMaterials[aiMesh->mMaterialIndex];
+		if (material) {
+			FillMaterialTextures(material, mesh->material);
+		}
+
+		aiString texPath;
+		material->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texPath);
 
 		for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
 		{
