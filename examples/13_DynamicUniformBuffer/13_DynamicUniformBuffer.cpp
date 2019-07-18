@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -105,15 +105,21 @@ private:
 			ImGui::Text("Renderabls");
             
 			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
-
+            
+            uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+            uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
+            
 			if (ImGui::SliderFloat("Alpha", &m_GlobalAlpha, 0.0f, 1.0f)) {
-				for (int32 i = 0; i < m_ColorDatas.size(); ++i) {
-					m_ColorDatas[i].color.w = m_GlobalAlpha;
+				for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
+                    ColorBlock* colorBlock = (ColorBlock*)(m_ColorDatas.data() + colorAlign * i);
+					colorBlock->color.w = m_GlobalAlpha;
 				}
 			}
-
+            
 			ImGui::Combo("Select Mesh", &m_Selected, m_MeshNames.data(), m_MeshNames.size());
-			ImGui::ColorEdit4("Mesh Color", (float*)&(m_ColorDatas[m_Selected].color), ImGuiColorEditFlags_AlphaBar);
+            
+            ColorBlock* selectedColorBlock = (ColorBlock*)(m_ColorDatas.data() + m_Selected * colorAlign);
+			ImGui::ColorEdit4("Mesh Color", (float*)&(selectedColorBlock->color), ImGuiColorEditFlags_AlphaBar);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -329,10 +335,18 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		// for (int32 i = 0; i < m_ModelDatas.size(); ++i) {
-		// 	m_ModelDatas[i].model.AppendRotation(10.0f * delta, Vector3::UpVector);
-		// }
-		// m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
+        uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+        uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+        
+		if (m_AutoRotate)
+        {
+            for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+            {
+                ModelBlock* modelBlock = (ModelBlock*)(m_ModelDatas.data() + modelAlign * i);
+                modelBlock->model.AppendRotation(10.0f * delta, Vector3::UpVector);
+            }
+            m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
+        }
 
 		m_ColorBuffer->CopyFrom(m_ColorDatas.data(), m_ColorBuffer->size);
 	}
@@ -342,25 +356,27 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size() * 0.75f;
+        boundCenter.z -= boundSize.Size() * 0.75f;
         
-		// world matrix dynamicbuffer
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+        // world matrix dynamicbuffer
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
-		m_ModelDatas.resize(m_Model->meshes.size());
-		for (int32 i = 0; i < m_ModelDatas.size(); ++i) {
-			m_ModelDatas[i].model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
-		}
-
+        m_ModelDatas.resize(modelAlign * m_Model->meshes.size());
+        for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+        {
+            ModelBlock* modelBlock = (ModelBlock*)(m_ModelDatas.data() + modelAlign * i);
+            modelBlock->model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
+        }
+        
 		m_ModelBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			modelAlign * m_Model->meshes.size(),
+			m_ModelDatas.size(),
 			m_ModelDatas.data()
 		);
 		m_ModelBuffer->Map();
-
+        
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
 		m_ViewProjData.view.SetOrigin(boundCenter);
@@ -378,26 +394,27 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
-
+        
 		// color per object
 		uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
-		m_ColorDatas.resize(m_Model->meshes.size());
-		for (int32 i = 0; i < m_ColorDatas.size(); ++i) 
+		m_ColorDatas.resize(colorAlign * m_Model->meshes.size());
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
-			float r = MMath::RandRange(0.0f, 1.0f);
-			float g = MMath::RandRange(0.0f, 1.0f);
-			float b = MMath::RandRange(0.0f, 1.0f);
-			m_ColorDatas[i].color.Set(r, g, b, 1.0f);
+            float r = MMath::RandRange(0.0f, 1.0f);
+            float g = MMath::RandRange(0.0f, 1.0f);
+            float b = MMath::RandRange(0.0f, 1.0f);
+            ColorBlock* colorBlock = (ColorBlock*)(m_ColorDatas.data() + colorAlign * i);
+			colorBlock->color.Set(r, g, b, 1.0f);
 		}
 		m_ColorBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			colorAlign * m_ColorDatas.size(),
+			m_ColorDatas.size(),
 			m_ColorDatas.data()
 		);
 		m_ColorBuffer->Map();
-
+        
 		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
 			m_MeshNames.push_back(m_Model->meshes[i]->linkNode->name.c_str());
 		}
@@ -435,15 +452,13 @@ private:
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
-	int32							m_Alignment;
-	
-	std::vector<ModelBlock> 		m_ModelDatas;
+    std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
 
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-	std::vector<ColorBlock>			m_ColorDatas;
+	std::vector<uint8>			    m_ColorDatas;
 	vk_demo::DVKBuffer*				m_ColorBuffer = nullptr;
 
 	std::vector<const char*>		m_MeshNames;
