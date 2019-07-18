@@ -19,10 +19,9 @@
 #include <vector>
 #include <memory>
 
-#include <assimp/Importer.hpp> 
-#include <assimp/scene.h>     
-#include <assimp/postprocess.h>
-#include <assimp/cimport.h>
+struct aiMesh;
+struct aiScene;
+struct aiNode;
 
 namespace vk_demo
 {
