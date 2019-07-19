@@ -123,12 +123,24 @@ private:
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
 		);
 
+		m_Texture = vk_demo::DVKTexture::CreateArray(
+			{ 
+				"assets/textures/perlin-512.png",
+				"assets/textures/roughness_map.jpg",
+				"assets/textures/brick_bump.jpg",
+				"assets/textures/brick_diffuse.jpg"
+			},
+			m_VulkanDevice,
+			cmdBuffer
+		);
+
 		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
 	{
 		delete m_Model;
+		delete m_Texture;
 	}
     
 	void SetupCommandBuffers()
@@ -197,16 +209,18 @@ private:
     
 	void CreateDescriptorSet()
 	{
-		VkDescriptorPoolSize poolSizes[2];
+		std::vector<VkDescriptorPoolSize> poolSizes(3);
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 1;
 		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		poolSizes[1].descriptorCount = 1;
+		poolSizes[2].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[2].descriptorCount = 1;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-		descriptorPoolInfo.poolSizeCount = 2;
-		descriptorPoolInfo.pPoolSizes    = poolSizes;
+		descriptorPoolInfo.poolSizeCount = poolSizes.size();
+		descriptorPoolInfo.pPoolSizes    = poolSizes.data();
 		descriptorPoolInfo.maxSets       = 1;
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
         
@@ -233,6 +247,15 @@ private:
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
         writeDescriptorSet.pBufferInfo     = &(m_ModelBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 1;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writeDescriptorSet.pBufferInfo     = nullptr;
+		writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
+        writeDescriptorSet.dstBinding      = 2;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
@@ -264,7 +287,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[2] = { };
+		std::vector<VkDescriptorSetLayoutBinding> layoutBindings(3);
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -277,10 +300,16 @@ private:
 		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
 
+		layoutBindings[2].binding 			 = 2;
+		layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layoutBindings[2].descriptorCount    = 1;
+		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layoutBindings[2].pImmutableSamplers = nullptr;
+
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 2;
-		descSetLayoutInfo.pBindings    = layoutBindings;
+		descSetLayoutInfo.bindingCount = layoutBindings.size();
+		descSetLayoutInfo.pBindings    = layoutBindings.data();
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
@@ -393,7 +422,7 @@ private:
 	ViewProjectionBlock				m_ViewProjData;
 
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
-
+	vk_demo::DVKTexture*			m_Texture = nullptr;
 	vk_demo::DVKModel*				m_Model = nullptr;
 
     VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
