@@ -13,15 +13,15 @@
 namespace vk_demo
 {
   
-    class DVKTexture2D
+    class DVKTexture
     {
     public:
-        DVKTexture2D()
+        DVKTexture()
         {
             
         }
         
-        ~DVKTexture2D()
+        ~DVKTexture()
         {
             VkDevice device = vulkanDevice->GetInstanceHandle();
             
@@ -46,7 +46,7 @@ namespace vk_demo
             }
         }
         
-        static DVKTexture2D* Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+        static DVKTexture* Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
         
     public:
         std::shared_ptr<VulkanDevice>   vulkanDevice = nullptr;

@@ -2,7 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture2D.h"
+#include "Demo/DVKTexture.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -76,11 +76,6 @@ private:
 		Matrix4x4 model;
 	};
 
-	struct ColorBlock
-	{
-		Vector4 color;
-	};
-
 	struct ViewProjectionBlock
 	{
 		Matrix4x4 view;
@@ -106,21 +101,6 @@ private:
             
 			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
             
-            uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
-            uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
-            
-			if (ImGui::SliderFloat("Alpha", &m_GlobalAlpha, 0.0f, 1.0f)) {
-				for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
-                    ColorBlock* colorBlock = (ColorBlock*)(m_ColorDatas.data() + colorAlign * i);
-					colorBlock->color.w = m_GlobalAlpha;
-				}
-			}
-            
-			ImGui::Combo("Select Mesh", &m_Selected, m_MeshNames.data(), m_MeshNames.size());
-            
-            ColorBlock* selectedColorBlock = (ColorBlock*)(m_ColorDatas.data() + m_Selected * colorAlign);
-			ImGui::ColorEdit4("Mesh Color", (float*)&(selectedColorBlock->color), ImGuiColorEditFlags_AlphaBar);
-
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -172,7 +152,6 @@ private:
         
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
-		uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
 
 		for (int32 i = 0; i < m_CommandBuffers.size(); ++i)
 		{
@@ -202,11 +181,10 @@ private:
             
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex)
             {
-				uint32 dynamicOffsets[2] = {
-					meshIndex * modelAlign,
-					meshIndex * colorAlign
+				uint32 dynamicOffsets[1] = {
+					meshIndex * modelAlign
 				};
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 2, dynamicOffsets);
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 1, dynamicOffsets);
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
 			
@@ -223,7 +201,7 @@ private:
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 1;
 		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		poolSizes[1].descriptorCount = 2;
+		poolSizes[1].descriptorCount = 1;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -256,14 +234,6 @@ private:
         writeDescriptorSet.pBufferInfo     = &(m_ModelBuffer->descriptor);
         writeDescriptorSet.dstBinding      = 1;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-
-		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-        writeDescriptorSet.dstSet          = m_DescriptorSet;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptorSet.pBufferInfo     = &(m_ColorBuffer->descriptor);
-        writeDescriptorSet.dstBinding      = 2;
-        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
 	void CreatePipelines()
@@ -272,8 +242,8 @@ private:
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
 		vk_demo::DVKPipelineInfo pipelineInfo(m_VulkanDevice);
-        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.vert.spv");
-		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.frag.spv");
+        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.vert.spv");
+		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.frag.spv");
 		
 		pipelineInfo.blendAttachmentState.blendEnable         = VK_TRUE;
 		pipelineInfo.blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -294,7 +264,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[3] = { };
+		VkDescriptorSetLayoutBinding layoutBindings[2] = { };
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -307,15 +277,9 @@ private:
 		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
 
-		layoutBindings[2].binding 			 = 2;
-		layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-		layoutBindings[2].descriptorCount    = 1;
-		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layoutBindings[2].pImmutableSamplers = nullptr;
-
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 3;
+		descSetLayoutInfo.bindingCount = 2;
 		descSetLayoutInfo.pBindings    = layoutBindings;
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
@@ -347,8 +311,6 @@ private:
             }
             m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
         }
-
-		m_ColorBuffer->CopyFrom(m_ColorDatas.data(), m_ColorBuffer->size);
 	}
 
 	void CreateUniformBuffers()
@@ -394,30 +356,6 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
-        
-		// color per object
-		uint32 colorAlign = Align(sizeof(ColorBlock), alignment);
-		m_ColorDatas.resize(colorAlign * m_Model->meshes.size());
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-		{
-            float r = MMath::RandRange(0.0f, 1.0f);
-            float g = MMath::RandRange(0.0f, 1.0f);
-            float b = MMath::RandRange(0.0f, 1.0f);
-            ColorBlock* colorBlock = (ColorBlock*)(m_ColorDatas.data() + colorAlign * i);
-			colorBlock->color.Set(r, g, b, 1.0f);
-		}
-		m_ColorBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			m_ColorDatas.size(),
-			m_ColorDatas.data()
-		);
-		m_ColorBuffer->Map();
-        
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
-			m_MeshNames.push_back(m_Model->meshes[i]->linkNode->name.c_str());
-		}
 	}
 	
 	void DestroyUniformBuffers()
@@ -429,10 +367,6 @@ private:
 		m_ModelBuffer->UnMap();
 		delete m_ModelBuffer;
 		m_ModelBuffer = nullptr;
-
-		m_ColorBuffer->UnMap();
-		delete m_ColorBuffer;
-		m_ColorBuffer = nullptr;
 	}
     
 	void CreateGUI()
@@ -457,13 +391,6 @@ private:
 
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
-
-	std::vector<uint8>			    m_ColorDatas;
-	vk_demo::DVKBuffer*				m_ColorBuffer = nullptr;
-
-	std::vector<const char*>		m_MeshNames;
-	int32							m_Selected = 0;
-	float							m_GlobalAlpha = 1.0f;
 
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 

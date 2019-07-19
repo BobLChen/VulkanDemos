@@ -85,9 +85,7 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		if (m_AutoRotate) {
-			UpdateUniformBuffers(time, delta);
-		}
+		UpdateUniformBuffers(time, delta);
         DemoBase::Present();
 	}
     
@@ -311,11 +309,12 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
-			m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
-			m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(MVPBlock));
+		if (m_AutoRotate) {
+			for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
+				m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
+				m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(MVPBlock));
+			}
 		}
-
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
 

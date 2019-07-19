@@ -2,7 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture2D.h"
+#include "Demo/DVKTexture.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -145,10 +145,10 @@ private:
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent }
 		);
 
-		m_TexDiffuse       = vk_demo::DVKTexture2D::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
-		m_TexNormal        = vk_demo::DVKTexture2D::Create("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
-		m_TexCurvature     = vk_demo::DVKTexture2D::Create("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
-		m_TexPreIntegrated = vk_demo::DVKTexture2D::Create("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
+		m_TexDiffuse       = vk_demo::DVKTexture::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
+		m_TexNormal        = vk_demo::DVKTexture::Create("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
+		m_TexCurvature     = vk_demo::DVKTexture::Create("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
+		m_TexPreIntegrated = vk_demo::DVKTexture::Create("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
 
 		delete cmdBuffer;
 	}
@@ -260,7 +260,7 @@ private:
         writeDescriptorSet.dstBinding      = 1;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 
-		std::vector<vk_demo::DVKTexture2D*> textures = { m_TexDiffuse, m_TexNormal, m_TexCurvature, m_TexPreIntegrated };
+		std::vector<vk_demo::DVKTexture*> textures = { m_TexDiffuse, m_TexNormal, m_TexCurvature, m_TexPreIntegrated };
 		for (int32 i = 0; i < 4; ++i)
 		{
 			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
@@ -420,10 +420,10 @@ private:
 	ParamBlock						m_ParamData;
 	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
 
-	vk_demo::DVKTexture2D*			m_TexDiffuse = nullptr;
-	vk_demo::DVKTexture2D*			m_TexNormal = nullptr;
-	vk_demo::DVKTexture2D*			m_TexCurvature = nullptr;
-	vk_demo::DVKTexture2D*			m_TexPreIntegrated = nullptr;
+	vk_demo::DVKTexture*			m_TexDiffuse = nullptr;
+	vk_demo::DVKTexture*			m_TexNormal = nullptr;
+	vk_demo::DVKTexture*			m_TexCurvature = nullptr;
+	vk_demo::DVKTexture*			m_TexPreIntegrated = nullptr;
 	
     vk_demo::DVKPipeline*           m_Pipeline = nullptr;
 

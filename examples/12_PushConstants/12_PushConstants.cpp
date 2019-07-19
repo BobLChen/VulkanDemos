@@ -2,7 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture2D.h"
+#include "Demo/DVKTexture.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"

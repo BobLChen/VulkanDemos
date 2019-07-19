@@ -1,4 +1,4 @@
-#include "DVKTexture2D.h"
+#include "DVKTexture.h"
 #include "DVKBuffer.h"
 
 #include "Math/Math.h"
@@ -10,7 +10,7 @@
 namespace vk_demo
 {
     
-    DVKTexture2D* DVKTexture2D::Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+    DVKTexture* DVKTexture::Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
     {
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
@@ -216,7 +216,7 @@ namespace vk_demo
 		descriptorInfo.imageView   = imageView;
 		descriptorInfo.imageLayout = imageLayout;
 
-		DVKTexture2D* texture   = new DVKTexture2D();
+		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
 		texture->format         = format;
 		texture->height         = height;

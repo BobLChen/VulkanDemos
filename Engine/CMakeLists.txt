@@ -9,7 +9,7 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKModel.h
 	Monkey/Demo/DVKCommon.h
 	Monkey/Demo/DVKPipeline.h
-	Monkey/Demo/DVKTexture2D.h
+	Monkey/Demo/DVKTexture.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -19,7 +19,7 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKIndexBuffer.cpp
 	Monkey/Demo/DVKModel.cpp
 	Monkey/Demo/DVKPipeline.cpp
-	Monkey/Demo/DVKTexture2D.cpp
+	Monkey/Demo/DVKTexture.cpp
 )
 
 set(Monkey_Configuration_HDRS
