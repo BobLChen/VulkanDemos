@@ -69,20 +69,20 @@ elseif (UNIX)
 	)
 endif ()
 
-SETUP_SAMPLE_START(0_SuperDemo)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/0_SuperDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/0_SuperDemo/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(0_SuperDemo)
+# SETUP_SAMPLE_START(0_SuperDemo)
+# 	SET(SOURCE_FILES
+# 		${MainLaunch}
+# 		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/0_SuperDemo.cpp
+# 	)
+# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/0_SuperDemo/*.*")
+# 	foreach(file ${files})
+# 		SET(ASSETS
+# 			${ASSETS}
+# 			${file}
+# 		)
+# 	endforeach()
+# 	SET(RESOURCE_FILES ${ASSETS})
+# SETUP_SAMPLE_END(0_SuperDemo)
 
 SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
@@ -264,35 +264,20 @@ SETUP_SAMPLE_START(13_DynamicUniformBuffer)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(13_DynamicUniformBuffer)
 
-# SETUP_SAMPLE_START(6_DynamicUniformBuffer)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/6_DynamicUniformBuffer/DynamicUniformBuffer.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/6_DynamicUniformBuffer/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(6_DynamicUniformBuffer)
-
-# SETUP_SAMPLE_START(9_TextureArray)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/9_TextureArray/TextureArray.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/9_TextureArray/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(9_TextureArray)
+SETUP_SAMPLE_START(14_TextureArray)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/14_TextureArray/14_TextureArray.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/14_TextureArray/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(14_TextureArray)
 
 # SETUP_SAMPLE_START(10_Texture3D)
 # 	SET(SOURCE_FILES
