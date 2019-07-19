@@ -1,4 +1,4 @@
-#include "Shader.h"
+Ôªø#include "Shader.h"
 #include "Engine.h"
 #include "spirv_cross.hpp"
 
@@ -87,11 +87,11 @@ void Shader::ProcessShaderModule(std::shared_ptr<ShaderModule> shaderModule)
     shaderCreateInfo.pName  = "main";
     m_ShaderCreateInfos.push_back(shaderCreateInfo);
 
-	// ∑¥±‡“ÎShaderªÒ»°œ‡πÿ–≈œ¢
+	// ÂèçÁºñËØëShaderËé∑ÂèñÁõ∏ÂÖ≥‰ø°ÊÅØ
 	spirv_cross::Compiler compiler(shaderModule->GetData(), shaderModule->GetDataSize() / sizeof(uint32));
 	spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 	
-    // ªÒ»°Uniform Buffer–≈œ¢
+    // Ëé∑ÂèñUniform Buffer‰ø°ÊÅØ
     for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
     {
         spirv_cross::Resource& res      = resources.uniform_buffers[i];
@@ -116,7 +116,7 @@ void Shader::ProcessShaderModule(std::shared_ptr<ShaderModule> shaderModule)
 		m_Params.push_back(paramInfo);
     }
     
-    // ªÒ»°Texture
+    // Ëé∑ÂèñTexture
     for (int32 i = 0; i < resources.sampled_images.size(); ++i)
     {
         spirv_cross::Resource& res      = resources.sampled_images[i];
@@ -141,7 +141,7 @@ void Shader::ProcessShaderModule(std::shared_ptr<ShaderModule> shaderModule)
 		m_Params.push_back(paramInfo);
     }
 
-	// ªÒ»°input–≈œ¢
+	// Ëé∑Âèñinput‰ø°ÊÅØ
 	if (shaderModule->GetStageFlags() == VK_SHADER_STAGE_VERTEX_BIT)
 	{
 		for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
