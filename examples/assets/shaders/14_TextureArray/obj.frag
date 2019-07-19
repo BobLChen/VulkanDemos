@@ -11,6 +11,6 @@ void main()
 {
     vec3 normal = normalize(inNormal);
     float NDotL = clamp(dot(normal, vec3(0, 0, -1)), 0, 1.0);
-    vec4 color  = texture(diffuseMap, vec3(inUV0, 1)) * NDotL;
+    vec4 color  = texture(diffuseMap, vec3(inUV0, 3), 0.0) * NDotL;
     outFragColor = color;
 }

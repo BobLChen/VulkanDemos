@@ -23,7 +23,8 @@ namespace vk_demo
         int32 width  = 0;
         int32 height = 0;
         uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
-
+        uint32 size  = width * height * 4;
+        
 		delete[] dataPtr;
 		dataPtr  = nullptr;
 		dataSize = 0;
@@ -37,9 +38,9 @@ namespace vk_demo
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
         
-        DVKBuffer* stagingBuffer = DVKBuffer::CreateBuffer(vulkanDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, width * height * 4);
+        DVKBuffer* stagingBuffer = DVKBuffer::CreateBuffer(vulkanDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, size);
         stagingBuffer->Map();
-        stagingBuffer->CopyFrom(rgbaData, width * height * 4);
+        stagingBuffer->CopyFrom(rgbaData, size);
 		stagingBuffer->UnMap();
         
         uint32 memoryTypeIndex = 0;
@@ -259,10 +260,11 @@ namespace vk_demo
 				return nullptr;
 			}
 
-			ImageInfo imageInfo;
+            ImageInfo& imageInfo = images[i];
 			imageInfo.data = stbi_load_from_memory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 4);
 			imageInfo.comp = 4;
-
+            imageInfo.size = imageInfo.width * imageInfo.height * imageInfo.comp;
+            
 			delete[] dataPtr;
 			dataSize = -1;
 			dataPtr  = nullptr;
@@ -271,10 +273,8 @@ namespace vk_demo
 				MLOGE("Failed load image : %s", filenames[i].c_str());
 				return nullptr;
 			}
-
-			images[i] = imageInfo;
 		}
-
+        
 		// 图片信息，TextureArray要求尺寸一致
         int32 width     = images[0].width;
         int32 height    = images[0].height;
@@ -282,14 +282,12 @@ namespace vk_demo
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
-
-		mipLevels = 1;
-
+        
 		uint32 memoryTypeIndex = 0;
 		VkMemoryRequirements memReqs = {};
 		VkMemoryAllocateInfo memAllocInfo;
 		ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-
+        
 		// 准备stagingBuffer
 		DVKBuffer* stagingBuffer = DVKBuffer::CreateBuffer(
 			vulkanDevice, 
@@ -302,7 +300,7 @@ namespace vk_demo
 			uint8* src  = images[i].data;
 			uint32 size = width * height * 4;
 			stagingBuffer->Map(size, size * i);
-			stagingBuffer->CopyFrom(src, width * height * 4);
+			stagingBuffer->CopyFrom(src, size);
 			stagingBuffer->UnMap();
 		}
 		
@@ -345,7 +343,7 @@ namespace vk_demo
 		subresourceRange.levelCount   = 1;
 		subresourceRange.layerCount   = numArray;
 		subresourceRange.baseMipLevel = 0;
-
+        
 		{
 			VkImageMemoryBarrier imageMemoryBarrier;
             ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -357,7 +355,7 @@ namespace vk_demo
             imageMemoryBarrier.subresourceRange = subresourceRange;
             vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
-
+        
 		std::vector<VkBufferImageCopy> bufferCopyRegions;
 		for (int32 i = 0; i < images.size(); ++i)
 		{
@@ -374,24 +372,92 @@ namespace vk_demo
 		}
 		
 		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
-
+        
 		{
 			VkImageMemoryBarrier imageMemoryBarrier;
 			ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 			imageMemoryBarrier.image = image;
 			imageMemoryBarrier.subresourceRange = subresourceRange;
-			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 		}
-
+        
+        // Generate the mip chain
+        for (uint32_t i = 1; i < mipLevels; i++) {
+            VkImageBlit imageBlit = {};
+            
+            imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.srcSubresource.layerCount = numArray;
+            imageBlit.srcSubresource.mipLevel   = i - 1;
+            imageBlit.srcOffsets[1].x = int32_t(width  >> (i - 1));
+            imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+            imageBlit.srcOffsets[1].z = 1;
+            
+            imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.dstSubresource.layerCount = numArray;
+            imageBlit.dstSubresource.mipLevel   = i;
+            imageBlit.dstOffsets[1].x = int32_t(width  >> i);
+            imageBlit.dstOffsets[1].y = int32_t(height >> i);
+            imageBlit.dstOffsets[1].z = 1;
+            
+            VkImageSubresourceRange mipSubRange = {};
+            mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+            mipSubRange.baseMipLevel = i;
+            mipSubRange.levelCount   = 1;
+            mipSubRange.layerCount   = numArray;
+            
+            {
+                VkImageMemoryBarrier imageMemoryBarrier;
+                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                imageMemoryBarrier.srcAccessMask = 0;
+                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                imageMemoryBarrier.image = image;
+                imageMemoryBarrier.subresourceRange = mipSubRange;
+                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+            }
+            
+            vkCmdBlitImage(cmdBuffer->cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+            
+            {
+                VkImageMemoryBarrier imageMemoryBarrier;
+                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                imageMemoryBarrier.image = image;
+                imageMemoryBarrier.subresourceRange = mipSubRange;
+                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+            }
+        }
+        
+        subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.levelCount   = mipLevels;
+        subresourceRange.layerCount   = numArray;
+        subresourceRange.baseMipLevel = 0;
+        
+        {
+            VkImageMemoryBarrier imageMemoryBarrier;
+            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            imageMemoryBarrier.image = image;
+            imageMemoryBarrier.subresourceRange = subresourceRange;
+            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+        }
+        
 		cmdBuffer->End();
 		cmdBuffer->Submit();
 
 		delete stagingBuffer;
-
+        
 		VkSamplerCreateInfo samplerInfo;
 		ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
 		samplerInfo.magFilter        = VK_FILTER_LINEAR;
@@ -405,8 +471,9 @@ namespace vk_demo
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
 		samplerInfo.maxLod           = (float)mipLevels;
+        samplerInfo.minLod           = 0;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
-	
+        
 		VkImageViewCreateInfo viewInfo;
 		ZeroVulkanStruct(viewInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
 		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
@@ -417,11 +484,11 @@ namespace vk_demo
 		viewInfo.subresourceRange.layerCount = numArray;
 		viewInfo.subresourceRange.levelCount = mipLevels;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
-
+        
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
 		descriptorInfo.imageLayout = imageLayout;
-
+        
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
 		texture->format         = format;

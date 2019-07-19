@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -253,7 +253,6 @@ private:
         writeDescriptorSet.dstSet          = m_DescriptorSet;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        writeDescriptorSet.pBufferInfo     = nullptr;
 		writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
         writeDescriptorSet.dstBinding      = 2;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
@@ -267,15 +266,6 @@ private:
 		vk_demo::DVKPipelineInfo pipelineInfo(m_VulkanDevice);
         pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.vert.spv");
 		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.frag.spv");
-		
-		pipelineInfo.blendAttachmentState.blendEnable         = VK_TRUE;
-		pipelineInfo.blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
-		pipelineInfo.blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
-
 		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 	}
     
