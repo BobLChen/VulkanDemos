@@ -12,8 +12,7 @@
 #include "Vulkan/VulkanMemory.h"
 #include "Vulkan/VulkanCommandBuffer.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "Loader/stb_image.h"
+#include "Loader/ImageLoader.h"
 
 Texture3D::Texture3D()
 {
@@ -60,7 +59,7 @@ void Texture3D::LoadFromBuffer(uint8* data, int32 width, int32 height, int32 dep
     VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &stagingMemory));
     VERIFYVULKANRESULT(vkBindBufferMemory(device, stagingBuffer, stagingMemory, 0));
         
-    // ½«Êý¾Ý¿½±´µ½staging buffer
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ý¿ï¿½ï¿½ï¿½ï¿½ï¿½staging buffer
     void* stagingDataPtr = nullptr;
     VERIFYVULKANRESULT(vkMapMemory(device, stagingMemory, 0, memReqs.size, 0, &stagingDataPtr));
     std::memcpy(stagingDataPtr, data, bufferCreateInfo.size);

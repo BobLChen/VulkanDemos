@@ -212,7 +212,7 @@ private:
         }
         
         // 加载贴图
-		m_Texture = vk_demo::DVKTexture::CreateArray(
+		m_Texture = vk_demo::DVKTexture::Create2DArray(
 			{ 
 				"assets/textures/terrain/snow.jpg",
 				"assets/textures/terrain/terrain.jpg",
@@ -556,5 +556,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<TextureArrayModule>(1400, 900, "DynamicUniformBuffer", cmdLine);
+	return std::make_shared<TextureArrayModule>(1400, 900, "TextureArray", cmdLine);
 }
