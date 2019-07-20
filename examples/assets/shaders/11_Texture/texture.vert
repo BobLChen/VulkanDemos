@@ -25,9 +25,10 @@ out gl_PerVertex
 void main() 
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
-	vec3 normal  = normalize(normalMatrix * inNormal);
-	vec3 tangent = normalize(inTangent.xyz);
 
+	vec3 normal  = normalize(normalMatrix * inNormal.xyz);
+	vec3 tangent = normalize(normalMatrix * inTangent.xyz);
+	
 	outUV        = inUV;
 	outNormal    = normal;
 	outTangent   = tangent;

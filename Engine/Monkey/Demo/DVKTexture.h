@@ -47,6 +47,8 @@ namespace vk_demo
         }
         
         static DVKTexture* Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+
+        static DVKTexture* CreateArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
         
     public:
         std::shared_ptr<VulkanDevice>   vulkanDevice = nullptr;
@@ -61,6 +63,7 @@ namespace vk_demo
         int32                           width = 0;
         int32                           height = 0;
         int32                           mipLevels = 0;
+		int32							layerCount = 1;
         VkFormat                        format = VK_FORMAT_R8G8B8A8_UNORM;
     };
     
