@@ -340,34 +340,34 @@
                 }
             ],
         },
-        // {
-        //     "name": "Debug 9_TextureArray",
-        //     "type": "cppdbg",
-        //     "request": "launch",
-        //     "program": "${workspaceFolder}/build/Debug/examples/9_TextureArray",
-        //     "args": [],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [
-        //         {
-        //             "name": "LD_LIBRARY_PATH",
-        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
-        //         },
-        //         {
-        //             "name": "VK_LAYER_PATH",
-        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-        //         }
-        //     ],
-        //     "externalConsole": true,
-        //     "MIMode": "gdb",
-        //     "setupCommands": [
-        //         {
-        //             "description": "Enable pretty-printing for gdb",
-        //             "text": "-enable-pretty-printing",
-        //             "ignoreFailures": true
-        //         }
-        //     ],
-        // },
+        {
+            "name": "Debug 14_TextureArray",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/14_TextureArray",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
         // {
         //     "name": "Debug 10_Texture3D",
         //     "type": "cppdbg",
