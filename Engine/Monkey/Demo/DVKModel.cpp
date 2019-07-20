@@ -153,9 +153,20 @@ namespace vk_demo
 					vertices.push_back(aiMesh->mColors[0][i].g);
 					vertices.push_back(aiMesh->mColors[0][i].b);
 				}
+                else if (attributes[j] == VertexAttribute::VA_Custom0 ||
+                         attributes[j] == VertexAttribute::VA_Custom1 ||
+                         attributes[j] == VertexAttribute::VA_Custom2 ||
+                         attributes[j] == VertexAttribute::VA_Custom3
+                )
+                {
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                }
 			}
 		}
-
+        
 		for (int32 i = 0; i < aiMesh->mNumFaces; ++i)
 		{
 			indices.push_back(aiMesh->mFaces[i].mIndices[0]);
@@ -199,12 +210,15 @@ namespace vk_demo
 				}
 			}
 
-			for (int32 i = 0; i < mesh->primitives.size(); ++i) 
-			{
-				primitive = mesh->primitives[i];
-				primitive->vertexBuffer = DVKVertexBuffer::Create(device, cmdBuffer, primitive->vertices, attributes);
-				primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
-			}
+            if (cmdBuffer)
+            {
+                for (int32 i = 0; i < mesh->primitives.size(); ++i)
+                {
+                    primitive = mesh->primitives[i];
+                    primitive->vertexBuffer = DVKVertexBuffer::Create(device, cmdBuffer, primitive->vertices, attributes);
+                    primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
+                }
+            }
 		}
 		else
 		{
@@ -213,17 +227,25 @@ namespace vk_demo
 			for (uint16 i = 0; i < indices.size(); ++i) {
 				primitive->indices.push_back(indices[i]);
 			}
-			primitive->vertexBuffer = DVKVertexBuffer::Create(device, cmdBuffer, primitive->vertices, attributes);
-			primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
 			mesh->primitives.push_back(primitive);
+            
+            if (cmdBuffer)
+            {
+                primitive->vertexBuffer = DVKVertexBuffer::Create(device, cmdBuffer, primitive->vertices, attributes);
+                primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
+            }
 		}
-
+        
 		for (int32 i = 0; i < mesh->primitives.size(); ++i)
 		{
-			mesh->vertexCount   += mesh->primitives[i]->vertices.size() / stride;
-			mesh->triangleCount += mesh->primitives[i]->indices.size() / 3;
+            DVKPrimitive* primitive = mesh->primitives[i];
+            primitive->vertexCount  = primitive->vertices.size() / stride;
+            primitive->indexCount   = primitive->indices.size() / 3;
+            
+            mesh->vertexCount   += primitive->vertexCount;
+            mesh->triangleCount += primitive->indexCount;
 		}
-
+        
 		mesh->bounding.min = mmin;
 		mesh->bounding.max = mmax;
 

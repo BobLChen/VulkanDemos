@@ -75,6 +75,14 @@ private:
 	{
 		Matrix4x4 model;
 	};
+    
+    struct ParamBlock
+    {
+        float step;
+        float debug;
+        float padding0;
+        float padding1;
+    };
 
 	struct ViewProjectionBlock
 	{
@@ -96,10 +104,14 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("DynamicUniformBuffer", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("Renderabls");
+            ImGui::Begin("TextureArray", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Text("Terrain");
             
 			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
+            
+            bool debug = m_ParamData.debug != 0;
+            ImGui::Checkbox("Debug", &debug);
+            m_ParamData.debug = debug ? 1 : 0;
             
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -115,20 +127,107 @@ private:
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
-
+        
+        // 只加载数据不创建buffer
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/littlesttokyo.fbx",
+			"assets/models/StHelen.x",
 			m_VulkanDevice,
-			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
+			nullptr,
+            {
+                VertexAttribute::VA_Position,
+                VertexAttribute::VA_UV0,
+                VertexAttribute::VA_Normal,
+                VertexAttribute::VA_Tangent,
+                VertexAttribute::VA_Custom0
+            }
 		);
-
+        
+        // 为顶点数据生成混合数据。PS:这里一般使用贴图来进行混合，而不是顶点数据。
+        for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+        {
+            vk_demo::DVKMesh* mesh = m_Model->meshes[i];
+            for (int32 j = 0; j < mesh->primitives.size(); ++j)
+            {
+                vk_demo::DVKPrimitive* primitive = mesh->primitives[j];
+                int32 stride = primitive->vertices.size() / primitive->vertexCount;
+                for (int32 v = 0; v < primitive->vertexCount; ++v)
+                {
+                    float vy = primitive->vertices[v * stride + 1];
+                    
+                    float& tex0Index = primitive->vertices[v * stride + stride - 4];
+                    float& tex0Alpha = primitive->vertices[v * stride + stride - 3];
+                    float& tex1Index = primitive->vertices[v * stride + stride - 2];
+                    float& tex1Alpha = primitive->vertices[v * stride + stride - 1];
+                    
+                    const float snowLine    = 0.8f;
+                    const float terrainLine = 0.3f;
+                    const float rocksLine   = -0.1f;
+                    
+                    const float snowTerrainBandSize  = 3.0f;
+                    const float terrainRocksBandSize = 0.5f;
+                    const float rocksLavaBandSize    = 1.f;
+                    
+                    if (vy >= snowLine)
+                    {
+                        tex0Index = 0.0f;
+                        tex1Index = 1.0f;
+                        tex0Alpha = MMath::Min(1.0f, (vy - snowLine) / snowTerrainBandSize);
+                        tex1Alpha = 1.0f - tex0Alpha;
+                    }
+                    else if (vy >= terrainLine)
+                    {
+                        tex0Index = 2.0f;
+                        tex1Index = 1.0f;
+                        tex1Alpha = MMath::Min(1.0f, (vy - terrainLine) / terrainRocksBandSize);
+                        tex0Alpha = 1.0f - tex1Alpha;
+                    }
+                    else if (vy >= rocksLine)
+                    {
+                        tex0Index = 2.0f;
+                        tex1Index = 3.0f;
+                        tex0Alpha = MMath::Min(1.0f, (vy - rocksLine) / rocksLavaBandSize);
+                        tex1Alpha = 1.0f - tex0Alpha;
+                    }
+                    else
+                    {
+                        tex0Index = 2.0f;
+                        tex1Index = 3.0f;
+                        tex0Alpha = 0.0f;
+                        tex1Alpha = 1.0f;
+                    }
+                }
+            }
+        }
+        
+        // 创建buffer
+        for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+        {
+            vk_demo::DVKMesh* mesh = m_Model->meshes[i];
+            for (int32 j = 0; j < mesh->primitives.size(); ++j)
+            {
+                vk_demo::DVKPrimitive* primitive = mesh->primitives[j];
+                primitive->vertexBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->vertices, m_Model->attributes);
+                primitive->indexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->indices);
+            }
+        }
+        
+        // 加载贴图
 		m_Texture = vk_demo::DVKTexture::CreateArray(
 			{ 
-				"assets/textures/perlin-512.png",
-				"assets/textures/roughness_map.jpg",
-				"assets/textures/brick_bump.jpg",
-				"assets/textures/brick_diffuse.jpg"
+				"assets/textures/terrain/snow.jpg",
+				"assets/textures/terrain/terrain.jpg",
+				"assets/textures/terrain/rocks.jpg",
+				"assets/textures/terrain/lava.jpg",
+                
+                "assets/textures/terrain/snow_normal.jpg",
+                "assets/textures/terrain/terrain_normal.jpg",
+                "assets/textures/terrain/rocks_normal.jpg",
+                "assets/textures/terrain/lava_normal.jpg",
+                
+                "assets/textures/terrain/mosaic-red.jpg",
+                "assets/textures/terrain/mosaic-green.jpg",
+                "assets/textures/terrain/mosaic-blue.jpg",
+                "assets/textures/terrain/mosaic-white.jpg"
 			},
 			m_VulkanDevice,
 			cmdBuffer
@@ -209,13 +308,15 @@ private:
     
 	void CreateDescriptorSet()
 	{
-		std::vector<VkDescriptorPoolSize> poolSizes(3);
+		std::vector<VkDescriptorPoolSize> poolSizes(4);
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 1;
 		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		poolSizes[1].descriptorCount = 1;
 		poolSizes[2].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[2].descriptorCount = 1;
+        poolSizes[3].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolSizes[3].descriptorCount = 1;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -256,6 +357,14 @@ private:
 		writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
         writeDescriptorSet.dstBinding      = 2;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+        
+        ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
+        writeDescriptorSet.dstBinding      = 3;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
 	void CreatePipelines()
@@ -277,7 +386,7 @@ private:
 	
 	void CreateDescriptorSetLayout()
 	{
-		std::vector<VkDescriptorSetLayoutBinding> layoutBindings(3);
+		std::vector<VkDescriptorSetLayoutBinding> layoutBindings(4);
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -295,7 +404,13 @@ private:
 		layoutBindings[2].descriptorCount    = 1;
 		layoutBindings[2].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
 		layoutBindings[2].pImmutableSamplers = nullptr;
-
+        
+        layoutBindings[3].binding            = 3;
+        layoutBindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBindings[3].descriptorCount    = 1;
+        layoutBindings[3].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBindings[3].pImmutableSamplers = nullptr;
+        
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
 		descSetLayoutInfo.bindingCount = layoutBindings.size();
@@ -330,15 +445,12 @@ private:
             }
             m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
         }
+        
+        m_ParamBuffer->CopyFrom(&m_ParamData, m_ParamBuffer->size);
 	}
 
 	void CreateUniformBuffers()
 	{
-		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 0.75f;
-        
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
         // world matrix dynamicbuffer
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
@@ -360,8 +472,8 @@ private:
         
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+        m_ViewProjData.view.AppendRotation(45.0f, Vector3::RightVector);
+		m_ViewProjData.view.SetOrigin(Vector3(0.0f, 5.0f, -6.0f));
 		m_ViewProjData.view.SetInverse();
 
 		m_ViewProjData.projection.SetIdentity();
@@ -375,6 +487,18 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
+        
+        // params
+        m_ParamData.step  = 4;
+        m_ParamData.debug = 0;
+        m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
+            m_VulkanDevice,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            sizeof(ParamBlock),
+            &(m_ParamData)
+        );
+        m_ParamBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
@@ -386,6 +510,10 @@ private:
 		m_ModelBuffer->UnMap();
 		delete m_ModelBuffer;
 		m_ModelBuffer = nullptr;
+        
+        m_ParamBuffer->UnMap();
+        delete m_ParamBuffer;
+        m_ParamBuffer = nullptr;
 	}
     
 	void CreateGUI()
@@ -407,6 +535,9 @@ private:
     
     std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
+    
+    ParamBlock                      m_ParamData;
+    vk_demo::DVKBuffer*             m_ParamBuffer = nullptr;
 
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;

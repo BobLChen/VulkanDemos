@@ -44,9 +44,17 @@ namespace vk_demo
 		else if (attribute == VertexAttribute::VA_SkinIndex) {
 			return 4 * sizeof(float);
 		}
+        else if (attribute == VertexAttribute::VA_Custom0 ||
+                 attribute == VertexAttribute::VA_Custom1 ||
+                 attribute == VertexAttribute::VA_Custom2 ||
+                 attribute == VertexAttribute::VA_Custom3
+        )
+        {
+            return 4 * sizeof(float);
+        }
 		return 0;
 	}
-
+    
 	inline VkFormat VertexAttributeToVkFormat(VertexAttribute attribute)
 	{
 		VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -74,9 +82,17 @@ namespace vk_demo
 		else if (attribute == VertexAttribute::VA_SkinIndex) {
 			format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		}
+        else if (attribute == VertexAttribute::VA_Custom0 ||
+                 attribute == VertexAttribute::VA_Custom1 ||
+                 attribute == VertexAttribute::VA_Custom2 ||
+                 attribute == VertexAttribute::VA_Custom3
+        )
+        {
+            format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        }
 		return format;
 	}
-
+    
 	class DVKVertexBuffer
 	{
 	private:

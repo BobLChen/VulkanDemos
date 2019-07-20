@@ -463,9 +463,9 @@ namespace vk_demo
 		samplerInfo.magFilter        = VK_FILTER_LINEAR;
 		samplerInfo.minFilter        = VK_FILTER_LINEAR;
 		samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-		samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		samplerInfo.compareOp	     = VK_COMPARE_OP_NEVER;
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;

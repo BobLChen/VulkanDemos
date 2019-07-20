@@ -54,19 +54,20 @@ namespace vk_demo
 
 	struct DVKPrimitive
 	{
-		DVKIndexBuffer*					indexBuffer;
-        DVKVertexBuffer*				vertexBuffer;
+		DVKIndexBuffer*					indexBuffer = nullptr;
+        DVKVertexBuffer*				vertexBuffer = nullptr;
 
 		std::vector<float>				vertices;
 		std::vector<uint16>				indices;
+        
+        int32                           vertexCount = 0;
+        int32                           indexCount = 0;
 
 		DVKPrimitive()
-			: indexBuffer(nullptr)
-			, vertexBuffer(nullptr)
 		{
 
 		}
-
+        
 		~DVKPrimitive()
 		{
 			if (indexBuffer) {
