@@ -6,12 +6,14 @@
         {
             "label": "Configure",
             "type": "shell",
+            "problemMatcher": "$msCompile",
             "command": "bash ./Configure.sh",
         },
         {
             "label": "BuildAll",
             "type": "shell",
             "command": "bash ./Build.sh",
+            "problemMatcher": "$msCompile",
             "group": {
                 "kind": "build",
                 "isDefault": true

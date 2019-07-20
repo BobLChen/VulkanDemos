@@ -69,8 +69,8 @@ include_directories(
 	external/assimp/include/
 )
 
-add_subdirectory(Engine)
 add_subdirectory(external/imgui)
 add_subdirectory(external/SPIRV-Cross)
 add_subdirectory(external/assimp)
+add_subdirectory(Engine)
 add_subdirectory(examples)

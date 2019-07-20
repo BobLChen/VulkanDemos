@@ -69,21 +69,6 @@ elseif (UNIX)
 	)
 endif ()
 
-# SETUP_SAMPLE_START(0_SuperDemo)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/0_SuperDemo.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/0_SuperDemo/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(0_SuperDemo)
-
 SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
 		${MainLaunch}
@@ -207,7 +192,7 @@ SETUP_SAMPLE_END(9_LoadMesh)
 SETUP_SAMPLE_START(10_Pipelines)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/10_Pipelines/10_Pipelines.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/10_Pipelines/Pipelines.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/10_Pipelines/*.*")
 	foreach(file ${files})
@@ -222,7 +207,7 @@ SETUP_SAMPLE_END(10_Pipelines)
 SETUP_SAMPLE_START(11_Texture)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/11_Texture/11_Texture.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/11_Texture/Texture.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/11_Texture/*.*")
 	foreach(file ${files})
@@ -237,7 +222,7 @@ SETUP_SAMPLE_END(11_Texture)
 SETUP_SAMPLE_START(12_PushConstants)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/12_PushConstants/12_PushConstants.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/12_PushConstants/PushConstants.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/12_PushConstants/*.*")
 	foreach(file ${files})
@@ -252,7 +237,7 @@ SETUP_SAMPLE_END(12_PushConstants)
 SETUP_SAMPLE_START(13_DynamicUniformBuffer)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/13_DynamicUniformBuffer/13_DynamicUniformBuffer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/13_DynamicUniformBuffer/DynamicUniformBuffer.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/13_DynamicUniformBuffer/*.*")
 	foreach(file ${files})
@@ -267,7 +252,7 @@ SETUP_SAMPLE_END(13_DynamicUniformBuffer)
 SETUP_SAMPLE_START(14_TextureArray)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/14_TextureArray/14_TextureArray.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/14_TextureArray/TextureArray.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/14_TextureArray/*.*")
 	foreach(file ${files})

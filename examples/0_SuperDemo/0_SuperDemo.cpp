@@ -1,47 +1,27 @@
 #include "Common/Common.h"
 #include "Common/Log.h"
 
-#include "Vulkan/VulkanPlatform.h"
-#include "Vulkan/VulkanDevice.h"
-#include "Vulkan/VulkanQueue.h"
-#include "Vulkan/VulkanSwapChain.h"
-#include "Vulkan/VulkanMemory.h"
-#include "Vulkan/VulkanCommandBuffer.h"
-#include "Vulkan/VulkanContext.h"
-#include "Vulkan/VulkanFence.h"
-#include "Vulkan/VulkanCommandBuffer.h"
-
-#include "Graphics/Data/VertexBuffer.h"
-#include "Graphics/Data/IndexBuffer.h"
-#include "Graphics/Data/VulkanBuffer.h"
-#include "Graphics/Shader/Shader.h"
-#include "Graphics/Material/Material.h"
-#include "Graphics/Renderer/Renderable.h"
-#include "Graphics/Command/DrawCommand.h"
+#include "Demo/DVKCommon.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include "File/FileManager.h"
-#include "Loader/MeshLoader.h"
-#include "Application/AppModuleBase.h"
+#include "UI/ImageGUIContext.h"
 
 #include <vector>
 #include <fstream>
-#include <istream>
 
-class SuperDemoModule : public AppModuleBase
+class PipelinesModule : public DemoBase
 {
 public:
-	SuperDemoModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: AppModuleBase(width, height, title)
-		, m_Ready(false)
-		, m_ImageIndex(0)
+	PipelinesModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
-
-	virtual ~SuperDemoModule()
+    
+	virtual ~PipelinesModule()
 	{
 
 	}
@@ -53,227 +33,390 @@ public:
 
 	virtual bool Init() override
 	{
-		Prepare();
-		InitFences();
-		InitShaderParams();
+		DemoBase::Setup();
+		DemoBase::Prepare();
+
 		LoadAssets();
+		CreateGUI();
+		CreateUniformBuffers();
+		CreateDescriptorSetLayout();
+        CreateDescriptorSet();
+		CreatePipelines();
+		SetupCommandBuffers();
+
 		m_Ready = true;
+
 		return true;
 	}
 
 	virtual void Exist() override
 	{
-		Release();
-		DestroyFences();
-        DestroyAssets();
+		DemoBase::Release();
+
+		DestroyAssets();
+		DestroyGUI();
+        DestroyDescriptorSetLayout();
+		DestroyPipelines();
+		DestroyUniformBuffers();
 	}
-    
+
 	virtual void Loop(float time, float delta) override
 	{
-		if (m_Ready) {
-			Draw(time, delta);
+		if (!m_Ready) {
+			return;
 		}
+		Draw(time, delta);
 	}
 
 private:
     
-	struct UBOData
+	struct MVPBlock
 	{
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
 
+	struct ParamBlock
+	{
+		float intensity;
+	};
+    
 	void Draw(float time, float delta)
 	{
-		UpdateShaderParams(time, delta);
-
-		m_ImageIndex = GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_AcquiredSemaphore);
-
-		VulkanCommandListContextImmediate& cmdContext    = GetVulkanRHI()->GetDevice()->GetImmediateContext();
-		VulkanCommandBufferManager* commandBufferManager = cmdContext.GetCommandBufferManager();
-        VulkanCmdBuffer* cmdBuffer  = commandBufferManager->GetActiveCmdBuffer();
-
-		std::shared_ptr<VulkanSwapChain> swapChain   = GetVulkanRHI()->GetSwapChain();
-        std::shared_ptr<VulkanQueue> gfxQueue        = GetVulkanRHI()->GetDevice()->GetGraphicsQueue();
-        std::shared_ptr<VulkanQueue> presentQueue    = GetVulkanRHI()->GetDevice()->GetPresentQueue();
-
-		RecordCommandBuffers(cmdContext, cmdBuffer);
-
-		cmdBuffer->End();
-		cmdBuffer->AddWaitSemaphore(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, m_AcquiredSemaphore);
-
-		presentQueue->Submit(cmdBuffer, m_RenderingDoneSemaphores[m_ImageIndex]);
-		
-        swapChain->Present(gfxQueue, presentQueue, &(m_RenderingDoneSemaphores[m_ImageIndex]));
-
-		commandBufferManager->NewActiveCommandBuffer();
+        UpdateUI(time, delta);
+		UpdateUniformBuffers(time, delta);
+        DemoBase::Present();
 	}
-	
-	void RecordCommandBuffers(VulkanCommandListContextImmediate& cmdContext, VulkanCmdBuffer* cmdBuffer)
+    
+	void UpdateUI(float time, float delta)
 	{
-		int32 frameWidth  = GetVulkanRHI()->GetSwapChain()->GetWidth();
-		int32 frameHeight = GetVulkanRHI()->GetSwapChain()->GetHeight();
-		
-		VkClearValue clearValues[2];
-		clearValues[0].color = { {0.2f, 0.2f, 0.2f, 1.0f} };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		m_GUI->StartFrame();
         
+		{
+			ImGui::SetNextWindowPos(ImVec2(0, 0));
+			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
+            ImGui::Begin("Pipelines!", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			
+			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
+			
+			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
+			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::End();
+		}
+        
+		m_GUI->EndFrame();
+        
+		if (m_GUI->Update()) {
+			SetupCommandBuffers();
+		}
+	}
+
+	void LoadAssets()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		m_Model = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/Vela_Template.fbx",
+			m_VulkanDevice,
+			cmdBuffer,
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }
+		);
+
+		delete cmdBuffer;
+	}
+
+	void DestroyAssets()
+	{
+		delete m_Model;
+	}
+    
+	void SetupCommandBuffers()
+	{
+		VkCommandBufferBeginInfo cmdBeginInfo;
+		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+
+		VkClearValue clearValues[2];
+		clearValues[0].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-		renderPassBeginInfo.renderPass      = m_RenderPass;
+        renderPassBeginInfo.renderPass      = m_RenderPass;
 		renderPassBeginInfo.clearValueCount = 2;
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
-		renderPassBeginInfo.renderArea.extent.width  = frameWidth;
-		renderPassBeginInfo.renderArea.extent.height = frameHeight;
-		renderPassBeginInfo.framebuffer = m_FrameBuffers[m_ImageIndex];;
-
-		VkViewport viewport = {};
-		viewport.x = 0;
-		viewport.y = frameHeight;
-		viewport.width  =  (float)frameWidth;
-		viewport.height = -(float)frameHeight;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.extent.width  = (uint32)frameWidth;
-		scissor.extent.height = (uint32)frameHeight;
-		scissor.offset.x      = 0;
-		scissor.offset.y      = 0;
+        renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
+        renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
         
-        VkCommandBuffer vkCmdBuffer = cmdBuffer->GetHandle();
-        
-        vkCmdBeginRenderPass(vkCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(vkCmdBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(vkCmdBuffer, 0, 1, &scissor);
-
-		for (int32 i = 0; i < m_DrawCommands.size(); ++i) {
-			m_DrawCommands[i]->Prepare(cmdBuffer, &cmdContext);
-		}
-        
-        vkCmdEndRenderPass(vkCmdBuffer);
-	}
-    
-	void UpdateShaderParams(float time, float delta)
-	{
-		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
+		for (int32 i = 0; i < m_CommandBuffers.size(); ++i)
 		{
-			Vector3 position = m_MVPDatas[i].model.GetOrigin();
+            renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
+            
+			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBeginInfo));
+			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector, &position);
-			m_Materials[i]->SetParam("uboMVP", &(m_MVPDatas[i]), sizeof(UBOData));
-		}
-	}
-    
-	void InitShaderParams()
-	{
-		m_MVPDatas.resize(25 * 25);
-        
-		float fw = GetVulkanRHI()->GetSwapChain()->GetWidth();
-		float fh = GetVulkanRHI()->GetSwapChain()->GetHeight();
-
-		for (int32 row = 0; row < 25; ++row)
-		{
-			for (int32 col = 0; col < 25; ++col)
+			for (int32 j = 0; j < 3; ++j)
 			{
-				Vector3 position(0, 0, 0);
-				position.x = (row - 12.5f) * 25;
-				position.y = (col - 12.5f) * 25;
+				int32 ww = 1.0f / 3 * m_FrameWidth;
+				int32 tx = j * ww;
 
-				int index = row * 25 + col;
+				VkViewport viewport = {};
+				viewport.x        = tx;
+				viewport.y        = m_FrameHeight;
+				viewport.width    = ww;
+				viewport.height   = -(float)m_FrameHeight;    // flip y axis
+				viewport.minDepth = 0.0f;
+				viewport.maxDepth = 1.0f;
+				
+				VkRect2D scissor = {};
+				scissor.extent.width  = ww;
+				scissor.extent.height = m_FrameHeight;
+				scissor.offset.x      = tx;
+				scissor.offset.y      = 0;
 
-				m_MVPDatas[index].model.SetIdentity();
-				m_MVPDatas[index].model.AppendTranslation(position);
+				vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
+				vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
 
-				m_MVPDatas[index].view.SetIdentity();
-				m_MVPDatas[index].view.SetOrigin(Vector4(0, 0, -500.0f));
-				m_MVPDatas[index].view.SetInverse();
+				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[j]->pipeline);
+                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+                
+				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
+					m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
+				}
+			}
+			
+			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
+
+			vkCmdEndRenderPass(m_CommandBuffers[i]);
+			VERIFYVULKANRESULT(vkEndCommandBuffer(m_CommandBuffers[i]));
+		}
+	}
+    
+	void CreateDescriptorSet()
+	{
+		VkDescriptorPoolSize poolSize = {};
+		poolSize.type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSize.descriptorCount = 2;
         
-				m_MVPDatas[index].projection.SetIdentity();
-				m_MVPDatas[index].projection.Perspective(MMath::DegreesToRadians(60.0f), fw, fh, 0.01f, 3000.0f);
+		VkDescriptorPoolCreateInfo descriptorPoolInfo;
+		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+		descriptorPoolInfo.poolSizeCount = 1;
+		descriptorPoolInfo.pPoolSizes    = &poolSize;
+		descriptorPoolInfo.maxSets       = m_Model->meshes.size();
+		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
+
+		m_DescriptorSets.resize(m_Model->meshes.size());
+		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
+		{
+			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+
+			VkDescriptorSetAllocateInfo allocInfo;
+			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+			allocInfo.descriptorPool     = m_DescriptorPool;
+			allocInfo.descriptorSetCount = 1;
+			allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
+			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &descriptorSet));
+        
+			VkWriteDescriptorSet writeDescriptorSet;
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = descriptorSet;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->descriptor);
+			writeDescriptorSet.dstBinding      = 0;
+			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = descriptorSet;
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
+			writeDescriptorSet.dstBinding      = 1;
+			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+			m_DescriptorSets[i] = descriptorSet;
+		}
+	}
+    
+	void CreatePipelines()
+	{
+		m_Pipelines.resize(3);
+
+		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
+		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
+		
+		vk_demo::DVKPipelineInfo pipelineInfo0(m_VulkanDevice);
+        pipelineInfo0.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline0.vert.spv");
+		pipelineInfo0.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline0.frag.spv");
+		m_Pipelines[0] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		
+		vk_demo::DVKPipelineInfo pipelineInfo1(m_VulkanDevice);
+        pipelineInfo1.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline1.vert.spv");
+		pipelineInfo1.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline1.frag.spv");
+		m_Pipelines[1] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+	
+		vk_demo::DVKPipelineInfo pipelineInfo2(m_VulkanDevice);
+		pipelineInfo2.rasterizationState.polygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
+        pipelineInfo2.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.vert.spv");
+		pipelineInfo2.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.frag.spv");
+		m_Pipelines[2] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+	}
+    
+	void DestroyPipelines()
+	{
+		for (int32 i = 0; i < m_Pipelines.size(); ++i) {
+			delete m_Pipelines[i];
+		}
+		m_Pipelines.clear();
+	}
+	
+	void CreateDescriptorSetLayout()
+	{
+		VkDescriptorSetLayoutBinding layoutBindings[2] = { };
+		layoutBindings[0].binding 			 = 0;
+		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindings[0].descriptorCount    = 1;
+		layoutBindings[0].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBindings[0].pImmutableSamplers = nullptr;
+
+		layoutBindings[1].binding 			 = 1;
+		layoutBindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layoutBindings[1].descriptorCount    = 1;
+		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_VERTEX_BIT;
+		layoutBindings[1].pImmutableSamplers = nullptr;
+        
+		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
+		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+		descSetLayoutInfo.bindingCount = 2;
+		descSetLayoutInfo.pBindings    = layoutBindings;
+		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
+        
+		VkPipelineLayoutCreateInfo pipeLayoutInfo;
+		ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+		pipeLayoutInfo.setLayoutCount = 1;
+		pipeLayoutInfo.pSetLayouts    = &m_DescriptorSetLayout;
+		VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
+	}
+    
+	void DestroyDescriptorSetLayout()
+	{
+		vkDestroyDescriptorSetLayout(m_Device, m_DescriptorSetLayout, VULKAN_CPU_ALLOCATOR);
+		vkDestroyPipelineLayout(m_Device, m_PipelineLayout, VULKAN_CPU_ALLOCATOR);
+		vkDestroyDescriptorPool(m_Device, m_DescriptorPool, VULKAN_CPU_ALLOCATOR);
+	}
+	
+	void UpdateUniformBuffers(float time, float delta)
+	{
+		if (m_AutoRotate) {
+			for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
+				m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
+				m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(MVPBlock));
 			}
 		}
-
+		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
 
-	void DestroyFences()
+	void CreateUniformBuffers()
 	{
-		VkDevice vkDevice = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-		for (int32 i = 0; i < m_RenderingDoneSemaphores.size(); ++i) {
-			vkDestroySemaphore(vkDevice, m_RenderingDoneSemaphores[i], VULKAN_CPU_ALLOCATOR);
-		}
-		m_RenderingDoneSemaphores.clear();
-	}
+		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		boundCenter.z -= boundSize.Size();
 
-	void InitFences()
-	{
-		int32 bufferCount = GetVulkanRHI()->GetSwapChain()->GetBackBufferCount();
-		VkDevice vkDevice = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
+		m_MVPDatas.resize(m_Model->meshes.size());
+		m_MVPBuffers.resize(m_Model->meshes.size());
 
-		for (int32 i = 0; i < bufferCount; ++i)
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
-			VkSemaphore semaphore;
-			VkSemaphoreCreateInfo createInfo;
-			ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-			vkCreateSemaphore(vkDevice, &createInfo, VULKAN_CPU_ALLOCATOR, &semaphore);
-			m_RenderingDoneSemaphores.push_back(semaphore);
-		}
-	}
+			m_MVPDatas[i].model.SetIdentity();
+			m_MVPDatas[i].model.SetOrigin(Vector3(0, 0, 0));
+        
+			m_MVPDatas[i].view.SetIdentity();
+			m_MVPDatas[i].view.SetOrigin(boundCenter);
+			m_MVPDatas[i].view.SetInverse();
 
-    void DestroyAssets()
-    {
-        m_Shader       = nullptr;
-        m_Renderable   = nullptr;
-		m_Materials.clear();
-		m_DrawCommands.clear();
-    }
-    
-	void LoadAssets()
+			m_MVPDatas[i].projection.SetIdentity();
+			m_MVPDatas[i].projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 3.0f, (float)GetHeight(), 0.01f, 3000.0f);
+		
+			m_MVPBuffers[i] = vk_demo::DVKBuffer::CreateBuffer(
+				m_VulkanDevice, 
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+				sizeof(MVPBlock),
+				&(m_MVPDatas[i])
+			);
+			m_MVPBuffers[i]->Map();
+		}
+
+		m_ParamData.intensity = 5.0f;
+		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(ParamBlock),
+			&(m_ParamData)
+		);
+		m_ParamBuffer->Map();
+	}
+	
+	void DestroyUniformBuffers()
 	{
-        m_Renderable  = MeshLoader::LoadFromFile("assets/models/suzanne.obj")[0];
-        m_Shader      = Shader::Create("assets/shaders/0_SuperDemo/obj.vert.spv", "assets/shaders/0_SuperDemo/obj.frag.spv");
+		m_MVPDatas.clear();
 
-		m_Materials.resize(m_MVPDatas.size());
-		m_DrawCommands.resize(m_MVPDatas.size());
-
-		for (int32 i = 0; i < m_MVPDatas.size(); ++i)
-		{
-			m_Materials[i] = std::make_shared<Material>(m_Shader);
-			m_Materials[i]->SetParam("uboMVP", &(m_MVPDatas[i]), sizeof(UBOData));
-
-			m_DrawCommands[i] = std::make_shared<MeshDrawCommand>();
-			m_DrawCommands[i]->material   = m_Materials[i];
-			m_DrawCommands[i]->renderable = m_Renderable;
+		for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
+			vk_demo::DVKBuffer* buffer = m_MVPBuffers[i];
+			buffer->UnMap();
+			delete buffer;
 		}
 
-        MLOG("DrawCommand Prepare done.")
+		m_MVPBuffers.clear();
+
+		m_ParamBuffer->UnMap();
+		delete m_ParamBuffer;
+		m_ParamBuffer = nullptr;
 	}
-    
+
+	void CreateGUI()
+	{
+		m_GUI = new ImageGUIContext();
+		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+	}
+
+	void DestroyGUI()
+	{
+		m_GUI->Destroy();
+		delete m_GUI;
+	}
+
 private:
+	typedef std::vector<vk_demo::DVKBuffer*>		DVKBuffers;
+	typedef std::vector<VkDescriptorSet>			VkDescriptorSets;
+	typedef std::vector<vk_demo::DVKPipeline*>		DVKPipelines;
 
-	typedef std::vector<std::shared_ptr<MeshDrawCommand>>	MeshDrawCommandList;
-	typedef std::vector<UBOData>							MeshUBODataList;
-	typedef std::vector<std::shared_ptr<Material>>			MaterialList;
-
-	bool 							    m_Ready;
+	bool							m_AutoRotate = false;
+	bool 							m_Ready = false;
     
-    MeshDrawCommandList					m_DrawCommands;
-    MeshUBODataList						m_MVPDatas;
+	std::vector<MVPBlock> 			m_MVPDatas;
+	DVKBuffers						m_MVPBuffers;
 
-    std::shared_ptr<Shader>             m_Shader;
-	std::shared_ptr<Renderable>         m_Renderable;
-	MaterialList						m_Materials;
+	ParamBlock						m_ParamData;
+	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
+	
+	DVKPipelines					m_Pipelines;
 
-	std::vector<VkSemaphore>			m_RenderingDoneSemaphores;
-	VkSemaphore							m_AcquiredSemaphore;
+	vk_demo::DVKModel*				m_Model = nullptr;
 
-	uint32 							    m_ImageIndex;
+    VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
+	VkPipelineLayout 				m_PipelineLayout = VK_NULL_HANDLE;
+	VkDescriptorPool                m_DescriptorPool = VK_NULL_HANDLE;
+	VkDescriptorSets 				m_DescriptorSets;
+    
+	ImageGUIContext*				m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<SuperDemoModule>(1400, 900, "Advanced", cmdLine);
+	return std::make_shared<PipelinesModule>(1400, 900, "Pipelines", cmdLine);
 }
