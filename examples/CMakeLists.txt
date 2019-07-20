@@ -264,6 +264,21 @@ SETUP_SAMPLE_START(14_TextureArray)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(14_TextureArray)
 
+SETUP_SAMPLE_START(0_SuperDemo)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/SuperDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/14_TextureArray/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(0_SuperDemo)
+
 # SETUP_SAMPLE_START(10_Texture3D)
 # 	SET(SOURCE_FILES
 # 		${MainLaunch}
