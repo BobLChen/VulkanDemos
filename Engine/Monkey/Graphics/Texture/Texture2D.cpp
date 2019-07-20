@@ -12,8 +12,7 @@
 #include "Vulkan/VulkanMemory.h"
 #include "Vulkan/VulkanCommandBuffer.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "Loader/stb_image.h"
+#include "Loader/ImageLoader.h"
 
 Texture2D::Texture2D()
 {
@@ -46,7 +45,7 @@ void Texture2D::LoadFromFiles(const std::vector<std::string>& filenames)
 		}
 
 		ImageInfo imageInfo;
-		imageInfo.data = stbi_load_from_memory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 0);
+		imageInfo.data = StbImage::LoadFromMemory(dataPtr, dataSize, &imageInfo.width, &imageInfo.height, &imageInfo.comp, 0);
 
 		delete[] dataPtr;
 		dataSize = -1;
@@ -255,7 +254,7 @@ void Texture2D::LoadFromFile(const std::string& filename)
     int32 width  = -1;
     int32 height = -1;
     int32 comp   = 0;
-    uint8* rgbaData = stbi_load_from_memory(dataPtr, dataSize, &width, &height, &comp, 4);
+    uint8* rgbaData = StbImage::LoadFromMemory(dataPtr, dataSize, &width, &height, &comp, 4);
     
     if (rgbaData == nullptr) {
         MLOGE("Failed load image : %s", filename.c_str());

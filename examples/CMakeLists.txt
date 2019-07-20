@@ -69,6 +69,21 @@ elseif (UNIX)
 	)
 endif ()
 
+SETUP_SAMPLE_START(0_SuperDemo)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/SuperDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/14_TextureArray/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(0_SuperDemo)
+
 SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
 		${MainLaunch}
@@ -264,12 +279,12 @@ SETUP_SAMPLE_START(14_TextureArray)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(14_TextureArray)
 
-SETUP_SAMPLE_START(0_SuperDemo)
+SETUP_SAMPLE_START(15_Texture3D)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/SuperDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/15_Texture3D/Texture3D.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/14_TextureArray/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/15_Texture3D/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -277,19 +292,4 @@ SETUP_SAMPLE_START(0_SuperDemo)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(0_SuperDemo)
-
-# SETUP_SAMPLE_START(10_Texture3D)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/10_Texture3D/Texture3D.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/10_Texture3D/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(10_Texture3D)
+SETUP_SAMPLE_END(15_Texture3D)

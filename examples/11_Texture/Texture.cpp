@@ -145,10 +145,10 @@ private:
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal, VertexAttribute::VA_Tangent }
 		);
 
-		m_TexDiffuse       = vk_demo::DVKTexture::Create("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
-		m_TexNormal        = vk_demo::DVKTexture::Create("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
-		m_TexCurvature     = vk_demo::DVKTexture::Create("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
-		m_TexPreIntegrated = vk_demo::DVKTexture::Create("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
+		m_TexDiffuse       = vk_demo::DVKTexture::Create2D("assets/textures/head_diffuse.jpg", m_VulkanDevice, cmdBuffer);
+		m_TexNormal        = vk_demo::DVKTexture::Create2D("assets/textures/head_normal.png", m_VulkanDevice, cmdBuffer);
+		m_TexCurvature     = vk_demo::DVKTexture::Create2D("assets/textures/curvatureLUT.png", m_VulkanDevice, cmdBuffer);
+		m_TexPreIntegrated = vk_demo::DVKTexture::Create2D("assets/textures/preIntegratedLUT.png", m_VulkanDevice, cmdBuffer);
 
 		delete cmdBuffer;
 	}

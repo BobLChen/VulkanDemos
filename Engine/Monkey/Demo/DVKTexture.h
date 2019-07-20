@@ -46,10 +46,14 @@ namespace vk_demo
             }
         }
         
-        static DVKTexture* Create(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+		static DVKTexture* Create2D(const uint8* rgbaData, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer); 
 
-        static DVKTexture* CreateArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+        static DVKTexture* Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+
+        static DVKTexture* Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
         
+		static DVKTexture* Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
+
     public:
         std::shared_ptr<VulkanDevice>   vulkanDevice = nullptr;
         
@@ -62,6 +66,7 @@ namespace vk_demo
         
         int32                           width = 0;
         int32                           height = 0;
+		int32							depth = 1;
         int32                           mipLevels = 0;
 		int32							layerCount = 1;
         VkFormat                        format = VK_FORMAT_R8G8B8A8_UNORM;
