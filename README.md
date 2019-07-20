@@ -85,5 +85,8 @@ Vulkan Examples
 ### DynamicUniformBuffer
 ![DynamicUniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/13_DynamicUniformBuffer.jpg)
 
-### TextureArray
+### TextureArray (Terrain)
 ![TextureArray](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/14_TextureArray.jpg)
+
+### Texture3D (3D LUT)
+![Texture3D](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/15_Texture3D.jpg)
