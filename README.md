@@ -84,3 +84,6 @@ Vulkan Examples
 
 ### DynamicUniformBuffer
 ![DynamicUniformBuffer](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/13_DynamicUniformBuffer.jpg)
+
+### TextureArray
+![TextureArray](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/14_TextureArray.jpg)
