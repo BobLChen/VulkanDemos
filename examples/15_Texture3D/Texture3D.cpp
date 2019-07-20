@@ -80,6 +80,14 @@ private:
 		uint8*	data   = nullptr;
 	};
     
+    struct LutDebugBlock
+    {
+        float bias;
+        float padding0;
+        float padding1;
+        float padding2;
+    };
+    
 	struct MVPBlock
 	{
 		Matrix4x4 model;
@@ -103,7 +111,9 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("Texture3D", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("3D LUT");
-
+            
+            ImGui::SliderFloat("DebugLut", &m_LutDebugData.bias, 0.0f, 1.0f);
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -128,7 +138,6 @@ private:
         int32 width  = 0;
         int32 height = 0;
         uint8* rgbaData = StbImage::LoadFromMemory(dataPtr, dataSize, &width, &height, &comp, 4);
-        uint32 size  = width * height * 4;
         
 		delete[] dataPtr;
 		dataPtr = nullptr;
@@ -137,15 +146,15 @@ private:
             MLOGE("Failed load image : %s", filename.c_str());
             return false;
         }
-
+        
 		imageInfo.comp   = 4;
 		imageInfo.data   = rgbaData;
 		imageInfo.width  = width;
 		imageInfo.height = height;
-
+        
 		return true;
 	}
-
+    
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
@@ -159,53 +168,44 @@ private:
 				VertexAttribute::VA_UV0
 			}
 		);
-
-		ImageInfo image0;
-		LoadImage("assets/textures/game0.jpg", image0);
-		ImageInfo image1;
-		LoadImage("assets/textures/game0_filter.jpg", image1);
-
+        
 		// 64mb 
 		// map image0 -> image1
 		int32 lutSize  = 256;
 		uint8* lutRGBA = new uint8[lutSize * lutSize * 4 * lutSize];
-		for (int32 i = 0; i < image0.width; ++i)
-		{
-			for (int32 j = 0; j < image0.height; ++j)
-			{
-				int32 idx = j * image0.width * 4 + i * 4;
-				uint8 r0  = image0.data[idx + 0];
-				uint8 g0  = image0.data[idx + 1];
-				uint8 b0  = image0.data[idx + 2];
-
-				uint8 r1  = image1.data[idx + 0];
-				uint8 g1  = image1.data[idx + 1];
-				uint8 b1  = image1.data[idx + 2];
-
-				// x:r;y:g;z:b
-				idx = r0 * 4 + g0 * lutSize * 4 + b0 * lutSize * lutSize * 4;
-				lutRGBA[idx + 0] = r1;
-				lutRGBA[idx + 1] = g1;
-				lutRGBA[idx + 2] = b1;
-				lutRGBA[idx + 3] = 255;
-			}
-		}
-
-		m_TexOrigin = vk_demo::DVKTexture::Create2D(image0.data, image0.width, image0.height, m_VulkanDevice, cmdBuffer);
-		m_TexFilter = vk_demo::DVKTexture::Create2D(image1.data, image1.width, image1.height, m_VulkanDevice, cmdBuffer);
+        for (int32 x = 0; x < lutSize; ++x)
+        {
+            for (int32 y = 0; y < lutSize; ++y)
+            {
+                for (int32 z = 0; z < lutSize; ++z)
+                {
+                    int idx = (x + y * lutSize + z * lutSize * lutSize) * 4;
+                    int32 r = x * 1.0f / (lutSize - 1) * 255;
+                    int32 g = y * 1.0f / (lutSize - 1) * 255;
+                    int32 b = z * 1.0f / (lutSize - 1) * 255;
+                    // 怀旧PS滤镜，色调映射。
+                    r = 0.393f * r + 0.769f * g + 0.189f * b;
+                    g = 0.349f * r + 0.686f * g + 0.168f * b;
+                    b = 0.272f * r + 0.534f * g + 0.131f * b;
+                    lutRGBA[idx + 0] = MMath::Min(r, 255);
+                    lutRGBA[idx + 1] = MMath::Min(g, 255);
+                    lutRGBA[idx + 2] = MMath::Min(b, 255);
+                    lutRGBA[idx + 3] = 255;
+                }
+            }
+        }
+        
+		m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/game0.jpg", m_VulkanDevice, cmdBuffer);
 		m_Tex3DLut  = vk_demo::DVKTexture::Create3D(VK_FORMAT_R8G8B8A8_UNORM, lutRGBA, lutSize * lutSize * 4 * lutSize, lutSize, lutSize, lutSize, m_VulkanDevice, cmdBuffer);
 		
-		StbImage::Free(image0.data);
-		StbImage::Free(image1.data);
-
 		delete cmdBuffer;
 	}
-
+    
 	void DestroyAssets()
 	{
 		delete m_Model;
 		delete m_TexOrigin;
-		delete m_TexFilter;
+        delete m_Tex3DLut;
 	}
     
 	void SetupCommandBuffers()
@@ -251,8 +251,6 @@ private:
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBeginInfo));
 			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
             
-            vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipeline);
-            
 			// 0
 			viewport.x = 0;
 			viewport.y = hh;
@@ -260,6 +258,7 @@ private:
 			scissor.offset.y = 0;
 			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
+            vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipeline);
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet0, 0, nullptr);
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
@@ -272,6 +271,7 @@ private:
 			scissor.offset.y = 0;
 			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
+            vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->pipeline);
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet1, 0, nullptr);
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
@@ -284,11 +284,12 @@ private:
 			scissor.offset.y = hh;
 			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
+            vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline2->pipeline);
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet2, 0, nullptr);
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
-
+            
 			// 3
 			viewport.x = ww;
 			viewport.y = hh * 2;
@@ -296,6 +297,7 @@ private:
 			scissor.offset.y = hh;
 			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
             vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
+            vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline3->pipeline);
 			vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet3, 0, nullptr);
             for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
@@ -312,9 +314,9 @@ private:
 	{
 		VkDescriptorPoolSize poolSizes[2];
 		poolSizes[0].type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = 1;
+		poolSizes[0].descriptorCount = 2;
 		poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = 1;
+		poolSizes[1].descriptorCount = 2;
         
 		VkDescriptorPoolCreateInfo descriptorPoolInfo;
 		ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
@@ -323,7 +325,6 @@ private:
 		descriptorPoolInfo.maxSets       = 4;
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
         
-		// set0
 		std::vector<VkDescriptorSet*> descriptorSets = {
 			&m_DescriptorSet0,
 			&m_DescriptorSet1,
@@ -332,11 +333,11 @@ private:
 		};
 		std::vector<vk_demo::DVKTexture*> textures = {
 			m_TexOrigin,
-			m_TexFilter,
 			m_TexOrigin,
-			m_TexFilter
+			m_TexOrigin,
+			m_TexOrigin
 		};
-
+        
 		for (int32 i = 0; i < descriptorSets.size(); ++i)
 		{
 			VkDescriptorSetAllocateInfo allocInfo;
@@ -363,6 +364,23 @@ private:
 			writeDescriptorSet.pImageInfo      = &(textures[i]->descriptorInfo);
 			writeDescriptorSet.dstBinding      = 1;
 			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+            
+            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            writeDescriptorSet.dstSet          = *(descriptorSets[i]);
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            writeDescriptorSet.pBufferInfo     = nullptr;
+            writeDescriptorSet.pImageInfo      = &(m_Tex3DLut->descriptorInfo);
+            writeDescriptorSet.dstBinding      = 2;
+            vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+            
+            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            writeDescriptorSet.dstSet          = *(descriptorSets[i]);
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            writeDescriptorSet.pBufferInfo     = &(m_LutDebugBuffer->descriptor);
+            writeDescriptorSet.dstBinding      = 3;
+            vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 		}
 	}
     
@@ -371,21 +389,38 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo(m_VulkanDevice);
-        pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.vert.spv");
-		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.frag.spv");
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		vk_demo::DVKPipelineInfo pipelineInfo0(m_VulkanDevice);
+        pipelineInfo0.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.vert.spv");
+		pipelineInfo0.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.frag.spv");
+		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        
+        vk_demo::DVKPipelineInfo pipelineInfo1(m_VulkanDevice);
+        pipelineInfo1.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/lut.vert.spv");
+        pipelineInfo1.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/lut.frag.spv");
+        m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        
+        vk_demo::DVKPipelineInfo pipelineInfo2(m_VulkanDevice);
+        pipelineInfo2.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug0.vert.spv");
+        pipelineInfo2.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug0.frag.spv");
+        m_Pipeline2 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        
+        vk_demo::DVKPipelineInfo pipelineInfo3(m_VulkanDevice);
+        pipelineInfo3.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug1.vert.spv");
+        pipelineInfo3.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug1.frag.spv");
+        m_Pipeline3 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 	}
     
 	void DestroyPipelines()
 	{
         delete m_Pipeline0;
-        m_Pipeline0 = nullptr;
+        delete m_Pipeline1;
+        delete m_Pipeline2;
+        delete m_Pipeline3;
 	}
 	
 	void CreateDescriptorSetLayout()
 	{
-		VkDescriptorSetLayoutBinding layoutBindings[2] = { };
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(4);
 		layoutBindings[0].binding 			 = 0;
 		layoutBindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		layoutBindings[0].descriptorCount    = 1;
@@ -397,11 +432,23 @@ private:
 		layoutBindings[1].descriptorCount    = 1;
 		layoutBindings[1].stageFlags 		 = VK_SHADER_STAGE_FRAGMENT_BIT;
 		layoutBindings[1].pImmutableSamplers = nullptr;
-		
+        
+        layoutBindings[2].binding            = 2;
+        layoutBindings[2].descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        layoutBindings[2].descriptorCount    = 1;
+        layoutBindings[2].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBindings[2].pImmutableSamplers = nullptr;
+        
+        layoutBindings[3].binding            = 3;
+        layoutBindings[3].descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        layoutBindings[3].descriptorCount    = 1;
+        layoutBindings[3].stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBindings[3].pImmutableSamplers = nullptr;
+        
 		VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 		ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-		descSetLayoutInfo.bindingCount = 2;
-		descSetLayoutInfo.pBindings    = layoutBindings;
+		descSetLayoutInfo.bindingCount = layoutBindings.size();
+		descSetLayoutInfo.pBindings    = layoutBindings.data();
 		VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorSetLayout));
         
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
@@ -420,7 +467,7 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-
+        m_LutDebugBuffer->CopyFrom(&m_LutDebugData, sizeof(LutDebugBlock));
 	}
     
 	void CreateUniformBuffers()
@@ -449,13 +496,25 @@ private:
 			&(m_MVPData)
 		);
 		m_MVPBuffer->Map();
+        
+        // lut debug data
+        m_LutDebugBuffer = vk_demo::DVKBuffer::CreateBuffer(
+           m_VulkanDevice,
+           VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+           sizeof(LutDebugBlock),
+           &(m_LutDebugData)
+        );
+        m_LutDebugBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
 	{
 		m_MVPBuffer->UnMap();
 		delete m_MVPBuffer;
-		m_MVPBuffer = nullptr;
+        
+        m_LutDebugBuffer->UnMap();
+        delete m_LutDebugBuffer;
 	}
 
 	void CreateGUI()
@@ -476,13 +535,18 @@ private:
     
 	MVPBlock 						m_MVPData;
 	vk_demo::DVKBuffer*				m_MVPBuffer;
-
+    
+    LutDebugBlock                   m_LutDebugData;
+    vk_demo::DVKBuffer*             m_LutDebugBuffer = nullptr;;
+    
 	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
-	vk_demo::DVKTexture*			m_TexFilter = nullptr;
 	vk_demo::DVKTexture*			m_Tex3DLut  = nullptr;
 	
     vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
-
+    vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
+    vk_demo::DVKPipeline*           m_Pipeline2 = nullptr;
+    vk_demo::DVKPipeline*           m_Pipeline3 = nullptr;
+    
 	vk_demo::DVKModel*				m_Model = nullptr;
 
 	VkDescriptorPool                m_DescriptorPool = VK_NULL_HANDLE;

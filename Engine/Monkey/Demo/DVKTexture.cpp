@@ -236,8 +236,7 @@ namespace vk_demo
         int32 width  = 0;
         int32 height = 0;
         uint8* rgbaData = StbImage::LoadFromMemory(dataPtr, dataSize, &width, &height, &comp, 4);
-        uint32 size  = width * height * 4;
-
+        
 		delete[] dataPtr;
 		dataPtr = nullptr;
 
@@ -542,7 +541,7 @@ namespace vk_demo
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo           descriptorInfo = {};
-
+        
 		// Create optimal tiled target image
 		VkImageCreateInfo imageCreateInfo;
 		ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -567,6 +566,8 @@ namespace vk_demo
         memAllocInfo.memoryTypeIndex = memoryTypeIndex;
         VERIFYVULKANRESULT(vkAllocateMemory(device, &memAllocInfo, VULKAN_CPU_ALLOCATOR, &imageMemory));
         VERIFYVULKANRESULT(vkBindImageMemory(device, image, imageMemory, 0));
+        
+        cmdBuffer->Begin();
         
 		VkImageSubresourceRange subresourceRange = {};
 		subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -620,9 +621,9 @@ namespace vk_demo
 		samplerInfo.magFilter        = VK_FILTER_LINEAR;
 		samplerInfo.minFilter        = VK_FILTER_LINEAR;
 		samplerInfo.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+		samplerInfo.addressModeU     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeV     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+		samplerInfo.addressModeW     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		samplerInfo.mipLodBias       = 0.0f;
 		samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
 		samplerInfo.minLod           = 0.0f;
