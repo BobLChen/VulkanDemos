@@ -7,6 +7,8 @@
 
 #include "Vulkan/VulkanCommon.h"
 
+#include "DVKShader.h"
+
 #include <string>
 #include <cstring>
 #include <vector>
@@ -25,12 +27,14 @@ namespace vk_demo
 		VkPipelineDepthStencilStateCreateInfo		depthStencilState;
 		VkPipelineMultisampleStateCreateInfo		multisampleState;
 
-		VkShaderModule								vertShaderModule = VK_NULL_HANDLE;
-		VkShaderModule								fragShaderModule = VK_NULL_HANDLE;
-		VkShaderModule								compShaderModule = VK_NULL_HANDLE;
-		VkShaderModule								tescShaderModule = VK_NULL_HANDLE;
-		VkShaderModule								teseShaderModule = VK_NULL_HANDLE;
-		VkShaderModule								geomShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	vertShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	fragShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	compShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	tescShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	teseShaderModule = VK_NULL_HANDLE;
+		VkShaderModule	geomShaderModule = VK_NULL_HANDLE;
+
+		DVKShader*		shader = nullptr;
 
 		DVKPipelineInfo(std::shared_ptr<VulkanDevice> inDevice)
 			: vulkanDevice(inDevice)
@@ -207,6 +211,7 @@ namespace vk_demo
 
 		VulkanDeviceRef		vulkanDevice;
 		VkPipeline			pipeline;
+		VkPipelineLayout	pipelineLayout;
 	};
 
 };

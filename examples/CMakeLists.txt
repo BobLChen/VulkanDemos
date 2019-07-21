@@ -293,3 +293,18 @@ SETUP_SAMPLE_START(15_Texture3D)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(15_Texture3D)
+
+SETUP_SAMPLE_START(16_OptimizeShaderAndLayout)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/16_OptimizeShaderAndLayout/OptimizeShaderAndLayout.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/16_OptimizeShaderAndLayout/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(16_OptimizeShaderAndLayout)

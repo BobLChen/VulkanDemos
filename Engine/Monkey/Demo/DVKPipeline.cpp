@@ -13,8 +13,9 @@ namespace vk_demo
 		VkRenderPass renderPass
 	)
 	{
-		DVKPipeline* pipeline   = new DVKPipeline();
-		pipeline->vulkanDevice  = vulkanDevice;
+		DVKPipeline* pipeline    = new DVKPipeline();
+		pipeline->vulkanDevice   = vulkanDevice;
+		pipeline->pipelineLayout = pipelineLayout;
 
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -45,8 +46,13 @@ namespace vk_demo
 		dynamicState.pDynamicStates    = dynamicStateEnables.data();
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-		pipelineInfo.FillShaderStages(shaderStages);
-
+		if (pipelineInfo.shader) {
+			shaderStages = pipelineInfo.shader->shaderStageCreateInfos;
+		}
+		else {
+			pipelineInfo.FillShaderStages(shaderStages);
+		}
+		
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout 				= pipelineLayout;
