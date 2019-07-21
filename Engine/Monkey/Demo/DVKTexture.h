@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine.h"
-#include "DVKCommon.h"
+#include "DVKCommand.h"
 
 #include "Common/Common.h"
 #include "Math/Math.h"

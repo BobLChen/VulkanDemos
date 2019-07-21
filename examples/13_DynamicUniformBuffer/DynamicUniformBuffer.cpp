@@ -206,7 +206,7 @@ private:
 					meshIndex * modelAlign,
 					meshIndex * colorAlign
 				};
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLayout, 0, 1, &m_DescriptorSet, 2, dynamicOffsets);
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->pipelineLayout, 0, 1, &m_DescriptorSet, 2, dynamicOffsets);
                 m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
             }
 			

@@ -10,6 +10,7 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKCommon.h
 	Monkey/Demo/DVKPipeline.h
 	Monkey/Demo/DVKTexture.h
+	Monkey/Demo/DVKShader.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -20,6 +21,7 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKModel.cpp
 	Monkey/Demo/DVKPipeline.cpp
 	Monkey/Demo/DVKTexture.cpp
+	Monkey/Demo/DVKShader.cpp
 )
 
 set(Monkey_Configuration_HDRS

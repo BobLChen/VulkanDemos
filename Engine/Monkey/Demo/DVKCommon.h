@@ -8,3 +8,5 @@
 #include "DVKVertexBuffer.h"
 #include "DVKModel.h"
 #include "DVKPipeline.h"
+#include "DVKTexture.h"
+#include "DVKShader.h"
