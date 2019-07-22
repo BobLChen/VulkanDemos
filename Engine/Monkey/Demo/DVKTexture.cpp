@@ -313,9 +313,11 @@ namespace vk_demo
 		viewInfo.viewType   = VK_IMAGE_VIEW_TYPE_2D;
 		viewInfo.format     = format;
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-		viewInfo.subresourceRange.aspectMask = aspect;
-		viewInfo.subresourceRange.layerCount = 1;
-		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.aspectMask     = aspect;
+		viewInfo.subresourceRange.layerCount     = 1;
+		viewInfo.subresourceRange.levelCount     = 1;
+		viewInfo.subresourceRange.baseMipLevel   = 0;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
 		descriptorInfo.sampler     = imageSampler;

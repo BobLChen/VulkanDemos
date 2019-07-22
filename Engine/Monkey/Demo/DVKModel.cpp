@@ -45,6 +45,40 @@ namespace vk_demo
 			SimplifyTexturePath(material.specular);
 		}
 	}
+    
+    DVKModel* DVKModel::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<float>& vertices, const std::vector<uint16>& indices, const std::vector<VertexAttribute>& attributes)
+    {
+        DVKModel* model   = new DVKModel();
+        model->device     = vulkanDevice;
+        model->attributes = attributes;
+        model->cmdBuffer  = cmdBuffer;
+        
+        DVKPrimitive* primitive = new DVKPrimitive();
+        primitive->vertices = vertices;
+        primitive->indices  = indices;
+        
+        if (cmdBuffer)
+        {
+            primitive->vertexBuffer = DVKVertexBuffer::Create(vulkanDevice, cmdBuffer, primitive->vertices, attributes);
+            primitive->indexBuffer  = DVKIndexBuffer::Create(vulkanDevice, cmdBuffer, primitive->indices);
+        }
+        
+        DVKMesh* mesh = new DVKMesh();
+        mesh->primitives.push_back(primitive);
+        mesh->bounding.min = Vector3(-1.0f, -1.0f, 0.0f);
+        mesh->bounding.max = Vector3(1.0f, 1.0f, 0.0f);
+        
+        DVKNode* rootNode = new DVKNode();
+        rootNode->name = "RootNode";
+        rootNode->meshes.push_back(mesh);
+        rootNode->localMatrix.SetIdentity();
+        mesh->linkNode = rootNode;
+        
+        model->rootNode = rootNode;
+        model->meshes.push_back(mesh);
+        
+        return model;
+    }
 
 	DVKModel* DVKModel::LoadFromFile(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<VertexAttribute>& attributes)
     {

@@ -74,9 +74,7 @@ protected:
 	void CreateFrameBuffers() override
 	{
 		DestroyFrameBuffers();
-		DestroyAttachments();
-		CreateAttachments();
-
+		
 		int32 fwidth    = GetVulkanRHI()->GetSwapChain()->GetWidth();
 		int32 fheight   = GetVulkanRHI()->GetSwapChain()->GetHeight();
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
@@ -136,7 +134,6 @@ protected:
 		int32 fwidth    = swapChain->GetWidth();
 		int32 fheight   = swapChain->GetHeight();
 		int32 numBuffer = swapChain->GetBackBufferCount();
-		VkDevice device = m_VulkanDevice->GetInstanceHandle();
 		
 		m_AttachsDepth.resize(numBuffer);
 		m_AttachsColor.resize(numBuffer);
@@ -150,6 +147,7 @@ protected:
 				fwidth, fheight,
 				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
+			m_AttachsDepth[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
 		
 		for (int32 i = 0; i < m_AttachsColor.size(); ++i)
@@ -161,12 +159,15 @@ protected:
 				fwidth, fheight,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
+			m_AttachsColor[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
 	}
 
 	void CreateRenderPass() override
 	{
 		DestoryRenderPass();
+		DestroyAttachments();
+		CreateAttachments();
 
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 		PixelFormat pixelFormat = GetVulkanRHI()->GetPixelFormat();
@@ -245,7 +246,7 @@ protected:
 		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 		dependencies[1].srcSubpass      = 0;
@@ -258,9 +259,9 @@ protected:
 
 		dependencies[2].srcSubpass      = 1;
 		dependencies[2].dstSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+		dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependencies[2].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[2].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
+		dependencies[2].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependencies[2].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
 		dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 		
@@ -324,7 +325,7 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("InputAttachments", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("Color、Deptch");
+			ImGui::Text("Color Depth");
             
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -360,6 +361,24 @@ private:
 			cmdBuffer,
 			m_Shader0->attributes
 		);
+        
+        std::vector<float> vertices = {
+            -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, 0.0f, 0.0f, 1.0f
+        };
+        std::vector<uint16> indices = {
+            0, 1, 2, 0, 2, 3
+        };
+        
+        m_Quad = vk_demo::DVKModel::Create(
+            m_VulkanDevice,
+            cmdBuffer,
+            vertices,
+            indices,
+            m_Shader1->attributes
+        );
         
 		// 生成LUT 3D图数据
 		// 64mb 
@@ -398,11 +417,13 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
+        delete m_Quad;
 
 		delete m_TexOrigin;
         delete m_Tex3DLut;
 
 		delete m_Shader0;
+		delete m_Shader1;
 	}
     
 	void SetupCommandBuffers()
@@ -463,9 +484,13 @@ private:
 
 			// pass1
 			{
-				
+				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->pipeline);
+				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->pipelineLayout, 0, m_DescriptorSets[i]->descriptorSets.size(), m_DescriptorSets[i]->descriptorSets.data(), 0, nullptr);
+                for (int32 meshIndex = 0; meshIndex < m_Quad->meshes.size(); ++meshIndex) {
+                    m_Quad->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
+                }
 			}
-
+            
 			vkCmdEndRenderPass(m_CommandBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(m_CommandBuffers[i]));
 		}
@@ -477,6 +502,14 @@ private:
 		m_DescriptorSet0->WriteBuffer("uboMVP", m_MVPBuffer);
 		m_DescriptorSet0->WriteImage("diffuseMap", m_TexOrigin);
 		m_DescriptorSet0->WriteImage("lutMap", m_Tex3DLut);
+
+		m_DescriptorSets.resize(m_AttachsColor.size());
+		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
+		{
+			m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
+			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
+			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
+		}
 	}
     
 	void CreatePipelines()
@@ -484,15 +517,31 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo;
-		pipelineInfo.shader = m_Shader0;
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_Shader0->pipelineLayout, m_RenderPass);
-    }
+		vk_demo::DVKPipelineInfo pipelineInfo0;
+		pipelineInfo0.shader = m_Shader0;
+		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_Shader0->pipelineLayout, m_RenderPass);
+		
+		vk_demo::DVKPipelineInfo pipelineInfo1;
+		pipelineInfo1.depthStencilState.depthTestEnable   = VK_FALSE;
+		pipelineInfo1.depthStencilState.depthWriteEnable  = VK_FALSE;
+		pipelineInfo1.depthStencilState.stencilTestEnable = VK_FALSE;
+		pipelineInfo1.shader  = m_Shader1;
+		pipelineInfo1.subpass = 1;
+		m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_Shader1->pipelineLayout, m_RenderPass);
+	}
     
 	void DestroyPipelines()
 	{
         delete m_Pipeline0;
+		delete m_Pipeline1;
+
 		delete m_DescriptorSet0;
+		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
+		{
+			vk_demo::DVKDescriptorSet* descriptorSet = m_DescriptorSets[i];
+			delete descriptorSet;
+		}
+		m_DescriptorSets.clear();
 	}
 	
 	void CreateUniformBuffers()
@@ -512,7 +561,7 @@ private:
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 2, (float)GetHeight() / 2, 0.01f, 3000.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
 		
 		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -544,8 +593,8 @@ private:
 
 private:
 
-	std::vector<vk_demo::DVKTexture*>	m_AttachsDepth;
-	std::vector<vk_demo::DVKTexture*>	m_AttachsColor;
+	typedef std::vector<vk_demo::DVKDescriptorSet*>		DVKDescriptorSetArray;
+	typedef std::vector<vk_demo::DVKTexture*>			DVKTextureArray;
 
 	bool 							m_Ready = false;
     
@@ -556,6 +605,7 @@ private:
 	vk_demo::DVKTexture*			m_Tex3DLut = nullptr;
 
 	vk_demo::DVKModel*				m_Model = nullptr;
+    vk_demo::DVKModel*              m_Quad = nullptr;
 
     vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
 	vk_demo::DVKShader*				m_Shader0 = nullptr;
@@ -563,7 +613,10 @@ private:
 	
 	vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
 	vk_demo::DVKShader*				m_Shader1 = nullptr;
-	vk_demo::DVKDescriptorSet*		m_Descriptor1 = nullptr;
+	DVKDescriptorSetArray			m_DescriptorSets;
+
+	DVKTextureArray					m_AttachsDepth;
+	DVKTextureArray					m_AttachsColor;
 	
 	ImageGUIContext*				m_GUI = nullptr;
 };
