@@ -54,10 +54,15 @@ public:
         return m_SwapChainInfo.minImageCount;
     }
     
-    const VkSwapchainCreateInfoKHR& GetInfo() const
+    inline const VkSwapchainCreateInfoKHR& GetInfo() const
     {
         return m_SwapChainInfo;
     }
+
+	inline VkFormat GetColorFormat() const
+	{
+		return m_ColorFormat;
+	}
 
 protected:
 	friend class VulkanViewport;
@@ -68,6 +73,8 @@ protected:
 	VkSwapchainKHR					m_SwapChain;
 	VkSurfaceKHR					m_Surface;
 	VkSwapchainCreateInfoKHR		m_SwapChainInfo;
+	VkFormat						m_ColorFormat;
+	
 	std::shared_ptr<VulkanDevice>	m_Device;
 	std::vector<VkSemaphore>		m_ImageAcquiredSemaphore;
 

@@ -308,3 +308,18 @@ SETUP_SAMPLE_START(16_OptimizeShaderAndLayout)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(16_OptimizeShaderAndLayout)
+
+SETUP_SAMPLE_START(17_InputAttachments)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/17_InputAttachments/InputAttachments.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/17_InputAttachments/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(17_InputAttachments)

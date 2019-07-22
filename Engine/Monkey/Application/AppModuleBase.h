@@ -77,9 +77,9 @@ public:
 
 	virtual void Exist() = 0;
 
-private:
+protected:
 
-	void CreateFrameBuffers()
+	virtual void CreateFrameBuffers()
 	{
 		DestroyFrameBuffers();
 
@@ -108,7 +108,7 @@ private:
 		}
 	}
 
-	void CreateDepthStencil()
+	virtual void CreateDepthStencil()
 	{
 		DestoryDepthStencil();
 
@@ -156,7 +156,7 @@ private:
 		VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
 	}
 
-	void CreateRenderPass()
+	virtual void CreateRenderPass()
 	{
 		DestoryRenderPass();
 
@@ -230,7 +230,7 @@ private:
 		VERIFYVULKANRESULT(vkCreateRenderPass(device, &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
 	}
 
-	void DestroyFrameBuffers()
+	virtual void DestroyFrameBuffers()
 	{
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 		for (int32 i = 0; i < m_FrameBuffers.size(); ++i) {
@@ -239,7 +239,7 @@ private:
 		m_FrameBuffers.clear();
 	}
 
-	void DestoryRenderPass()
+	virtual void DestoryRenderPass()
 	{
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 		if (m_RenderPass != VK_NULL_HANDLE) {
@@ -248,7 +248,7 @@ private:
 		}
 	}
 
-	void DestoryDepthStencil()
+	virtual void DestoryDepthStencil()
 	{
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 

@@ -57,6 +57,7 @@ namespace vk_demo
 		ZeroVulkanStruct(pipelineCreateInfo, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
 		pipelineCreateInfo.layout 				= pipelineLayout;
 		pipelineCreateInfo.renderPass 			= renderPass;
+		pipelineCreateInfo.subpass              = pipelineInfo.subpass;
 		pipelineCreateInfo.stageCount 			= shaderStages.size();
 		pipelineCreateInfo.pStages 				= shaderStages.data();
 		pipelineCreateInfo.pVertexInputState 	= &vertexInputState;

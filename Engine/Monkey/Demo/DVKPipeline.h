@@ -19,8 +19,6 @@ namespace vk_demo
 
 	struct DVKPipelineInfo
 	{
-		std::shared_ptr<VulkanDevice>				vulkanDevice;
-
 		VkPipelineInputAssemblyStateCreateInfo		inputAssemblyState;
 		VkPipelineRasterizationStateCreateInfo		rasterizationState;
 		VkPipelineColorBlendAttachmentState			blendAttachmentState;
@@ -34,10 +32,10 @@ namespace vk_demo
 		VkShaderModule	teseShaderModule = VK_NULL_HANDLE;
 		VkShaderModule	geomShaderModule = VK_NULL_HANDLE;
 
-		DVKShader*		shader = nullptr;
+		DVKShader*		shader  = nullptr;
+		int32			subpass = 0;
 
-		DVKPipelineInfo(std::shared_ptr<VulkanDevice> inDevice)
-			: vulkanDevice(inDevice)
+		DVKPipelineInfo()
 		{
 			ZeroVulkanStruct(inputAssemblyState, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
 			inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -82,41 +80,6 @@ namespace vk_demo
 			multisampleState.pSampleMask 		  = nullptr;
 		}
 
-		~DVKPipelineInfo()
-		{
-			VkDevice device = vulkanDevice->GetInstanceHandle();
-
-			if (vertShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, vertShaderModule, VULKAN_CPU_ALLOCATOR);
-				vertShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (fragShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, fragShaderModule, VULKAN_CPU_ALLOCATOR);
-				fragShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (compShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, compShaderModule, VULKAN_CPU_ALLOCATOR);
-				compShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (geomShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, geomShaderModule, VULKAN_CPU_ALLOCATOR);
-				geomShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (tescShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, tescShaderModule, VULKAN_CPU_ALLOCATOR);
-				tescShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (teseShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, teseShaderModule, VULKAN_CPU_ALLOCATOR);
-				teseShaderModule = VK_NULL_HANDLE;
-			}
-		}
-		
 		void FillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages)
 		{
 			if (vertShaderModule != VK_NULL_HANDLE) {

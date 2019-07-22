@@ -75,6 +75,27 @@ namespace vk_demo
 		spirv_cross::Compiler compiler((uint32*)shaderModule->data, shaderModule->size / sizeof(uint32));
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 		
+		// 获取input信息
+		for (int32 i = 0; i < resources.subpass_inputs.size(); ++i)
+		{
+			spirv_cross::Resource& res      = resources.subpass_inputs[i];
+			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+			const std::string &varName      = compiler.get_name(res.id);
+
+			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+			VkDescriptorSetLayoutBinding setLayoutBinding = {};
+			setLayoutBinding.binding 			= binding;
+			setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			setLayoutBinding.descriptorCount    = 1;
+			setLayoutBinding.stageFlags 		= shaderModule->stage;
+			setLayoutBinding.pImmutableSamplers = nullptr;
+
+			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+		}
+		
 		// 获取Uniform Buffer信息
 		for (int32 i = 0; i < resources.uniform_buffers.size(); ++i)
 		{
