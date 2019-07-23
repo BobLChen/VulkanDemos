@@ -25,7 +25,7 @@ public:
 		, m_DepthStencilMemory(VK_NULL_HANDLE)
 		, m_RenderPass(VK_NULL_HANDLE)
 		, m_SampleCount(VK_SAMPLE_COUNT_1_BIT)
-		, m_DepthFormat(PF_D24)
+		, m_DepthFormat(PF_DepthStencil)
 	{
 
 	}
@@ -129,6 +129,18 @@ protected:
 		imageCreateInfo.flags       = 0;
 		VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilImage));
 		
+		VkMemoryRequirements memRequire;
+		vkGetImageMemoryRequirements(device, m_DepthStencilImage, &memRequire);
+		uint32 memoryTypeIndex = 0;
+		VERIFYVULKANRESULT(GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex));
+		
+		VkMemoryAllocateInfo memAllocateInfo;
+		ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
+		memAllocateInfo.allocationSize  = memRequire.size;
+		memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
+		vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);
+		vkBindImageMemory(device, m_DepthStencilImage, m_DepthStencilMemory, 0);
+
 		VkImageViewCreateInfo imageViewCreateInfo;
 		ZeroVulkanStruct(imageViewCreateInfo, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -140,19 +152,6 @@ protected:
 		imageViewCreateInfo.subresourceRange.levelCount     = 1;
 		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		imageViewCreateInfo.subresourceRange.layerCount     = 1;
-		
-		VkMemoryRequirements memRequire;
-		vkGetImageMemoryRequirements(device, imageViewCreateInfo.image, &memRequire);
-		uint32 memoryTypeIndex = 0;
-		VERIFYVULKANRESULT(GetVulkanRHI()->GetDevice()->GetMemoryManager().GetMemoryTypeFromProperties(memRequire.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryTypeIndex));
-		
-		VkMemoryAllocateInfo memAllocateInfo;
-		ZeroVulkanStruct(memAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
-		memAllocateInfo.allocationSize  = memRequire.size;
-		memAllocateInfo.memoryTypeIndex = memoryTypeIndex;
-		vkAllocateMemory(device, &memAllocateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilMemory);
-		vkBindImageMemory(device, m_DepthStencilImage, m_DepthStencilMemory, 0);
-
 		VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
 	}
 
@@ -182,7 +181,7 @@ protected:
 		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
 		attachments[1].finalLayout	  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    
+		
 		VkAttachmentReference colorReference = { };
 		colorReference.attachment = 0;
 		colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

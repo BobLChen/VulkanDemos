@@ -327,15 +327,16 @@ namespace vk_demo
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
 		texture->format         = format;
+		texture->width          = width;
 		texture->height         = height;
+		texture->depth			= 1;
 		texture->image          = image;
 		texture->imageLayout    = imageLayout;
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
 		texture->vulkanDevice   = vulkanDevice;
-		texture->width          = width;
-		texture->mipLevels		= 1.0f;
+		texture->mipLevels		= 1;
 		texture->layerCount		= 1;
 
         return texture;

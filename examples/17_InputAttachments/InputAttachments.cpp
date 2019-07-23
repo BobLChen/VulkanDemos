@@ -138,18 +138,6 @@ protected:
 		m_AttachsDepth.resize(numBuffer);
 		m_AttachsColor.resize(numBuffer);
 
-		for (int32 i = 0; i < m_AttachsDepth.size(); ++i)
-		{
-			m_AttachsDepth[i] = vk_demo::DVKTexture::Create2D(
-				m_VulkanDevice, 
-				PixelFormatToVkFormat(m_DepthFormat, false), 
-				VK_IMAGE_ASPECT_DEPTH_BIT,
-				fwidth, fheight,
-				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
-			);
-			m_AttachsDepth[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
-		}
-		
 		for (int32 i = 0; i < m_AttachsColor.size(); ++i)
 		{
 			m_AttachsColor[i] = vk_demo::DVKTexture::Create2D(
@@ -160,6 +148,18 @@ protected:
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
 			m_AttachsColor[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
+		}
+
+		for (int32 i = 0; i < m_AttachsDepth.size(); ++i)
+		{
+			m_AttachsDepth[i] = vk_demo::DVKTexture::Create2D(
+				m_VulkanDevice, 
+				PixelFormatToVkFormat(m_DepthFormat, false), 
+				VK_IMAGE_ASPECT_DEPTH_BIT,
+				fwidth, fheight,
+				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+			);
+			m_AttachsDepth[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
 	}
 
@@ -176,12 +176,15 @@ protected:
 		// swap chain attachment
 		attachments[0].format		  = PixelFormatToVkFormat(pixelFormat, false);
 		attachments[0].samples		  = m_SampleCount;
+		// Ê¹ÓÃÖ®Ç°Çå³ý£¬Ê¹ÓÃÖ®ºó´æ´¢
 		attachments[0].loadOp		  = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+		// stencil²»¹ØÐÄ
 		attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[0].finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		// ÓÃÓÚ³ÊÏÖ
+		attachments[0].finalLayout	  = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		// color attachment
 		attachments[1].format         = PixelFormatToVkFormat(pixelFormat, false);
 		attachments[1].samples        = m_SampleCount;
@@ -190,16 +193,18 @@ protected:
 		attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[1].finalLayout	  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		// color¸½¼þ
+		attachments[1].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		// depth stencil attachment
 		attachments[2].format         = PixelFormatToVkFormat(m_DepthFormat, false);
 		attachments[2].samples        = m_SampleCount;
 		attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
 		attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachments[2].finalLayout	  = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		// Éî¶È¸½¼þ
+		attachments[2].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		
 		VkAttachmentReference swapReference = { };
 		swapReference.attachment  = 0;
@@ -246,7 +251,7 @@ protected:
 		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
 		dependencies[1].srcSubpass      = 0;
@@ -259,9 +264,9 @@ protected:
 
 		dependencies[2].srcSubpass      = 1;
 		dependencies[2].dstSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 		dependencies[2].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[2].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[2].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
 		dependencies[2].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
 		dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 		
@@ -296,17 +301,13 @@ protected:
 
 private:
 
-	struct ImageInfo
-	{
-		int32	width  = 0;
-		int32	height = 0;
-		int32	comp   = 0;
-		uint8*	data   = nullptr;
-	};
-    
-	struct MVPBlock
+	struct ModelBlock
 	{
 		Matrix4x4 model;
+	};
+
+	struct ViewProjectionBlock
+	{
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
@@ -342,8 +343,8 @@ private:
 	{
 		m_Shader0 = vk_demo::DVKShader::Create(
 			m_VulkanDevice, 
-			"assets/shaders/16_OptimizeShaderAndLayout/lut.vert.spv",
-			"assets/shaders/16_OptimizeShaderAndLayout/lut.frag.spv"
+			"assets/shaders/17_InputAttachments/obj.vert.spv",
+			"assets/shaders/17_InputAttachments/obj.frag.spv"
 		);
 
 		m_Shader1 = vk_demo::DVKShader::Create(
@@ -354,19 +355,20 @@ private:
 
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		// è¯»å–æ¨¡åž‹æ–‡ä»¶
+		// scene model
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/plane_z.obj",
+			"assets/models/littlesttokyo.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			m_Shader0->attributes
 		);
         
+		// quad model
         std::vector<float> vertices = {
             -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
              1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
              1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, 0.0f, 0.0f, 1.0f
+            -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
         };
         std::vector<uint16> indices = {
             0, 1, 2, 0, 2, 3
@@ -379,38 +381,7 @@ private:
             indices,
             m_Shader1->attributes
         );
-        
-		// ç”ŸæˆLUT 3Då›¾æ•°æ®
-		// 64mb 
-		// map image0 -> image1
-		int32 lutSize  = 256;
-		uint8* lutRGBA = new uint8[lutSize * lutSize * 4 * lutSize];
-        for (int32 x = 0; x < lutSize; ++x)
-        {
-            for (int32 y = 0; y < lutSize; ++y)
-            {
-                for (int32 z = 0; z < lutSize; ++z)
-                {
-                    int idx = (x + y * lutSize + z * lutSize * lutSize) * 4;
-                    int32 r = x * 1.0f / (lutSize - 1) * 255;
-                    int32 g = y * 1.0f / (lutSize - 1) * 255;
-                    int32 b = z * 1.0f / (lutSize - 1) * 255;
-                    // æ€€æ—§PSæ»¤é•œï¼Œè‰²è°ƒæ˜ å°„ã€‚
-                    r = 0.393f * r + 0.769f * g + 0.189f * b;
-                    g = 0.349f * r + 0.686f * g + 0.168f * b;
-                    b = 0.272f * r + 0.534f * g + 0.131f * b;
-                    lutRGBA[idx + 0] = MMath::Min(r, 255);
-                    lutRGBA[idx + 1] = MMath::Min(g, 255);
-                    lutRGBA[idx + 2] = MMath::Min(b, 255);
-                    lutRGBA[idx + 3] = 255;
-                }
-            }
-        }
-        
-		// åˆ›å»ºTexture
-		m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/game0.jpg", m_VulkanDevice, cmdBuffer);
-		m_Tex3DLut  = vk_demo::DVKTexture::Create3D(VK_FORMAT_R8G8B8A8_UNORM, lutRGBA, lutSize * lutSize * 4 * lutSize, lutSize, lutSize, lutSize, m_VulkanDevice, cmdBuffer);
-		
+
 		delete cmdBuffer;
 	}
     
@@ -418,9 +389,6 @@ private:
 	{
 		delete m_Model;
         delete m_Quad;
-
-		delete m_TexOrigin;
-        delete m_Tex3DLut;
 
 		delete m_Shader0;
 		delete m_Shader1;
@@ -432,8 +400,8 @@ private:
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
 		VkClearValue clearValues[3];
-		clearValues[0].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
-		clearValues[1].color        = { {0.2f, 0.2f, 0.2f, 1.0f} };
+		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
+		clearValues[1].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
 		clearValues[2].depthStencil = { 1.0f, 0 };
 
 		VkRenderPassBeginInfo renderPassBeginInfo;
@@ -460,24 +428,27 @@ private:
         scissor.offset.x      = 0;
         scissor.offset.y      = 0;
 
+		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+
 		for (int32 i = 0; i < m_CommandBuffers.size(); ++i)
 		{
             renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
             
 			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBeginInfo));
 			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
-            vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
+
+			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
+			vkCmdSetScissor(m_CommandBuffers[i],  0, 1, &scissor);
 
 			// pass0
 			{
 				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipeline);
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipelineLayout, 0, m_DescriptorSet0->descriptorSets.size(), m_DescriptorSet0->descriptorSets.data(), 0, nullptr);
 				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
+					uint32 offset = meshIndex * modelAlign;
+					vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipelineLayout, 0, m_DescriptorSet0->descriptorSets.size(), m_DescriptorSet0->descriptorSets.data(), 1, &offset);
 					m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
 				}
-
-				m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
 			}
 
 			vkCmdNextSubpass(m_CommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
@@ -491,6 +462,8 @@ private:
                 }
 			}
             
+			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass, 1);
+
 			vkCmdEndRenderPass(m_CommandBuffers[i]);
 			VERIFYVULKANRESULT(vkEndCommandBuffer(m_CommandBuffers[i]));
 		}
@@ -499,9 +472,8 @@ private:
 	void CreateDescriptorSet()
 	{
 		m_DescriptorSet0 = m_Shader0->AllocateDescriptorSet();
-		m_DescriptorSet0->WriteBuffer("uboMVP", m_MVPBuffer);
-		m_DescriptorSet0->WriteImage("diffuseMap", m_TexOrigin);
-		m_DescriptorSet0->WriteImage("lutMap", m_Tex3DLut);
+		m_DescriptorSet0->WriteBuffer("uboViewProj", m_ViewProjBuffer);
+		m_DescriptorSet0->WriteBuffer("uboModel",    m_ModelBuffer);
 
 		m_DescriptorSets.resize(m_AttachsColor.size());
 		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
@@ -514,12 +486,19 @@ private:
     
 	void CreatePipelines()
 	{
-		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
-		
 		vk_demo::DVKPipelineInfo pipelineInfo0;
 		pipelineInfo0.shader = m_Shader0;
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_Shader0->pipelineLayout, m_RenderPass);
+		m_Pipeline0 = vk_demo::DVKPipeline::Create(
+			m_VulkanDevice, 
+			m_PipelineCache, 
+			pipelineInfo0, 
+			{ 
+				m_Model->GetInputBinding()
+			}, 
+			m_Model->GetInputAttributes(), 
+			m_Shader0->pipelineLayout, 
+			m_RenderPass
+		);
 		
 		vk_demo::DVKPipelineInfo pipelineInfo1;
 		pipelineInfo1.depthStencilState.depthTestEnable   = VK_FALSE;
@@ -527,7 +506,17 @@ private:
 		pipelineInfo1.depthStencilState.stencilTestEnable = VK_FALSE;
 		pipelineInfo1.shader  = m_Shader1;
 		pipelineInfo1.subpass = 1;
-		m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_Shader1->pipelineLayout, m_RenderPass);
+		m_Pipeline1 = vk_demo::DVKPipeline::Create(
+			m_VulkanDevice, 
+			m_PipelineCache, 
+			pipelineInfo1, 
+			{ 
+				m_Quad->GetInputBinding()
+			}, 
+			m_Quad->GetInputAttributes(), 
+			m_Shader1->pipelineLayout, 
+			m_RenderPass
+		);
 	}
     
 	void DestroyPipelines()
@@ -549,34 +538,55 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z = -10.0f;
-
-		// mvpæ•°æ®
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
-		m_MVPData.model.AppendScale(Vector3(1.0f, 0.5f, 1.0f));
+        boundCenter.z -= boundSize.Size() * 0.55f;
         
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
-		
-		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		// dynamic
+		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+        m_ModelDatas.resize(modelAlign * m_Model->meshes.size());
+        for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+        {
+            ModelBlock* modelBlock = (ModelBlock*)(m_ModelDatas.data() + modelAlign * i);
+            modelBlock->model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
+        }
+        
+		m_ModelBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(MVPBlock),
-			&(m_MVPData)
+			m_ModelDatas.size(),
+			m_ModelDatas.data()
 		);
-		m_MVPBuffer->Map();
+		m_ModelBuffer->Map();
+        
+		// view projection buffer
+		m_ViewProjData.view.SetIdentity();
+		m_ViewProjData.view.SetOrigin(boundCenter);
+        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetInverse();
+
+		m_ViewProjData.projection.SetIdentity();
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		
+		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(ViewProjectionBlock),
+			&(m_ViewProjData)
+		);
+		m_ViewProjBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
 	{
-		m_MVPBuffer->UnMap();
-		delete m_MVPBuffer;
+		m_ViewProjBuffer->UnMap();
+		delete m_ViewProjBuffer;
+		m_ViewProjBuffer = nullptr;
+
+		m_ModelBuffer->UnMap();
+		delete m_ModelBuffer;
+		m_ModelBuffer = nullptr;
 	}
 
 	void CreateGUI()
@@ -598,12 +608,12 @@ private:
 
 	bool 							m_Ready = false;
     
-	MVPBlock 						m_MVPData;
-	vk_demo::DVKBuffer*				m_MVPBuffer;
-    
-	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
-	vk_demo::DVKTexture*			m_Tex3DLut = nullptr;
+	std::vector<uint8>              m_ModelDatas;
+	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
 
+	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
+	ViewProjectionBlock				m_ViewProjData;
+    
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
 

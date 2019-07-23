@@ -72,7 +72,7 @@ namespace vk_demo
 			depthStencilState.back.failOp 			= VK_STENCIL_OP_KEEP;
 			depthStencilState.back.passOp 			= VK_STENCIL_OP_KEEP;
 			depthStencilState.back.compareOp 		= VK_COMPARE_OP_ALWAYS;
-			depthStencilState.stencilTestEnable 	= VK_FALSE;
+			depthStencilState.stencilTestEnable 	= VK_TRUE;
 			depthStencilState.front 				= depthStencilState.back;
 
 			ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);

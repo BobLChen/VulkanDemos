@@ -197,7 +197,6 @@ namespace vk_demo
 
 		DVKDescriptorSetLayoutsInfo		setLayoutsInfo;
 		std::vector<VkDescriptorSet>	descriptorSets;
-
 	};
 
 	class DVKDescriptorSetPool
