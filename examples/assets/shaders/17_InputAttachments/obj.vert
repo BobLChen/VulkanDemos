@@ -23,6 +23,9 @@ out gl_PerVertex
     vec4 gl_Position;   
 };
 
+float near = 0.01; 
+float far  = 3000.0; 
+
 void main() 
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboModel.modelMatrix)));
@@ -32,5 +35,6 @@ void main()
 	outNormal = normal;
 
 	gl_Position = uboViewProj.projectionMatrix * uboViewProj.viewMatrix * uboModel.modelMatrix * vec4(inPosition.xyz, 1.0);
-	gl_Position.w = 0.5;
+
+	outUV0.x = gl_Position.z / far;
 }

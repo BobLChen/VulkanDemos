@@ -9,5 +9,6 @@ void main()
 {
     vec3 normal = normalize(inNormal);
     float NDotL = clamp(dot(normal, vec3(0, 0, -1)), 0, 1.0);
+    NDotL = inUV0.x;
     outFragColor = vec4(NDotL, NDotL, NDotL, 1.0);
 }
