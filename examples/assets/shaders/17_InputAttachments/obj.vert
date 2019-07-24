@@ -15,6 +15,7 @@ layout (binding = 1) uniform ModelDynamicBlock
 } uboModel;
 
 layout (location = 0) out vec3 outNormal;
+layout (location = 1) out vec3 outPosition;
 
 out gl_PerVertex 
 {
@@ -24,9 +25,10 @@ out gl_PerVertex
 void main() 
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboModel.modelMatrix)));
-	vec3 normal  = normalize(normalMatrix * inNormal);
+	vec3 normal = normalize(normalMatrix * inNormal);
 
-	outNormal = normal;
+	outNormal   = normal;
+	outPosition = (uboModel.modelMatrix * vec4(inPosition.xyz, 1.0)).xyz;
 
 	gl_Position = uboViewProj.projectionMatrix * uboViewProj.viewMatrix * uboModel.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

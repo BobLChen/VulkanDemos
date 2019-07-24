@@ -79,12 +79,12 @@ protected:
 		int32 fheight   = GetVulkanRHI()->GetSwapChain()->GetHeight();
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 
-		VkImageView attachments[3];
+		VkImageView attachments[4];
 
 		VkFramebufferCreateInfo frameBufferCreateInfo;
 		ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
 		frameBufferCreateInfo.renderPass      = m_RenderPass;
-		frameBufferCreateInfo.attachmentCount = 3;
+		frameBufferCreateInfo.attachmentCount = 4;
 		frameBufferCreateInfo.pAttachments    = attachments;
 		frameBufferCreateInfo.width			  = fwidth;
 		frameBufferCreateInfo.height		  = fheight;
@@ -96,7 +96,8 @@ protected:
 		for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) {
 			attachments[0] = backbufferViews[i];
 			attachments[1] = m_AttachsColor[i]->imageView;
-			attachments[2] = m_AttachsDepth[i]->imageView;
+            attachments[2] = m_AttachsNormal[i]->imageView;
+			attachments[3] = m_AttachsDepth[i]->imageView;
 			VERIFYVULKANRESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
 		}
 	}
@@ -126,6 +127,13 @@ protected:
 			delete texture;
 		}
 		m_AttachsColor.clear();
+        
+        for (int32 i = 0; i < m_AttachsNormal.size(); ++i)
+        {
+            vk_demo::DVKTexture* texture = m_AttachsNormal[i];
+            delete texture;
+        }
+        m_AttachsNormal.clear();
 	}
 
 	void CreateAttachments()
@@ -137,6 +145,7 @@ protected:
 		
 		m_AttachsDepth.resize(numBuffer);
 		m_AttachsColor.resize(numBuffer);
+        m_AttachsNormal.resize(numBuffer);
 
 		for (int32 i = 0; i < m_AttachsColor.size(); ++i)
 		{
@@ -149,7 +158,19 @@ protected:
 			);
 			m_AttachsColor[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
-
+        
+        for (int32 i = 0; i < m_AttachsNormal.size(); ++i)
+        {
+            m_AttachsNormal[i] = vk_demo::DVKTexture::Create2D(
+                m_VulkanDevice,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                fwidth, fheight,
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
+            );
+            m_AttachsNormal[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
+        }
+        
 		for (int32 i = 0; i < m_AttachsDepth.size(); ++i)
 		{
 			m_AttachsDepth[i] = vk_demo::DVKTexture::Create2D(
@@ -172,18 +193,15 @@ protected:
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 		PixelFormat pixelFormat = GetVulkanRHI()->GetPixelFormat();
 
-		std::vector<VkAttachmentDescription> attachments(3);
+		std::vector<VkAttachmentDescription> attachments(4);
 		// swap chain attachment
 		attachments[0].format		  = PixelFormatToVkFormat(pixelFormat, false);
 		attachments[0].samples		  = m_SampleCount;
-		// 使用之前清除，使用之后存储
 		attachments[0].loadOp		  = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		attachments[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-		// stencil不关心
 		attachments[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		// 用于呈现
 		attachments[0].finalLayout	  = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 		// color attachment
 		attachments[1].format         = PixelFormatToVkFormat(pixelFormat, false);
@@ -193,48 +211,59 @@ protected:
 		attachments[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		attachments[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		// color附件
 		attachments[1].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        // normal attachment
+        attachments[2].format         = VK_FORMAT_R8G8B8A8_UNORM;
+        attachments[2].samples        = m_SampleCount;
+        attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+        attachments[2].finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		// depth stencil attachment
-		attachments[2].format         = PixelFormatToVkFormat(m_DepthFormat, false);
-		attachments[2].samples        = m_SampleCount;
-		attachments[2].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[2].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-		attachments[2].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attachments[2].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attachments[2].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		// 深度附件
-		attachments[2].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		attachments[3].format         = PixelFormatToVkFormat(m_DepthFormat, false);
+		attachments[3].samples        = m_SampleCount;
+		attachments[3].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[3].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[3].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[3].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[3].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[3].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		
 		VkAttachmentReference swapReference = { };
 		swapReference.attachment  = 0;
 		swapReference.layout      = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference colorReference = { };
-		colorReference.attachment = 1;
-		colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		VkAttachmentReference colorReferences[2];
+		colorReferences[0].attachment = 1;
+		colorReferences[0].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorReferences[1].attachment = 2;
+        colorReferences[1].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		
 		VkAttachmentReference depthReference = { };
-		depthReference.attachment = 2;
+		depthReference.attachment = 3;
 		depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference inputReferences[2];
+        
+		VkAttachmentReference inputReferences[3];
 		inputReferences[0].attachment = 1;
 		inputReferences[0].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		inputReferences[1].attachment = 2;
-		inputReferences[1].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
+        inputReferences[1].attachment = 2;
+        inputReferences[1].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		inputReferences[2].attachment = 3;
+		inputReferences[2].layout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        
 		std::vector<VkSubpassDescription> subpassDescriptions(2);
 		subpassDescriptions[0].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescriptions[0].colorAttachmentCount    = 1;
-		subpassDescriptions[0].pColorAttachments       = &colorReference;
+		subpassDescriptions[0].colorAttachmentCount    = 2;
+		subpassDescriptions[0].pColorAttachments       = colorReferences;
 		subpassDescriptions[0].pDepthStencilAttachment = &depthReference;
 		subpassDescriptions[0].pResolveAttachments     = nullptr;
 		subpassDescriptions[0].inputAttachmentCount    = 0;
 		subpassDescriptions[0].pInputAttachments       = nullptr;
 		subpassDescriptions[0].preserveAttachmentCount = 0;
 		subpassDescriptions[0].pPreserveAttachments    = nullptr;
-
+        
 		subpassDescriptions[1].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpassDescriptions[1].colorAttachmentCount    = 1;
 		subpassDescriptions[1].pColorAttachments       = &swapReference;
@@ -245,30 +274,38 @@ protected:
 		subpassDescriptions[1].preserveAttachmentCount = 0;
 		subpassDescriptions[1].pPreserveAttachments    = nullptr;
 		
-		std::vector<VkSubpassDependency> dependencies(3);
-		dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass      = 0;
-		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		dependencies[1].srcSubpass      = 0;
-		dependencies[1].dstSubpass      = 1;
-		dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		dependencies[2].srcSubpass      = 1;
-		dependencies[2].dstSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[2].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-		dependencies[2].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[2].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-		dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        std::vector<VkSubpassDependency> dependencies(4);
+        dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+        dependencies[0].dstSubpass      = 0;
+        dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        
+        dependencies[1].srcSubpass      = 0;
+        dependencies[1].dstSubpass      = 1;
+        dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[1].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
+        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        
+        dependencies[2].srcSubpass      = 0;
+        dependencies[2].dstSubpass      = 1;
+        dependencies[2].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[2].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        dependencies[2].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[2].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
+        dependencies[2].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+        
+        dependencies[3].srcSubpass      = 0;
+        dependencies[3].dstSubpass      = VK_SUBPASS_EXTERNAL;
+        dependencies[3].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        dependencies[3].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        dependencies[3].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        dependencies[3].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+        dependencies[3].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 		
 		VkRenderPassCreateInfo renderPassInfo;
 		ZeroVulkanStruct(renderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
@@ -319,15 +356,7 @@ private:
 		float zFar;
 		float padding;
 	};
-
-	struct CameraParamBlock
-	{
-		float xMaxFar;
-		float yMaxFar;
-		float zFar;
-		float one;
-	};
-
+    
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
@@ -341,11 +370,6 @@ private:
 
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
 		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
-
-		m_CameraParam.yMaxFar = m_DebugParam.zFar * MMath::Tan(75.0f * PI / 360.0f);
-		m_CameraParam.xMaxFar = m_CameraParam.yMaxFar * GetWidth() / GetHeight();
-		m_CameraParam.zFar    = m_DebugParam.zFar;
-		m_CameraParamBuffer->CopyFrom(&m_CameraParam, sizeof(CameraParamBlock));
 	}
     
 	void UpdateUI(float time, float delta)
@@ -437,15 +461,16 @@ private:
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 
-		VkClearValue clearValues[3];
+		VkClearValue clearValues[4];
 		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
 		clearValues[1].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
-		clearValues[2].depthStencil = { 1.0f, 0 };
+        clearValues[2].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
+		clearValues[3].depthStencil = { 1.0f, 0 };
 
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
         renderPassBeginInfo.renderPass      = m_RenderPass;
-		renderPassBeginInfo.clearValueCount = 3;
+		renderPassBeginInfo.clearValueCount = 4;
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
 		renderPassBeginInfo.renderArea.offset.y = 0;
@@ -519,8 +544,8 @@ private:
 			m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
 			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
 			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
+            m_DescriptorSets[i]->WriteInputAttachment("inputNormal", m_AttachsNormal[i]);
 			m_DescriptorSets[i]->WriteBuffer("param", m_DebugBuffer);
-			m_DescriptorSets[i]->WriteBuffer("cameraParam", m_CameraParamBuffer);
 		}
 	}
     
@@ -528,6 +553,7 @@ private:
 	{
 		vk_demo::DVKPipelineInfo pipelineInfo0;
 		pipelineInfo0.shader = m_Shader0;
+        pipelineInfo0.colorAttachmentCount = 2;
 		m_Pipeline0 = vk_demo::DVKPipeline::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
@@ -614,22 +640,8 @@ private:
 
 		m_DebugNames.push_back("Color");
 		m_DebugNames.push_back("Depth");
-		m_DebugNames.push_back("Reconstruct Position");
-
-		// camera params
-		m_CameraParam.yMaxFar = m_DebugParam.zFar * MMath::Tan(75.0f * PI / 360.0f);
-		m_CameraParam.xMaxFar = m_CameraParam.yMaxFar * GetWidth() / GetHeight();
-		m_CameraParam.zFar    = m_DebugParam.zFar;
-		m_CameraParam.one     = 1.0;
-		m_CameraParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(CameraParamBlock),
-			&(m_CameraParam)
-		);
-		m_CameraParamBuffer->Map();
-
+		m_DebugNames.push_back("Normal");
+        
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
 		m_ViewProjData.view.SetOrigin(boundCenter);
@@ -662,10 +674,6 @@ private:
 		m_DebugBuffer->UnMap();
 		delete m_DebugBuffer;
 		m_DebugBuffer = nullptr;
-
-		m_CameraParamBuffer->UnMap();
-		delete m_CameraParamBuffer;
-		m_CameraParamBuffer = nullptr;
 	}
 
 	void CreateGUI()
@@ -696,9 +704,6 @@ private:
 	vk_demo::DVKBuffer*				m_DebugBuffer = nullptr;
 	AttachmentParamBlock			m_DebugParam;
 	std::vector<const char*>		m_DebugNames;
-
-	vk_demo::DVKBuffer*				m_CameraParamBuffer = nullptr;
-	CameraParamBlock				m_CameraParam;
     
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
@@ -713,6 +718,7 @@ private:
 
 	DVKTextureArray					m_AttachsDepth;
 	DVKTextureArray					m_AttachsColor;
+    DVKTextureArray                 m_AttachsNormal;
 	
 	ImageGUIContext*				m_GUI = nullptr;
 };

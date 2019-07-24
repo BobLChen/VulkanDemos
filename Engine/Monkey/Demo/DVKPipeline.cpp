@@ -28,8 +28,8 @@ namespace vk_demo
 
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
 		ZeroVulkanStruct(colorBlendState, VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);
-		colorBlendState.attachmentCount = 1;
-		colorBlendState.pAttachments    = &(pipelineInfo.blendAttachmentState);
+		colorBlendState.attachmentCount = pipelineInfo.colorAttachmentCount;
+		colorBlendState.pAttachments    = pipelineInfo.blendAttachmentStates;
 		
 		VkPipelineViewportStateCreateInfo viewportState;
 		ZeroVulkanStruct(viewportState, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
