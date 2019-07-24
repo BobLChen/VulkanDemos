@@ -312,10 +312,40 @@ private:
 		Matrix4x4 projection;
 	};
 
+	struct AttachmentParamBlock
+	{
+		int attachmentIndex;
+		float zNear;
+		float zFar;
+		float padding;
+	};
+
+	struct CameraParamBlock
+	{
+		float xMaxFar;
+		float yMaxFar;
+		float zFar;
+		float one;
+	};
+
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
+		UpdateUniform();
         DemoBase::Present();
+	}
+
+	void UpdateUniform()
+	{
+		m_DebugBuffer->CopyFrom(&m_DebugParam, sizeof(AttachmentParamBlock));
+
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
+		m_CameraParam.yMaxFar = m_DebugParam.zFar * MMath::Tan(75.0f * PI / 360.0f);
+		m_CameraParam.xMaxFar = m_CameraParam.yMaxFar * GetWidth() / GetHeight();
+		m_CameraParam.zFar    = m_DebugParam.zFar;
+		m_CameraParamBuffer->CopyFrom(&m_CameraParam, sizeof(CameraParamBlock));
 	}
     
 	void UpdateUI(float time, float delta)
@@ -328,6 +358,14 @@ private:
             ImGui::Begin("InputAttachments", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Color Depth");
             
+			ImGui::Combo("Attachment", &m_DebugParam.attachmentIndex, m_DebugNames.data(), m_DebugNames.size());
+			ImGui::SliderFloat("Z-Near", &m_DebugParam.zNear, 0.1f, 3000.0f);
+			ImGui::SliderFloat("Z-Far", &m_DebugParam.zFar, 0.1f, 3000.0f);
+
+			if (m_DebugParam.zNear >= m_DebugParam.zFar) {
+				m_DebugParam.zNear = m_DebugParam.zFar * 0.5f;
+			}
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -481,6 +519,8 @@ private:
 			m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
 			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
 			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
+			m_DescriptorSets[i]->WriteBuffer("param", m_DebugBuffer);
+			m_DescriptorSets[i]->WriteBuffer("cameraParam", m_CameraParamBuffer);
 		}
 	}
     
@@ -559,6 +599,37 @@ private:
 		);
 		m_ModelBuffer->Map();
         
+		// debug params
+		m_DebugParam.attachmentIndex = 0;
+		m_DebugParam.zNear = 300.0f;
+		m_DebugParam.zFar = 1000.0f;
+		m_DebugBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			sizeof(AttachmentParamBlock),
+			&(m_DebugParam)
+		);
+		m_DebugBuffer->Map();
+
+		m_DebugNames.push_back("Color");
+		m_DebugNames.push_back("Depth");
+		m_DebugNames.push_back("Reconstruct Position");
+
+		// camera params
+		m_CameraParam.yMaxFar = m_DebugParam.zFar * MMath::Tan(75.0f * PI / 360.0f);
+		m_CameraParam.xMaxFar = m_CameraParam.yMaxFar * GetWidth() / GetHeight();
+		m_CameraParam.zFar    = m_DebugParam.zFar;
+		m_CameraParam.one     = 1.0;
+		m_CameraParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			sizeof(CameraParamBlock),
+			&(m_CameraParam)
+		);
+		m_CameraParamBuffer->Map();
+
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
 		m_ViewProjData.view.SetOrigin(boundCenter);
@@ -566,7 +637,7 @@ private:
 		m_ViewProjData.view.SetInverse();
 
 		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -587,6 +658,14 @@ private:
 		m_ModelBuffer->UnMap();
 		delete m_ModelBuffer;
 		m_ModelBuffer = nullptr;
+
+		m_DebugBuffer->UnMap();
+		delete m_DebugBuffer;
+		m_DebugBuffer = nullptr;
+
+		m_CameraParamBuffer->UnMap();
+		delete m_CameraParamBuffer;
+		m_CameraParamBuffer = nullptr;
 	}
 
 	void CreateGUI()
@@ -613,6 +692,13 @@ private:
 
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
+
+	vk_demo::DVKBuffer*				m_DebugBuffer = nullptr;
+	AttachmentParamBlock			m_DebugParam;
+	std::vector<const char*>		m_DebugNames;
+
+	vk_demo::DVKBuffer*				m_CameraParamBuffer = nullptr;
+	CameraParamBlock				m_CameraParam;
     
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
@@ -633,5 +719,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<InputAttachments>(1400, 900, "InputAttachments", cmdLine);
+	return std::make_shared<InputAttachments>(1440, 900, "InputAttachments", cmdLine);
 }
