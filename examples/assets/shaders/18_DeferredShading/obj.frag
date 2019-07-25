@@ -10,9 +10,7 @@ layout (location = 2) out vec4 outPosition;
 void main() 
 {
     vec3 normal = normalize(inNormal);
-    float NDotL = clamp(dot(normal, vec3(0, 0, -1)), 0, 1.0);
-
     outNormal    = vec4(inNormal, 1.0);
-    outFragColor = vec4(NDotL, NDotL, NDotL, 1.0);
+    outFragColor = vec4(1.0, 1.0, 1.0, 1.0);
     outPosition  = vec4(inPosition, 1.0);
 }

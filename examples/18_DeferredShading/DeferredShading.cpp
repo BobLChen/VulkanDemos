@@ -375,6 +375,13 @@ private:
 		float	radius;
 	};
 
+	struct LightSpawnBlock
+	{
+		Vector3 position[NUM_LIGHTS];
+		Vector3 direction[NUM_LIGHTS];
+		float speed[NUM_LIGHTS];
+	};
+
 	struct LightDataBlock
 	{
 		PointLight lights[NUM_LIGHTS];
@@ -383,12 +390,19 @@ private:
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniform();
+		UpdateUniform(time, delta);
         DemoBase::Present();
 	}
 
-	void UpdateUniform()
+	void UpdateUniform(float time, float delta)
 	{
+		for (int32 i = 0; i < NUM_LIGHTS; ++i)
+		{
+			float bias = MMath::Sin(time * m_LightInfos.speed[i]) / 5.0f;
+			m_LightDatas.lights[i].position.x = m_LightInfos.position[i].x + bias * m_LightInfos.direction[i].x * 30.0f;
+			m_LightDatas.lights[i].position.y = m_LightInfos.position[i].y + bias * m_LightInfos.direction[i].y * 30.0f;
+			m_LightDatas.lights[i].position.z = m_LightInfos.position[i].z + bias * m_LightInfos.direction[i].z * 30.0f;
+		}
 		m_LightBuffer->CopyFrom(&m_LightDatas, sizeof(LightDataBlock));
 	}
     
@@ -401,6 +415,27 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("DeferredShadingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Simple Deferred");
+
+			if (ImGui::Button("Random")) 
+			{
+				for (int32 i = 0; i < NUM_LIGHTS; ++i)
+				{
+					m_LightDatas.lights[i].position.x = MMath::RandRange(-15.0f, 15.0f);
+					m_LightDatas.lights[i].position.y = MMath::RandRange(-15.0f, 15.0f);
+					m_LightDatas.lights[i].position.z = MMath::RandRange(-15.0f, 15.0f);
+
+					m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
+					m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
+					m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
+
+					m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, 15.0f);
+
+					m_LightInfos.position[i] = m_LightDatas.lights[i].position;
+					m_LightInfos.direction[i] = m_LightInfos.position[i];
+					m_LightInfos.direction[i].Normalize();
+					m_LightInfos.speed[i] = 1.0f + MMath::RandRange(0.0f, 5.0f);
+				}
+			}
             
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
@@ -431,7 +466,7 @@ private:
 
 		// scene model
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/littlesttokyo.fbx",
+			"assets/models/samplebuilding.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			m_Shader0->attributes
@@ -615,11 +650,6 @@ private:
 	
 	void CreateUniformBuffers()
 	{
-		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 0.55f;
-        
 		// dynamic
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
@@ -628,6 +658,7 @@ private:
         {
             ModelBlock* modelBlock = (ModelBlock*)(m_ModelDatas.data() + modelAlign * i);
             modelBlock->model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
+			modelBlock->model.AppendRotation(180.0f, Vector3::UpVector);
         }
         
 		m_ModelBuffer = vk_demo::DVKBuffer::CreateBuffer(
@@ -642,15 +673,20 @@ private:
 		// light datas
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
 		{
-			m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);
-			m_LightDatas.lights[i].position.y = MMath::RandRange(bounds.min.y, bounds.max.y);
-			m_LightDatas.lights[i].position.z = MMath::RandRange(bounds.min.z, bounds.max.z);
+			m_LightDatas.lights[i].position.x = MMath::RandRange(-15.0f, 15.0f);
+			m_LightDatas.lights[i].position.y = MMath::RandRange(-15.0f, 15.0f);
+			m_LightDatas.lights[i].position.z = MMath::RandRange(-15.0f, 15.0f);
 
 			m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
 
-			m_LightDatas.lights[i].radius  = MMath::RandRange(boundSize.Size() / 10.0f, boundSize.Size());
+			m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, 15.0f);
+
+			m_LightInfos.position[i] = m_LightDatas.lights[i].position;
+			m_LightInfos.direction[i] = m_LightInfos.position[i];
+			m_LightInfos.direction[i].Normalize();
+			m_LightInfos.speed[i] = 1.0f + MMath::RandRange(0.0f, 5.0f);
 		}
 		m_LightBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
@@ -663,12 +699,12 @@ private:
 
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
+		m_ViewProjData.view.SetOrigin(Vector3(0.0, 1.0f, -15.9f));
         m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
 		m_ViewProjData.view.SetInverse();
 
 		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 100.0f, 1000.0f);
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.1f, 1000.0f);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -722,6 +758,7 @@ private:
 
 	vk_demo::DVKBuffer*				m_LightBuffer = nullptr;
 	LightDataBlock					m_LightDatas;
+	LightSpawnBlock					m_LightInfos;
     
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;

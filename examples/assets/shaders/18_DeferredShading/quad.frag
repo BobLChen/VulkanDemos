@@ -22,6 +22,11 @@ layout (location = 0) in vec2 inUV0;
 
 layout (location = 0) out vec4 outFragColor;
 
+float DoAttenuation(float range, float d)
+{
+    return 1.0 - smoothstep(range * 0.75, range, d);
+}
+
 void main() 
 {
 	vec4 albedo   = subpassLoad(inputColor);
@@ -37,7 +42,7 @@ void main()
 	{
 		vec3 lightDir = lightDatas.lights[i].position.xyz - position.xyz;
 		float dist    = length(lightDir);
-		float atten   = lightDatas.lights[i].radius / (pow(dist, 2.0) + 1.0);
+		float atten   = DoAttenuation(lightDatas.lights[i].radius, dist);
 		float ndotl   = max(0.0, dot(normal.xyz, normalize(lightDir)));
 		vec3 diffuse  = lightDatas.lights[i].color * albedo.xyz * ndotl * atten;
 
