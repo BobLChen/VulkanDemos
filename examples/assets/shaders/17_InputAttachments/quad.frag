@@ -20,7 +20,7 @@ void main()
 		outFragColor = subpassLoad(inputColor);
 	} 
 	else if (param.attachmentIndex == 1) {
-		outFragColor = subpassLoad(inputDepth);
+		outFragColor = vec4(subpassLoad(inputDepth).r);
 	} 
 	else if (param.attachmentIndex == 2) {
 		outFragColor = subpassLoad(inputNormal);
