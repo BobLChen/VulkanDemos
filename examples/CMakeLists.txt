@@ -323,3 +323,18 @@ SETUP_SAMPLE_START(17_InputAttachments)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(17_InputAttachments)
+
+SETUP_SAMPLE_START(18_DeferredShading)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/18_DeferredShading/DeferredShading.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/18_DeferredShading/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(18_DeferredShading)

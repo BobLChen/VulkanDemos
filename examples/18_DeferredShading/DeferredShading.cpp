@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -13,16 +13,16 @@
 #include <vector>
 #include <fstream>
 
-class InputAttachmentsDemo : public DemoBase
+class DeferredShadingDemo : public DemoBase
 {
 public:
-	InputAttachmentsDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	DeferredShadingDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
     
-	virtual ~InputAttachmentsDemo()
+	virtual ~DeferredShadingDemo()
 	{
 
 	}
@@ -362,7 +362,7 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("InputAttachmentsDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+            ImGui::Begin("DeferredShadingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			ImGui::Text("Color Depth");
             
 			ImGui::Combo("Attachment", &m_DebugParam.attachmentIndex, m_DebugNames.data(), m_DebugNames.size());
@@ -708,5 +708,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<InputAttachmentsDemo>(1400, 900, "InputAttachmentsDemo", cmdLine);
+	return std::make_shared<DeferredShadingDemo>(1400, 900, "DeferredShadingDemo", cmdLine);
 }

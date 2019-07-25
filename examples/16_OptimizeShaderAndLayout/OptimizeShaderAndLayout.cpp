@@ -13,16 +13,16 @@
 #include <vector>
 #include <fstream>
 
-class OptimizeShaderAndLayoutModule : public DemoBase
+class OptimizeShaderAndLayoutModuleDemo : public DemoBase
 {
 public:
-	OptimizeShaderAndLayoutModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	OptimizeShaderAndLayoutModuleDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
     
-	virtual ~OptimizeShaderAndLayoutModule()
+	virtual ~OptimizeShaderAndLayoutModuleDemo()
 	{
 
 	}
@@ -465,5 +465,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<OptimizeShaderAndLayoutModule>(1400, 900, "OptimizeShaderAndLayoutModule", cmdLine);
+	return std::make_shared<OptimizeShaderAndLayoutModuleDemo>(1400, 900, "OptimizeShaderAndLayoutModuleDemo", cmdLine);
 }

@@ -14,16 +14,16 @@
 #include <vector>
 #include <fstream>
 
-class Texture3DModule : public DemoBase
+class Texture3DDemo : public DemoBase
 {
 public:
-	Texture3DModule(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	Texture3DDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
         
 	}
     
-	virtual ~Texture3DModule()
+	virtual ~Texture3DDemo()
 	{
 
 	}
@@ -547,5 +547,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<Texture3DModule>(1400, 900, "Texture3D", cmdLine);
+	return std::make_shared<Texture3DDemo>(1400, 900, "Texture3D", cmdLine);
 }
