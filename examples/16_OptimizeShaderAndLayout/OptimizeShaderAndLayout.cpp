@@ -334,19 +334,19 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo0(m_VulkanDevice);
+		vk_demo::DVKPipelineInfo pipelineInfo0;
 		pipelineInfo0.shader = m_ShaderTexture;
 		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_ShaderTexture->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo1(m_VulkanDevice);
+        vk_demo::DVKPipelineInfo pipelineInfo1;
 		pipelineInfo1.shader = m_ShaderLut;
         m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_ShaderLut->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo2(m_VulkanDevice);
+        vk_demo::DVKPipelineInfo pipelineInfo2;
 		pipelineInfo2.shader = m_ShaderLutDebug0;
         m_Pipeline2 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug0->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo3(m_VulkanDevice);
+        vk_demo::DVKPipelineInfo pipelineInfo3;
 		pipelineInfo3.shader = m_ShaderLutDebug1;
         m_Pipeline3 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug1->pipelineLayout, m_RenderPass);
 	}
@@ -465,5 +465,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<OptimizeShaderAndLayoutModule>(1400, 900, "Texture3D", cmdLine);
+	return std::make_shared<OptimizeShaderAndLayoutModule>(1400, 900, "OptimizeShaderAndLayoutModule", cmdLine);
 }

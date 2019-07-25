@@ -150,6 +150,27 @@ namespace vk_demo
 			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 		}
 
+		void WriteInputAttachment(const std::string& name, DVKTexture* texture)
+		{
+			auto it = setLayoutsInfo.paramsMap.find(name);
+			if (it == setLayoutsInfo.paramsMap.end()) {
+				MLOGE("Failed write buffer, %s not found!", name.c_str());
+				return;
+			}
+
+			auto bindInfo = it->second;
+
+			VkWriteDescriptorSet writeDescriptorSet;
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			writeDescriptorSet.pBufferInfo     = nullptr;
+			writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
+			writeDescriptorSet.dstBinding      = bindInfo.binding;
+			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+		}
+
 		void WriteBuffer(const std::string& name, DVKBuffer* buffer)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
@@ -176,7 +197,6 @@ namespace vk_demo
 
 		DVKDescriptorSetLayoutsInfo		setLayoutsInfo;
 		std::vector<VkDescriptorSet>	descriptorSets;
-
 	};
 
 	class DVKDescriptorSetPool
@@ -360,6 +380,7 @@ namespace vk_demo
 			DVKDescriptorSet* dvkSet = new DVKDescriptorSet();
 			dvkSet->device = device;
 			dvkSet->setLayoutsInfo = setLayoutsInfo;
+			dvkSet->descriptorSets.resize(setLayoutsInfo.setLayouts.size());
 
 			for (int32 i = descriptorSetPools.size() - 1; i >= 0; --i)
 			{
@@ -370,8 +391,6 @@ namespace vk_demo
 
 			DVKDescriptorSetPool* setPool = new DVKDescriptorSetPool(device, 64, setLayoutsInfo, descriptorSetLayouts);
 			descriptorSetPools.push_back(setPool);
-
-			dvkSet->descriptorSets.resize(setLayoutsInfo.setLayouts.size());
 			setPool->AllocateDescriptorSet(dvkSet->descriptorSets.data());
 
 			return dvkSet;

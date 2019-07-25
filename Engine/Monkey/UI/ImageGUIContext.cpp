@@ -131,7 +131,7 @@ void ImageGUIContext::Init(const std::string& font)
 	PreparePipelineResources();
 }
 
-void ImageGUIContext::PreparePipeline(VkRenderPass renderPass)
+void ImageGUIContext::PreparePipeline(VkRenderPass renderPass, int32 subpass)
 {
 	VkDevice device = m_VulkanDevice->GetInstanceHandle();
 	if (m_Pipeline != VK_NULL_HANDLE) {
@@ -254,12 +254,14 @@ void ImageGUIContext::PreparePipeline(VkRenderPass renderPass)
 	pipelineCreateInfo.pDynamicState       = &dynamicState;
 	pipelineCreateInfo.layout              = m_PipelineLayout;
 	pipelineCreateInfo.renderPass          = renderPass;
+	pipelineCreateInfo.subpass             = subpass;
 	VERIFYVULKANRESULT(vkCreateGraphicsPipelines(device, m_PipelineCache, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));	
 
 	vkDestroyShaderModule(device, vertModule, VULKAN_CPU_ALLOCATOR);
 	vkDestroyShaderModule(device, fragModule, VULKAN_CPU_ALLOCATOR);
 
 	m_LastRenderPass = renderPass;
+	m_LastSubPass    = subpass;
 }
 
 void ImageGUIContext::PreparePipelineResources()
@@ -715,7 +717,7 @@ void ImageGUIContext::CreateBuffer(UIBuffer& buffer, VkBufferUsageFlags usageFla
 	buffer.alignment = memReqs.alignment;
 }
 
-void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass)
+void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass)
 {
     ImDrawData* imDrawData = ImGui::GetDrawData();
 	int32_t vertexOffset   = 0;
@@ -725,8 +727,8 @@ void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const Vk
 		return;
 	}
 
-	if (m_LastRenderPass != renderPass) {
-		PreparePipeline(renderPass);
+	if (m_LastRenderPass != renderPass || m_LastSubPass != subpass) {
+		PreparePipeline(renderPass, subpass);
 	}
 
 	ImGuiIO& io = ImGui::GetIO();

@@ -9,6 +9,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	: m_Instance(instance)
 	, m_SwapChain(VK_NULL_HANDLE)
     , m_Surface(VK_NULL_HANDLE)
+	, m_ColorFormat(VK_FORMAT_R8G8B8A8_UNORM)
 	, m_Device(device)
 	, m_CurrentImageIndex(-1)
 	, m_SemaphoreIndex(0)
@@ -226,7 +227,8 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 		VERIFYVULKANRESULT(vkCreateSemaphore(m_Device->GetInstanceHandle(), &createInfo, VULKAN_CPU_ALLOCATOR, &m_ImageAcquiredSemaphore[index]));
 	}
 	
-	m_PresentID = 0;
+	m_PresentID   = 0;
+	m_ColorFormat = currFormat.format;
     MLOG("SwapChain: Backbuffer:%d Format:%d ColorSpace:%d Size:%dx%d Present:%d", m_SwapChainInfo.minImageCount, m_SwapChainInfo.imageFormat, m_SwapChainInfo.imageColorSpace, m_SwapChainInfo.imageExtent.width, m_SwapChainInfo.imageExtent.height, m_SwapChainInfo.presentMode);
 }
 

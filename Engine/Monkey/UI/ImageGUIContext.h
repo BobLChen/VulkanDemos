@@ -98,7 +98,7 @@ public:
 
 	void EndFrame();
 
-    void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass);
+    void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass = 0);
     
     bool Header(const char* caption);
     
@@ -129,7 +129,7 @@ protected:
 
 	void PreparePipelineResources();
 
-	void PreparePipeline(VkRenderPass renderPass);;
+	void PreparePipeline(VkRenderPass renderPass, int32 subpass);
 
 	void CreateBuffer(UIBuffer& buffer, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size);
 
@@ -155,6 +155,7 @@ protected:
     VkPipeline              m_Pipeline;
 
 	VkRenderPass			m_LastRenderPass;
+	int32					m_LastSubPass = -1;
 
     VkDeviceMemory          m_FontMemory;
     VkImage                 m_FontImage;

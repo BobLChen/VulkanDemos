@@ -19,14 +19,12 @@ namespace vk_demo
 
 	struct DVKPipelineInfo
 	{
-		std::shared_ptr<VulkanDevice>				vulkanDevice;
-
 		VkPipelineInputAssemblyStateCreateInfo		inputAssemblyState;
 		VkPipelineRasterizationStateCreateInfo		rasterizationState;
-		VkPipelineColorBlendAttachmentState			blendAttachmentState;
+		VkPipelineColorBlendAttachmentState			blendAttachmentStates[8];
 		VkPipelineDepthStencilStateCreateInfo		depthStencilState;
 		VkPipelineMultisampleStateCreateInfo		multisampleState;
-
+        
 		VkShaderModule	vertShaderModule = VK_NULL_HANDLE;
 		VkShaderModule	fragShaderModule = VK_NULL_HANDLE;
 		VkShaderModule	compShaderModule = VK_NULL_HANDLE;
@@ -34,10 +32,11 @@ namespace vk_demo
 		VkShaderModule	teseShaderModule = VK_NULL_HANDLE;
 		VkShaderModule	geomShaderModule = VK_NULL_HANDLE;
 
-		DVKShader*		shader = nullptr;
+		DVKShader*		shader  = nullptr;
+		int32			subpass = 0;
+        int32           colorAttachmentCount = 1;
 
-		DVKPipelineInfo(std::shared_ptr<VulkanDevice> inDevice)
-			: vulkanDevice(inDevice)
+		DVKPipelineInfo()
 		{
 			ZeroVulkanStruct(inputAssemblyState, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
 			inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -51,21 +50,24 @@ namespace vk_demo
 			rasterizationState.depthBiasEnable         = VK_FALSE;
 			rasterizationState.lineWidth 			   = 1.0f;
 			
-			blendAttachmentState = {};
-			blendAttachmentState.colorWriteMask = (
-				VK_COLOR_COMPONENT_R_BIT |
-				VK_COLOR_COMPONENT_G_BIT |
-				VK_COLOR_COMPONENT_B_BIT |
-				VK_COLOR_COMPONENT_A_BIT
-			);
-			blendAttachmentState.blendEnable = VK_FALSE;
-			blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-			blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-			blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
-			blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-			blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-			blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
-
+            for (int32 i = 0; i < 8; ++i)
+            {
+                blendAttachmentStates[i] = {};
+                blendAttachmentStates[i].colorWriteMask = (
+                    VK_COLOR_COMPONENT_R_BIT |
+                    VK_COLOR_COMPONENT_G_BIT |
+                    VK_COLOR_COMPONENT_B_BIT |
+                    VK_COLOR_COMPONENT_A_BIT
+                );
+                blendAttachmentStates[i].blendEnable = VK_FALSE;
+                blendAttachmentStates[i].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+                blendAttachmentStates[i].dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+                blendAttachmentStates[i].colorBlendOp        = VK_BLEND_OP_ADD;
+                blendAttachmentStates[i].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+                blendAttachmentStates[i].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+                blendAttachmentStates[i].alphaBlendOp        = VK_BLEND_OP_ADD;
+            }
+            
 			ZeroVulkanStruct(depthStencilState, VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
 			depthStencilState.depthTestEnable 		= VK_TRUE;
 			depthStencilState.depthWriteEnable 		= VK_TRUE;
@@ -74,7 +76,7 @@ namespace vk_demo
 			depthStencilState.back.failOp 			= VK_STENCIL_OP_KEEP;
 			depthStencilState.back.passOp 			= VK_STENCIL_OP_KEEP;
 			depthStencilState.back.compareOp 		= VK_COMPARE_OP_ALWAYS;
-			depthStencilState.stencilTestEnable 	= VK_FALSE;
+			depthStencilState.stencilTestEnable 	= VK_TRUE;
 			depthStencilState.front 				= depthStencilState.back;
 
 			ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
@@ -82,41 +84,6 @@ namespace vk_demo
 			multisampleState.pSampleMask 		  = nullptr;
 		}
 
-		~DVKPipelineInfo()
-		{
-			VkDevice device = vulkanDevice->GetInstanceHandle();
-
-			if (vertShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, vertShaderModule, VULKAN_CPU_ALLOCATOR);
-				vertShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (fragShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, fragShaderModule, VULKAN_CPU_ALLOCATOR);
-				fragShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (compShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, compShaderModule, VULKAN_CPU_ALLOCATOR);
-				compShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (geomShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, geomShaderModule, VULKAN_CPU_ALLOCATOR);
-				geomShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (tescShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, tescShaderModule, VULKAN_CPU_ALLOCATOR);
-				tescShaderModule = VK_NULL_HANDLE;
-			}
-
-			if (teseShaderModule != VK_NULL_HANDLE) {
-				vkDestroyShaderModule(device, teseShaderModule, VULKAN_CPU_ALLOCATOR);
-				teseShaderModule = VK_NULL_HANDLE;
-			}
-		}
-		
 		void FillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages)
 		{
 			if (vertShaderModule != VK_NULL_HANDLE) {
