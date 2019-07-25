@@ -90,3 +90,7 @@ Vulkan Examples
 
 ### Texture3D (3D LUT)
 ![Texture3D](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/15_Texture3D.jpg)
+
+### InputAttachments (Color Normal Depth)
+![InputAttachments](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/17_InputAttachments.jpg)
+
