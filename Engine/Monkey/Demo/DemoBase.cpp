@@ -34,7 +34,7 @@ void DemoBase::Present()
     vkResetFences(m_Device, 1, &(m_Fences[backBufferIndex]));
 
 	VERIFYVULKANRESULT(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, m_Fences[backBufferIndex]));
-    vkWaitForFences(m_Device, 1, &(m_Fences[backBufferIndex]), true, 200 * 1000 * 1000);
+    vkWaitForFences(m_Device, 1, &(m_Fences[backBufferIndex]), true, MAX_uint64);
     
     // present
     m_SwapChain->Present(m_VulkanDevice->GetGraphicsQueue(), m_VulkanDevice->GetPresentQueue(), &m_RenderComplete);

@@ -338,3 +338,18 @@ SETUP_SAMPLE_START(18_DeferredShading)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(18_DeferredShading)
+
+SETUP_SAMPLE_START(19_OptimizeDeferredShading)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/19_OptimizeDeferredShading/OptimizeDeferredShading.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/19_OptimizeDeferredShading/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(19_OptimizeDeferredShading)
