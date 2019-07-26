@@ -275,13 +275,13 @@ private:
         pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.vert.spv");
 		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.frag.spv");
 		
-		pipelineInfo.blendAttachmentState.blendEnable         = VK_TRUE;
-		pipelineInfo.blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
-		pipelineInfo.blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		pipelineInfo.blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
+		pipelineInfo.blendAttachmentStates[0].blendEnable         = VK_TRUE;
+		pipelineInfo.blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		pipelineInfo.blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipelineInfo.blendAttachmentStates[0].colorBlendOp        = VK_BLEND_OP_ADD;
+		pipelineInfo.blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		pipelineInfo.blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		pipelineInfo.blendAttachmentStates[0].alphaBlendOp        = VK_BLEND_OP_ADD;
 
 		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
