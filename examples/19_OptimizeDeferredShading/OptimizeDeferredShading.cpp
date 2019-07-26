@@ -13,6 +13,8 @@
 #include <vector>
 #include <fstream>
 
+#define NUM_LIGHTS 64
+
 class OptimizeDeferredShading : public DemoBase
 {
 public:
@@ -334,25 +336,62 @@ private:
 
 	struct AttachmentParamBlock
 	{
-		int attachmentIndex;
-		float zNear;
-		float zFar;
-		float padding;
+		int			attachmentIndex;
+		float		zNear;
+		float		zFar;
+		float		one;
+		float		xMaxFar;
+		float		yMaxFar;
+		Vector2		padding;
+	};
+
+	struct PointLight
+	{
+		Vector4 position;
+		Vector3 color;
+		float	radius;
+	};
+
+	struct LightSpawnBlock
+	{
+		Vector3 position[NUM_LIGHTS];
+		float speed[NUM_LIGHTS];
+	};
+
+	struct LightDataBlock
+	{
+		PointLight lights[NUM_LIGHTS];
 	};
     
 	void Draw(float time, float delta)
 	{
         UpdateUI(time, delta);
-		UpdateUniform();
+		UpdateUniform(time, delta);
         DemoBase::Present();
 	}
 
-	void UpdateUniform()
+	void UpdateUniform(float time, float delta)
 	{
-		m_DebugBuffer->CopyFrom(&m_DebugParam, sizeof(AttachmentParamBlock));
+		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
+		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
+		m_FragParamBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_VertBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
 
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
+		auto bounds  = m_Model->rootNode->GetBounds();
+		Vector3 bMin = bounds.min;
+		Vector3 bMax = bounds.max;
+		float radius = Vector2(bMax.x - bMin.x, bMax.z - bMin.z).Size();
+		for (int32 i = 0; i < NUM_LIGHTS; ++i)
+		{
+			float sinBias = MMath::Sin(time * m_LightInfos.speed[i]) / 15.0f;
+			float cosBias = MMath::Cos(time * m_LightInfos.speed[i]) / 15.0f;
+			m_LightDatas.lights[i].position.x = m_LightInfos.position[i].x + sinBias * radius;
+			m_LightDatas.lights[i].position.z = m_LightInfos.position[i].z + cosBias * radius;
+		}
+		m_LightParamBuffer->CopyFrom(&m_LightDatas, sizeof(LightDataBlock));
 	}
     
 	void UpdateUI(float time, float delta)
@@ -363,16 +402,28 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("OptimizeDeferredShading", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("Color Depth");
-            
-			ImGui::Combo("Attachment", &m_DebugParam.attachmentIndex, m_DebugNames.data(), m_DebugNames.size());
-			ImGui::SliderFloat("Z-Near", &m_DebugParam.zNear, 0.1f, 256.0f);
-			ImGui::SliderFloat("Z-Far", &m_DebugParam.zFar, 0.1f, 256.0f);
+			
+			ImGui::SliderInt("Index", &m_VertFragParam.attachmentIndex, 0, 3);
 
-			if (m_DebugParam.zNear >= m_DebugParam.zFar) {
-				m_DebugParam.zNear = m_DebugParam.zFar * 0.5f;
+			if (ImGui::Button("Random"))
+			{
+				for (int32 i = 0; i < NUM_LIGHTS; ++i)
+				{
+					m_LightDatas.lights[i].position.x = MMath::RandRange(-15.0f, 15.0f);
+					m_LightDatas.lights[i].position.y = MMath::RandRange(-15.0f, 15.0f);
+					m_LightDatas.lights[i].position.z = MMath::RandRange(-15.0f, 15.0f);
+
+					m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
+					m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
+					m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
+
+					m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, 15.0f);
+
+					m_LightInfos.position[i] = m_LightDatas.lights[i].position;
+					m_LightInfos.speed[i]    = 1.0f + MMath::RandRange(0.0f, 2.50f);
+				}
 			}
-
+			
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -446,7 +497,7 @@ private:
 
 		VkClearValue clearValues[4];
 		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
-		clearValues[1].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
+		clearValues[1].color        = { { 0.0f, 0.0f, 0.0f, 1.0f } };
         clearValues[2].color        = { { 0.2f, 0.2f, 0.2f, 0.0f } };
 		clearValues[3].depthStencil = { 1.0f, 0 };
 
@@ -528,7 +579,9 @@ private:
 			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
             m_DescriptorSets[i]->WriteInputAttachment("inputNormal", m_AttachsNormal[i]);
 			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
-			m_DescriptorSets[i]->WriteBuffer("param", m_DebugBuffer);
+			m_DescriptorSets[i]->WriteBuffer("fragParam", m_FragParamBuffer);
+			m_DescriptorSets[i]->WriteBuffer("vertParam", m_VertBuffer);
+			m_DescriptorSets[i]->WriteBuffer("lightDatas", m_LightParamBuffer);
 		}
 	}
     
@@ -605,22 +658,30 @@ private:
 		m_ModelBuffer->Map();
         
 		// debug params
-		m_DebugParam.attachmentIndex = 1;
-		m_DebugParam.zNear = 1.0f;
-		m_DebugParam.zFar = 100.0f;
-		m_DebugBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		m_VertFragParam.attachmentIndex = 0;
+		m_VertFragParam.zNear   = 1.0f;
+		m_VertFragParam.zFar    = 100.0f;
+		m_VertFragParam.one     = 1.0f;
+		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
+		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
+		m_FragParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(AttachmentParamBlock),
-			&(m_DebugParam)
+			&(m_VertFragParam)
 		);
-		m_DebugBuffer->Map();
+		m_FragParamBuffer->Map();
 
-		m_DebugNames.push_back("Color");
-		m_DebugNames.push_back("Depth");
-		m_DebugNames.push_back("Normal");
-        
+		m_VertBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			sizeof(AttachmentParamBlock),
+			&(m_VertFragParam)
+		);
+		m_VertBuffer->Map();
+
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
 		m_ViewProjData.view.SetOrigin(Vector3(0.0, 1.0f, -15.9f));
@@ -628,7 +689,7 @@ private:
 		m_ViewProjData.view.SetInverse();
 
 		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -638,6 +699,34 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
+
+		// light datas
+		auto bounds  = m_Model->rootNode->GetBounds();
+		Vector3 bMin = bounds.min;
+		Vector3 bMax = bounds.max;
+		for (int32 i = 0; i < NUM_LIGHTS; ++i)
+		{
+			m_LightDatas.lights[i].position.x = MMath::RandRange(bMin.x, bMax.x);
+			m_LightDatas.lights[i].position.y = MMath::RandRange(bMin.y, bMax.y);
+			m_LightDatas.lights[i].position.z = MMath::RandRange(bMin.z, bMax.z);
+
+			m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
+			m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
+			m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
+
+			m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, bMax.y - bMin.y);
+
+			m_LightInfos.position[i] = m_LightDatas.lights[i].position;
+			m_LightInfos.speed[i]    = 1.0f + MMath::RandRange(0.0f, 5.0f);
+		}
+		m_LightParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			sizeof(LightDataBlock),
+			&(m_LightDatas)
+		);
+		m_LightParamBuffer->Map();
 	}
 	
 	void DestroyUniformBuffers()
@@ -650,9 +739,17 @@ private:
 		delete m_ModelBuffer;
 		m_ModelBuffer = nullptr;
 
-		m_DebugBuffer->UnMap();
-		delete m_DebugBuffer;
-		m_DebugBuffer = nullptr;
+		m_FragParamBuffer->UnMap();
+		delete m_FragParamBuffer;
+		m_FragParamBuffer = nullptr;
+
+		m_VertBuffer->UnMap();
+		delete m_VertBuffer;
+		m_VertBuffer = nullptr;
+
+		m_LightParamBuffer->UnMap();
+		delete m_LightParamBuffer;
+		m_LightParamBuffer = nullptr;
 	}
 
 	void CreateGUI()
@@ -680,10 +777,14 @@ private:
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-	vk_demo::DVKBuffer*				m_DebugBuffer = nullptr;
-	AttachmentParamBlock			m_DebugParam;
-	std::vector<const char*>		m_DebugNames;
-    
+	vk_demo::DVKBuffer*				m_FragParamBuffer = nullptr;
+	AttachmentParamBlock			m_VertFragParam;
+	vk_demo::DVKBuffer*				m_VertBuffer = nullptr;
+
+	vk_demo::DVKBuffer*				m_LightParamBuffer = nullptr;
+	LightDataBlock					m_LightDatas;
+	LightSpawnBlock					m_LightInfos;
+
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
 

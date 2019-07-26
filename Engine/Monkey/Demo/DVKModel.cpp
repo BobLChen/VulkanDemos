@@ -137,6 +137,8 @@ namespace vk_demo
 		aiString texPath;
 		material->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texPath);
 
+		Vector3 defaultColor = Vector3(MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f));
+
 		for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
 		{
 			for (int32 j = 0; j < attributes.size(); ++j)
@@ -183,9 +185,18 @@ namespace vk_demo
 				}
 				else if (attributes[j] == VertexAttribute::VA_Color) 
 				{
-					vertices.push_back(aiMesh->mColors[0][i].r);
-					vertices.push_back(aiMesh->mColors[0][i].g);
-					vertices.push_back(aiMesh->mColors[0][i].b);
+					if (aiMesh->HasVertexColors(i))
+					{
+						vertices.push_back(aiMesh->mColors[0][i].r);
+						vertices.push_back(aiMesh->mColors[0][i].g);
+						vertices.push_back(aiMesh->mColors[0][i].b);
+					}
+					else 
+					{
+						vertices.push_back(defaultColor.x);
+						vertices.push_back(defaultColor.y);
+						vertices.push_back(defaultColor.z);
+					}
 				}
                 else if (attributes[j] == VertexAttribute::VA_Custom0 ||
                          attributes[j] == VertexAttribute::VA_Custom1 ||
