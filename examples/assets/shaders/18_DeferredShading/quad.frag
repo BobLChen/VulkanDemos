@@ -34,10 +34,10 @@ void main()
 	vec4 position = subpassLoad(inputPosition);
 	
 	normal.xyz    = normalize(normal.xyz);
-
+	
 	vec4 ambient  = vec4(0.20);
-
-	outFragColor  = vec4(0.0);
+	
+	outFragColor  = vec4(0.0) + ambient;
 	for (int i = 0; i < NUM_LIGHTS; ++i)
 	{
 		vec3 lightDir = lightDatas.lights[i].position.xyz - position.xyz;
