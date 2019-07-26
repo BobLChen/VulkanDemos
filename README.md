@@ -91,8 +91,20 @@ Vulkan Examples
 ### Texture3D (3D LUT)
 ![15_Texture3D](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/15_Texture3D.jpg)
 
-### InputAttachments (Color Normal Depth)
+### InputAttachments
 ![17_InputAttachments](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/17_InputAttachments.jpg)
 
-### InputAttachments (Simple DererredShading)
+### SimpleDeferredShading
+- Albedo:VK_FORMAT_R8G8B8A8_UNORM
+- Normal:VK_FORMAT_R16G16B16A16_SFLOAT
+- Position:VK_FORMAT_R16G16B16A16_SFLOAT
+
 ![18_DeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/18_DeferredShading.jpg)
+
+### OptimizeDeferredShading
+- Albedo: VK_FORMAT_R8G8B8A8_UNORM
+- Normal: VK_FORMAT_R8G8B8A8_UNORM
+- Position: Reconstructing world space position from depth buffer
+
+![19_OptimizeDeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/19_OptimizeDeferredShading.jpg)
+
