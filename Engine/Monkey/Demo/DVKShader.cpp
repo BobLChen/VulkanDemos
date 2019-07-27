@@ -82,7 +82,7 @@ namespace vk_demo
 			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
-
+			
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
@@ -104,7 +104,8 @@ namespace vk_demo
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
 			const std::string &typeName     = compiler.get_name(res.base_type_id);
-			
+			uint32 uniformBufferStructSize  = compiler.get_declared_struct_size(type);
+
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
@@ -117,6 +118,23 @@ namespace vk_demo
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存UBO变量信息
+			auto it = uboParams.find(varName);
+			if (it == uboParams.end())
+			{
+				UBOInfo uboInfo = {};
+				uboInfo.set = set;
+				uboInfo.binding = binding;
+				uboInfo.bufferSize = uniformBufferStructSize;
+				uboInfo.stageFlags = shaderModule->stage;
+				uboInfo.descriptorType = setLayoutBinding.descriptorType;
+				uboParams.insert(std::make_pair(varName, uboInfo));
+			}
+			else
+			{
+				it->second.stageFlags = it->second.stageFlags | setLayoutBinding.stageFlags;
+			}
 		}
 		
 		// 获取Texture
@@ -138,6 +156,14 @@ namespace vk_demo
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存Texture变量信息
+			TexInfo texInfo = {};
+			texInfo.set = set;
+			texInfo.binding = binding;
+			texInfo.stageFlags = shaderModule->stage;
+			texInfo.descriptorType = setLayoutBinding.descriptorType;
+			texParams.insert(std::make_pair(varName, texInfo));
 		}
 
 		// 获取input信息

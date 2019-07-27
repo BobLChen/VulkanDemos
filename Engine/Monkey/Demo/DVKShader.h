@@ -317,6 +317,23 @@ namespace vk_demo
 
 	class DVKShader
 	{
+		struct UBOInfo
+		{
+			uint32				set = 0;
+			uint32				binding = 0;
+			uint32				bufferSize = 0;
+			VkDescriptorType	descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			VkShaderStageFlags	stageFlags = 0;
+		};
+
+		struct TexInfo
+		{
+			uint32				set = 0;
+			uint32				binding = 0;
+			VkDescriptorType	descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			VkShaderStageFlags	stageFlags = 0;
+		};
+
 	private:
 		typedef std::vector<VkPipelineShaderStageCreateInfo>	ShaderStageInfoArray;
 		typedef std::vector<VkDescriptorSetLayout>				DescriptorSetLayouts;
@@ -436,6 +453,10 @@ namespace vk_demo
 		DescriptorSetLayouts 			descriptorSetLayouts;
 		VkPipelineLayout 				pipelineLayout = VK_NULL_HANDLE;
 		DVKDescriptorSetPools			descriptorSetPools;
+
+		std::unordered_map<std::string, UBOInfo>	uboParams;
+		std::unordered_map<std::string, TexInfo>	texParams;
+
 	};
 
 }
