@@ -94,6 +94,17 @@ namespace vk_demo
 				setLayout = &(setLayouts[setLayouts.size() - 1]);
 			}
 
+			// 公用一个UniformBuffer
+			for (int32 i = 0; i < setLayout->bindings.size(); ++i)
+			{
+				VkDescriptorSetLayoutBinding& setBinding = setLayout->bindings[i];
+				if (setBinding.binding == binding.binding && setBinding.descriptorType == binding.descriptorType)
+				{
+					setBinding.stageFlags = setBinding.stageFlags | binding.stageFlags;
+					return;
+				}
+			}
+			
 			setLayout->set = set;
 			setLayout->bindings.push_back(binding);
 
