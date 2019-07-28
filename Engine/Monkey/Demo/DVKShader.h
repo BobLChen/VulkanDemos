@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -94,6 +94,17 @@ namespace vk_demo
 				setLayout = &(setLayouts[setLayouts.size() - 1]);
 			}
 
+			// 公用一个UniformBuffer
+			for (int32 i = 0; i < setLayout->bindings.size(); ++i)
+			{
+				VkDescriptorSetLayoutBinding& setBinding = setLayout->bindings[i];
+				if (setBinding.binding == binding.binding && setBinding.descriptorType == binding.descriptorType)
+				{
+					setBinding.stageFlags = setBinding.stageFlags | binding.stageFlags;
+					return;
+				}
+			}
+			
 			setLayout->set = set;
 			setLayout->bindings.push_back(binding);
 
@@ -167,6 +178,26 @@ namespace vk_demo
 			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
 			writeDescriptorSet.pBufferInfo     = nullptr;
 			writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
+			writeDescriptorSet.dstBinding      = bindInfo.binding;
+			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+		}
+
+		void WriteBuffer(const std::string& name, const VkDescriptorBufferInfo* bufferInfo)
+		{
+			auto it = setLayoutsInfo.paramsMap.find(name);
+			if (it == setLayoutsInfo.paramsMap.end()) {
+				MLOGE("Failed write buffer, %s not found!", name.c_str());
+				return;
+			}
+
+			auto bindInfo = it->second;
+
+			VkWriteDescriptorSet writeDescriptorSet;
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = setLayoutsInfo.GetDescriptorType(bindInfo.set, bindInfo.binding);
+			writeDescriptorSet.pBufferInfo     = bufferInfo;
 			writeDescriptorSet.dstBinding      = bindInfo.binding;
 			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 		}
@@ -306,6 +337,23 @@ namespace vk_demo
 
 	class DVKShader
 	{
+		struct UBOInfo
+		{
+			uint32				set = 0;
+			uint32				binding = 0;
+			uint32				bufferSize = 0;
+			VkDescriptorType	descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			VkShaderStageFlags	stageFlags = 0;
+		};
+
+		struct TexInfo
+		{
+			uint32				set = 0;
+			uint32				binding = 0;
+			VkDescriptorType	descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			VkShaderStageFlags	stageFlags = 0;
+		};
+
 	private:
 		typedef std::vector<VkPipelineShaderStageCreateInfo>	ShaderStageInfoArray;
 		typedef std::vector<VkDescriptorSetLayout>				DescriptorSetLayouts;
@@ -374,7 +422,9 @@ namespace vk_demo
 		}
 
 		static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
-
+        
+        static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, bool dynamicUBO, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
+        
 		DVKDescriptorSet* AllocateDescriptorSet()
 		{
 			DVKDescriptorSet* dvkSet = new DVKDescriptorSet();
@@ -417,6 +467,7 @@ namespace vk_demo
 		DVKShaderModule*				teseShaderModule = nullptr;
 
 		VkDevice						device = VK_NULL_HANDLE;
+        bool                            dynamicUBO = false;
 
 		ShaderStageInfoArray			shaderStageCreateInfos;
 		DVKDescriptorSetLayoutsInfo		setLayoutsInfo;
@@ -425,6 +476,9 @@ namespace vk_demo
 		DescriptorSetLayouts 			descriptorSetLayouts;
 		VkPipelineLayout 				pipelineLayout = VK_NULL_HANDLE;
 		DVKDescriptorSetPools			descriptorSetPools;
+
+		std::unordered_map<std::string, UBOInfo>	uboParams;
+		std::unordered_map<std::string, TexInfo>	texParams;
 	};
 
 }

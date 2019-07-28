@@ -1,4 +1,4 @@
-﻿#include "DVKShader.h"
+#include "DVKShader.h"
 #include "spirv_cross.hpp"
 
 namespace vk_demo
@@ -32,29 +32,35 @@ namespace vk_demo
 
 		return dvkModule;
 	}
+    
+    DVKShader* DVKShader::Create(std::shared_ptr<VulkanDevice> vulkanDevice, bool dynamicUBO, const char* vert, const char* frag, const char* geom, const char* comp, const char* tesc, const char* tese)
+    {
+        DVKShaderModule* vertModule = vert ? DVKShaderModule::Create(vulkanDevice, vert, VK_SHADER_STAGE_VERTEX_BIT)   : nullptr;
+        DVKShaderModule* fragModule = frag ? DVKShaderModule::Create(vulkanDevice, frag, VK_SHADER_STAGE_FRAGMENT_BIT) : nullptr;
+        DVKShaderModule* geomModule = geom ? DVKShaderModule::Create(vulkanDevice, geom, VK_SHADER_STAGE_GEOMETRY_BIT) : nullptr;
+        DVKShaderModule* compModule = comp ? DVKShaderModule::Create(vulkanDevice, comp, VK_SHADER_STAGE_COMPUTE_BIT) : nullptr;
+        DVKShaderModule* tescModule = tesc ? DVKShaderModule::Create(vulkanDevice, tesc, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)    : nullptr;
+        DVKShaderModule* teseModule = tese ? DVKShaderModule::Create(vulkanDevice, tese, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) : nullptr;
+        
+        DVKShader* shader = new DVKShader();
+        shader->device     = vulkanDevice->GetInstanceHandle();
+        shader->dynamicUBO = dynamicUBO;
+        
+        shader->vertShaderModule = vertModule;
+        shader->fragShaderModule = fragModule;
+        shader->geomShaderModule = geomModule;
+        shader->compShaderModule = compModule;
+        shader->tescShaderModule = tescModule;
+        shader->teseShaderModule = teseModule;
+        
+        shader->Compile();
+        
+        return shader;
+    }
 
 	DVKShader* DVKShader::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* vert, const char* frag, const char* geom, const char* comp, const char* tesc, const char* tese)
 	{
-		DVKShaderModule* vertModule = vert ? DVKShaderModule::Create(vulkanDevice, vert, VK_SHADER_STAGE_VERTEX_BIT)   : nullptr;
-		DVKShaderModule* fragModule = frag ? DVKShaderModule::Create(vulkanDevice, frag, VK_SHADER_STAGE_FRAGMENT_BIT) : nullptr;
-		DVKShaderModule* geomModule = geom ? DVKShaderModule::Create(vulkanDevice, geom, VK_SHADER_STAGE_GEOMETRY_BIT) : nullptr;
-		DVKShaderModule* compModule = comp ? DVKShaderModule::Create(vulkanDevice, comp, VK_SHADER_STAGE_COMPUTE_BIT) : nullptr;
-		DVKShaderModule* tescModule = tesc ? DVKShaderModule::Create(vulkanDevice, tesc, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT)    : nullptr;
-		DVKShaderModule* teseModule = tese ? DVKShaderModule::Create(vulkanDevice, tese, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) : nullptr;
-		
-		DVKShader* shader = new DVKShader();
-
-		shader->vertShaderModule = vertModule;
-		shader->fragShaderModule = fragModule;
-		shader->geomShaderModule = geomModule;
-		shader->compShaderModule = compModule;
-		shader->tescShaderModule = tescModule;
-		shader->teseShaderModule = teseModule;
-
-		shader->device = vulkanDevice->GetInstanceHandle();
-		shader->Compile();
-
-		return shader;
+        return Create(vulkanDevice, false, vert, frag, geom, comp, tesc, tese);
 	}
 
 	void DVKShader::ProcessShaderModule(DVKShaderModule* shaderModule)
@@ -75,14 +81,14 @@ namespace vk_demo
 		spirv_cross::Compiler compiler((uint32*)shaderModule->data, shaderModule->size / sizeof(uint32));
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 		
-		// 获取input信息
+		// 获取attachment信息
 		for (int32 i = 0; i < resources.subpass_inputs.size(); ++i)
 		{
 			spirv_cross::Resource& res      = resources.subpass_inputs[i];
 			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
-
+			
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
@@ -94,6 +100,14 @@ namespace vk_demo
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存Texture变量信息
+			TexInfo texInfo = {};
+			texInfo.set            = set;
+			texInfo.binding        = binding;
+			texInfo.stageFlags     = shaderModule->stage;
+			texInfo.descriptorType = setLayoutBinding.descriptorType;
+			texParams.insert(std::make_pair(varName, texInfo));
 		}
 		
 		// 获取Uniform Buffer信息
@@ -104,19 +118,37 @@ namespace vk_demo
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
 			const std::string &typeName     = compiler.get_name(res.base_type_id);
-			
+			uint32 uniformBufferStructSize  = compiler.get_declared_struct_size(type);
+
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
 			// [layout (binding = 0) uniform MVPDynamicBlock] 标记为Dynamic的buffer
 			VkDescriptorSetLayoutBinding setLayoutBinding = {};
 			setLayoutBinding.binding 			= binding;
-			setLayoutBinding.descriptorType     = typeName.find("Dynamic") != std::string::npos ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			setLayoutBinding.descriptorType     = (typeName.find("Dynamic") != std::string::npos || dynamicUBO) ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			setLayoutBinding.descriptorCount    = 1;
 			setLayoutBinding.stageFlags 		= shaderModule->stage;
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+            
+			// 保存UBO变量信息
+			auto it = uboParams.find(varName);
+			if (it == uboParams.end())
+			{
+				UBOInfo uboInfo = {};
+				uboInfo.set            = set;
+				uboInfo.binding        = binding;
+				uboInfo.bufferSize     = uniformBufferStructSize;
+				uboInfo.stageFlags     = shaderModule->stage;
+				uboInfo.descriptorType = setLayoutBinding.descriptorType;
+				uboParams.insert(std::make_pair(varName, uboInfo));
+			}
+			else
+			{
+				it->second.stageFlags = it->second.stageFlags | setLayoutBinding.stageFlags;
+			}
 		}
 		
 		// 获取Texture
@@ -138,6 +170,14 @@ namespace vk_demo
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存Texture变量信息
+			TexInfo texInfo = {};
+			texInfo.set            = set;
+			texInfo.binding        = binding;
+			texInfo.stageFlags     = shaderModule->stage;
+			texInfo.descriptorType = setLayoutBinding.descriptorType;
+			texParams.insert(std::make_pair(varName, texInfo));
 		}
 
 		// 获取input信息
@@ -184,6 +224,20 @@ namespace vk_demo
 
 	void DVKShader::GenerateLayout()
 	{
+        std::vector<DVKDescriptorSetLayoutInfo>& setLayouts = setLayoutsInfo.setLayouts;
+        // 先按照set进行排序
+        std::sort(setLayouts.begin(), setLayouts.end(), [](const DVKDescriptorSetLayoutInfo& a, const DVKDescriptorSetLayoutInfo& b) -> bool {
+            return a.set < b.set;
+        });
+        // 再按照binding进行排序
+        for (int32 i = 0; i < setLayouts.size(); ++i)
+        {
+            std::vector<VkDescriptorSetLayoutBinding>& bindings = setLayouts[i].bindings;
+            std::sort(bindings.begin(), bindings.end(), [](const VkDescriptorSetLayoutBinding& a, const VkDescriptorSetLayoutBinding& b) -> bool {
+                return a.binding < b.binding;
+            });
+        }
+
 		for (int32 i = 0; i < setLayoutsInfo.setLayouts.size(); ++i)
 		{
 			VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;

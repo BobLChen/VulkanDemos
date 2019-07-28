@@ -344,7 +344,8 @@ private:
 	{
         UpdateUI(time, delta);
 		UpdateUniform();
-        DemoBase::Present();
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateUniform()

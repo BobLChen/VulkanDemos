@@ -22,7 +22,7 @@ namespace vk_demo
 		}
 	}
 
-	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterial& material)
+	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterialInfo& material)
 	{
 		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE)) {
 			aiString texturePath;
@@ -104,7 +104,7 @@ namespace vk_demo
                 assimpFlags = assimpFlags | aiProcess_GenSmoothNormals;
             }
         }
-        
+
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
         if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {

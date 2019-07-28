@@ -87,7 +87,7 @@ namespace vk_demo
 		}
 	};
 
-	struct DVKMaterial
+	struct DVKMaterialInfo
 	{
 		std::string		diffuse;
 		std::string		normalmap;
@@ -102,8 +102,8 @@ namespace vk_demo
 		DVKBoundingBox	bounding;
         DVKNode*		linkNode;
 
-		DVKMaterial		material;
-
+		DVKMaterialInfo	material;
+        
 		int32			vertexCount;
 		int32			triangleCount;
 
@@ -159,7 +159,7 @@ namespace vk_demo
             return localMatrix;
         }
         
-        const Matrix4x4& GetGlobalMatrix()
+        Matrix4x4& GetGlobalMatrix()
         {
             globalMatrix = localMatrix;
             

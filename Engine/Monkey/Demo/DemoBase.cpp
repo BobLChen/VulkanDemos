@@ -1,4 +1,6 @@
 #include "DemoBase.h"
+#include "DVKDefaultRes.h"
+#include "DVKCommand.h"
 
 void DemoBase::Setup()
 {
@@ -16,10 +18,14 @@ void DemoBase::Setup()
 	m_FrameHeight	= vulkanRHI->GetSwapChain()->GetHeight();
 }
 
-void DemoBase::Present()
+int32 DemoBase::AcquireBackbufferIndex()
 {
 	int32 backBufferIndex = m_SwapChain->AcquireImageIndex(&m_PresentComplete);
-    
+	return backBufferIndex;
+}
+
+void DemoBase::Present(int backBufferIndex)
+{
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType 				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.pWaitDstStageMask 	= &m_WaitStageMask;									
@@ -91,6 +97,18 @@ void DemoBase::DestroyFences()
 	}
 
 	vkDestroySemaphore(device, m_RenderComplete, VULKAN_CPU_ALLOCATOR);
+}
+
+void DemoBase::CreateDefaultRes()
+{
+	vk_demo::DVKCommandBuffer* cmdbuffer = vk_demo::DVKCommandBuffer::Create(GetVulkanRHI()->GetDevice(), m_CommandPool);
+	vk_demo::DVKDefaultRes::Init(GetVulkanRHI()->GetDevice(), cmdbuffer);
+	delete cmdbuffer;
+}
+
+void DemoBase::DestroyDefaultRes()
+{
+	vk_demo::DVKDefaultRes::Destroy();
 }
 
 void DemoBase::CreateCommandBuffers()
