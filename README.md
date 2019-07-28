@@ -179,3 +179,7 @@ Vulkan Examples
 - Position: Reconstructing world space position from depth buffer
 
 ![19_OptimizeDeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/19_OptimizeDeferredShading.jpg)
+
+### [SimpleMaterial](https://github.com/BobLChen/VulkanDemos/tree/master/examples/20_Material)
+
+在之前的所有Demo里面，我们都在频繁的创建UniformBuffer以及管理UniformBuffer的生命周期。比如在上一个简单延迟着色的Demo里面，我们就会发现Shader参数的设置愈来愈变得非常繁琐。为了简化这些工作量，在这个Demo里面，简单设计了一个Material。针对UniformBuffer统一使用DynamicUniformBuffer，在Material内部维护了一个全局的RingUniformBuffer用来存储Uniform数据。在以后的Demo中，我们不在自己创建管理维护UniformBuffer数据。
