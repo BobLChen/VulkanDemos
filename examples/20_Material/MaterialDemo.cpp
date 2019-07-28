@@ -502,6 +502,7 @@ private:
 		delete m_Shader1;
 
 		delete m_Material0;
+        delete m_Material1;
 	}
     
 	void SetupCommandBuffers(int32 backBufferIndex)
