@@ -43,6 +43,11 @@ namespace vk_demo
 		uniformBuffers.clear();
 
 		vulkanDevice = nullptr;
+        
+        if (pipeline) {
+            delete pipeline;
+            pipeline = nullptr;
+        }
 
 		ringBufferRefCount -= 1;
 		if (ringBufferRefCount == 0) {
@@ -248,7 +253,7 @@ namespace vk_demo
 		uint64 bufferSize  = it->second.dataSize;
 		
 		// 拷贝数据
-		memcpy(ringCPUData + ringOffset, dataPtr, size);
+		memcpy(ringCPUData + ringOffset, dataPtr, bufferSize);
 		// 记录Offset
 		dynOffsets[it->second.dynamicIndex] = ringOffset;
     }
