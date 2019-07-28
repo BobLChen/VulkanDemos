@@ -104,7 +104,8 @@ private:
 	void Draw(float time, float delta)
 	{
 		UpdateUniformBuffers(time, delta);
-        DemoBase::Present();
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		DemoBase::Present(bufferIndex);
 	}
 
 	void SetupCommandBuffers()

@@ -15,7 +15,7 @@ layout (binding = 3) uniform ParamBlock
 	float		xMaxFar;
 	float		yMaxFar;
 	vec2		padding;
-} vertParam;
+} cameraParam;
 
 out gl_PerVertex {
 	vec4 gl_Position;
@@ -25,7 +25,7 @@ void main()
 {
 	gl_Position = vec4(inPosition, 1.0f);
 
-	vec4 param  = vec4(vertParam.xMaxFar, vertParam.yMaxFar, vertParam.zFar, 1.0);
+	vec4 param  = vec4(cameraParam.xMaxFar, cameraParam.yMaxFar, cameraParam.zFar, 1.0);
 	
 	outRay.x = inPosition.x * param.x;
 	outRay.y = inPosition.y * param.y;

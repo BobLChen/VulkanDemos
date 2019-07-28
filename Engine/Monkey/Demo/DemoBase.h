@@ -74,21 +74,29 @@ public:
 		CreateFences();
 		CreateCommandBuffers();
 		CreatePipelineCache();
+		CreateDefaultRes();
 	}
 
 	void Release() override
 	{
         AppModuleBase::Release();
+		DestroyDefaultRes();
 		DestroyFences();
 		DestroyCommandBuffers();
 		DestroyPipelineCache();
 	}
 
-	void Present();
+	void Present(int backBufferIndex);
+
+	int32 AcquireBackbufferIndex();
 
 	uint32 GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties);
 
 private:
+
+	void CreateDefaultRes();
+
+	void DestroyDefaultRes();
 
 	void CreateCommandBuffers();
 

@@ -94,7 +94,8 @@ private:
 		if (m_EnableRotate) {
 			UpdateUniformBuffers(time, delta);
 		}
-        DemoBase::Present();
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateUI(float time, float delta)

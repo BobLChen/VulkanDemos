@@ -182,6 +182,26 @@ namespace vk_demo
 			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 		}
 
+		void WriteBuffer(const std::string& name, const VkDescriptorBufferInfo* bufferInfo)
+		{
+			auto it = setLayoutsInfo.paramsMap.find(name);
+			if (it == setLayoutsInfo.paramsMap.end()) {
+				MLOGE("Failed write buffer, %s not found!", name.c_str());
+				return;
+			}
+
+			auto bindInfo = it->second;
+
+			VkWriteDescriptorSet writeDescriptorSet;
+			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+			writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
+			writeDescriptorSet.descriptorCount = 1;
+			writeDescriptorSet.descriptorType  = setLayoutsInfo.GetDescriptorType(bindInfo.set, bindInfo.binding);
+			writeDescriptorSet.pBufferInfo     = bufferInfo;
+			writeDescriptorSet.dstBinding      = bindInfo.binding;
+			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+		}
+
 		void WriteBuffer(const std::string& name, DVKBuffer* buffer)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
@@ -459,7 +479,6 @@ namespace vk_demo
 
 		std::unordered_map<std::string, UBOInfo>	uboParams;
 		std::unordered_map<std::string, TexInfo>	texParams;
-
 	};
 
 }

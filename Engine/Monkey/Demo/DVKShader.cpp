@@ -81,7 +81,7 @@ namespace vk_demo
 		spirv_cross::Compiler compiler((uint32*)shaderModule->data, shaderModule->size / sizeof(uint32));
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 		
-		// 获取input信息
+		// 获取attachment信息
 		for (int32 i = 0; i < resources.subpass_inputs.size(); ++i)
 		{
 			spirv_cross::Resource& res      = resources.subpass_inputs[i];
@@ -100,6 +100,14 @@ namespace vk_demo
 			setLayoutBinding.pImmutableSamplers = nullptr;
 
 			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存Texture变量信息
+			TexInfo texInfo = {};
+			texInfo.set            = set;
+			texInfo.binding        = binding;
+			texInfo.stageFlags     = shaderModule->stage;
+			texInfo.descriptorType = setLayoutBinding.descriptorType;
+			texParams.insert(std::make_pair(varName, texInfo));
 		}
 		
 		// 获取Uniform Buffer信息
@@ -130,10 +138,10 @@ namespace vk_demo
 			if (it == uboParams.end())
 			{
 				UBOInfo uboInfo = {};
-				uboInfo.set = set;
-				uboInfo.binding = binding;
-				uboInfo.bufferSize = uniformBufferStructSize;
-				uboInfo.stageFlags = shaderModule->stage;
+				uboInfo.set            = set;
+				uboInfo.binding        = binding;
+				uboInfo.bufferSize     = uniformBufferStructSize;
+				uboInfo.stageFlags     = shaderModule->stage;
 				uboInfo.descriptorType = setLayoutBinding.descriptorType;
 				uboParams.insert(std::make_pair(varName, uboInfo));
 			}
@@ -165,9 +173,9 @@ namespace vk_demo
 
 			// 保存Texture变量信息
 			TexInfo texInfo = {};
-			texInfo.set = set;
-			texInfo.binding = binding;
-			texInfo.stageFlags = shaderModule->stage;
+			texInfo.set            = set;
+			texInfo.binding        = binding;
+			texInfo.stageFlags     = shaderModule->stage;
 			texInfo.descriptorType = setLayoutBinding.descriptorType;
 			texParams.insert(std::make_pair(varName, texInfo));
 		}
@@ -229,7 +237,7 @@ namespace vk_demo
                 return a.binding < b.binding;
             });
         }
-        
+
 		for (int32 i = 0; i < setLayoutsInfo.setLayouts.size(); ++i)
 		{
 			VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;

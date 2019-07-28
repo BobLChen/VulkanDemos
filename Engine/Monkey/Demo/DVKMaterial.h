@@ -21,13 +21,13 @@ namespace vk_demo
 
 	struct DVKSimulateUniformBuffer
 	{
-		void*		        dataPtr;
-		uint32		        dataSize;
-        uint32              set = 0;
-        uint32              binding = 0;
-        uint32              dynamicIndex = 0;
-        VkDescriptorType    descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        VkShaderStageFlags  stageFlags = 0;
+		uint32					dataSize;
+        uint32					set = 0;
+        uint32					binding = 0;
+        uint32					dynamicIndex = 0;
+        VkDescriptorType		descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        VkShaderStageFlags		stageFlags = 0;
+		VkDescriptorBufferInfo	bufferInfo;
 	};
     
     struct DVKSimulateTexture
@@ -68,10 +68,8 @@ namespace vk_demo
 				return allocationOffset;
 			}
 
-			bufferOffset = Align<uint64>(size, minAlignment);
-            allocationOffset = 0;
-            
-			return allocationOffset;
+			bufferOffset = 0;
+			return bufferOffset;
 		}
         
 	public:
@@ -98,15 +96,40 @@ namespace vk_demo
 	public:
 		virtual ~DVKMaterial();
 
-		static DVKMaterial* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkRenderPass renderPass, VkPipelineCache pipelineCache, DVKShader* shader, DVKModel* model);
+		static DVKMaterial* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkRenderPass renderPass, VkPipelineCache pipelineCache, DVKShader* shader);
         
         void PreparePipeline();
+
+		void BeginObject();
+
+		void EndObject();
+
+		void BeginFrame();
+
+		void EndFrame();
         
-        void Update();
-        
+		void BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint, int32 objIndex);
+
         void SetUniform(const std::string& name, void* dataPtr, uint32 size);
         
         void SetTexture(const std::string& name, DVKTexture* texture);
+
+		void SetInputAttachment(const std::string& name, DVKTexture* texture);
+
+		inline VkPipeline GetPipeline() const
+		{
+			return pipeline->pipeline;
+		}
+
+		inline VkPipelineLayout GetPipelineLayout() const
+		{
+			return pipeline->pipelineLayout;
+		}
+
+		inline std::vector<VkDescriptorSet>& GetDescriptorSets() const
+		{
+			return descriptorSet->descriptorSets;
+		}
         
 	private:
 		static void InitRingBuffer(std::shared_ptr<VulkanDevice> vulkanDevice);
@@ -124,18 +147,20 @@ namespace vk_demo
 
 		VulkanDeviceRef			vulkanDevice = nullptr;
 		DVKShader*				shader = nullptr;
-        DVKModel*               model = nullptr;
         
         VkRenderPass            renderPass = VK_NULL_HANDLE;
         VkPipelineCache         pipelineCache = VK_NULL_HANDLE;
         
         DVKPipelineInfo         pipelineInfo;
-        DVKPipeline*            pipeline;
+        DVKPipeline*            pipeline = nullptr;
         DVKDescriptorSet*		descriptorSet = nullptr;
+		uint32					dynamicOffsetCount;
         std::vector<uint32>     dynamicOffsets;
+		std::vector<uint32>		perObjectIndexes;
         
 		UniformBuffersMap		uniformBuffers;
 		TexturesMap				textures;
+		TexturesMap				inputAttachments;
 	};
 
 }

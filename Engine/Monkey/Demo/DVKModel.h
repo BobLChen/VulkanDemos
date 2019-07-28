@@ -159,7 +159,7 @@ namespace vk_demo
             return localMatrix;
         }
         
-        const Matrix4x4& GetGlobalMatrix()
+        Matrix4x4& GetGlobalMatrix()
         {
             globalMatrix = localMatrix;
             

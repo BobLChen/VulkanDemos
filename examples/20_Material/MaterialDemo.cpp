@@ -39,13 +39,9 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
-		LoadAssets();
 		CreateGUI();
-		CreateUniformBuffers();
-        CreateDescriptorSet();
-		CreatePipelines();
-		SetupCommandBuffers();
-
+		LoadAssets();
+		InitParmas();
 		m_Ready = true;
 
 		return true;
@@ -54,12 +50,8 @@ public:
 	virtual void Exist() override
 	{
 		DemoBase::Release();
-
 		DestroyAssets();
 		DestroyGUI();
-		DestroyPipelines();
-		DestroyUniformBuffers();
-
 		DestroyAttachments();
 	}
 
@@ -323,11 +315,6 @@ protected:
 
 private:
 
-	struct ModelBlock
-	{
-		Matrix4x4 model;
-	};
-
 	struct ViewProjectionBlock
 	{
 		Matrix4x4 view;
@@ -365,21 +352,43 @@ private:
     
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniform(time, delta);
-        DemoBase::Present();
+
+		// 设置model的参数
+		m_Material0->BeginFrame();
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
+			m_Material0->BeginObject();
+			m_Material0->SetUniform("uboModel",    &(m_Model->meshes[i]->linkNode->GetGlobalMatrix()), sizeof(Matrix4x4));
+			m_Material0->SetUniform("uboViewProj", &m_ViewProjData,                                    sizeof(m_ViewProjData));
+			m_Material0->EndObject();
+		}
+		m_Material0->EndFrame();
+		// 设置postprocess的参数
+		m_Material1->BeginFrame();
+		m_Material1->BeginObject();
+		m_Material1->SetUniform("cameraParam", &m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_Material1->SetUniform("lightDatas",  &m_LightDatas,    sizeof(LightDataBlock));
+		m_Material1->SetInputAttachment("inputColor",  m_AttachsColor[bufferIndex]);
+		m_Material1->SetInputAttachment("inputNormal", m_AttachsNormal[bufferIndex]);
+		m_Material1->SetInputAttachment("inputDepth",  m_AttachsDepth[bufferIndex]);
+		m_Material1->EndObject();
+		m_Material1->EndFrame();
+
+		SetupCommandBuffers(bufferIndex);
+		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateUniform(float time, float delta)
 	{
+		// 相机参数
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		m_FragParamBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
-		m_VertBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
-
+		// 投影矩阵
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
-		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
-
+		// 灯光参数
 		auto bounds  = m_Model->rootNode->GetBounds();
 		Vector3 bMin = bounds.min;
 		Vector3 bMax = bounds.max;
@@ -391,7 +400,6 @@ private:
 			m_LightDatas.lights[i].position.x = m_LightInfos.position[i].x + sinBias * radius;
 			m_LightDatas.lights[i].position.z = m_LightInfos.position[i].z + cosBias * radius;
 		}
-		m_LightParamBuffer->CopyFrom(&m_LightDatas, sizeof(LightDataBlock));
 	}
     
 	void UpdateUI(float time, float delta)
@@ -429,68 +437,74 @@ private:
 		}
         
 		m_GUI->EndFrame();
-        
-		if (m_GUI->Update()) {
-			SetupCommandBuffers();
-		}
+		m_GUI->Update();
 	}
 
 	void LoadAssets()
 	{
+		// shader0
 		m_Shader0 = vk_demo::DVKShader::Create(
-			m_VulkanDevice, 
-			"assets/shaders/19_OptimizeDeferredShading/obj.vert.spv",
-			"assets/shaders/19_OptimizeDeferredShading/obj.frag.spv"
-		);
-
-		m_Shader1 = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
-			"assets/shaders/19_OptimizeDeferredShading/quad.vert.spv",
-			"assets/shaders/19_OptimizeDeferredShading/quad.frag.spv"
+			true,
+			"assets/shaders/20_Material/obj.vert.spv",
+			"assets/shaders/20_Material/obj.frag.spv"
 		);
-        
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		// scene model
+		// 加载Model
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		m_Model = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/samplebuilding.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			m_Shader0->attributes
 		);
-        
-		// quad model
-        std::vector<float> vertices = {
-            -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-             1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
-             1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-            -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
-        };
-        std::vector<uint16> indices = {
-            0, 1, 2, 0, 2, 3
-        };
-        
-        m_Quad = vk_demo::DVKModel::Create(
-            m_VulkanDevice,
-            cmdBuffer,
-            vertices,
-            indices,
-            m_Shader1->attributes
-        );
-
+		m_Model->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
 		delete cmdBuffer;
+
+		// 设置gbuffer material
+		m_Material0 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_Shader0
+		);
+		// 这里还需要手动指定，以后封装了renderpass之后，可以在内部自动获取
+		m_Material0->pipelineInfo.colorAttachmentCount = 2;
+		m_Material0->PreparePipeline();
+
+		// shader1
+		m_Shader1 = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/20_Material/quad.vert.spv",
+			"assets/shaders/20_Material/quad.frag.spv"
+		);
+		// 设置deferred material
+		m_Material1 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_Shader1
+		);
+		m_Material1->pipelineInfo.depthStencilState.depthTestEnable   = VK_FALSE;
+		m_Material1->pipelineInfo.depthStencilState.depthWriteEnable  = VK_FALSE;
+		m_Material1->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
+		m_Material1->pipelineInfo.shader  = m_Shader1;
+		m_Material1->pipelineInfo.subpass = 1;
+		m_Material1->PreparePipeline();
 	}
     
 	void DestroyAssets()
 	{
 		delete m_Model;
-        delete m_Quad;
 
 		delete m_Shader0;
 		delete m_Shader1;
+
+		delete m_Material0;
 	}
     
-	void SetupCommandBuffers()
+	void SetupCommandBuffers(int32 backBufferIndex)
 	{
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -504,6 +518,7 @@ private:
 		VkRenderPassBeginInfo renderPassBeginInfo;
 		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
         renderPassBeginInfo.renderPass      = m_RenderPass;
+		renderPassBeginInfo.framebuffer     = m_FrameBuffers[backBufferIndex];
 		renderPassBeginInfo.clearValueCount = 4;
 		renderPassBeginInfo.pClearValues    = clearValues;
 		renderPassBeginInfo.renderArea.offset.x = 0;
@@ -525,138 +540,40 @@ private:
         scissor.offset.x      = 0;
         scissor.offset.y      = 0;
 
-		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
-		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
+		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
 
-		for (int32 i = 0; i < m_CommandBuffers.size(); ++i)
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
+		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+		// pass0
 		{
-            renderPassBeginInfo.framebuffer = m_FrameBuffers[i];
-            
-			VERIFYVULKANRESULT(vkBeginCommandBuffer(m_CommandBuffers[i], &cmdBeginInfo));
-			vkCmdBeginRenderPass(m_CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdSetViewport(m_CommandBuffers[i], 0, 1, &viewport);
-			vkCmdSetScissor(m_CommandBuffers[i],  0, 1, &scissor);
-
-			// pass0
-			{
-				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipeline);
-				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
-					uint32 offset = meshIndex * modelAlign;
-					vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline0->pipelineLayout, 0, m_DescriptorSet0->descriptorSets.size(), m_DescriptorSet0->descriptorSets.data(), 1, &offset);
-					m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
-				}
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->GetPipeline());
+			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
+				m_Material0->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshIndex);
+				m_Model->meshes[meshIndex]->BindDrawCmd(commandBuffer);
 			}
-
-			vkCmdNextSubpass(m_CommandBuffers[i], VK_SUBPASS_CONTENTS_INLINE);
-
-			// pass1
-			{
-				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->pipeline);
-				vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline1->pipelineLayout, 0, m_DescriptorSets[i]->descriptorSets.size(), m_DescriptorSets[i]->descriptorSets.data(), 0, nullptr);
-                for (int32 meshIndex = 0; meshIndex < m_Quad->meshes.size(); ++meshIndex) {
-                    m_Quad->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
-                }
-			}
-            
-			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass, 1);
-
-			vkCmdEndRenderPass(m_CommandBuffers[i]);
-			VERIFYVULKANRESULT(vkEndCommandBuffer(m_CommandBuffers[i]));
 		}
-	}
-    
-	void CreateDescriptorSet()
-	{
-		m_DescriptorSet0 = m_Shader0->AllocateDescriptorSet();
-		m_DescriptorSet0->WriteBuffer("uboViewProj", m_ViewProjBuffer);
-		m_DescriptorSet0->WriteBuffer("uboModel",    m_ModelBuffer);
 
-		m_DescriptorSets.resize(m_AttachsColor.size());
-		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
+		vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
+
+		// pass1
 		{
-			m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
-			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
-            m_DescriptorSets[i]->WriteInputAttachment("inputNormal", m_AttachsNormal[i]);
-			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
-			m_DescriptorSets[i]->WriteBuffer("fragParam", m_FragParamBuffer);
-			m_DescriptorSets[i]->WriteBuffer("vertParam", m_VertBuffer);
-			m_DescriptorSets[i]->WriteBuffer("lightDatas", m_LightParamBuffer);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material1->GetPipeline());
+			m_Material1->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			vk_demo::DVKDefaultRes::fullQuad->meshes[0]->BindDrawCmd(commandBuffer);
 		}
-	}
-    
-	void CreatePipelines()
-	{
-		vk_demo::DVKPipelineInfo pipelineInfo0;
-		pipelineInfo0.shader = m_Shader0;
-        pipelineInfo0.colorAttachmentCount = 2;
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(
-			m_VulkanDevice, 
-			m_PipelineCache, 
-			pipelineInfo0, 
-			{ 
-				m_Model->GetInputBinding()
-			}, 
-			m_Model->GetInputAttributes(), 
-			m_Shader0->pipelineLayout, 
-			m_RenderPass
-		);
-		
-		vk_demo::DVKPipelineInfo pipelineInfo1;
-		pipelineInfo1.depthStencilState.depthTestEnable   = VK_FALSE;
-		pipelineInfo1.depthStencilState.depthWriteEnable  = VK_FALSE;
-		pipelineInfo1.depthStencilState.stencilTestEnable = VK_FALSE;
-		pipelineInfo1.shader  = m_Shader1;
-		pipelineInfo1.subpass = 1;
-		m_Pipeline1 = vk_demo::DVKPipeline::Create(
-			m_VulkanDevice, 
-			m_PipelineCache, 
-			pipelineInfo1, 
-			{ 
-				m_Quad->GetInputBinding()
-			}, 
-			m_Quad->GetInputAttributes(), 
-			m_Shader1->pipelineLayout, 
-			m_RenderPass
-		);
-	}
-    
-	void DestroyPipelines()
-	{
-        delete m_Pipeline0;
-		delete m_Pipeline1;
 
-		delete m_DescriptorSet0;
-		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
-		{
-			vk_demo::DVKDescriptorSet* descriptorSet = m_DescriptorSets[i];
-			delete descriptorSet;
-		}
-		m_DescriptorSets.clear();
+		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass, 1);
+
+		vkCmdEndRenderPass(commandBuffer);
+		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
-	
-	void CreateUniformBuffers()
+    
+	void InitParmas()
 	{
-		// dynamic
-		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
-		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
-        m_ModelDatas.resize(modelAlign * m_Model->meshes.size());
-        for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-        {
-            ModelBlock* modelBlock = (ModelBlock*)(m_ModelDatas.data() + modelAlign * i);
-            modelBlock->model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
-            modelBlock->model.AppendRotation(180.0f, Vector3::UpVector);
-        }
-        
-		m_ModelBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			m_ModelDatas.size(),
-			m_ModelDatas.data()
-		);
-		m_ModelBuffer->Map();
-        
 		// debug params
 		m_VertFragParam.attachmentIndex = 0;
 		m_VertFragParam.zNear   = 1.0f;
@@ -664,24 +581,7 @@ private:
 		m_VertFragParam.one     = 1.0f;
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		m_FragParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(AttachmentParamBlock),
-			&(m_VertFragParam)
-		);
-		m_FragParamBuffer->Map();
-
-		m_VertBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(AttachmentParamBlock),
-			&(m_VertFragParam)
-		);
-		m_VertBuffer->Map();
-
+		
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
 		m_ViewProjData.view.SetOrigin(Vector3(0.0, 1.0f, -15.9f));
@@ -691,15 +591,6 @@ private:
 		m_ViewProjData.projection.SetIdentity();
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 		
-		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(ViewProjectionBlock),
-			&(m_ViewProjData)
-		);
-		m_ViewProjBuffer->Map();
-
 		// light datas
 		auto bounds  = m_Model->rootNode->GetBounds();
 		Vector3 bMin = bounds.min;
@@ -719,39 +610,8 @@ private:
 			m_LightInfos.position[i] = m_LightDatas.lights[i].position;
 			m_LightInfos.speed[i]    = 1.0f + MMath::RandRange(0.0f, 5.0f);
 		}
-		m_LightParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(LightDataBlock),
-			&(m_LightDatas)
-		);
-		m_LightParamBuffer->Map();
 	}
 	
-	void DestroyUniformBuffers()
-	{
-		m_ViewProjBuffer->UnMap();
-		delete m_ViewProjBuffer;
-		m_ViewProjBuffer = nullptr;
-
-		m_ModelBuffer->UnMap();
-		delete m_ModelBuffer;
-		m_ModelBuffer = nullptr;
-
-		m_FragParamBuffer->UnMap();
-		delete m_FragParamBuffer;
-		m_FragParamBuffer = nullptr;
-
-		m_VertBuffer->UnMap();
-		delete m_VertBuffer;
-		m_VertBuffer = nullptr;
-
-		m_LightParamBuffer->UnMap();
-		delete m_LightParamBuffer;
-		m_LightParamBuffer = nullptr;
-	}
-
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
@@ -766,35 +626,23 @@ private:
 
 private:
 
-	typedef std::vector<vk_demo::DVKDescriptorSet*>		DVKDescriptorSetArray;
 	typedef std::vector<vk_demo::DVKTexture*>			DVKTextureArray;
 
 	bool 							m_Ready = false;
     
-	std::vector<uint8>              m_ModelDatas;
-	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
-
-	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-	vk_demo::DVKBuffer*				m_FragParamBuffer = nullptr;
 	AttachmentParamBlock			m_VertFragParam;
-	vk_demo::DVKBuffer*				m_VertBuffer = nullptr;
-
-	vk_demo::DVKBuffer*				m_LightParamBuffer = nullptr;
 	LightDataBlock					m_LightDatas;
 	LightSpawnBlock					m_LightInfos;
 
 	vk_demo::DVKModel*				m_Model = nullptr;
-    vk_demo::DVKModel*              m_Quad = nullptr;
 
-    vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
 	vk_demo::DVKShader*				m_Shader0 = nullptr;
-	vk_demo::DVKDescriptorSet*		m_DescriptorSet0 = nullptr;
+	vk_demo::DVKMaterial*			m_Material0 = nullptr;
 	
-	vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
 	vk_demo::DVKShader*				m_Shader1 = nullptr;
-	DVKDescriptorSetArray			m_DescriptorSets;
+	vk_demo::DVKMaterial*			m_Material1 = nullptr;
 
 	DVKTextureArray					m_AttachsDepth;
 	DVKTextureArray					m_AttachsColor;

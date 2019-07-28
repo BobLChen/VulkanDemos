@@ -104,7 +104,7 @@ namespace vk_demo
                 assimpFlags = assimpFlags | aiProcess_GenSmoothNormals;
             }
         }
-        
+
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
         if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {

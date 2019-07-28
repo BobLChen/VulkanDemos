@@ -391,7 +391,8 @@ private:
 	{
         UpdateUI(time, delta);
 		UpdateUniform(time, delta);
-        DemoBase::Present();
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateUniform(float time, float delta)

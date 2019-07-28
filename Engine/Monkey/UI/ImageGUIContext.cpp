@@ -727,6 +727,12 @@ void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const Vk
 		return;
 	}
 
+	VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
+	VkDeviceSize indexBufferSize  = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
+	if (vertexBufferSize == 0 || indexBufferSize == 0) {
+		return;
+	}
+
 	if (m_LastRenderPass != renderPass || m_LastSubPass != subpass) {
 		PreparePipeline(renderPass, subpass);
 	}
