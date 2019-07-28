@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -402,7 +402,9 @@ namespace vk_demo
 		}
 
 		static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
-
+        
+        static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, bool dynamicUBO, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
+        
 		DVKDescriptorSet* AllocateDescriptorSet()
 		{
 			DVKDescriptorSet* dvkSet = new DVKDescriptorSet();
@@ -445,6 +447,7 @@ namespace vk_demo
 		DVKShaderModule*				teseShaderModule = nullptr;
 
 		VkDevice						device = VK_NULL_HANDLE;
+        bool                            dynamicUBO = false;
 
 		ShaderStageInfoArray			shaderStageCreateInfos;
 		DVKDescriptorSetLayoutsInfo		setLayoutsInfo;

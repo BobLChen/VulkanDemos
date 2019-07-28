@@ -22,7 +22,7 @@ namespace vk_demo
 		}
 	}
 
-	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterial& material)
+	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterialInfo& material)
 	{
 		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE)) {
 			aiString texturePath;

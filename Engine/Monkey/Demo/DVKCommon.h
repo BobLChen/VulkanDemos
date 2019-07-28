@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "DemoBase.h"
 #include "DVKBuffer.h"
@@ -10,3 +10,5 @@
 #include "DVKPipeline.h"
 #include "DVKTexture.h"
 #include "DVKShader.h"
+#include "DVKDefaultRes.h"
+#include "DVKMaterial.h"

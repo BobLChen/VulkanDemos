@@ -12,6 +12,7 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKTexture.h
 	Monkey/Demo/DVKShader.h
 	Monkey/Demo/DVKMaterial.h
+	Monkey/Demo/DVKDefaultRes.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -24,6 +25,7 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKTexture.cpp
 	Monkey/Demo/DVKShader.cpp
 	Monkey/Demo/DVKMaterial.cpp
+	Monkey/Demo/DVKDefaultRes.cpp
 )
 
 set(Monkey_Configuration_HDRS
