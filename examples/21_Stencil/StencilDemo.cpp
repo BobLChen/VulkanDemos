@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -173,16 +173,16 @@ private:
 
 		// Role Model
 		m_ModelRole = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/LizardMage_Lowpoly/LizardMage_Lowpoly.fbx",
+			"assets/models/LizardMage/LizardMage_Lowpoly.obj",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
 		);
 		m_ModelRole->rootNode->localMatrix.AppendScale(Vector3(100.0f, 100.0f, 100.0f));
-		m_ModelRole->rootNode->localMatrix.AppendTranslation(Vector3(235.0f, 300.0f, 500.0f));
+		m_ModelRole->rootNode->localMatrix.AppendTranslation(Vector3(-15.0f, 300.0f, 500.0f));
 		// Role diffuse
 		m_RoleDiffuse = vk_demo::DVKTexture::Create2D(
-			"assets/models/LizardMage_Lowpoly/Body_colors1.jpg",
+			"assets/models/LizardMage/Body_colors1.jpg",
 			m_VulkanDevice,
 			cmdBuffer
 		);
@@ -284,19 +284,21 @@ private:
 		blendState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 		blendState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
 		blendState.colorBlendOp        = VK_BLEND_OP_ADD;
+        
 		VkPipelineDepthStencilStateCreateInfo& depthStencilState = m_RayMaterial->pipelineInfo.depthStencilState;
 		depthStencilState.stencilTestEnable = VK_TRUE;
-		depthStencilState.back.reference    = 2;
+		depthStencilState.back.reference    = 1;
 		depthStencilState.back.writeMask    = 0xFF;
 		depthStencilState.back.compareMask  = 0xFF;
-		depthStencilState.back.compareOp    = VK_COMPARE_OP_GREATER;
+		depthStencilState.back.compareOp    = VK_COMPARE_OP_EQUAL;
 		depthStencilState.back.failOp       = VK_STENCIL_OP_KEEP;
 		depthStencilState.back.depthFailOp  = VK_STENCIL_OP_KEEP;
 		depthStencilState.back.passOp       = VK_STENCIL_OP_REPLACE;
 		depthStencilState.front             = depthStencilState.back;
+        depthStencilState.depthTestEnable   = VK_FALSE;
 		m_RayMaterial->PreparePipeline();
 	}
-
+    
 	void DestroyAssets()
 	{
 		delete m_DiffuseShader;
@@ -363,11 +365,11 @@ private:
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
 		// role
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_RoleMaterial->GetPipeline());
-		for (int32 meshIndex = 0; meshIndex < m_ModelRole->meshes.size(); ++meshIndex) {
-			m_RoleMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshIndex);
-			m_ModelRole->meshes[meshIndex]->BindDrawCmd(commandBuffer);
-		}
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_RoleMaterial->GetPipeline());
+        for (int32 meshIndex = 0; meshIndex < m_ModelRole->meshes.size(); ++meshIndex) {
+            m_RoleMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshIndex);
+            m_ModelRole->meshes[meshIndex]->BindDrawCmd(commandBuffer);
+        }
 
 		// room
 		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
@@ -406,7 +408,7 @@ private:
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
 		
 		m_RayData.viewDir = -m_MVPData.view.GetForward();
-		m_RayData.color   = Vector3(1.0f, 0.0f, 0.0f);
+		m_RayData.color   = Vector3(0.0f, 0.6f, 1.0f);
 		m_RayData.power   = 5.0f;
 		m_RayData.padding = 0;
 	}
