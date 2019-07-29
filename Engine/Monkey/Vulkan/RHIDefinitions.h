@@ -695,5 +695,6 @@ FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
 		return VertexAttribute::VA_Custom3;
 	}
 
+	MLOGE("Not found attribute : %s", name);
 	return VertexAttribute::VA_None;
 }
