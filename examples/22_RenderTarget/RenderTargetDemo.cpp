@@ -38,11 +38,11 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
-		CreateGUI();
-		LoadAssets();
 		InitParmas();
 		CreateRenderTarget();
-
+		CreateGUI();
+		LoadAssets();
+		
 		m_Ready = true;
 
 		return true;
@@ -67,12 +67,15 @@ public:
 
 private:
 
-	struct MVPBlock
+	struct Filter3x3ConvolutionParamBlock
 	{
-		Matrix4x4 model;
-		Matrix4x4 view;
-		Matrix4x4 projection;
-	};
+		float		texelWidth;
+		float		texelHeight;
+		Vector2		padding0;
+
+		float		convolutionMatrix[9] = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+	} filter3x3ConvolutionParam;
 
 	struct FrameBufferObject
 	{
@@ -116,16 +119,16 @@ private:
 
 		UpdateUI(time, delta);
 
-		m_Material->BeginFrame();
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
-			m_Material->BeginObject();
-			m_Material->SetLocalUniform("uboMVP", &m_MVPData, sizeof(MVPBlock));
-			m_Material->EndObject();
-		}
-		m_Material->EndFrame();
+		UpdateFilter3x3Convolution(time, delta);
 
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
+	}
+	
+	void UpdateFilter3x3Convolution(float time, float delta)
+	{
+		m_Filter3x3ConvolutionMaterial->BeginFrame();
+		m_Filter3x3ConvolutionMaterial->EndFrame();
 	}
 
 	void UpdateUI(float time, float delta)
@@ -251,42 +254,85 @@ private:
 
 	void LoadAssets()
 	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+		{
+			vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/game0.jpg", m_VulkanDevice, cmdBuffer);
+			m_Model     = vk_demo::DVKDefaultRes::fullQuad;
+			m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/game0.jpg", m_VulkanDevice, cmdBuffer);
+			m_TexOrigin->UpdateSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
-		m_Shader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/22_RenderTarget/texture.vert.spv",
-			"assets/shaders/22_RenderTarget/texture.frag.spv"
-		);
+			delete cmdBuffer;
+		}
 
-		m_Material = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_Shader
-		);
-		m_Material->PreparePipeline();
-		m_Material->SetTexture("diffuseMap", m_TexOrigin);
+		// normal
+		{
+			m_NormalShader = vk_demo::DVKShader::Create(
+				m_VulkanDevice,
+				true,
+				"assets/shaders/22_RenderTarget/texture.vert.spv",
+				"assets/shaders/22_RenderTarget/texture.frag.spv"
+			);
+			m_NormalMaterial = vk_demo::DVKMaterial::Create(
+				m_VulkanDevice,
+				m_RenderPass,
+				m_PipelineCache,
+				m_NormalShader
+			);
+			m_NormalMaterial->PreparePipeline();
+			m_NormalMaterial->SetTexture("diffuseMap", m_TexOrigin);
+		}
 
-		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/plane_z.obj",
-			m_VulkanDevice,
-			cmdBuffer,
-			m_Shader->attributes
-		);
+		// filter
+		{
+			// filter0
+			m_Shader0 = vk_demo::DVKShader::Create(
+				m_VulkanDevice,
+				true,
+				"assets/shaders/22_RenderTarget/quad.vert.spv",
+				"assets/shaders/22_RenderTarget/quad.frag.spv"
+			);
+			m_Material0 = vk_demo::DVKMaterial::Create(
+				m_VulkanDevice,
+				m_RenderPass,
+				m_PipelineCache,
+				m_Shader0
+			);
+			m_Material0->PreparePipeline();
+			m_Material0->SetTexture("diffuseMap", m_RenderTarget.color);
+		}
 
-		delete cmdBuffer;
+		// filter
+		{
+			m_Filter3x3ConvolutionShader = vk_demo::DVKShader::Create(
+				m_VulkanDevice,
+				true,
+				"assets/shaders/22_RenderTarget/Filter3x3Convolution.vert.spv",
+				"assets/shaders/22_RenderTarget/Filter3x3Convolution.frag.spv"
+			);
+			m_Filter3x3ConvolutionMaterial = vk_demo::DVKMaterial::Create(
+				m_VulkanDevice,
+				m_RenderPass,
+				m_PipelineCache,
+				m_Filter3x3ConvolutionShader
+			);
+			m_Filter3x3ConvolutionMaterial->PreparePipeline();
+			m_Filter3x3ConvolutionMaterial->SetTexture("inputImageTexture", m_RenderTarget.color);
+			m_Filter3x3ConvolutionMaterial->SetGlobalUniform("filterParam", &filter3x3ConvolutionParam, sizeof(Filter3x3ConvolutionParamBlock));
+		}
 	}
 
 	void DestroyAssets()
 	{
-		delete m_Model;
-		delete m_Material;
-		delete m_Shader;
 		delete m_TexOrigin;
+
+		delete m_NormalMaterial;
+		delete m_NormalShader;
+		
+		delete m_Material0;
+		delete m_Shader0;
+
+		delete m_Filter3x3ConvolutionMaterial;
+		delete m_Filter3x3ConvolutionShader;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -332,9 +378,9 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_NormalMaterial->GetPipeline());
 			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
-				m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+				m_NormalMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 				m_Model->meshes[meshIndex]->BindDrawCmd(commandBuffer);
 			}
 
@@ -362,11 +408,15 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
+			/*vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->GetPipeline());
 			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
-				m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+				m_Material0->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 				m_Model->meshes[meshIndex]->BindDrawCmd(commandBuffer);
-			}
+			}*/
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Filter3x3ConvolutionMaterial->GetPipeline());
+			m_Filter3x3ConvolutionMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Model->meshes[0]->BindDrawCmd(commandBuffer);
 
 			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
@@ -378,21 +428,10 @@ private:
 
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z       = -10.0f;
-
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
-		m_MVPData.model.AppendScale(Vector3(1.0f, 0.5f, 1.0f));
-
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.1f, 3000.0f);
+		{
+			filter3x3ConvolutionParam.texelWidth  = 1.0f / m_FrameWidth;
+			filter3x3ConvolutionParam.texelHeight = 1.0f / m_FrameHeight;
+		}
 	}
 
 	void CreateGUI()
@@ -411,14 +450,21 @@ private:
 
 	bool 							m_Ready = false;
 
-	MVPBlock 						m_MVPData;
 	FrameBufferObject				m_RenderTarget;
 
-	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
-	vk_demo::DVKShader*				m_Shader = nullptr;
-	vk_demo::DVKMaterial*			m_Material = nullptr;
 	vk_demo::DVKModel*				m_Model = nullptr;
+	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
 
+	vk_demo::DVKShader*				m_NormalShader = nullptr;
+	vk_demo::DVKMaterial*			m_NormalMaterial = nullptr;
+
+	vk_demo::DVKShader*             m_Shader0 = nullptr;
+	vk_demo::DVKMaterial*			m_Material0 = nullptr;
+
+	// filter0
+	vk_demo::DVKShader*				m_Filter3x3ConvolutionShader = nullptr;
+	vk_demo::DVKMaterial*			m_Filter3x3ConvolutionMaterial = nullptr;
+									
 	ImageGUIContext*				m_GUI = nullptr;
 };
 

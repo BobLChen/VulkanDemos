@@ -23,8 +23,6 @@ namespace vk_demo
         
         ~DVKTexture()
         {
-            VkDevice device = vulkanDevice->GetInstanceHandle();
-            
             if (imageView != VK_NULL_HANDLE) {
                 vkDestroyImageView(device, imageView, VULKAN_CPU_ALLOCATOR);
                 imageView = VK_NULL_HANDLE;
@@ -45,6 +43,15 @@ namespace vk_demo
                 imageMemory = VK_NULL_HANDLE;
             }
         }
+
+		void UpdateSampler(
+			VkFilter magFilter = VK_FILTER_LINEAR, 
+			VkFilter minFilter = VK_FILTER_LINEAR,
+			VkSamplerMipmapMode mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+			VkSamplerAddressMode addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
+			VkSamplerAddressMode addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT, 
+			VkSamplerAddressMode addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT
+		);
         
 		static DVKTexture* Create2D(const uint8* rgbaData, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer); 
 
@@ -57,7 +64,7 @@ namespace vk_demo
 		static DVKTexture* Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
 
     public:
-        std::shared_ptr<VulkanDevice>   vulkanDevice = nullptr;
+        VkDevice						device = nullptr;
         
         VkImage                         image = VK_NULL_HANDLE;
         VkImageLayout                   imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;

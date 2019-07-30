@@ -259,9 +259,15 @@ namespace vk_demo
 
 	void DVKMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint, int32 objIndex)
 	{
-		int32 offsetStart  = perObjectIndexes[objIndex] * dynamicOffsetCount;
-		uint32* dynOffsets = dynamicOffsets.data() + offsetStart;
-
+		uint32* dynOffsets = nullptr;
+		if (objIndex < perObjectIndexes.size())
+		{
+			dynOffsets  = dynamicOffsets.data() + perObjectIndexes[objIndex] * dynamicOffsetCount;;;
+		}
+		else if (globalOffsets.size() > 0) {
+			dynOffsets  = globalOffsets.data();
+		}
+		
 		vkCmdBindDescriptorSets(
 			commandBuffer, 
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -328,6 +334,11 @@ namespace vk_demo
             return;
         }
         
+		if (texture == nullptr) {
+			MLOGE("Texture %s can't be null.", name.c_str());
+			return;
+		}
+
         if (it->second.texture != texture) {
             it->second.texture = texture;
             descriptorSet->WriteImage(name, texture);
