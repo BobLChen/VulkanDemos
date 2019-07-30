@@ -19,6 +19,7 @@ layout (binding = 0) uniform FilterParamBlock
     vec2  padding0;
     
     mat3  convolutionMatrix;
+    vec3  padding1;
 } filterParam;
 
 layout (binding  = 1) uniform sampler2D inputImageTexture;

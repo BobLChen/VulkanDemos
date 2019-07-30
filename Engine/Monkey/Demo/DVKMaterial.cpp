@@ -318,7 +318,7 @@ namespace vk_demo
 			MLOGE("Uniform %s size not match, dst=%ud src=%ud", name.c_str(), it->second.dataSize, size);
 			return;
 		}
-
+        
 		if (it->second.dataContent.size() != size) {
 			it->second.dataContent.resize(size);
 		}

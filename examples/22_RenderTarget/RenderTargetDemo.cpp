@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -13,6 +13,13 @@
 
 #include <vector>
 #include <fstream>
+
+enum ImageFilterType
+{
+    Normal = 0,
+    Filter3x3Convolution,
+    FilterCount
+};
 
 class RenderTargetDemo : public DemoBase
 {
@@ -71,10 +78,16 @@ private:
 	{
 		float		texelWidth;
 		float		texelHeight;
-		Vector2		padding0;
+        float       lineSize = 1;
+		float		padding0;
 
-		float		convolutionMatrix[9] = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-
+		float		convolutionMatrix[9] = {
+            -1.0f, 0.0f, 1.0f,
+            -2.0f, 0.0f, 2.0f,
+            -3.0f, 0.0f, 3.0f
+        };
+        Vector3     padding1;
+        
 	} filter3x3ConvolutionParam;
 
 	struct FrameBufferObject
@@ -116,21 +129,58 @@ private:
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
-
 		UpdateUI(time, delta);
-
-		UpdateFilter3x3Convolution(time, delta);
-
+        UpdateFilterParams(time, delta);
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
 	}
+    
+    void UpdateFilterParams(float time, float delta)
+    {
+        switch (m_SelectedFilter) {
+            case ImageFilterType::Normal:
+                // nothing
+                break;
+            case ImageFilterType::Filter3x3Convolution:
+                UpdateFilter3x3Convolution(time, delta);
+            default:
+                break;
+        }
+    }
 	
 	void UpdateFilter3x3Convolution(float time, float delta)
 	{
 		m_Filter3x3ConvolutionMaterial->BeginFrame();
+        m_Filter3x3ConvolutionMaterial->BeginObject();
+        m_Filter3x3ConvolutionMaterial->SetLocalUniform("filterParam", &filter3x3ConvolutionParam, sizeof(Filter3x3ConvolutionParamBlock));
+        m_Filter3x3ConvolutionMaterial->EndObject();
 		m_Filter3x3ConvolutionMaterial->EndFrame();
 	}
-
+    
+    void UpdateFilter3x3ConvolutionUI(float time, float delta)
+    {
+        ImGui::SliderFloat("LineSize", &filter3x3ConvolutionParam.lineSize, 0.1f, 10.0f);
+        filter3x3ConvolutionParam.texelWidth  = filter3x3ConvolutionParam.lineSize / m_FrameWidth;
+        filter3x3ConvolutionParam.texelHeight = filter3x3ConvolutionParam.lineSize / m_FrameHeight;
+        
+        ImGui::SliderFloat3("Row0", (filter3x3ConvolutionParam.convolutionMatrix + 0), -25.0f, 25.0f);
+        ImGui::SliderFloat3("Row1", (filter3x3ConvolutionParam.convolutionMatrix + 3), -25.0f, 25.0f);
+        ImGui::SliderFloat3("Row2", (filter3x3ConvolutionParam.convolutionMatrix + 6), -25.0f, 25.0f);
+    }
+    
+    void UpdateFilterUI(float time, float delta)
+    {
+        switch (m_SelectedFilter) {
+            case ImageFilterType::Normal:
+                // nothing
+                break;
+            case ImageFilterType::Filter3x3Convolution:
+                UpdateFilter3x3ConvolutionUI(time, delta);
+            default:
+                break;
+        }
+    }
+    
 	void UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
@@ -140,6 +190,10 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("RenderTargetDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			
+            ImGui::Combo("Filter", &m_SelectedFilter, m_FilterNames.data(), m_FilterNames.size());
+            
+            UpdateFilterUI(time, delta);
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
@@ -317,10 +371,20 @@ private:
 			);
 			m_Filter3x3ConvolutionMaterial->PreparePipeline();
 			m_Filter3x3ConvolutionMaterial->SetTexture("inputImageTexture", m_RenderTarget.color);
-			m_Filter3x3ConvolutionMaterial->SetGlobalUniform("filterParam", &filter3x3ConvolutionParam, sizeof(Filter3x3ConvolutionParamBlock));
-		}
+        }
+        
+        m_FilterNames.resize(ImageFilterType::FilterCount);
+        m_FilterTypes.resize(ImageFilterType::FilterCount);
+        
+        m_FilterNames[ImageFilterType::Normal] = "Origin";
+        m_FilterTypes[ImageFilterType::Normal] = m_NormalMaterial;
+        
+        m_FilterNames[ImageFilterType::Filter3x3Convolution] = "3x3Convolution";
+        m_FilterTypes[ImageFilterType::Filter3x3Convolution] = m_Filter3x3ConvolutionMaterial;
+        
+        m_SelectedFilter = 0;
 	}
-
+    
 	void DestroyAssets()
 	{
 		delete m_TexOrigin;
@@ -407,15 +471,9 @@ private:
 
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
-
-			/*vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material0->GetPipeline());
-			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
-				m_Material0->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Model->meshes[meshIndex]->BindDrawCmd(commandBuffer);
-			}*/
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Filter3x3ConvolutionMaterial->GetPipeline());
-			m_Filter3x3ConvolutionMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+            
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FilterTypes[m_SelectedFilter]->GetPipeline());
+			m_FilterTypes[m_SelectedFilter]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 			m_Model->meshes[0]->BindDrawCmd(commandBuffer);
 
 			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -429,6 +487,7 @@ private:
 	void InitParmas()
 	{
 		{
+            filter3x3ConvolutionParam.lineSize    = 1.0f;
 			filter3x3ConvolutionParam.texelWidth  = 1.0f / m_FrameWidth;
 			filter3x3ConvolutionParam.texelHeight = 1.0f / m_FrameHeight;
 		}
@@ -464,11 +523,15 @@ private:
 	// filter0
 	vk_demo::DVKShader*				m_Filter3x3ConvolutionShader = nullptr;
 	vk_demo::DVKMaterial*			m_Filter3x3ConvolutionMaterial = nullptr;
-									
-	ImageGUIContext*				m_GUI = nullptr;
+    
+    std::vector<const char*>            m_FilterNames;
+    std::vector<vk_demo::DVKMaterial*>  m_FilterTypes;
+    int32                               m_SelectedFilter = 0;
+    
+	ImageGUIContext*				    m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RenderTargetDemo>(1400, 900, "RenderTargetDemo", cmdLine);
+	return std::make_shared<RenderTargetDemo>(1024, 512, "RenderTargetDemo", cmdLine);
 }
