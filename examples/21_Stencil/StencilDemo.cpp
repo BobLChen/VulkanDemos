@@ -89,7 +89,7 @@ private:
 		for (int32 i = 0; i < m_ModelRole->meshes.size(); ++i) {
 			m_MVPData.model = m_ModelRole->meshes[i]->linkNode->GetGlobalMatrix();
 			m_RoleMaterial->BeginObject();
-			m_RoleMaterial->SetUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+			m_RoleMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
 			m_RoleMaterial->EndObject();
 		}
 		m_RoleMaterial->EndFrame();
@@ -99,8 +99,8 @@ private:
 		for (int32 i = 0; i < m_ModelRole->meshes.size(); ++i) {
 			m_MVPData.model = m_ModelRole->meshes[i]->linkNode->GetGlobalMatrix();
 			m_RayMaterial->BeginObject();
-			m_RayMaterial->SetUniform("uboMVP",   &m_MVPData, sizeof(ModelViewProjectionBlock));
-			m_RayMaterial->SetUniform("rayParam", &m_RayData, sizeof(RayParamBlock));
+			m_RayMaterial->SetLocalUniform("uboMVP",   &m_MVPData, sizeof(ModelViewProjectionBlock));
+			m_RayMaterial->SetLocalUniform("rayParam", &m_RayData, sizeof(RayParamBlock));
 			m_RayMaterial->EndObject();
 		}
 		m_RayMaterial->EndFrame();
@@ -112,7 +112,7 @@ private:
 			for (int32 j = 0; j < m_SceneMatMeshes[i].size(); ++j) {
 				m_MVPData.model = m_SceneMatMeshes[i][j]->linkNode->GetGlobalMatrix();
 				m_SceneMaterials[i]->BeginObject();
-				m_SceneMaterials[i]->SetUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+				m_SceneMaterials[i]->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
 				m_SceneMaterials[i]->EndObject();
 			}
 			m_SceneMaterials[i]->EndFrame();

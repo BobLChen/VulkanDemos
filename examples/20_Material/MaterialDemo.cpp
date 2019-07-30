@@ -361,16 +361,16 @@ private:
 		m_Material0->BeginFrame();
 		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
 			m_Material0->BeginObject();
-			m_Material0->SetUniform("uboModel",    &(m_Model->meshes[i]->linkNode->GetGlobalMatrix()), sizeof(Matrix4x4));
-			m_Material0->SetUniform("uboViewProj", &m_ViewProjData,                                    sizeof(m_ViewProjData));
+			m_Material0->SetLocalUniform("uboModel",    &(m_Model->meshes[i]->linkNode->GetGlobalMatrix()), sizeof(Matrix4x4));
+			m_Material0->SetLocalUniform("uboViewProj", &m_ViewProjData,                                    sizeof(m_ViewProjData));
 			m_Material0->EndObject();
 		}
 		m_Material0->EndFrame();
 		// 设置postprocess的参数
 		m_Material1->BeginFrame();
 		m_Material1->BeginObject();
-		m_Material1->SetUniform("cameraParam", &m_VertFragParam, sizeof(AttachmentParamBlock));
-		m_Material1->SetUniform("lightDatas",  &m_LightDatas,    sizeof(LightDataBlock));
+		m_Material1->SetLocalUniform("cameraParam", &m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_Material1->SetLocalUniform("lightDatas",  &m_LightDatas,    sizeof(LightDataBlock));
 		m_Material1->SetInputAttachment("inputColor",  m_AttachsColor[bufferIndex]);
 		m_Material1->SetInputAttachment("inputNormal", m_AttachsNormal[bufferIndex]);
 		m_Material1->SetInputAttachment("inputDepth",  m_AttachsDepth[bufferIndex]);
