@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+ï»¿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -357,7 +357,7 @@ private:
         UpdateUI(time, delta);
 		UpdateUniform(time, delta);
 
-		// ÉèÖÃmodelµÄ²ÎÊı
+		// è®¾ç½®modelçš„å‚æ•°
 		m_Material0->BeginFrame();
 		for (int32 i = 0; i < m_Model->meshes.size(); ++i) {
 			m_Material0->BeginObject();
@@ -366,7 +366,7 @@ private:
 			m_Material0->EndObject();
 		}
 		m_Material0->EndFrame();
-		// ÉèÖÃpostprocessµÄ²ÎÊı
+		// è®¾ç½®postprocessçš„å‚æ•°
 		m_Material1->BeginFrame();
 		m_Material1->BeginObject();
 		m_Material1->SetLocalUniform("cameraParam", &m_VertFragParam, sizeof(AttachmentParamBlock));
@@ -383,12 +383,12 @@ private:
 
 	void UpdateUniform(float time, float delta)
 	{
-		// Ïà»ú²ÎÊı
+		// ç›¸æœºå‚æ•°
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		// Í¶Ó°¾ØÕó
+		// æŠ•å½±çŸ©é˜µ
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
-		// µÆ¹â²ÎÊı
+		// ç¯å…‰å‚æ•°
 		auto bounds  = m_Model->rootNode->GetBounds();
 		Vector3 bMin = bounds.min;
 		Vector3 bMax = bounds.max;
@@ -450,7 +450,7 @@ private:
 			"assets/shaders/20_Material/obj.frag.spv"
 		);
 
-		// ¼ÓÔØModel
+		// åŠ è½½Model
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		m_Model = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/samplebuilding.dae",
@@ -461,14 +461,14 @@ private:
 		m_Model->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
 		delete cmdBuffer;
 
-		// ÉèÖÃgbuffer material
+		// è®¾ç½®gbuffer material
 		m_Material0 = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
 			m_Shader0
 		);
-		// ÕâÀï»¹ĞèÒªÊÖ¶¯Ö¸¶¨£¬ÒÔºó·â×°ÁËrenderpassÖ®ºó£¬¿ÉÒÔÔÚÄÚ²¿×Ô¶¯»ñÈ¡
+		// è¿™é‡Œè¿˜éœ€è¦æ‰‹åŠ¨æŒ‡å®šï¼Œä»¥åå°è£…äº†renderpassä¹‹åï¼Œå¯ä»¥åœ¨å†…éƒ¨è‡ªåŠ¨è·å–
 		m_Material0->pipelineInfo.colorAttachmentCount = 2;
 		m_Material0->PreparePipeline();
 
@@ -479,7 +479,7 @@ private:
 			"assets/shaders/20_Material/quad.vert.spv",
 			"assets/shaders/20_Material/quad.frag.spv"
 		);
-		// ÉèÖÃdeferred material
+		// è®¾ç½®deferred material
 		m_Material1 = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
