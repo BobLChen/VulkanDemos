@@ -82,9 +82,9 @@ private:
 		float		padding0;
 
 		float		convolutionMatrix[9] = {
-            -1.0f, 0.0f, 1.0f,
-            -2.0f, 0.0f, 2.0f,
-            -3.0f, 0.0f, 3.0f
+            -0.1f,  1.0f,  1.0f,
+            -0.15f, 0.0f, -0.6f,
+            -0.2f,  0.0f, -1.0f
         };
         Vector3     padding1;
         
@@ -163,9 +163,9 @@ private:
         filter3x3ConvolutionParam.texelWidth  = filter3x3ConvolutionParam.lineSize / m_FrameWidth;
         filter3x3ConvolutionParam.texelHeight = filter3x3ConvolutionParam.lineSize / m_FrameHeight;
         
-        ImGui::SliderFloat3("Row0", (filter3x3ConvolutionParam.convolutionMatrix + 0), -25.0f, 25.0f);
-        ImGui::SliderFloat3("Row1", (filter3x3ConvolutionParam.convolutionMatrix + 3), -25.0f, 25.0f);
-        ImGui::SliderFloat3("Row2", (filter3x3ConvolutionParam.convolutionMatrix + 6), -25.0f, 25.0f);
+        ImGui::SliderFloat3("Row0", (filter3x3ConvolutionParam.convolutionMatrix + 0), -1.0f, 1.0f);
+        ImGui::SliderFloat3("Row1", (filter3x3ConvolutionParam.convolutionMatrix + 3), -1.0f, 1.0f);
+        ImGui::SliderFloat3("Row2", (filter3x3ConvolutionParam.convolutionMatrix + 6), -1.0f, 1.0f);
     }
     
     void UpdateFilterUI(float time, float delta)
@@ -312,7 +312,7 @@ private:
 			vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 			m_Model     = vk_demo::DVKDefaultRes::fullQuad;
-			m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/game0.jpg", m_VulkanDevice, cmdBuffer);
+			m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/timg.jpg", m_VulkanDevice, cmdBuffer);
 			m_TexOrigin->UpdateSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
 			delete cmdBuffer;
@@ -507,22 +507,22 @@ private:
 
 private:
 
-	bool 							m_Ready = false;
+	bool 							    m_Ready = false;
 
-	FrameBufferObject				m_RenderTarget;
+	FrameBufferObject				    m_RenderTarget;
 
-	vk_demo::DVKModel*				m_Model = nullptr;
-	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
+	vk_demo::DVKModel*				    m_Model = nullptr;
+	vk_demo::DVKTexture*			    m_TexOrigin = nullptr;
 
-	vk_demo::DVKShader*				m_NormalShader = nullptr;
-	vk_demo::DVKMaterial*			m_NormalMaterial = nullptr;
+	vk_demo::DVKShader*				    m_NormalShader = nullptr;
+	vk_demo::DVKMaterial*			    m_NormalMaterial = nullptr;
 
-	vk_demo::DVKShader*             m_Shader0 = nullptr;
-	vk_demo::DVKMaterial*			m_Material0 = nullptr;
+	vk_demo::DVKShader*                 m_Shader0 = nullptr;
+	vk_demo::DVKMaterial*			    m_Material0 = nullptr;
 
 	// filter0
-	vk_demo::DVKShader*				m_Filter3x3ConvolutionShader = nullptr;
-	vk_demo::DVKMaterial*			m_Filter3x3ConvolutionMaterial = nullptr;
+	vk_demo::DVKShader*				    m_Filter3x3ConvolutionShader = nullptr;
+	vk_demo::DVKMaterial*			    m_Filter3x3ConvolutionMaterial = nullptr;
     
     std::vector<const char*>            m_FilterNames;
     std::vector<vk_demo::DVKMaterial*>  m_FilterTypes;
@@ -533,5 +533,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RenderTargetDemo>(1024, 512, "RenderTargetDemo", cmdLine);
+	return std::make_shared<RenderTargetDemo>(1400, 900, "RenderTargetDemo", cmdLine);
 }
