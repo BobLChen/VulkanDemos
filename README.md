@@ -195,6 +195,6 @@ Vulkan Examples
 ![21_Stencil](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/21_Stencil.jpg)
 
 ### [RenderTarget(ImageFilter)](https://github.com/BobLChen/VulkanDemos/tree/master/examples/21_Stencil)
-19_OptimizeDeferredShading这个Demo展示了如何在一个Pass里面读取附件数据，在一个Pass里面读取数据有一些弊端。在这个Demo里面使用了传统的方式来获取附件数据，传统的方式可以进行临近采样从而实现各种不同的效果。
+19_OptimizeDeferredShading这个Demo展示了如何在一个Pass里面读取附件数据，在一个Pass里面读取数据有一些弊端。在这个Demo里面使用了传统的方式来获取附件数据，传统的方式可以进行临近采样从而实现各种不同的效果。在这个Demo里面一共实现了30种图像滤镜。
 
 ![22_RenderTarget](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/22_RenderTarget.gif)
