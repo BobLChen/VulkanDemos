@@ -42,6 +42,11 @@ enum ImageFilterType
 	FilterLuminance,
 	FilterLuminanceThreshold,
 	FilterMonochrome,
+	FilterPixelation,
+	FilterPosterize,
+	FilterSharpen,
+	FilterSolarize,
+	FilterSphereRefraction,
     FilterCount
 };
 
@@ -295,6 +300,45 @@ private:
 		float   intensity;
 	} filterMonochromeParam;
 
+	struct FilterPixelationParamBlock
+	{
+		float imageWidthFactor;
+		float imageHeightFactor;
+		float pixel;
+		float padding;
+	} filterPixelationParam;
+
+	struct FilterPosterizeParamBlock
+	{
+		float colorLevels;
+		Vector3 padding;
+	} filterPosterizeParam;
+
+	struct FilterSharpenParamBlock
+	{
+		float imageWidthFactor;
+		float imageHeightFactor;
+		float sharpness;
+		float padding2;
+	} filterSharpenParam;
+
+	struct FilterSolarizeParamBlock
+	{
+		float threshold;
+		float padding0;
+		float padding1;
+		float padding2;
+	} filterSolarizeParam;
+
+	struct FilterSphereRefractionParamBlock
+	{
+		Vector4 center;
+		float	radius;
+		float	aspectRatio;
+		float	refractiveIndex;
+		float	padding;
+	} filterSphereRefractionParam;
+
 	struct FrameBufferObject
 	{
 		int32					width = 0;
@@ -446,6 +490,26 @@ private:
 			case ImageFilterType::FilterMonochrome:
 				data = &filterMonochromeParam;
 				size = sizeof(FilterMonochromeParamBlock);
+				break;
+			case ImageFilterType::FilterPixelation:
+				data = &filterPixelationParam;
+				size = sizeof(FilterPixelationParamBlock);
+				break;
+			case ImageFilterType::FilterPosterize:
+				data = &filterPosterizeParam;
+				size = sizeof(FilterPosterizeParamBlock);
+				break;
+			case ImageFilterType::FilterSharpen:
+				data = &filterSharpenParam;
+				size = sizeof(FilterSharpenParamBlock);
+				break;
+			case ImageFilterType::FilterSolarize:
+				data = &filterSolarizeParam;
+				size = sizeof(FilterSolarizeParamBlock);
+				break;
+			case ImageFilterType::FilterSphereRefraction:
+				data = &filterSphereRefractionParam;
+				size = sizeof(FilterSphereRefractionParamBlock);
 				break;
             default:
                 break;
@@ -599,6 +663,33 @@ private:
 		ImGui::SliderFloat("Intensity", &filterMonochromeParam.intensity, 0.0f, 10.0f);
 	}
 
+	void UpdateFilterPixelationUI()
+	{
+		ImGui::SliderFloat("Pixel", &filterPixelationParam.pixel, 0.0f, 10.0f);
+	}
+
+	void UpdateFilterPosterizeUI()
+	{
+		ImGui::SliderFloat("ColorLevels", &filterPosterizeParam.colorLevels, 1.0f, 256.0f);
+	}
+
+	void UpdateFilterSharpenUI()
+	{
+		ImGui::SliderFloat("Sharpness", &filterSharpenParam.sharpness, -4.0f, 4.0f);
+	}
+
+	void UpdateFilterSolarizeUI()
+	{
+		ImGui::SliderFloat("Threshold", &filterSolarizeParam.threshold, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterSphereRefractionUI()
+	{
+		ImGui::SliderFloat2("Center", (float*)&filterSphereRefractionParam.center, 0.0f, 1.0f);
+		ImGui::SliderFloat2("Radius", &filterSphereRefractionParam.radius, 0.0f, 1.0f);
+		ImGui::SliderFloat("Refractive", &filterSphereRefractionParam.refractiveIndex, 0.0f, 1.0f);
+	}
+
     void UpdateFilterUI(float time, float delta)
     {
         switch (m_Selected) {
@@ -667,6 +758,21 @@ private:
 				break;
 			case ImageFilterType::FilterMonochrome:
 				UpdateFilterMonochromeUI();
+				break;
+			case ImageFilterType::FilterPixelation:
+				UpdateFilterPixelationUI();
+				break;
+			case ImageFilterType::FilterPosterize:
+				UpdateFilterPosterizeUI();
+				break;
+			case ImageFilterType::FilterSharpen:
+				UpdateFilterSharpenUI();
+				break;
+			case ImageFilterType::FilterSolarize:
+				UpdateFilterSolarizeUI();
+				break;
+			case ImageFilterType::FilterSphereRefraction:
+				UpdateFilterSphereRefractionUI();
 				break;
             default:
                 break;
@@ -906,6 +1012,11 @@ private:
 		DefineFilter(ImageFilterType::FilterLuminance,						"FilterLuminance");
 		DefineFilter(ImageFilterType::FilterLuminanceThreshold,				"FilterLuminanceThreshold");
 		DefineFilter(ImageFilterType::FilterMonochrome,						"FilterMonochrome");
+		DefineFilter(ImageFilterType::FilterPixelation,						"FilterPixelation");
+		DefineFilter(ImageFilterType::FilterPosterize,						"FilterPosterize");
+		DefineFilter(ImageFilterType::FilterSharpen,						"FilterSharpen");
+		DefineFilter(ImageFilterType::FilterSolarize,						"FilterSolarize");
+		DefineFilter(ImageFilterType::FilterSphereRefraction,				"FilterSphereRefraction");
 		
 #undef DefineFilter
 
@@ -1164,6 +1275,33 @@ private:
 		{
 			filterMonochromeParam.filterColor.Set(0.6f, 0.45f, 0.3f);
 			filterMonochromeParam.intensity = 2.0f;
+		}
+
+		{
+			filterPixelationParam.imageWidthFactor = 1.0f / m_FrameWidth;
+			filterPixelationParam.imageHeightFactor = 1.0f / m_FrameHeight;
+			filterPixelationParam.pixel = 5.0f;
+		}
+
+		{
+			filterPosterizeParam.colorLevels = 1.0f;
+		}
+
+		{
+			filterSharpenParam.imageWidthFactor = 1.0f / m_FrameWidth;
+			filterSharpenParam.imageHeightFactor = 1.0f / m_FrameHeight;
+			filterSharpenParam.sharpness = 2.0f;
+		}
+
+		{
+			filterSolarizeParam.threshold = 0.5f;
+		}
+
+		{
+			filterSphereRefractionParam.center.Set(0.5f, 0.5f, 0.0f, 0.0f);
+			filterSphereRefractionParam.radius = 0.25f;
+			filterSphereRefractionParam.refractiveIndex = 0.71f;
+			filterSphereRefractionParam.aspectRatio = (float)m_FrameHeight / m_FrameWidth;
 		}
 	}
 
