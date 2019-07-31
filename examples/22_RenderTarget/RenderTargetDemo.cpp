@@ -16,8 +16,32 @@
 
 enum ImageFilterType
 {
-    Normal = 0,
+    FilterNormal = 0,
     Filter3x3Convolution,
+	FilterBilateralBlur,
+	FilterBrightness,
+	FilterBulgeDistortion,
+	FilterCGAColorspace,
+	FilterColorBalance,
+	FilterColorInvert,
+	FilterColorMatrix,
+	FilterContrast,
+	FilterCrosshatch,
+	FilterDirectionalSobelEdgeDetection,
+	FilterExposure,
+	FilterFalseColor,
+	FilterGamma,
+	FilterGlassSphere,
+	FilterGrayscale,
+	FilterHalftone,
+	FilterHaze,
+	FilterHighlightShadow,
+	FilterHue,
+	FilterKuwahara,
+	FilterLevels,
+	FilterLuminance,
+	FilterLuminanceThreshold,
+	FilterMonochrome,
     FilterCount
 };
 
@@ -74,21 +98,202 @@ public:
 
 private:
 
+	struct FilterItem
+	{
+		vk_demo::DVKMaterial*	material;
+		vk_demo::DVKShader*		shader;
+		ImageFilterType			type;
+
+		void Create(const char* vert, const char* frag, std::shared_ptr<VulkanDevice> vulkanDevice, VkRenderPass renderPass, VkPipelineCache pipelineCache, vk_demo::DVKTexture* rtt)
+		{
+			shader = vk_demo::DVKShader::Create(
+				vulkanDevice,
+				true,
+				vert,
+				frag
+			);
+			material = vk_demo::DVKMaterial::Create(
+				vulkanDevice,
+				renderPass,
+				pipelineCache,
+				shader
+			);
+			material->PreparePipeline();
+			material->SetTexture("inputImageTexture", rtt);
+		}
+
+		void Destroy()
+		{
+			delete material;
+			delete shader;
+		}
+	};
+
+	struct ModelViewProjectionBlock
+	{
+		Matrix4x4 model;
+		Matrix4x4 view;
+		Matrix4x4 projection;
+	};
+
 	struct Filter3x3ConvolutionParamBlock
 	{
 		float		texelWidth;
 		float		texelHeight;
         float       lineSize = 1;
 		float		padding0;
-
-		float		convolutionMatrix[9] = {
-            -0.1f,  1.0f,  1.0f,
-            -0.15f, 0.0f, -0.6f,
-            -0.2f,  0.0f, -1.0f
+		float		convolutionMatrix[16] = {
+            -0.1f,  1.0f,  1.0f, 0.0f,
+            -0.15f, 0.0f, -0.6f, 0.0f, 
+            -0.2f,  0.0f, -1.0f, 0.0f,
+			 0.0f,  0.0f,  0.0f, 0.0f
         };
-        Vector3     padding1;
-        
 	} filter3x3ConvolutionParam;
+
+	struct FilterBilateralBlurParamBlock
+	{
+		Vector2  singleStepOffset;
+		float	 distanceNormalizationFactor;
+		float	 padding0;
+	} filterBilateralBlurParam;
+
+	struct FilterBrightnessParamBlock
+	{
+		float   brightness;
+		Vector3 padding;
+	} filterBrightnessParam;
+	
+	struct FilterBulgeDistortionParamBlock
+	{
+		float	aspectRatio;
+		float	radius;
+		float	scale;
+		float	padding;
+		Vector4 center;
+	} filterBulgeDistortionParam;
+
+	struct FilterColorBalanceParamBlock
+	{
+		Vector4 shadowsShift;
+		Vector4 midtonesShift;
+		Vector4 highlightsShift;
+		int		preserveLuminosity;
+		Vector3 padding;
+	} filterColorBalanceParam;
+
+	struct FilterColorMatrixParamBlock
+	{
+		Matrix4x4 colorMatrix;
+		float     intensity;
+		Vector3   padding;
+	} filterColorMatrixParam;
+
+	struct FilterContrastParamBlock
+	{
+		float	contrast;
+		Vector3 padding;
+	} filterContrastParam;
+
+	struct FilterCrosshatchParamBlock
+	{
+		float crossHatchSpacing;
+		float lineWidth;
+		float padding1;
+		float padding2;
+	} filterCrosshatchParam;
+
+	struct FilterDirectionalSobelEdgeDetectionParamBlock
+	{
+		float  texelWidth;
+		float  texelHeight;
+		float  lineSize;
+		float  padding;
+	} filterDirectionalSobelEdgeDetectionParam;
+
+	struct FilterExposureParamBlock
+	{
+		float   exposure;
+		Vector3 padding;
+	} filterExposureParam;
+
+	struct FilterFalseColorParamBlock
+	{
+		Vector4 firstColor;
+		Vector4 secondColor;
+	} filterFalseColorParam;
+
+	struct FilterGammaParamBlock
+	{
+		Vector4 gamma;
+	} filterGammaParam;
+
+	struct FilterGlassSphereParamBlock
+	{
+		Vector4 center;
+		float	radius;
+		float	aspectRatio;
+		float	refractiveIndex;
+		float	padding;
+	} filterGlassSphereParam;
+
+	struct FilterHalftoneParamBlock
+	{
+		float fractionalWidthOfPixel;
+		float aspectRatio;
+		float padding0;
+		float padding1;
+	} filterHalftoneParam;
+
+	struct FilterHazeParamBlock
+	{
+		float distance;
+		float slope;
+		float padding0;
+		float padding1;
+	} filterHazeParam;
+
+	struct FilterHighlightShadowParamBlock
+	{
+		float	shadows;
+		float	highlights;
+		Vector2 padding;
+	} filterHighlightShadowParam;
+	
+	struct FilterHueParamBlock
+	{
+		float   hueAdjust;
+		float   hue;
+		Vector2 padding;
+	} filterHueParam;
+
+	struct FilterKuwaharaParamBlock
+	{
+		int   radius;
+		float padding0;
+		float padding1;
+		float padding2;
+	} filterKuwaharaParam;
+
+	struct FilterLevelsParamBlock
+	{
+		Vector4 levelMinimum;
+		Vector4 levelMiddle;
+		Vector4 levelMaximum;
+		Vector4 minOutput;
+		Vector4 maxOutput;
+	} filterLevelsParam;
+
+	struct FilterLuminanceThresholdParamBlock
+	{
+		float	threshold;
+		Vector3 padding;
+	} filterLuminanceThresholdParam;
+
+	struct FilterMonochromeParamBlock
+	{
+		Vector3 filterColor;
+		float   intensity;
+	} filterMonochromeParam;
 
 	struct FrameBufferObject
 	{
@@ -130,6 +335,21 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		UpdateUI(time, delta);
+
+		// 设置Room参数
+		m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
+		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
+		{
+			m_SceneMaterials[i]->BeginFrame();
+			for (int32 j = 0; j < m_SceneMatMeshes[i].size(); ++j) {
+				m_MVPData.model = m_SceneMatMeshes[i][j]->linkNode->GetGlobalMatrix();
+				m_SceneMaterials[i]->BeginObject();
+				m_SceneMaterials[i]->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+				m_SceneMaterials[i]->EndObject();
+			}
+			m_SceneMaterials[i]->EndFrame();
+		}
+
         UpdateFilterParams(time, delta);
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
@@ -137,45 +357,317 @@ private:
     
     void UpdateFilterParams(float time, float delta)
     {
-        switch (m_SelectedFilter) {
-            case ImageFilterType::Normal:
+		void*  data = nullptr;
+		uint32 size = 0;
+        switch (m_Selected) {
+            case ImageFilterType::FilterNormal:
                 // nothing
                 break;
             case ImageFilterType::Filter3x3Convolution:
-                UpdateFilter3x3Convolution(time, delta);
+				data = &filter3x3ConvolutionParam;
+				size = sizeof(Filter3x3ConvolutionParamBlock);
+				break;
+			case ImageFilterType::FilterBilateralBlur:
+				data = &filterBilateralBlurParam;
+				size = sizeof(FilterBilateralBlurParamBlock);
+				break;
+			case ImageFilterType::FilterBrightness:
+				data = &filterBrightnessParam;
+				size = sizeof(FilterBrightnessParamBlock);
+				break;
+			case ImageFilterType::FilterBulgeDistortion:
+				data = &filterBulgeDistortionParam;
+				size = sizeof(FilterBulgeDistortionParamBlock);
+				break;
+			case ImageFilterType::FilterColorBalance:
+				data = &filterColorBalanceParam;
+				size = sizeof(FilterColorBalanceParamBlock);
+				break;
+			case ImageFilterType::FilterColorMatrix:
+				data = &filterColorMatrixParam;
+				size = sizeof(FilterColorMatrixParamBlock);
+				break;
+			case ImageFilterType::FilterContrast:
+				data = &filterContrastParam;
+				size = sizeof(FilterContrastParamBlock);
+				break;
+			case ImageFilterType::FilterCrosshatch:
+				data = &filterCrosshatchParam;
+				size = sizeof(FilterCrosshatchParamBlock);
+				break;
+			case ImageFilterType::FilterDirectionalSobelEdgeDetection:
+				data = &filterDirectionalSobelEdgeDetectionParam;
+				size = sizeof(FilterDirectionalSobelEdgeDetectionParamBlock);
+				break;
+			case ImageFilterType::FilterExposure:
+				data = &filterExposureParam;
+				size = sizeof(FilterExposureParamBlock);
+				break;
+			case ImageFilterType::FilterFalseColor:
+				data = &filterFalseColorParam;
+				size = sizeof(FilterFalseColorParamBlock);
+				break;
+			case ImageFilterType::FilterGamma:
+				data = &filterGammaParam;
+				size = sizeof(FilterGammaParamBlock);
+				break;
+			case ImageFilterType::FilterGlassSphere:
+				data = &filterGlassSphereParam;
+				size = sizeof(FilterGlassSphereParamBlock);
+				break;
+			case ImageFilterType::FilterHalftone:
+				data = &filterHalftoneParam;
+				size = sizeof(FilterHalftoneParamBlock);
+				break;
+			case ImageFilterType::FilterHaze:
+				data = &filterHazeParam;
+				size = sizeof(FilterHazeParamBlock);
+				break;
+			case ImageFilterType::FilterHighlightShadow:
+				data = &filterHighlightShadowParam;
+				size = sizeof(FilterHighlightShadowParamBlock);
+				break;
+			case ImageFilterType::FilterHue:
+				data = &filterHueParam;
+				size = sizeof(FilterHueParamBlock);
+				break;
+			case ImageFilterType::FilterKuwahara:
+				data = &filterKuwaharaParam;
+				size = sizeof(FilterKuwaharaParamBlock);
+				break;
+			case ImageFilterType::FilterLevels:
+				data = &filterLevelsParam;
+				size = sizeof(FilterLevelsParamBlock);
+				break;
+			case ImageFilterType::FilterLuminanceThreshold:
+				data = &filterLuminanceThresholdParam;
+				size = sizeof(FilterLuminanceThresholdParamBlock);
+				break;
+			case ImageFilterType::FilterMonochrome:
+				data = &filterMonochromeParam;
+				size = sizeof(FilterMonochromeParamBlock);
+				break;
             default:
                 break;
         }
+
+		if (data == nullptr || size == 0) {
+			return;
+		}
+
+		vk_demo::DVKMaterial* material = m_FilterItems[m_Selected].material;
+		material->BeginFrame();
+		material->BeginObject();
+		material->SetLocalUniform("filterParam", data, size);
+		material->EndObject();
+		material->EndFrame();
     }
 	
-	void UpdateFilter3x3Convolution(float time, float delta)
-	{
-		m_Filter3x3ConvolutionMaterial->BeginFrame();
-        m_Filter3x3ConvolutionMaterial->BeginObject();
-        m_Filter3x3ConvolutionMaterial->SetLocalUniform("filterParam", &filter3x3ConvolutionParam, sizeof(Filter3x3ConvolutionParamBlock));
-        m_Filter3x3ConvolutionMaterial->EndObject();
-		m_Filter3x3ConvolutionMaterial->EndFrame();
-	}
-    
-    void UpdateFilter3x3ConvolutionUI(float time, float delta)
+    void UpdateFilter3x3ConvolutionUI()
     {
         ImGui::SliderFloat("LineSize", &filter3x3ConvolutionParam.lineSize, 0.1f, 10.0f);
         filter3x3ConvolutionParam.texelWidth  = filter3x3ConvolutionParam.lineSize / m_FrameWidth;
         filter3x3ConvolutionParam.texelHeight = filter3x3ConvolutionParam.lineSize / m_FrameHeight;
         
         ImGui::SliderFloat3("Row0", (filter3x3ConvolutionParam.convolutionMatrix + 0), -1.0f, 1.0f);
-        ImGui::SliderFloat3("Row1", (filter3x3ConvolutionParam.convolutionMatrix + 3), -1.0f, 1.0f);
-        ImGui::SliderFloat3("Row2", (filter3x3ConvolutionParam.convolutionMatrix + 6), -1.0f, 1.0f);
+        ImGui::SliderFloat3("Row1", (filter3x3ConvolutionParam.convolutionMatrix + 4), -1.0f, 1.0f);
+        ImGui::SliderFloat3("Row2", (filter3x3ConvolutionParam.convolutionMatrix + 8), -1.0f, 1.0f);
     }
+
+	void UpdateFilterBilateralBlurUI()
+	{
+		ImGui::SliderFloat("Factor", &filterBilateralBlurParam.distanceNormalizationFactor, 0.0f, 5.0f);
+	}
+
+	void UpdateFilterBrightnessUI()
+	{
+		ImGui::SliderFloat("Brightness", &filterBrightnessParam.brightness, 0.0f, 5.0f);
+	}
     
+	void UpdateFilterBulgeDistortionUI()
+	{
+		ImGui::SliderFloat("Radius", &filterBulgeDistortionParam.radius, 0.0f, 5.0f);
+		ImGui::SliderFloat("Scale", &filterBulgeDistortionParam.scale,  0.0f, 5.0f);
+		ImGui::SliderFloat2("Center", (float*)&filterBulgeDistortionParam.center, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterColorBalanceUI()
+	{
+		ImGui::SliderFloat3("Showdows", (float*)&filterColorBalanceParam.shadowsShift, 0.0f, 5.0f);
+		ImGui::SliderFloat3("Midtones", (float*)&filterColorBalanceParam.midtonesShift, 0.0f, 5.0f);
+		ImGui::SliderFloat3("Highlights", (float*)&filterColorBalanceParam.highlightsShift, 0.0f, 5.0f);
+		bool checked = filterColorBalanceParam.preserveLuminosity > 0 ? true : false;
+		ImGui::Checkbox("PreserveLuminosity", &checked);
+		filterColorBalanceParam.preserveLuminosity = checked ? 1 : 0;
+	}
+
+	void UpdateFilterColorMatrixUI()
+	{
+		ImGui::SliderFloat4("Row0", filterColorMatrixParam.colorMatrix.m[0], 0.0f, 1.0f);
+		ImGui::SliderFloat4("Row1", filterColorMatrixParam.colorMatrix.m[1], 0.0f, 1.0f);
+		ImGui::SliderFloat4("Row2", filterColorMatrixParam.colorMatrix.m[2], 0.0f, 1.0f);
+		ImGui::SliderFloat4("Row3", filterColorMatrixParam.colorMatrix.m[3], 0.0f, 1.0f);
+		ImGui::SliderFloat("Intensity", &filterColorMatrixParam.intensity, 0.0f, 5.0f);
+	}
+
+	void UpdateFilterContrastUI()
+	{
+		ImGui::SliderFloat("Contrast", &filterContrastParam.contrast, 0.0f, 4.0f);
+	}
+
+	void UpdateFilterCrosshatchUI()
+	{
+		ImGui::SliderFloat("CrossHatchSpacing", &filterCrosshatchParam.crossHatchSpacing, 0.0f, 1.0f);
+		ImGui::SliderFloat("LineWidth", &filterCrosshatchParam.lineWidth, 0.0f, 0.01f);
+	}
+
+	void UpdateFilterDirectionalSobelEdgeDetectionUI()
+	{
+		ImGui::SliderFloat("LineSize", &filterDirectionalSobelEdgeDetectionParam.lineSize, 0.0f, 1.0f);
+		filterDirectionalSobelEdgeDetectionParam.texelWidth  = filterDirectionalSobelEdgeDetectionParam.lineSize / m_FrameWidth;
+		filterDirectionalSobelEdgeDetectionParam.texelHeight = filterDirectionalSobelEdgeDetectionParam.lineSize / m_FrameHeight;
+	}
+
+	void UpdateFilterExposureUI()
+	{
+		ImGui::SliderFloat("Exposure", &filterExposureParam.exposure, -10.0f, 10.0f);
+	}
+
+	void UpdateFilterFalseColorUI()
+	{
+		ImGui::ColorEdit3("FirstColor", (float*)&filterFalseColorParam.firstColor);
+		ImGui::ColorEdit3("SecondColor", (float*)&filterFalseColorParam.secondColor);
+	}
+
+	void UpdateFilterGammaUI()
+	{
+		ImGui::SliderFloat3("Gamma", (float*)&filterGammaParam.gamma, 0.0f, 10.0f);
+	}
+
+	void UpdateFilterGlassSphereUI()
+	{
+		ImGui::SliderFloat2("Center", (float*)&filterGlassSphereParam.center, 0.0f, 1.0f);
+		ImGui::SliderFloat("Radius", &filterGlassSphereParam.radius, 0.0f, 5.0f);
+		ImGui::SliderFloat("RefractiveIndex", &filterGlassSphereParam.refractiveIndex, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterHalftoneUI()
+	{
+		ImGui::SliderFloat("Fractional", &filterHalftoneParam.fractionalWidthOfPixel, 0.0f, 0.10f);
+	}
+
+	void UpdateFilterHazeUI()
+	{
+		ImGui::SliderFloat("Distance", &filterHazeParam.distance, 0.0f, 1.0f);
+		ImGui::SliderFloat("Slope", &filterHazeParam.slope, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterHighlightShadowUI()
+	{
+		ImGui::SliderFloat("Shadows", &filterHighlightShadowParam.shadows, 0.0f, 1.0f);
+		ImGui::SliderFloat("Highlights", &filterHighlightShadowParam.highlights, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterHueUI()
+	{
+		ImGui::SliderFloat("Hue", &filterHueParam.hue, 0.0f, 360.0f);
+		filterHueParam.hueAdjust = filterHueParam.hue * PI / 180.0f;
+	}
+
+	void UpdateFilterKuwaharaUI()
+	{
+		ImGui::SliderInt("Radius", &filterKuwaharaParam.radius, 0, 30);
+	}
+
+	void UpdateFilterLevelsUI()
+	{
+		ImGui::SliderFloat3("LevelMinimum", (float*)&filterLevelsParam.levelMinimum, 0.0f, 1.0f);
+		ImGui::SliderFloat3("LevelMiddle", (float*)&filterLevelsParam.levelMiddle, 0.0f, 1.0f);
+		ImGui::SliderFloat3("LevelMaximum", (float*)&filterLevelsParam.levelMaximum, 0.0f, 1.0f);
+		ImGui::SliderFloat3("MinOutput", (float*)&filterLevelsParam.minOutput, 0.0f, 1.0f);
+		ImGui::SliderFloat3("MaxOutput", (float*)&filterLevelsParam.maxOutput, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterLuminanceThresholdUI()
+	{
+		ImGui::SliderFloat("Threshold", &filterLuminanceThresholdParam.threshold, 0.0f, 1.0f);
+	}
+
+	void UpdateFilterMonochromeUI()
+	{
+		ImGui::ColorEdit3("FilterColor", (float*)&filterMonochromeParam.filterColor);
+		ImGui::SliderFloat("Intensity", &filterMonochromeParam.intensity, 0.0f, 10.0f);
+	}
+
     void UpdateFilterUI(float time, float delta)
     {
-        switch (m_SelectedFilter) {
-            case ImageFilterType::Normal:
+        switch (m_Selected) {
+            case ImageFilterType::FilterNormal:
                 // nothing
                 break;
             case ImageFilterType::Filter3x3Convolution:
-                UpdateFilter3x3ConvolutionUI(time, delta);
+                UpdateFilter3x3ConvolutionUI();
+				break;
+			case ImageFilterType::FilterBilateralBlur:
+				UpdateFilterBilateralBlurUI();
+				break;
+			case ImageFilterType::FilterBrightness:
+				UpdateFilterBrightnessUI();
+				break;
+			case ImageFilterType::FilterBulgeDistortion:
+				UpdateFilterBulgeDistortionUI();
+				break;
+			case ImageFilterType::FilterColorBalance:
+				UpdateFilterColorBalanceUI();
+				break;
+			case ImageFilterType::FilterColorMatrix:
+				UpdateFilterColorMatrixUI();
+				break;
+			case ImageFilterType::FilterContrast:
+				UpdateFilterContrastUI();
+				break;
+			case ImageFilterType::FilterCrosshatch:
+				UpdateFilterCrosshatchUI();
+				break;
+			case ImageFilterType::FilterDirectionalSobelEdgeDetection:
+				UpdateFilterDirectionalSobelEdgeDetectionUI();
+				break;
+			case ImageFilterType::FilterExposure:
+				UpdateFilterExposureUI();
+				break;
+			case ImageFilterType::FilterFalseColor:
+				UpdateFilterFalseColorUI();
+				break;
+			case ImageFilterType::FilterGamma:
+				UpdateFilterGammaUI();
+				break;
+			case ImageFilterType::FilterGlassSphere:
+				UpdateFilterGlassSphereUI();
+				break;
+			case ImageFilterType::FilterHalftone:
+				UpdateFilterHalftoneUI();
+				break;
+			case ImageFilterType::FilterHaze:
+				UpdateFilterHazeUI();
+				break;
+			case ImageFilterType::FilterHighlightShadow:
+				UpdateFilterHighlightShadowUI();
+				break;
+			case ImageFilterType::FilterHue:
+				UpdateFilterHueUI();
+				break;
+			case ImageFilterType::FilterKuwahara:
+				UpdateFilterKuwaharaUI();
+				break;
+			case ImageFilterType::FilterLevels:
+				UpdateFilterLevelsUI();
+				break;
+			case ImageFilterType::FilterLuminanceThreshold:
+				UpdateFilterLuminanceThresholdUI();
+				break;
+			case ImageFilterType::FilterMonochrome:
+				UpdateFilterMonochromeUI();
+				break;
             default:
                 break;
         }
@@ -190,7 +682,7 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("RenderTargetDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			
-            ImGui::Combo("Filter", &m_SelectedFilter, m_FilterNames.data(), m_FilterNames.size());
+            ImGui::Combo("Filter", &m_Selected, m_FilterNames.data(), m_FilterNames.size());
             
             UpdateFilterUI(time, delta);
             
@@ -308,95 +800,151 @@ private:
 
 	void LoadAssets()
 	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
+		
+		// room model
+		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/Room/miniHouse_FBX.FBX",
+			m_VulkanDevice,
+			cmdBuffer,
+			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
+		);
+		// room shader
+		m_SceneShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/21_Stencil/obj.vert.spv",
+			"assets/shaders/21_Stencil/obj.frag.spv"
+		);
+		// Room textures
+		std::vector<std::string> diffusePaths = {
+			"assets/models/Room/miniHouse_Part1.jpg",
+			"assets/models/Room/miniHouse_Part2.jpg",
+			"assets/models/Room/miniHouse_Part3.jpg",
+			"assets/models/Room/miniHouse_Part4.jpg"
+		};
+		m_SceneDiffuses.resize(diffusePaths.size());
+		for (int32 i = 0; i < diffusePaths.size(); ++i)
 		{
-			vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
-
-			m_Model     = vk_demo::DVKDefaultRes::fullQuad;
-			m_TexOrigin = vk_demo::DVKTexture::Create2D("assets/textures/timg.jpg", m_VulkanDevice, cmdBuffer);
-			m_TexOrigin->UpdateSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
-
-			delete cmdBuffer;
-		}
-
-		// normal
-		{
-			m_NormalShader = vk_demo::DVKShader::Create(
+			m_SceneDiffuses[i] = vk_demo::DVKTexture::Create2D(
+				diffusePaths[i],
 				m_VulkanDevice,
-				true,
-				"assets/shaders/22_RenderTarget/texture.vert.spv",
-				"assets/shaders/22_RenderTarget/texture.frag.spv"
+				cmdBuffer
 			);
-			m_NormalMaterial = vk_demo::DVKMaterial::Create(
+		}
+		// room material
+		m_SceneMaterials.resize(m_SceneDiffuses.size());
+		for (int32 i = 0; i < m_SceneMaterials.size(); ++i)
+		{
+			m_SceneMaterials[i] = vk_demo::DVKMaterial::Create(
 				m_VulkanDevice,
 				m_RenderPass,
 				m_PipelineCache,
-				m_NormalShader
+				m_SceneShader
 			);
-			m_NormalMaterial->PreparePipeline();
-			m_NormalMaterial->SetTexture("diffuseMap", m_TexOrigin);
+			VkPipelineDepthStencilStateCreateInfo& depthStencilState = m_SceneMaterials[i]->pipelineInfo.depthStencilState;
+			m_SceneMaterials[i]->PreparePipeline();
+			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneDiffuses[i]);
+		}
+		// collect meshles
+		m_SceneMatMeshes.resize(m_SceneDiffuses.size());
+		for (int32 i = 0; i < m_ModelScene->meshes.size(); ++i)
+		{
+			vk_demo::DVKMesh* mesh = m_ModelScene->meshes[i];
+			const std::string& diffuseName = mesh->material.diffuse;
+			if (diffuseName == "miniHouse_Part1") {
+				m_SceneMatMeshes[0].push_back(mesh);
+			}
+			else if (diffuseName == "miniHouse_Part2") {
+				m_SceneMatMeshes[1].push_back(mesh);
+			}
+			else if (diffuseName == "miniHouse_Part3") {
+				m_SceneMatMeshes[2].push_back(mesh);
+			}
+			else if (diffuseName == "miniHouse_Part4") {
+				m_SceneMatMeshes[3].push_back(mesh);
+			}
 		}
 
-		// filter
+		delete cmdBuffer;
+
+		// ------------------------- Filters -------------------------
+		m_FilterNames.resize(ImageFilterType::FilterCount);
+		m_FilterItems.resize(ImageFilterType::FilterCount);
+		m_FilterSpirvs.resize(ImageFilterType::FilterCount * 2);
+
+#define DefineFilter(FilterType, FilterName) \
+		m_FilterNames[FilterType] = ##FilterName; \
+		m_FilterSpirvs[FilterType * 2 + 0] = "assets/shaders/22_RenderTarget/"##FilterName".vert.spv"; \
+		m_FilterSpirvs[FilterType * 2 + 1] = "assets/shaders/22_RenderTarget/"##FilterName".frag.spv"; \
+		
+		DefineFilter(ImageFilterType::FilterNormal,							"Normal");
+		DefineFilter(ImageFilterType::Filter3x3Convolution,					"Filter3x3Convolution");
+		DefineFilter(ImageFilterType::FilterBilateralBlur,					"FilterBilateralBlur");
+		DefineFilter(ImageFilterType::FilterBrightness,						"FilterBrightness");
+		DefineFilter(ImageFilterType::FilterBulgeDistortion,				"FilterBulgeDistortion");
+		DefineFilter(ImageFilterType::FilterCGAColorspace,					"FilterCGAColorspace");
+		DefineFilter(ImageFilterType::FilterColorBalance,					"FilterColorBalance");
+		DefineFilter(ImageFilterType::FilterColorInvert,					"FilterColorInvert");
+		DefineFilter(ImageFilterType::FilterColorMatrix,					"FilterColorMatrix");
+		DefineFilter(ImageFilterType::FilterContrast,						"FilterContrast");
+		DefineFilter(ImageFilterType::FilterCrosshatch,						"FilterCrosshatch");
+		DefineFilter(ImageFilterType::FilterDirectionalSobelEdgeDetection,	"FilterDirectionalSobelEdgeDetection");
+		DefineFilter(ImageFilterType::FilterExposure,						"FilterExposure");
+		DefineFilter(ImageFilterType::FilterFalseColor,						"FilterFalseColor");
+		DefineFilter(ImageFilterType::FilterGamma,							"FilterGamma");
+		DefineFilter(ImageFilterType::FilterGlassSphere,					"FilterGlassSphere");
+		DefineFilter(ImageFilterType::FilterGrayscale,						"FilterGrayscale");
+		DefineFilter(ImageFilterType::FilterHalftone,						"FilterHalftone");
+		DefineFilter(ImageFilterType::FilterHaze,							"FilterHaze");
+		DefineFilter(ImageFilterType::FilterHighlightShadow,				"FilterHighlightShadow");
+		DefineFilter(ImageFilterType::FilterHue,							"FilterHue");
+		DefineFilter(ImageFilterType::FilterKuwahara,						"FilterKuwahara");
+		DefineFilter(ImageFilterType::FilterLevels,							"FilterLevels");
+		DefineFilter(ImageFilterType::FilterLuminance,						"FilterLuminance");
+		DefineFilter(ImageFilterType::FilterLuminanceThreshold,				"FilterLuminanceThreshold");
+		DefineFilter(ImageFilterType::FilterMonochrome,						"FilterMonochrome");
+		
+#undef DefineFilter
+
+		// 创建Filter
+		for (int32 i = 0; i < ImageFilterType::FilterCount; ++i)
 		{
-			// filter0
-			m_Shader0 = vk_demo::DVKShader::Create(
-				m_VulkanDevice,
-				true,
-				"assets/shaders/22_RenderTarget/quad.vert.spv",
-				"assets/shaders/22_RenderTarget/quad.frag.spv"
-			);
-			m_Material0 = vk_demo::DVKMaterial::Create(
+			m_FilterItems[i].Create(
+				m_FilterSpirvs[i * 2 + 0],
+				m_FilterSpirvs[i * 2 + 1],
 				m_VulkanDevice,
 				m_RenderPass,
 				m_PipelineCache,
-				m_Shader0
+				m_RenderTarget.color
 			);
-			m_Material0->PreparePipeline();
-			m_Material0->SetTexture("diffuseMap", m_RenderTarget.color);
 		}
-
-		// filter
-		{
-			m_Filter3x3ConvolutionShader = vk_demo::DVKShader::Create(
-				m_VulkanDevice,
-				true,
-				"assets/shaders/22_RenderTarget/Filter3x3Convolution.vert.spv",
-				"assets/shaders/22_RenderTarget/Filter3x3Convolution.frag.spv"
-			);
-			m_Filter3x3ConvolutionMaterial = vk_demo::DVKMaterial::Create(
-				m_VulkanDevice,
-				m_RenderPass,
-				m_PipelineCache,
-				m_Filter3x3ConvolutionShader
-			);
-			m_Filter3x3ConvolutionMaterial->PreparePipeline();
-			m_Filter3x3ConvolutionMaterial->SetTexture("inputImageTexture", m_RenderTarget.color);
-        }
-        
-        m_FilterNames.resize(ImageFilterType::FilterCount);
-        m_FilterTypes.resize(ImageFilterType::FilterCount);
-        
-        m_FilterNames[ImageFilterType::Normal] = "Origin";
-        m_FilterTypes[ImageFilterType::Normal] = m_NormalMaterial;
-        
-        m_FilterNames[ImageFilterType::Filter3x3Convolution] = "3x3Convolution";
-        m_FilterTypes[ImageFilterType::Filter3x3Convolution] = m_Filter3x3ConvolutionMaterial;
-        
-        m_SelectedFilter = 0;
+		
+		m_Selected = 0;
 	}
     
 	void DestroyAssets()
 	{
-		delete m_TexOrigin;
+		delete m_SceneShader;
 
-		delete m_NormalMaterial;
-		delete m_NormalShader;
-		
-		delete m_Material0;
-		delete m_Shader0;
+		delete m_ModelScene;
 
-		delete m_Filter3x3ConvolutionMaterial;
-		delete m_Filter3x3ConvolutionShader;
+		for (int32 i = 0; i < m_SceneDiffuses.size(); ++i) {
+			delete m_SceneDiffuses[i];
+		}
+		m_SceneDiffuses.clear();
+
+		for (int32 i = 0; i < m_SceneMaterials.size(); ++i) {
+			delete m_SceneMaterials[i];
+		}
+		m_SceneMaterials.clear();
+
+		for (int32 i = 0; i < ImageFilterType::FilterCount; ++i) {
+			m_FilterItems[i].Destroy();
+		}
+		m_FilterItems.clear();
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -442,10 +990,13 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_NormalMaterial->GetPipeline());
-			for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
-				m_NormalMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Model->meshes[meshIndex]->BindDrawCmd(commandBuffer);
+			for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
+			{
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SceneMaterials[i]->GetPipeline());
+				for (int32 j = 0; j < m_SceneMatMeshes[i].size(); ++j) {
+					m_SceneMaterials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
+					m_SceneMatMeshes[i][j]->BindDrawCmd(commandBuffer);
+				}
 			}
 
 			vkCmdEndRenderPass(commandBuffer);
@@ -472,10 +1023,13 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
             
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FilterTypes[m_SelectedFilter]->GetPipeline());
-			m_FilterTypes[m_SelectedFilter]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-			m_Model->meshes[0]->BindDrawCmd(commandBuffer);
-
+			{
+				vk_demo::DVKMaterial* material = m_FilterItems[m_Selected].material;
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
+				material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+			}
+			
 			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
 			vkCmdEndRenderPass(commandBuffer);
@@ -486,10 +1040,130 @@ private:
 
 	void InitParmas()
 	{
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector3(0, 100.0f, -750.0f));
+		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
+		m_MVPData.view.SetInverse();
+
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+
 		{
             filter3x3ConvolutionParam.lineSize    = 1.0f;
 			filter3x3ConvolutionParam.texelWidth  = 1.0f / m_FrameWidth;
 			filter3x3ConvolutionParam.texelHeight = 1.0f / m_FrameHeight;
+		}
+
+		{
+			filterBilateralBlurParam.singleStepOffset.x = 1.0f / m_FrameWidth;
+			filterBilateralBlurParam.singleStepOffset.y = 1.0f / m_FrameHeight;
+			filterBilateralBlurParam.distanceNormalizationFactor = 0.8f;
+		}
+
+		{
+			filterBrightnessParam.brightness = 0.0f;
+		}
+
+		{
+			filterBulgeDistortionParam.aspectRatio = (float)m_FrameHeight / m_FrameWidth;
+			filterBulgeDistortionParam.radius      = 0.25f;
+			filterBulgeDistortionParam.scale       = 0.5f;
+			filterBulgeDistortionParam.center.x    = 0.5f;
+			filterBulgeDistortionParam.center.y    = 0.5f;
+		}
+
+		{
+			filterColorBalanceParam.shadowsShift.Set(0.5f, 1.0f, 0, 0);
+			filterColorBalanceParam.midtonesShift.Set(0.5f, 0, 0, 0);
+			filterColorBalanceParam.highlightsShift.Set(0.5f, 0, 0, 0);
+			filterColorBalanceParam.preserveLuminosity = 1;
+		}
+
+		{
+			filterColorMatrixParam.colorMatrix.CopyRawFrom(0, Vector4(0.0f, 0.0f, 0.0f, 1.0f));
+			filterColorMatrixParam.colorMatrix.CopyRawFrom(1, Vector4(0.0f, 1.0f, 1.0f, 0.0f));
+			filterColorMatrixParam.colorMatrix.CopyRawFrom(2, Vector4(0.0f, 0.0f, 0.0f, 0.0f));
+			filterColorMatrixParam.colorMatrix.CopyRawFrom(3, Vector4(0.0f, 0.0f, 1.0f, 0.0f));
+			filterColorMatrixParam.intensity = 1.0f;
+		}
+
+		{
+			filterContrastParam.contrast = 4.0f;
+		}
+
+		{
+			filterCrosshatchParam.crossHatchSpacing = 0.012f;
+			filterCrosshatchParam.lineWidth = 0.006f;
+		}
+
+		{
+			filterDirectionalSobelEdgeDetectionParam.lineSize    = 1.0f;
+			filterDirectionalSobelEdgeDetectionParam.texelWidth  = 1.0f / m_FrameWidth;
+			filterDirectionalSobelEdgeDetectionParam.texelHeight = 1.0f / m_FrameHeight;
+		}
+
+		{
+			filterExposureParam.exposure = 0.5f;
+		}
+
+		{
+			filterFalseColorParam.firstColor.Set(0.0f, 0.0f, 0.5f, 0.0f);
+			filterFalseColorParam.secondColor.Set(1.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		{
+			filterGammaParam.gamma.Set(2.2f, 2.2f, 2.2f, 0.0f);
+		}
+
+		{
+			filterGlassSphereParam.center.Set(0.5f, 0.5f, 0.0f, 0.0f);
+			filterGlassSphereParam.radius = 0.25f;
+			filterGlassSphereParam.refractiveIndex = 0.71f;
+			filterGlassSphereParam.aspectRatio = (float)m_FrameHeight / m_FrameWidth;
+		}
+
+		{
+			filterHalftoneParam.fractionalWidthOfPixel = 0.01f;
+			filterHalftoneParam.aspectRatio = (float)m_FrameHeight / m_FrameWidth;
+		}
+
+		{
+			filterHazeParam.distance = 0.7f;
+			filterHazeParam.slope = 0.0f;
+		}
+
+		{
+			filterHighlightShadowParam.shadows = 0.25f;
+			filterHighlightShadowParam.highlights = 1.0f;
+		}
+
+		{
+			filterHueParam.hue = 100.0f;
+			filterHueParam.hueAdjust = 100.0f * PI / 180.0f;
+		}
+
+		{
+			filterKuwaharaParam.radius = 15;
+		}
+
+		{
+			filterLevelsParam.levelMinimum.Set(0.5f, 0.5f, 0.5f, 1.0f);
+			filterLevelsParam.levelMiddle.Set(1.0f, 1.0f, 1.0f, 1.0f);
+			filterLevelsParam.levelMaximum.Set(1.0f, 1.0f, 1.0f, 1.0f);
+			filterLevelsParam.minOutput.Set(0.0f, 0.25f, 0.0f, 1.0f);
+			filterLevelsParam.maxOutput.Set(1.0f, 1.0f, 1.0f, 1.0f);
+		}
+
+		{
+			filterLuminanceThresholdParam.threshold = 0.5f;
+		}
+
+		{
+			filterMonochromeParam.filterColor.Set(0.6f, 0.45f, 0.3f);
+			filterMonochromeParam.intensity = 2.0f;
 		}
 	}
 
@@ -498,7 +1172,7 @@ private:
 		m_GUI = new ImageGUIContext();
 		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
 	}
-
+	
 	void DestroyGUI()
 	{
 		m_GUI->Destroy();
@@ -507,28 +1181,29 @@ private:
 
 private:
 
-	bool 							    m_Ready = false;
+	typedef std::vector<vk_demo::DVKTexture*>			TextureArray;
+	typedef std::vector<vk_demo::DVKMaterial*>			MaterialArray;
+	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
-	FrameBufferObject				    m_RenderTarget;
+	bool 						m_Ready = false;
 
-	vk_demo::DVKModel*				    m_Model = nullptr;
-	vk_demo::DVKTexture*			    m_TexOrigin = nullptr;
+	FrameBufferObject			m_RenderTarget;
 
-	vk_demo::DVKShader*				    m_NormalShader = nullptr;
-	vk_demo::DVKMaterial*			    m_NormalMaterial = nullptr;
+	vk_demo::DVKModel*			m_Quad = nullptr;
 
-	vk_demo::DVKShader*                 m_Shader0 = nullptr;
-	vk_demo::DVKMaterial*			    m_Material0 = nullptr;
+	ModelViewProjectionBlock	m_MVPData;
+	vk_demo::DVKModel*			m_ModelScene = nullptr;
+	vk_demo::DVKShader*			m_SceneShader = nullptr;
+	TextureArray				m_SceneDiffuses;
+	MaterialArray				m_SceneMaterials;
+	MatMeshArray				m_SceneMatMeshes;
 
-	// filter0
-	vk_demo::DVKShader*				    m_Filter3x3ConvolutionShader = nullptr;
-	vk_demo::DVKMaterial*			    m_Filter3x3ConvolutionMaterial = nullptr;
+    std::vector<const char*>    m_FilterNames;
+	std::vector<const char*>	m_FilterSpirvs;
+	std::vector<FilterItem>		m_FilterItems;
+    int32                       m_Selected = 0;
     
-    std::vector<const char*>            m_FilterNames;
-    std::vector<vk_demo::DVKMaterial*>  m_FilterTypes;
-    int32                               m_SelectedFilter = 0;
-    
-	ImageGUIContext*				    m_GUI = nullptr;
+	ImageGUIContext*			m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)

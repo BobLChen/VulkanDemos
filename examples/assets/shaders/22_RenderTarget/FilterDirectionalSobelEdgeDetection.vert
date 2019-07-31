@@ -7,9 +7,8 @@ layout (binding = 0) uniform FilterParamBlock
 {
     float texelWidth;
     float texelHeight;
-    vec2  padding0;
-    
-    mat4  convolutionMatrix;
+    float padding1;
+    float padding2;
 } filterParam;
 
 layout (location = 0) out vec2 textureCoordinate;

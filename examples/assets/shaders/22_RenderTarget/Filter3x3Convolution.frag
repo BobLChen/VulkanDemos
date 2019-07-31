@@ -18,8 +18,7 @@ layout (binding = 0) uniform FilterParamBlock
     float texelHeight;
     vec2  padding0;
     
-    mat3  convolutionMatrix;
-    vec3  padding1;
+    mat4  convolutionMatrix;
 } filterParam;
 
 layout (binding  = 1) uniform sampler2D inputImageTexture;
@@ -38,12 +37,12 @@ void main()
     vec4 topRightColor    = texture(inputImageTexture, topRightTextureCoordinate);
     vec4 topLeftColor     = texture(inputImageTexture, topLeftTextureCoordinate);
 
-    mat3 convolutionMatrix = filterParam.convolutionMatrix;
+    mat4 convolutionMatrix = filterParam.convolutionMatrix;
 
     vec4 resultColor = vec4(0, 0, 0, 0);
     resultColor += topLeftColor    * convolutionMatrix[0][0] + topColor    * convolutionMatrix[0][1] + topRightColor    * convolutionMatrix[0][2];
     resultColor += leftColor       * convolutionMatrix[1][0] + centerColor * convolutionMatrix[1][1] + rightColor       * convolutionMatrix[1][2];
     resultColor += bottomLeftColor * convolutionMatrix[2][0] + bottomColor * convolutionMatrix[2][1] + bottomRightColor * convolutionMatrix[2][2];
-
+    
     outFragColor = resultColor;
 }
