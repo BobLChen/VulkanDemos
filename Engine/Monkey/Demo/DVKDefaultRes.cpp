@@ -10,8 +10,8 @@ namespace vk_demo
         // quad model
         std::vector<float> vertices = {
             -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-            1.0f,   1.0f, 0.0f, 1.0f, 0.0f,
-            1.0f,  -1.0f, 0.0f, 1.0f, 1.0f,
+             1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
             -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
         };
         std::vector<uint16> indices = {

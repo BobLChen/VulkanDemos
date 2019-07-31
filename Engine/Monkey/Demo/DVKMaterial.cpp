@@ -120,6 +120,7 @@ namespace vk_demo
                 }
             }
         }
+		globalOffsets.resize(dynamicOffsetCount);
         
 		// 从Shader中获取Texture信息，包含attachment信息
         for (auto it = shader->texParams.begin(); it != shader->texParams.end(); ++it)
@@ -182,12 +183,35 @@ namespace vk_demo
 
 	void DVKMaterial::BeginFrame()
 	{
+		if (actived) {
+			return;
+		}
+		actived = true;
 		perObjectIndexes.clear();
+
+		// 重置GlobalOffsets数据
+		memset(globalOffsets.data(), MAX_uint32, sizeof(uint32) * globalOffsets.size());
+
+		// 拷贝UniformBuffer
+		for (auto it = uniformBuffers.begin(); it != uniformBuffers.end(); ++it)
+		{
+			if (!it->second.global) {
+				continue;
+			}
+			// 拷贝数据至ringbuffer
+			uint8* ringCPUData = (uint8*)(ringBuffer->GetMappedPointer());
+			uint64 ringOffset  = ringBuffer->AllocateMemory(it->second.dataSize);
+			uint64 bufferSize  = it->second.dataSize;
+			// 拷贝数据
+			memcpy(ringCPUData + ringOffset, it->second.dataContent.data(), bufferSize);
+			// 记录Offset
+			globalOffsets[it->second.dynamicIndex] = ringOffset;
+		}
 	}
 
 	void DVKMaterial::EndFrame()
 	{
-
+		actived = false;
 	}
     
 	void DVKMaterial::BeginObject()
@@ -196,30 +220,54 @@ namespace vk_demo
 		perObjectIndexes.push_back(index);
 
 		int32 offsetStart = index * dynamicOffsetCount;
-		if (offsetStart + dynamicOffsetCount > dynamicOffsets.size())
-		{
+		
+		// 扩充dynamicOffsets尺寸以便能够保持每个Object的参数
+		if (offsetStart + dynamicOffsetCount > dynamicOffsets.size()) {
 			for (int32 i = 0; i < dynamicOffsetCount; ++i) {
 				dynamicOffsets.push_back(0);
 			}
 		}
-		else
-		{
-			for (int32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
-				dynamicOffsets[offsetIndex] = 0;
-			}
+		
+		// 拷贝GlobalOffsets
+		for (int32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
+			dynamicOffsets[offsetIndex] = globalOffsets[offsetIndex - offsetStart];
 		}
 	}
 
 	void DVKMaterial::EndObject()
 	{
+		// 检查是否所有的Uniform数据都设置完成
+		for (int32 i = 0; i < perObjectIndexes.size(); ++i) 
+		{
+			int32 offsetStart = i * dynamicOffsetCount;
+			for (int32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
+				if (dynamicOffsets[offsetIndex] == MAX_uint32) {
+					MLOGE("Uniform not set\n");
+				}
+			}
+		}
 
+		if (perObjectIndexes.size() == 0)
+		{
+			for (int32 i = 0; i < dynamicOffsetCount; ++i) {
+				if (globalOffsets[i] == MAX_uint32) {
+					MLOGE("Uniform not set\n");
+				}
+			}
+		}
 	}
 
 	void DVKMaterial::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint, int32 objIndex)
 	{
-		int32 offsetStart  = perObjectIndexes[objIndex] * dynamicOffsetCount;
-		uint32* dynOffsets = dynamicOffsets.data() + offsetStart;
-
+		uint32* dynOffsets = nullptr;
+		if (objIndex < perObjectIndexes.size())
+		{
+			dynOffsets  = dynamicOffsets.data() + perObjectIndexes[objIndex] * dynamicOffsetCount;;;
+		}
+		else if (globalOffsets.size() > 0) {
+			dynOffsets  = globalOffsets.data();
+		}
+		
 		vkCmdBindDescriptorSets(
 			commandBuffer, 
 			VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -229,7 +277,7 @@ namespace vk_demo
 		);
 	}
 
-    void DVKMaterial::SetUniform(const std::string& name, void* dataPtr, uint32 size)
+    void DVKMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uint32 size)
     {
         auto it = uniformBuffers.find(name);
         if (it == uniformBuffers.end()) {
@@ -257,6 +305,26 @@ namespace vk_demo
 		// 记录Offset
 		dynOffsets[it->second.dynamicIndex] = ringOffset;
     }
+
+	void DVKMaterial::SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size)
+	{
+		auto it = uniformBuffers.find(name);
+		if (it == uniformBuffers.end()) {
+			MLOGE("Uniform %s not found.", name.c_str());
+			return;
+		}
+
+		if (it->second.dataSize != size) {
+			MLOGE("Uniform %s size not match, dst=%ud src=%ud", name.c_str(), it->second.dataSize, size);
+			return;
+		}
+        
+		if (it->second.dataContent.size() != size) {
+			it->second.dataContent.resize(size);
+		}
+		it->second.global = true;
+		memcpy(it->second.dataContent.data(), dataPtr, size);
+	}
     
     void DVKMaterial::SetTexture(const std::string& name, DVKTexture* texture)
     {
@@ -266,6 +334,11 @@ namespace vk_demo
             return;
         }
         
+		if (texture == nullptr) {
+			MLOGE("Texture %s can't be null.", name.c_str());
+			return;
+		}
+
         if (it->second.texture != texture) {
             it->second.texture = texture;
             descriptorSet->WriteImage(name, texture);

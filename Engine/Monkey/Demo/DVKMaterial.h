@@ -21,7 +21,9 @@ namespace vk_demo
 
 	struct DVKSimulateUniformBuffer
 	{
-		uint32					dataSize;
+		std::vector<uint8>		dataContent;
+		bool                    global = false;
+		uint32					dataSize = 0;
         uint32					set = 0;
         uint32					binding = 0;
         uint32					dynamicIndex = 0;
@@ -107,12 +109,14 @@ namespace vk_demo
 		void BeginFrame();
 
 		void EndFrame();
-        
+
 		void BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint, int32 objIndex);
 
-        void SetUniform(const std::string& name, void* dataPtr, uint32 size);
+        void SetLocalUniform(const std::string& name, void* dataPtr, uint32 size);
         
         void SetTexture(const std::string& name, DVKTexture* texture);
+
+		void SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size);
 
 		void SetInputAttachment(const std::string& name, DVKTexture* texture);
 
@@ -154,13 +158,17 @@ namespace vk_demo
         DVKPipelineInfo         pipelineInfo;
         DVKPipeline*            pipeline = nullptr;
         DVKDescriptorSet*		descriptorSet = nullptr;
+
 		uint32					dynamicOffsetCount;
+		std::vector<uint32>		globalOffsets;
         std::vector<uint32>     dynamicOffsets;
 		std::vector<uint32>		perObjectIndexes;
         
 		UniformBuffersMap		uniformBuffers;
 		TexturesMap				textures;
 		TexturesMap				inputAttachments;
+
+		bool                    actived = false;
 	};
 
 }

@@ -215,7 +215,7 @@ namespace vk_demo
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
-		texture->vulkanDevice   = vulkanDevice;
+		texture->device			= device;
 		texture->width          = width;
 		texture->mipLevels		= mipLevels;
 		texture->layerCount		= 1;
@@ -335,11 +335,41 @@ namespace vk_demo
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
-		texture->vulkanDevice   = vulkanDevice;
+		texture->device			= device;
 		texture->mipLevels		= 1;
 		texture->layerCount		= 1;
 
         return texture;
+	}
+
+	void DVKTexture::UpdateSampler(
+		VkFilter magFilter, 
+		VkFilter minFilter,
+		VkSamplerMipmapMode mipmapMode,
+		VkSamplerAddressMode addressModeU, 
+		VkSamplerAddressMode addressModeV, 
+		VkSamplerAddressMode addressModeW
+	)
+	{
+		VkSamplerCreateInfo samplerInfo;
+		ZeroVulkanStruct(samplerInfo, VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO);
+		samplerInfo.magFilter        = magFilter;
+		samplerInfo.minFilter        = minFilter;
+		samplerInfo.mipmapMode       = mipmapMode;
+		samplerInfo.addressModeU     = addressModeU;
+		samplerInfo.addressModeV     = addressModeV;
+		samplerInfo.addressModeW     = addressModeW;
+		samplerInfo.compareOp	     = VK_COMPARE_OP_NEVER;
+		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+		samplerInfo.maxAnisotropy    = 1.0;
+		samplerInfo.anisotropyEnable = VK_FALSE;
+		samplerInfo.maxLod           = 1.0f;
+		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
+
+		if (descriptorInfo.sampler) {
+			vkDestroySampler(device, descriptorInfo.sampler, VULKAN_CPU_ALLOCATOR);
+		}
+		descriptorInfo.sampler = imageSampler;
 	}
 
 	DVKTexture* DVKTexture::Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
@@ -602,7 +632,7 @@ namespace vk_demo
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
-		texture->vulkanDevice   = vulkanDevice;
+		texture->device			= device;
 		texture->width          = width;
 		texture->mipLevels		= mipLevels;
 		texture->layerCount		= numArray;
@@ -757,7 +787,7 @@ namespace vk_demo
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
-		texture->vulkanDevice   = vulkanDevice;
+		texture->device			= device;
 		texture->mipLevels		= 1;
 		texture->layerCount		= 1;
 
