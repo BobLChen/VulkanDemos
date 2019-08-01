@@ -380,7 +380,7 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		UpdateUI(time, delta);
 
-		// 设置Room参数
+		// 璁剧疆Room鍙傛暟
 		m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
 		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
 		{
@@ -982,10 +982,10 @@ private:
 		m_FilterSpirvs.resize(ImageFilterType::FilterCount * 2);
 
 #define DefineFilter(FilterType, FilterName) \
-		m_FilterNames[FilterType] = ##FilterName; \
-		m_FilterSpirvs[FilterType * 2 + 0] = "assets/shaders/22_RenderTarget/"##FilterName".vert.spv"; \
-		m_FilterSpirvs[FilterType * 2 + 1] = "assets/shaders/22_RenderTarget/"##FilterName".frag.spv"; \
-		
+        m_FilterNames[FilterType] = FilterName; \
+        m_FilterSpirvs[FilterType * 2 + 0] = "assets/shaders/22_RenderTarget/" FilterName ".vert.spv"; \
+        m_FilterSpirvs[FilterType * 2 + 1] = "assets/shaders/22_RenderTarget/" FilterName ".frag.spv"; \
+        
 		DefineFilter(ImageFilterType::FilterNormal,							"Normal");
 		DefineFilter(ImageFilterType::Filter3x3Convolution,					"Filter3x3Convolution");
 		DefineFilter(ImageFilterType::FilterBilateralBlur,					"FilterBilateralBlur");
@@ -1020,7 +1020,7 @@ private:
 		
 #undef DefineFilter
 
-		// 创建Filter
+		// 鍒涘缓Filter
 		for (int32 i = 0; i < ImageFilterType::FilterCount; ++i)
 		{
 			m_FilterItems[i].Create(
