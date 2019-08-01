@@ -36,7 +36,6 @@ void DemoBase::Present(int backBufferIndex)
 	submitInfo.pCommandBuffers 		= &(m_CommandBuffers[backBufferIndex]);
 	submitInfo.commandBufferCount 	= 1;												
 	
-	// 提交绘制命令
     vkResetFences(m_Device, 1, &(m_Fences[backBufferIndex]));
 
 	VERIFYVULKANRESULT(vkQueueSubmit(m_GfxQueue, 1, &submitInfo, m_Fences[backBufferIndex]));
