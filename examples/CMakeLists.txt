@@ -398,3 +398,18 @@ SETUP_SAMPLE_START(22_RenderTarget)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(22_RenderTarget)
+
+SETUP_SAMPLE_START(23_OptimizeRenderTarget)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/23_OptimizeRenderTarget/OptimizeRenderTarget.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/23_OptimizeRenderTarget/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(23_OptimizeRenderTarget)
