@@ -66,6 +66,20 @@ enum
 
 static_assert(MaxSimultaneousRenderTargets <= (1 << MaxSimultaneousRenderTargets_NumBits), "MaxSimultaneousRenderTargets will not fit on MaxSimultaneousRenderTargets_NumBits");
 
+enum class ImageLayoutBarrier
+{
+    Undefined,
+    TransferDest,
+    ColorAttachment,
+    DepthStencilAttachment,
+    TransferSource,
+    Present,
+    PixelShaderRead,
+    PixelDepthStencilRead,
+    ComputeGeneralRW,
+    PixelGeneralRW,
+};
+
 enum
 {
     MaxSimultaneousUAVs = 8

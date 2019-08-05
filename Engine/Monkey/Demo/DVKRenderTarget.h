@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Engine.h"
 #include "DVKTexture.h"
@@ -221,6 +221,65 @@ namespace vk_demo
 	    VkImage             depthStencilRenderTargetImage = VK_NULL_HANDLE;
 
         VkExtent2D          extent2D;
+    };
+    
+    class DVKRenderTarget
+    {
+    private:
+        DVKRenderTarget(const DVKRenderPassInfo& inRenderPassInfo)
+            : rtLayout(inRenderPassInfo)
+            , renderPassInfo(inRenderPassInfo)
+        {
+            for (int32 i = 0; i < inRenderPassInfo.numColorRenderTargets; ++i)
+            {
+                VkClearValue clearValue = {};
+                clearValue.color        = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+                clearValue.depthStencil = { 1.0f, 0 };
+                clearValues.push_back(clearValue);
+            }
+            
+            if (inRenderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+            {
+                VkClearValue clearValue = {};
+                clearValue.color        = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+                clearValue.depthStencil = { 1.0f, 0 };
+                clearValues.push_back(clearValue);
+            }
+        }
+        
+    public:
+        ~DVKRenderTarget()
+        {
+            if (renderPass) {
+                delete renderPass;
+                renderPass = nullptr;
+            }
+            
+            if (frameBuffer) {
+                delete frameBuffer;
+                frameBuffer = nullptr;
+            }
+        }
+        
+        void BeginRenderPass(VkCommandBuffer cmdBuffer);
+        
+        void EndRenderPass(VkCommandBuffer cmdBuffer);
+        
+        static DVKRenderTarget* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo);
+        
+    public:
+        typedef std::unordered_map<VkImage, VkImageLayout> ImageLayouts;
+        
+        DVKRenderTargetLayout       rtLayout;
+        DVKRenderPassInfo           renderPassInfo;
+        
+        DVKRenderPass*              renderPass = nullptr;
+        DVKFrameBuffer*             frameBuffer = nullptr;
+        
+        VkDevice                    device = VK_NULL_HANDLE;
+        VkExtent2D                  extent2D;
+        std::vector<VkClearValue>   clearValues;
+        ImageLayouts                imageLayouts;
     };
 
 };

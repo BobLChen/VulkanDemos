@@ -1,4 +1,4 @@
-﻿#include "DVKRenderTarget.h"
+#include "DVKRenderTarget.h"
 
 namespace vk_demo
 {
@@ -118,7 +118,6 @@ namespace vk_demo
     DVKFrameBuffer::DVKFrameBuffer(VkDevice inDevice, const DVKRenderTargetLayout& rtLayout, const DVKRenderPass& renderPass, const DVKRenderPassInfo& renderPassInfo)
         : device(inDevice)
     {
-        attachmentTextureViews.resize(rtLayout.numAttachmentDescriptions);
         numColorAttachments   = rtLayout.numColorAttachments;
         numColorRenderTargets = renderPassInfo.numColorRenderTargets;
 
@@ -151,5 +150,55 @@ namespace vk_demo
         extent2D.width  = rtLayout.extent3D.width;
         extent2D.height = rtLayout.extent3D.height;
     }
-
+    
+    void DVKRenderTarget::BeginRenderPass(VkCommandBuffer commandBuffer)
+    {
+        VkViewport viewport = {};
+        viewport.x        = 0;
+        viewport.y        = extent2D.height;
+        viewport.width    = extent2D.width;
+        viewport.height   = -(float)extent2D.height;    // flip y axis
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        
+        VkRect2D scissor = {};
+        scissor.extent.width  = extent2D.width;
+        scissor.extent.height = extent2D.height;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        
+        VkRenderPassBeginInfo renderPassBeginInfo;
+        ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+        renderPassBeginInfo.renderPass               = renderPass->renderPass;
+        renderPassBeginInfo.framebuffer              = frameBuffer->frameBuffer;
+        renderPassBeginInfo.renderArea.offset.x      = 0;
+        renderPassBeginInfo.renderArea.offset.y      = 0;
+        renderPassBeginInfo.renderArea.extent.width  = extent2D.width;
+        renderPassBeginInfo.renderArea.extent.height = extent2D.height;
+        renderPassBeginInfo.clearValueCount          = clearValues.size();
+        renderPassBeginInfo.pClearValues             = clearValues.data();
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+    }
+    
+    void DVKRenderTarget::EndRenderPass(VkCommandBuffer commandBuffer)
+    {
+        vkCmdEndRenderPass(commandBuffer);
+    }
+    
+    DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo)
+    {
+        VkDevice device = vulkanDevice->GetInstanceHandle();
+        
+        DVKRenderTarget* renderTarget = new DVKRenderTarget(inRenderPassInfo);
+        renderTarget->device          = device;
+        renderTarget->renderPass      = new DVKRenderPass(device, renderTarget->rtLayout);
+        renderTarget->frameBuffer     = new DVKFrameBuffer(device, renderTarget->rtLayout, *(renderTarget->renderPass), inRenderPassInfo);
+        renderTarget->extent2D        = renderTarget->frameBuffer->extent2D;
+        
+        return renderTarget;
+    }
+    
 };

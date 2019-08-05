@@ -1,8 +1,9 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
 #include "Demo/DVKTexture.h"
+#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -20,12 +21,12 @@ public:
 	OptimizeRenderTargetDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
-
+        
 	}
 
 	virtual ~OptimizeRenderTargetDemo()
 	{
-
+        
 	}
 
 	virtual bool PreInit() override
@@ -73,43 +74,7 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
-
-	struct FrameBufferObject
-	{
-		int32					width = 0;
-		int32					height = 0;
-
-		VkDevice				device = VK_NULL_HANDLE;
-		VkFramebuffer			frameBuffer = VK_NULL_HANDLE;
-		VkRenderPass			renderPass = VK_NULL_HANDLE;
-
-		vk_demo::DVKTexture*	color = nullptr;
-		vk_demo::DVKTexture*	depth = nullptr;
-
-		void Destroy()
-		{
-			if (color) {
-				delete color;
-				color = nullptr;
-			}
-
-			if (depth) {
-				delete depth;
-				depth = nullptr;
-			}
-
-			if (frameBuffer != VK_NULL_HANDLE) {
-				vkDestroyFramebuffer(device, frameBuffer, VULKAN_CPU_ALLOCATOR);
-				frameBuffer = VK_NULL_HANDLE;
-			}
-
-			if (renderPass != VK_NULL_HANDLE) {
-				vkDestroyRenderPass(device, renderPass, VULKAN_CPU_ALLOCATOR);
-				renderPass = VK_NULL_HANDLE;
-			}
-		}
-	};
-
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -152,11 +117,7 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_RenderTarget.device = m_Device;
-		m_RenderTarget.width  = m_FrameWidth;
-		m_RenderTarget.height = m_FrameHeight;
-
-		m_RenderTarget.color = vk_demo::DVKTexture::Create2D(
+		m_RTColor = vk_demo::DVKTexture::Create2D(
 			m_VulkanDevice, 
 			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
 			VK_IMAGE_ASPECT_COLOR_BIT,
@@ -164,7 +125,7 @@ private:
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
-		m_RenderTarget.depth = vk_demo::DVKTexture::Create2D(
+		m_RTDepth = vk_demo::DVKTexture::Create2D(
             m_VulkanDevice,
             PixelFormatToVkFormat(m_DepthFormat, false),
             VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -172,86 +133,16 @@ private:
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
         );
 
-		std::vector<VkAttachmentDescription> attchmentDescriptions(2);
-		// Color attachment
-		attchmentDescriptions[0].format         = m_RenderTarget.color->format;
-		attchmentDescriptions[0].samples        = VK_SAMPLE_COUNT_1_BIT;
-		attchmentDescriptions[0].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attchmentDescriptions[0].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-		attchmentDescriptions[0].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		attchmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		attchmentDescriptions[0].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		attchmentDescriptions[0].finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		// Depth attachment
-		attchmentDescriptions[1].format         = m_RenderTarget.depth->format;
-		attchmentDescriptions[1].samples        = VK_SAMPLE_COUNT_1_BIT;
-		attchmentDescriptions[1].loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attchmentDescriptions[1].storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-		attchmentDescriptions[1].stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		attchmentDescriptions[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-		attchmentDescriptions[1].initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-		attchmentDescriptions[1].finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference colorReference;
-		colorReference.attachment = 0;
-		colorReference.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depthReference;
-		depthReference.attachment = 1;
-		depthReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpassDescription = {};
-		subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescription.colorAttachmentCount    = 1;
-		subpassDescription.pColorAttachments       = &colorReference;
-		subpassDescription.pDepthStencilAttachment = &depthReference;
-
-		std::vector<VkSubpassDependency> dependencies(2);
-		dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[0].dstSubpass      = 0;
-		dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[0].srcAccessMask   = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-		dependencies[1].srcSubpass      = 0;
-		dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
-		dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		dependencies[1].dstAccessMask   = VK_ACCESS_SHADER_READ_BIT;
-		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-        
-		// Create renderpass
-		VkRenderPassCreateInfo renderPassInfo;
-		ZeroVulkanStruct(renderPassInfo, VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
-		renderPassInfo.attachmentCount = attchmentDescriptions.size();
-		renderPassInfo.pAttachments    = attchmentDescriptions.data();
-		renderPassInfo.subpassCount    = 1;
-		renderPassInfo.pSubpasses      = &subpassDescription;
-		renderPassInfo.dependencyCount = dependencies.size();
-		renderPassInfo.pDependencies   = dependencies.data();
-		VERIFYVULKANRESULT(vkCreateRenderPass(m_Device, &renderPassInfo, nullptr, &(m_RenderTarget.renderPass)));
-		
-		VkImageView attachments[2];
-		attachments[0] = m_RenderTarget.color->imageView;
-		attachments[1] = m_RenderTarget.depth->imageView;
-
-		VkFramebufferCreateInfo frameBufferInfo;
-		ZeroVulkanStruct(frameBufferInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-		frameBufferInfo.renderPass      = m_RenderTarget.renderPass;
-		frameBufferInfo.attachmentCount = 2;
-		frameBufferInfo.pAttachments    = attachments;
-		frameBufferInfo.width           = m_RenderTarget.width;
-		frameBufferInfo.height          = m_RenderTarget.height;
-		frameBufferInfo.layers          = 1;
-		VERIFYVULKANRESULT(vkCreateFramebuffer(m_Device, &frameBufferInfo, VULKAN_CPU_ALLOCATOR, &(m_RenderTarget.frameBuffer)));
+        vk_demo::DVKRenderPassInfo passInfo(
+            m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+            m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
+        );
+        m_RenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
 	}
-
+    
 	void DestroyRenderTarget()
 	{
-		m_RenderTarget.Destroy();
+        delete m_RenderTarget;
 	}
 
 	void LoadAssets()
@@ -300,7 +191,6 @@ private:
 				m_PipelineCache,
 				m_SceneShader
 			);
-			VkPipelineDepthStencilStateCreateInfo& depthStencilState = m_SceneMaterials[i]->pipelineInfo.depthStencilState;
 			m_SceneMaterials[i]->PreparePipeline();
 			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneDiffuses[i]);
 		}
@@ -340,7 +230,7 @@ private:
             m_FilterShader
         );
         m_FilterMaterial->PreparePipeline();
-        m_FilterMaterial->SetTexture("inputImageTexture", m_RenderTarget.color);
+        m_FilterMaterial->SetTexture("inputImageTexture", m_RTColor);
 	}
     
 	void DestroyAssets()
@@ -387,24 +277,7 @@ private:
 
 		// render target pass
 		{
-			VkClearValue clearValues[2];
-			clearValues[0].color        = { { 0.0f, 0.0f, 0.0f, 0.0f } };
-			clearValues[1].depthStencil = { 1.0f, 0 };
-
-			VkRenderPassBeginInfo renderPassBeginInfo;
-			ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-			renderPassBeginInfo.renderPass               = m_RenderTarget.renderPass;
-			renderPassBeginInfo.framebuffer              = m_RenderTarget.frameBuffer;
-			renderPassBeginInfo.renderArea.offset.x      = 0;
-			renderPassBeginInfo.renderArea.offset.y      = 0;
-			renderPassBeginInfo.renderArea.extent.width  = m_RenderTarget.width;
-			renderPassBeginInfo.renderArea.extent.height = m_RenderTarget.height;
-			renderPassBeginInfo.clearValueCount          = 2;
-			renderPassBeginInfo.pClearValues             = clearValues;
-			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+            m_RenderTarget->BeginRenderPass(commandBuffer);
 
 			for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
 			{
@@ -415,7 +288,7 @@ private:
 				}
 			}
 
-			vkCmdEndRenderPass(commandBuffer);
+            m_RenderTarget->EndRenderPass(commandBuffer);
 		}
 
 		// second pass
@@ -486,18 +359,19 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 						m_Ready = false;
-
-	FrameBufferObject			m_RenderTarget;
-
+    
 	vk_demo::DVKModel*			m_Quad = nullptr;
-
+    vk_demo::DVKRenderTarget*   m_RenderTarget = nullptr;
+    vk_demo::DVKTexture*        m_RTColor = nullptr;
+    vk_demo::DVKTexture*        m_RTDepth = nullptr;
+    
 	ModelViewProjectionBlock	m_MVPData;
 	vk_demo::DVKModel*			m_ModelScene = nullptr;
 	vk_demo::DVKShader*			m_SceneShader = nullptr;
 	TextureArray				m_SceneDiffuses;
 	MaterialArray				m_SceneMaterials;
 	MatMeshArray				m_SceneMatMeshes;
-
+    
     vk_demo::DVKMaterial*	    m_FilterMaterial;
     vk_demo::DVKShader*		    m_FilterShader;
     
