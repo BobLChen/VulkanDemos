@@ -251,6 +251,9 @@ private:
 
         delete m_FilterMaterial;
         delete m_FilterShader;
+
+		delete m_RTColor;
+		delete m_RTDepth;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)

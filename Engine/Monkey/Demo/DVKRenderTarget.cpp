@@ -1,8 +1,9 @@
 #include "DVKRenderTarget.h"
+#include "DVKUtils.h"
 
 namespace vk_demo
 {
-    
+
     // -------------- DVKRenderTargetLayout --------------
     DVKRenderTargetLayout::DVKRenderTargetLayout(const DVKRenderPassInfo& renderPassInfo)
     {
@@ -30,7 +31,7 @@ namespace vk_demo
             attchmentDescription.storeOp        = colorEntry.storeAction;
             attchmentDescription.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             attchmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-            attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
             attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
             colorReferences[numColorAttachments].attachment = numAttachmentDescriptions;
@@ -42,7 +43,7 @@ namespace vk_demo
                 descriptions[numAttachmentDescriptions + 1].samples = VK_SAMPLE_COUNT_1_BIT;
 
                 resolveReferences[numColorAttachments].attachment = numAttachmentDescriptions + 1;
-                resolveReferences[numColorAttachments].layout     = VK_IMAGE_LAYOUT_GENERAL;
+                resolveReferences[numColorAttachments].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
                 numAttachmentDescriptions += 1;
                 hasResolveAttachments      = true;
@@ -54,7 +55,6 @@ namespace vk_demo
 
         if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
         {
-            VkImageLayout depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL; // TODO:VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
             DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
             VkAttachmentDescription& attchmentDescription = descriptions[numAttachmentDescriptions];
 
@@ -64,11 +64,11 @@ namespace vk_demo
             attchmentDescription.stencilLoadOp  = renderPassInfo.depthStencilRenderTarget.loadAction;
             attchmentDescription.storeOp        = renderPassInfo.depthStencilRenderTarget.storeAction;
             attchmentDescription.stencilStoreOp = renderPassInfo.depthStencilRenderTarget.storeAction;
-            attchmentDescription.initialLayout  = depthStencilLayout;
-            attchmentDescription.finalLayout    = depthStencilLayout;
+            attchmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+            attchmentDescription.finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             depthStencilReference.attachment = numAttachmentDescriptions;
-            depthStencilReference.layout     = depthStencilLayout;
+            depthStencilReference.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             numAttachmentDescriptions += 1;
             hasDepthStencil            = true;
@@ -153,6 +153,32 @@ namespace vk_demo
     
     void DVKRenderTarget::BeginRenderPass(VkCommandBuffer commandBuffer)
     {
+		for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
+		{
+			DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
+			VkImage image = texture->image;
+			VkImageSubresourceRange subResRange = { };
+			subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subResRange.baseMipLevel   = 0;
+			subResRange.levelCount     = 1;
+			subResRange.baseArrayLayer = 0;
+			subResRange.layerCount     = 1;
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
+		}
+
+		if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+		{
+			DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
+			VkImage image = texture->image;
+			VkImageSubresourceRange subResRange = { };
+			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+			subResRange.baseMipLevel   = 0;
+			subResRange.levelCount     = 1;
+			subResRange.baseArrayLayer = 0;
+			subResRange.layerCount     = 1;
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
+		}
+
         VkViewport viewport = {};
         viewport.x        = 0;
         viewport.y        = extent2D.height;
@@ -186,6 +212,32 @@ namespace vk_demo
     void DVKRenderTarget::EndRenderPass(VkCommandBuffer commandBuffer)
     {
         vkCmdEndRenderPass(commandBuffer);
+
+		for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
+		{
+			DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
+			VkImage image = texture->image;
+			VkImageSubresourceRange subResRange = { };
+			subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subResRange.baseMipLevel   = 0;
+			subResRange.levelCount     = 1;
+			subResRange.baseArrayLayer = 0;
+			subResRange.layerCount     = 1;
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
+		}
+
+		if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+		{
+			DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
+			VkImage image = texture->image;
+			VkImageSubresourceRange subResRange = { };
+			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+			subResRange.baseMipLevel   = 0;
+			subResRange.levelCount     = 1;
+			subResRange.baseArrayLayer = 0;
+			subResRange.layerCount     = 1;
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
+		}
     }
     
     DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo)
