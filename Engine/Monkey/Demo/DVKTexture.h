@@ -78,6 +78,7 @@ namespace vk_demo
 		int32							depth = 1;
         int32                           mipLevels = 0;
 		int32							layerCount = 1;
+        VkSampleCountFlagBits           numSamples = VK_SAMPLE_COUNT_1_BIT;
         VkFormat                        format = VK_FORMAT_R8G8B8A8_UNORM;
     };
     
