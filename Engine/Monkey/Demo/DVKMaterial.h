@@ -11,6 +11,7 @@
 #include "DVKShader.h"
 #include "DVKPipeline.h"
 #include "DVKModel.h"
+#include "DVKRenderTarget.h"
 
 #include "Math/Math.h"
 #include "File/FileManager.h"
@@ -100,6 +101,8 @@ namespace vk_demo
 
 		static DVKMaterial* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkRenderPass renderPass, VkPipelineCache pipelineCache, DVKShader* shader);
         
+		static DVKMaterial* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKRenderTarget* renderTarget, VkPipelineCache pipelineCache, DVKShader* shader);
+
         void PreparePipeline();
 
 		void BeginObject();

@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+ï»¿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -80,7 +80,7 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		UpdateUI(time, delta);
 
-		// ÉèÖÃRoom²ÎÊý
+		// è®¾ç½®Roomå‚æ•°
 		m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
 		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
 		{
@@ -125,6 +125,14 @@ private:
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
+		m_RTNormal = vk_demo::DVKTexture::Create2D(
+			m_VulkanDevice, 
+			VK_FORMAT_R8G8B8A8_UNORM, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_FrameWidth, m_FrameHeight,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
 		m_RTDepth = vk_demo::DVKTexture::Create2D(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
@@ -133,8 +141,12 @@ private:
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
+		vk_demo::DVKTexture* rtColors[2];
+		rtColors[0] = m_RTColor;
+		rtColors[1] = m_RTNormal;
+
 		vk_demo::DVKRenderPassInfo passInfo(
-			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+			2, rtColors, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
 			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
 		);
 		m_RenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
@@ -187,7 +199,7 @@ private:
 		{
 			m_SceneMaterials[i] = vk_demo::DVKMaterial::Create(
 				m_VulkanDevice,
-				m_RenderPass,
+				m_RenderTarget,
 				m_PipelineCache,
 				m_SceneShader
 			);
@@ -220,8 +232,8 @@ private:
 		m_FilterShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/24_EdgeDetect/FilterGrayscale.vert.spv",
-			"assets/shaders/24_EdgeDetect/FilterGrayscale.frag.spv"
+			"assets/shaders/24_EdgeDetect/NormalEdge.vert.spv",
+			"assets/shaders/24_EdgeDetect/NormalEdge.frag.spv"
 		);
 		m_FilterMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
@@ -230,7 +242,8 @@ private:
 			m_FilterShader
 		);
 		m_FilterMaterial->PreparePipeline();
-		m_FilterMaterial->SetTexture("inputImageTexture", m_RTColor);
+		m_FilterMaterial->SetTexture("diffuseTexture", m_RTColor);
+		m_FilterMaterial->SetTexture("normalsTexture", m_RTNormal);
 	}
 
 	void DestroyAssets()
@@ -253,6 +266,7 @@ private:
 		delete m_FilterShader;
 
 		delete m_RTColor;
+		delete m_RTNormal;
 		delete m_RTDepth;
 	}
 
@@ -366,6 +380,7 @@ private:
 	vk_demo::DVKModel*			m_Quad = nullptr;
 	vk_demo::DVKRenderTarget*   m_RenderTarget = nullptr;
 	vk_demo::DVKTexture*        m_RTColor = nullptr;
+	vk_demo::DVKTexture*		m_RTNormal = nullptr;
 	vk_demo::DVKTexture*        m_RTDepth = nullptr;
 
 	ModelViewProjectionBlock	m_MVPData;

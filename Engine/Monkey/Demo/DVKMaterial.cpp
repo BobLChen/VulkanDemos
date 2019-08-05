@@ -55,6 +55,27 @@ namespace vk_demo
 		}
 	}
 
+	DVKMaterial* DVKMaterial::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKRenderTarget* renderTarget, VkPipelineCache pipelineCache, DVKShader* shader)
+	{
+		// 初始化全局RingBuffer
+		if (ringBufferRefCount == 0) {
+			InitRingBuffer(vulkanDevice);
+		}
+		ringBufferRefCount += 1;
+
+		// 创建材质
+		DVKMaterial* material = new DVKMaterial();
+		material->pipelineInfo.colorAttachmentCount = renderTarget->renderPassInfo.numColorRenderTargets;
+
+		material->vulkanDevice  = vulkanDevice;
+		material->shader        = shader;
+		material->renderPass    = renderTarget->GetRenderPass();
+		material->pipelineCache = pipelineCache;
+		material->Prepare();
+
+		return material;
+	}
+
 	DVKMaterial* DVKMaterial::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkRenderPass renderPass, VkPipelineCache pipelineCache, DVKShader* shader)
 	{
 		// 初始化全局RingBuffer
