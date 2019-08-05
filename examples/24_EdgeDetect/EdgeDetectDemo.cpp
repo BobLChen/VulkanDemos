@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -74,7 +74,15 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
-
+    
+    struct EdgeParamBlock
+    {
+        float width;
+        float height;
+        float debug;
+        float padding;
+    };
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -93,7 +101,14 @@ private:
 			}
 			m_SceneMaterials[i]->EndFrame();
 		}
-
+        
+        // 设置Edge参数
+        m_FilterMaterial->BeginFrame();
+        m_FilterMaterial->BeginObject();
+        m_FilterMaterial->SetLocalUniform("param", &m_FilterParam, sizeof(EdgeParamBlock));
+        m_FilterMaterial->EndObject();
+        m_FilterMaterial->EndFrame();
+        
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
 	}
@@ -106,7 +121,18 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("EdgeDetectDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
+            
+            bool checkDebug = m_FilterParam.debug >= 1.0f;
+            ImGui::Checkbox("Debug", &checkDebug);
+            if (checkDebug)
+            {
+                m_FilterParam.debug = 2.0f;
+            }
+            else
+            {
+                m_FilterParam.debug = 0.0f;
+            }
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
@@ -355,6 +381,11 @@ private:
 
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+        
+        m_FilterParam.width   = m_FrameWidth;
+        m_FilterParam.height  = m_FrameHeight;
+        m_FilterParam.debug   = 0.0f;
+        m_FilterParam.padding = 0.0f;
 	}
 
 	void CreateGUI()
@@ -390,6 +421,7 @@ private:
 	MaterialArray				m_SceneMaterials;
 	MatMeshArray				m_SceneMatMeshes;
 
+    EdgeParamBlock              m_FilterParam;
 	vk_demo::DVKMaterial*	    m_FilterMaterial;
 	vk_demo::DVKShader*		    m_FilterShader;
 
