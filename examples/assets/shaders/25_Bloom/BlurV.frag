@@ -1,11 +1,46 @@
 #version 450
 
+const int KernelSize = 13;
+
+const float BlurWeights[KernelSize] = 
+{
+    0.002216,
+    0.008764,
+    0.026995,
+    0.064759,
+    0.120985,
+    0.176033,
+    0.199471,
+    0.176033,
+    0.120985,
+    0.064759,
+    0.026995,
+    0.008764,
+    0.002216,
+};
+
+vec2 PixelKernel[KernelSize] =
+{
+    { 0, -6 },
+    { 0, -5 },
+    { 0, -4 },
+    { 0, -3 },
+    { 0, -2 },
+    { 0, -1 },
+    { 0,  0 },
+    { 0,  1 },
+    { 0,  2 },
+    { 0,  3 },
+    { 0,  4 },
+    { 0,  5 },
+    { 0,  6 },
+};
+
 layout (location = 0) in vec2 inUV0;
 
 layout (binding  = 1) uniform sampler2D diffuseTexture;
-layout (binding  = 2) uniform sampler2D normalsTexture;
 
-layout (binding = 0) uniform FilterParam 
+layout (binding  = 0) uniform FilterParam 
 {
     vec4 size;
 } param;
@@ -14,34 +49,13 @@ layout (location = 0) out vec4 outFragColor;
 
 void main() 
 {
-
-    const vec2 PixelKernel[4] =
+    vec4 finalColor = vec4(0);
+    for (int i = 0; i < KernelSize; ++i)
     {
-        { 0,  1 },
-        { 1,  0 },
-        { 0, -1 },
-        {-1,  0 }
-    };
+        vec2 uv = inUV0.xy + PixelKernel[i].xy / param.size.xy * param.size.z;
+        vec4 color = texture(diffuseTexture, uv);
+        finalColor += color * BlurWeights[i];
+    }
     
-    vec4 oriNormal = texture(normalsTexture, inUV0);
-    oriNormal = oriNormal * 2 - 1;
-
-    vec4 sum = vec4(0);
-    for (int i = 0; i < 4; ++i)
-    {
-        vec4 dstNormal = texture(normalsTexture, inUV0 + PixelKernel[i] / param.size.xy);
-        dstNormal = dstNormal * 2 - 1;
-
-        float odotd = dot(oriNormal.xyz, dstNormal.xyz);
-        odotd = min(odotd, 1.0);
-        odotd = max(odotd, 0.0);
-        sum += 1.0 - odotd;
-    }
-
-    vec4 diffuse = texture(diffuseTexture, inUV0);
-    if (param.size.z > 1.0) {
-        outFragColor = sum * diffuse;
-    } else {
-        outFragColor = sum;
-    }
+    outFragColor = finalColor;
 }
