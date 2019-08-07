@@ -155,3 +155,6 @@ Vulkan Examples
 
 ### [24_EdgeDetect](https://github.com/BobLChen/VulkanDemos/tree/master/examples/24_EdgeDetect)
 ![24_EdgeDetect](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/24_NormalEdge.jpg)
+
+### [25_Bloom](https://github.com/BobLChen/VulkanDemos/tree/master/examples/25_Bloom)
+![25_Bloom](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/25_Bloom.jpg)
