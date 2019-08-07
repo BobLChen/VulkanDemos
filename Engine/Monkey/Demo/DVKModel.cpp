@@ -103,8 +103,14 @@ namespace vk_demo
             else if (attributes[i] == VertexAttribute::VA_Normal) {
                 assimpFlags = assimpFlags | aiProcess_GenSmoothNormals;
             }
+            else if (attributes[i] == VertexAttribute::VA_SkinIndex) {
+                model->loadSkin = true;
+            }
+            else if (attributes[i] == VertexAttribute::VA_SkinWeight) {
+                model->loadSkin = true;
+            }
         }
-
+        
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
         if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
@@ -118,143 +124,202 @@ namespace vk_demo
 
         return model;
     }
-
-	DVKMesh* DVKModel::LoadMesh(const aiMesh* aiMesh, const aiScene* aiScene)
-	{
-		DVKMesh* mesh = new DVKMesh();
-
-		Vector3 mmin(MAX_flt, MAX_flt, MAX_flt);
-		Vector3 mmax(MIN_flt, MIN_flt, MIN_flt);
-
-		std::vector<float>  vertices;
-		std::vector<uint32> indices;
-
-		aiMaterial* material = aiScene->mMaterials[aiMesh->mMaterialIndex];
-		if (material) {
-			FillMaterialTextures(material, mesh->material);
-		}
-
-		aiString texPath;
-		material->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texPath);
-
-		Vector3 defaultColor = Vector3(MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f));
-
-		for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
-		{
-			for (int32 j = 0; j < attributes.size(); ++j)
-			{
-				if (attributes[j] == VertexAttribute::VA_Position) 
-				{
-					float v0 = aiMesh->mVertices[i].x;
-					float v1 = aiMesh->mVertices[i].y;
-					float v2 = aiMesh->mVertices[i].z;
-
-					vertices.push_back(v0);
-					vertices.push_back(v1);
-					vertices.push_back(v2);
-
-					mmin.x = MMath::Min(v0, mmin.x);
-					mmin.y = MMath::Min(v1, mmin.y);
-					mmin.z = MMath::Min(v2, mmin.z);
-					mmax.x = MMath::Max(v0, mmax.x);
-					mmax.y = MMath::Max(v1, mmax.y);
-					mmax.z = MMath::Max(v2, mmax.z);
-				}
-				else if (attributes[j] == VertexAttribute::VA_UV0) 
-				{
-					vertices.push_back(aiMesh->mTextureCoords[0][i].x);
-					vertices.push_back(aiMesh->mTextureCoords[0][i].y);
-				}
-				else if (attributes[j] == VertexAttribute::VA_UV1) 
-				{
-					vertices.push_back(aiMesh->mTextureCoords[1][i].x);
-					vertices.push_back(aiMesh->mTextureCoords[1][i].y);
-				}
-				else if (attributes[j] == VertexAttribute::VA_Normal) 
-				{
-					vertices.push_back(aiMesh->mNormals[i].x);
-					vertices.push_back(aiMesh->mNormals[i].y);
-					vertices.push_back(aiMesh->mNormals[i].z);
-				}
-				else if (attributes[j] == VertexAttribute::VA_Tangent) 
-				{
-					vertices.push_back(aiMesh->mTangents[i].x);
-					vertices.push_back(aiMesh->mTangents[i].y);
-					vertices.push_back(aiMesh->mTangents[i].z);
-					vertices.push_back(1);
-				}
-				else if (attributes[j] == VertexAttribute::VA_Color) 
-				{
-					if (aiMesh->HasVertexColors(i))
-					{
-						vertices.push_back(aiMesh->mColors[0][i].r);
-						vertices.push_back(aiMesh->mColors[0][i].g);
-						vertices.push_back(aiMesh->mColors[0][i].b);
-					}
-					else 
-					{
-						vertices.push_back(defaultColor.x);
-						vertices.push_back(defaultColor.y);
-						vertices.push_back(defaultColor.z);
-					}
-				}
-                else if (attributes[j] == VertexAttribute::VA_Custom0 ||
-                         attributes[j] == VertexAttribute::VA_Custom1 ||
-                         attributes[j] == VertexAttribute::VA_Custom2 ||
-                         attributes[j] == VertexAttribute::VA_Custom3
-                )
+    
+    void DVKModel::LoadSkin(DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+    {
+        std::unordered_map<std::string, int32> boneIndexMap;
+        for (int32 i = 0; i < aiMesh->mNumBones; ++i)
+        {
+            aiBone* boneInfo = aiMesh->mBones[i];
+            std::string boneName(boneInfo->mName.C_Str());
+            int boneIndex = 0;
+            
+            // 收集Bone信息
+            auto it = boneIndexMap.find(boneName);
+            if (it == boneIndexMap.end())
+            {
+                boneIndex    = mesh->bones.size();
+                DVKBone bone = {};
+                bone.index   = boneIndex;
+                bone.parent  = -1;
+                bone.name    = boneName;
+                
+                bone.inverseBindPose.m[0][0] = boneInfo->mOffsetMatrix.a1;
+                bone.inverseBindPose.m[0][1] = boneInfo->mOffsetMatrix.a2;
+                bone.inverseBindPose.m[0][2] = boneInfo->mOffsetMatrix.a3;
+                bone.inverseBindPose.m[0][3] = boneInfo->mOffsetMatrix.a4;
+                bone.inverseBindPose.m[1][0] = boneInfo->mOffsetMatrix.b1;
+                bone.inverseBindPose.m[1][1] = boneInfo->mOffsetMatrix.b2;
+                bone.inverseBindPose.m[1][2] = boneInfo->mOffsetMatrix.b3;
+                bone.inverseBindPose.m[1][3] = boneInfo->mOffsetMatrix.b4;
+                bone.inverseBindPose.m[2][0] = boneInfo->mOffsetMatrix.c1;
+                bone.inverseBindPose.m[2][1] = boneInfo->mOffsetMatrix.c2;
+                bone.inverseBindPose.m[2][2] = boneInfo->mOffsetMatrix.c3;
+                bone.inverseBindPose.m[2][3] = boneInfo->mOffsetMatrix.c4;
+                bone.inverseBindPose.m[3][0] = boneInfo->mOffsetMatrix.d1;
+                bone.inverseBindPose.m[3][1] = boneInfo->mOffsetMatrix.d2;
+                bone.inverseBindPose.m[3][2] = boneInfo->mOffsetMatrix.d3;
+                bone.inverseBindPose.m[3][3] = boneInfo->mOffsetMatrix.d4;
+                bone.inverseBindPose.SetTransposed();
+                
+                mesh->bones.push_back(bone);
+                boneIndexMap.insert(std::make_pair(boneName, boneIndex));
+            }
+            else
+            {
+                boneIndex = it->second;
+            }
+            
+            // 收集被Bone影响的顶点
+            for (uint32 j = 0; j < boneInfo->mNumWeights; ++j)
+            {
+                uint32 vertexID = boneInfo->mWeights[j].mVertexId;
+                float  weight   = boneInfo->mWeights[j].mWeight;
+                
+            }
+            
+        }
+    }
+    
+    void DVKModel::LoadVertexDatas(std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, const aiMesh* aiMesh, const aiScene* aiScene)
+    {
+        Vector3 defaultColor = Vector3(MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f));
+        
+        for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
+        {
+            for (int32 j = 0; j < attributes.size(); ++j)
+            {
+                if (attributes[j] == VertexAttribute::VA_Position)
+                {
+                    float v0 = aiMesh->mVertices[i].x;
+                    float v1 = aiMesh->mVertices[i].y;
+                    float v2 = aiMesh->mVertices[i].z;
+                    
+                    vertices.push_back(v0);
+                    vertices.push_back(v1);
+                    vertices.push_back(v2);
+                    
+                    mmin.x = MMath::Min(v0, mmin.x);
+                    mmin.y = MMath::Min(v1, mmin.y);
+                    mmin.z = MMath::Min(v2, mmin.z);
+                    mmax.x = MMath::Max(v0, mmax.x);
+                    mmax.y = MMath::Max(v1, mmax.y);
+                    mmax.z = MMath::Max(v2, mmax.z);
+                }
+                else if (attributes[j] == VertexAttribute::VA_UV0)
+                {
+                    vertices.push_back(aiMesh->mTextureCoords[0][i].x);
+                    vertices.push_back(aiMesh->mTextureCoords[0][i].y);
+                }
+                else if (attributes[j] == VertexAttribute::VA_UV1)
+                {
+                    vertices.push_back(aiMesh->mTextureCoords[1][i].x);
+                    vertices.push_back(aiMesh->mTextureCoords[1][i].y);
+                }
+                else if (attributes[j] == VertexAttribute::VA_Normal)
+                {
+                    vertices.push_back(aiMesh->mNormals[i].x);
+                    vertices.push_back(aiMesh->mNormals[i].y);
+                    vertices.push_back(aiMesh->mNormals[i].z);
+                }
+                else if (attributes[j] == VertexAttribute::VA_Tangent)
+                {
+                    vertices.push_back(aiMesh->mTangents[i].x);
+                    vertices.push_back(aiMesh->mTangents[i].y);
+                    vertices.push_back(aiMesh->mTangents[i].z);
+                    vertices.push_back(1);
+                }
+                else if (attributes[j] == VertexAttribute::VA_Color)
+                {
+                    if (aiMesh->HasVertexColors(i))
+                    {
+                        vertices.push_back(aiMesh->mColors[0][i].r);
+                        vertices.push_back(aiMesh->mColors[0][i].g);
+                        vertices.push_back(aiMesh->mColors[0][i].b);
+                    }
+                    else
+                    {
+                        vertices.push_back(defaultColor.x);
+                        vertices.push_back(defaultColor.y);
+                        vertices.push_back(defaultColor.z);
+                    }
+                }
+                else if (attributes[j] == VertexAttribute::VA_SkinIndex)
+                {
+                    vertices.push_back(0);
+                    vertices.push_back(0);
+                    vertices.push_back(0);
+                    vertices.push_back(0);
+                }
+                else if (attributes[j] == VertexAttribute::VA_SkinWeight)
                 {
                     vertices.push_back(0.0f);
                     vertices.push_back(0.0f);
                     vertices.push_back(0.0f);
                     vertices.push_back(0.0f);
                 }
-			}
-		}
-        
-		for (int32 i = 0; i < aiMesh->mNumFaces; ++i)
-		{
-			indices.push_back(aiMesh->mFaces[i].mIndices[0]);
-			indices.push_back(aiMesh->mFaces[i].mIndices[1]);
-			indices.push_back(aiMesh->mFaces[i].mIndices[2]);
-		}
-
-		int32 stride = vertices.size() / aiMesh->mNumVertices;
-
-		if (indices.size() > 65535) 
-		{
-			std::unordered_map<uint32, uint32> indicesMap;
-			DVKPrimitive* primitive = nullptr;
-
-			for (int32 i = 0; i < indices.size(); ++i) {
-				uint32 idx = indices[i];
-				if (primitive == nullptr) {
-					primitive = new DVKPrimitive();
-					indicesMap.clear();
-					mesh->primitives.push_back(primitive);
-				}
-
-				uint32 newIdx = 0;
-				auto it = indicesMap.find(idx);
-				if (it == indicesMap.end()) 
-				{
-					uint32 start = idx * stride;
-					newIdx = primitive->vertices.size() / stride;
-					primitive->vertices.insert(primitive->vertices.end(), vertices.begin() + start, vertices.begin() + start + stride);
-					indicesMap.insert(std::make_pair(idx, newIdx));
-				}
-				else
-				{
-					newIdx = it->second;
-				}
-
-				primitive->indices.push_back(newIdx);
-
-				if (primitive->indices.size() == 65535) {
-					primitive = nullptr;
-				}
-			}
-
+                else if (attributes[j] == VertexAttribute::VA_Custom0 ||
+                         attributes[j] == VertexAttribute::VA_Custom1 ||
+                         attributes[j] == VertexAttribute::VA_Custom2 ||
+                         attributes[j] == VertexAttribute::VA_Custom3
+                         )
+                {
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                    vertices.push_back(0.0f);
+                }
+            }
+        }
+    }
+    
+    void DVKModel::LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene)
+    {
+        for (int32 i = 0; i < aiMesh->mNumFaces; ++i)
+        {
+            indices.push_back(aiMesh->mFaces[i].mIndices[0]);
+            indices.push_back(aiMesh->mFaces[i].mIndices[1]);
+            indices.push_back(aiMesh->mFaces[i].mIndices[2]);
+        }
+    }
+    
+    void DVKModel::LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+    {
+        int32 stride = vertices.size() / aiMesh->mNumVertices;
+        if (indices.size() > 65535)
+        {
+            std::unordered_map<uint32, uint32> indicesMap;
+            DVKPrimitive* primitive = nullptr;
+            
+            for (int32 i = 0; i < indices.size(); ++i) {
+                uint32 idx = indices[i];
+                if (primitive == nullptr) {
+                    primitive = new DVKPrimitive();
+                    indicesMap.clear();
+                    mesh->primitives.push_back(primitive);
+                }
+                
+                uint32 newIdx = 0;
+                auto it = indicesMap.find(idx);
+                if (it == indicesMap.end())
+                {
+                    uint32 start = idx * stride;
+                    newIdx = primitive->vertices.size() / stride;
+                    primitive->vertices.insert(primitive->vertices.end(), vertices.begin() + start, vertices.begin() + start + stride);
+                    indicesMap.insert(std::make_pair(idx, newIdx));
+                }
+                else
+                {
+                    newIdx = it->second;
+                }
+                
+                primitive->indices.push_back(newIdx);
+                
+                if (primitive->indices.size() == 65535) {
+                    primitive = nullptr;
+                }
+            }
+            
             if (cmdBuffer)
             {
                 for (int32 i = 0; i < mesh->primitives.size(); ++i)
@@ -264,32 +329,61 @@ namespace vk_demo
                     primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
                 }
             }
-		}
-		else
-		{
-			DVKPrimitive* primitive = new DVKPrimitive();
-			primitive->vertices = vertices;
-			for (uint16 i = 0; i < indices.size(); ++i) {
-				primitive->indices.push_back(indices[i]);
-			}
-			mesh->primitives.push_back(primitive);
+        }
+        else
+        {
+            DVKPrimitive* primitive = new DVKPrimitive();
+            primitive->vertices = vertices;
+            for (uint16 i = 0; i < indices.size(); ++i) {
+                primitive->indices.push_back(indices[i]);
+            }
+            mesh->primitives.push_back(primitive);
             
             if (cmdBuffer)
             {
                 primitive->vertexBuffer = DVKVertexBuffer::Create(device, cmdBuffer, primitive->vertices, attributes);
                 primitive->indexBuffer  = DVKIndexBuffer::Create(device, cmdBuffer, primitive->indices);
             }
-		}
+        }
         
-		for (int32 i = 0; i < mesh->primitives.size(); ++i)
-		{
+        for (int32 i = 0; i < mesh->primitives.size(); ++i)
+        {
             DVKPrimitive* primitive = mesh->primitives[i];
             primitive->vertexCount  = primitive->vertices.size() / stride;
             primitive->indexCount   = primitive->indices.size() / 3;
             
             mesh->vertexCount   += primitive->vertexCount;
             mesh->triangleCount += primitive->indexCount;
+        }
+    }
+    
+	DVKMesh* DVKModel::LoadMesh(const aiMesh* aiMesh, const aiScene* aiScene)
+	{
+		DVKMesh* mesh = new DVKMesh();
+
+        // load material
+		aiMaterial* material = aiScene->mMaterials[aiMesh->mMaterialIndex];
+		if (material) {
+			FillMaterialTextures(material, mesh->material);
 		}
+        
+        // load bones
+        if (aiMesh->mNumBones > 0 && loadSkin) {
+            LoadSkin(mesh, aiMesh, aiScene);
+        }
+        
+        // load vertex data
+        std::vector<float> vertices;
+        Vector3 mmin(MAX_flt, MAX_flt, MAX_flt);
+        Vector3 mmax(MIN_flt, MIN_flt, MIN_flt);
+        LoadVertexDatas(vertices, mmax, mmin, aiMesh, aiScene);
+        
+        // load indices
+        std::vector<uint32> indices;
+        LoadIndices(indices, aiMesh, aiScene);
+
+		// load primitives
+        LoadPrimitives(vertices, indices, mesh, aiMesh, aiScene);
         
 		mesh->bounding.min = mmin;
 		mesh->bounding.max = mmax;

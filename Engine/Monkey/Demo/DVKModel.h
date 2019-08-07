@@ -94,19 +94,31 @@ namespace vk_demo
 		std::string		specular;
 	};
     
+    struct DVKBone
+    {
+        int32           index = -1;
+        int32           parent = -1;
+        Matrix4x4       inverseBindPose;
+        std::string     name;
+    };
+    
     struct DVKMesh
     {
 		typedef std::vector<DVKPrimitive*> DVKPrimitives;
+        typedef std::vector<DVKBone> DVKBones;
 
 		DVKPrimitives	primitives;
 		DVKBoundingBox	bounding;
         DVKNode*		linkNode;
-
+        
+        DVKBones        bones;
+        bool            isSkin = false;
+        
 		DVKMaterialInfo	material;
         
 		int32			vertexCount;
 		int32			triangleCount;
-
+        
         DVKMesh()
             : linkNode(nullptr)
 			, vertexCount(0)
@@ -256,7 +268,15 @@ namespace vk_demo
         DVKNode* LoadNode(const aiNode* node, const aiScene* scene);
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
+        
+        void LoadSkin(DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
 
+        void LoadVertexDatas(std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, const aiMesh* aiMesh, const aiScene* aiScene);
+        
+        void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
+        
+        void LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        
     public:
         
         std::shared_ptr<VulkanDevice>	device;
@@ -269,7 +289,8 @@ namespace vk_demo
 
 	private:
 
-		DVKCommandBuffer*				cmdBuffer;
+		DVKCommandBuffer*				cmdBuffer = nullptr;
+        bool                            loadSkin = false;
     };
     
 };
