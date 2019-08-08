@@ -85,7 +85,7 @@ private:
 
 		UpdateUI(time, delta);
 
-		UpdateAnimation(0, 0);
+		UpdateAnimation(time, delta);
 
 		// 设置Room参数
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
@@ -102,10 +102,13 @@ private:
 				vk_demo::DVKBone& bone = mesh->bones[j];
 				std::string& boneName  = bone.name;
 				vk_demo::DVKNode* node = m_RoleModel->nodesMap[boneName];
-				m_BonesData.bones[j]   = m_RoleModel->rootNode->localMatrix.Inverse() * node->GetGlobalMatrix() * bone.inverseBindPose;
+
+				m_BonesData.bones[j] = bone.inverseBindPose;
+				m_BonesData.bones[j].Append(node->GetGlobalMatrix());
+				m_BonesData.bones[j].Append(m_RoleModel->rootNode->localMatrix.Inverse());
 			}
 
-            m_RoleMaterial->BeginObject();
+			m_RoleMaterial->BeginObject();
 			m_RoleMaterial->SetLocalUniform("bonesData", &m_BonesData, sizeof(BonesTransformBlock));
             m_RoleMaterial->SetLocalUniform("uboMVP",    &m_MVPData,   sizeof(ModelViewProjectionBlock));
             m_RoleMaterial->EndObject();
@@ -145,7 +148,7 @@ private:
         
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
-			// "assets/models/xiaonan/nvhai.fbx",
+			//"assets/models/xiaonan/nvhai.fbx",
 			"assets/models/goblin.dae",
 			m_VulkanDevice,
 			cmdBuffer,

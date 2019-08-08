@@ -560,6 +560,8 @@ namespace vk_demo
 			vk_demo::DVKAnimationClip& clip = it->second;
 			vk_demo::DVKNode* node = nodesMap[clip.nodeName];
 
+			std::string nodeName(node->name);
+
 			float alpha = 0.0f;
 
 			// rotation
