@@ -37,13 +37,11 @@ void main()
 	boneMatrix += bonesData.bones[int(inSkinIndex.z)] * inSkinWeight.z;
 	boneMatrix += bonesData.bones[int(inSkinIndex.w)] * inSkinWeight.w;
 
-	mat4 modeMatrix = uboMVP.modelMatrix * boneMatrix;
+	// boneMatrix = bonesData.bones[int(inSkinIndex.x)];
 
-	if (inSkinWeight.x + inSkinWeight.y + inSkinWeight.z + inSkinWeight.w == 0) {
-		modeMatrix = uboMVP.modelMatrix;
-	}
-
+	mat4 modeMatrix   = uboMVP.modelMatrix * boneMatrix;
 	mat3 normalMatrix = transpose(inverse(mat3(modeMatrix)));
+
 	vec3 normal = normalize(normalMatrix * inNormal.xyz);
 	
 	outUV       = inUV0;

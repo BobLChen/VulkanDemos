@@ -135,18 +135,18 @@ namespace vk_demo
 			}
 
 			int32 frameIndex = 0;
-			for (int32 i = 0; i < keys.size() - 1; ++i) {
+			for (int32 i = 0; i < keys.size(); ++i) {
 				if (key <= keys[i]) {
 					frameIndex = i;
 					break;
 				}
 			}
+            
+			outPrevValue = values[frameIndex - 1];
+			outNextValue = values[frameIndex];
 
-			outPrevValue = values[frameIndex];
-			outNextValue = values[(frameIndex + 1) % keys.size()];
-
-			float prevKey = keys[frameIndex];
-			float nextKey = keys[(frameIndex + 1) % keys.size()];
+			float prevKey = keys[frameIndex - 1];
+			float nextKey = keys[frameIndex];
 			outAlpha      = (key - prevKey) / (nextKey - prevKey);
 		}
 	};

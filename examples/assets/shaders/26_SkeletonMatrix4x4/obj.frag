@@ -15,5 +15,4 @@ void main()
     diffuse.xyz   = dot(lightDir, inNormal) * diffuse.xyz; 
 
     outFragColor  = diffuse;
-    // outFragColor  = inColor;
 }

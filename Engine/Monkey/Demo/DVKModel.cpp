@@ -305,10 +305,10 @@ namespace vk_demo
                     }
                     else
                     {
-                        vertices.push_back(0);
-                        vertices.push_back(0);
-                        vertices.push_back(0);
-                        vertices.push_back(0);
+                        vertices.push_back(1.0f);
+                        vertices.push_back(0.0f);
+                        vertices.push_back(0.0f);
+                        vertices.push_back(0.0f);
                     }
                 }
                 else if (attributes[j] == VertexAttribute::VA_Custom0 ||
@@ -542,46 +542,35 @@ namespace vk_demo
 		if (animIndex == -1) {
 			return;
 		}
-
+        
 		DVKAnimation& animation = animations[animIndex];
-
-		if (time <= 0.0f) {
-			time = 0.0f;
-		}
-
-		if (time >= animation.duration) {
-			time = animation.duration;
-		}
-
-		animation.time = time;
-
+        animation.time = MMath::Clamp(time, 0.0f, animation.duration);
+        
 		for (auto it = animation.clips.begin(); it != animation.clips.end(); ++it)
 		{
 			vk_demo::DVKAnimationClip& clip = it->second;
 			vk_demo::DVKNode* node = nodesMap[clip.nodeName];
-
-			std::string nodeName(node->name);
-
+            
 			float alpha = 0.0f;
-
+            
 			// rotation
 			Quat prevRot(0, 0, 0, 1);
 			Quat nextRot(0, 0, 0, 1);
 			clip.rotations.GetValue(animation.time, prevRot, nextRot, alpha);
 			Quat retRot = MMath::Lerp(prevRot, nextRot, alpha);
-
+            
 			// position
 			Vector3 prevPos(0, 0, 0);
 			Vector3 nextPos(0, 0, 0);
 			clip.positions.GetValue(animation.time, prevPos, nextPos, alpha);
 			Vector3 retPos = MMath::Lerp(prevPos, nextPos, alpha);
-
+            
 			// scale
 			Vector3 prevScale(1, 1, 1);
 			Vector3 nextScale(1, 1, 1);
 			clip.scales.GetValue(animation.time, prevScale, nextScale, alpha);
 			Vector3 retScale = MMath::Lerp(prevScale, nextScale, alpha);
-
+            
 			node->localMatrix.SetIdentity();
 			node->localMatrix.AppendScale(retScale);
 			node->localMatrix.Append(retRot.ToMatrix());
@@ -594,14 +583,14 @@ namespace vk_demo
 		if (animIndex == -1) {
 			return;
 		}
-
+        
 		DVKAnimation& animation = animations[animIndex];
 		animation.time += delta;
 
 		if (animation.time >= animation.duration) {
 			animation.time = animation.time - animation.duration;
 		}
-
+        
 		GotoAnimation(animation.time);
 	}
 

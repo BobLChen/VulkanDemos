@@ -82,32 +82,38 @@ private:
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
-
+        
 		UpdateUI(time, delta);
-
+        
 		UpdateAnimation(time, delta);
-
+        
 		// 设置Room参数
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
         m_RoleMaterial->BeginFrame();
         for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
         {
 			vk_demo::DVKMesh* mesh = m_RoleModel->meshes[i];
-
+            
 			// model data
             m_MVPData.model = mesh->linkNode->GetGlobalMatrix();
-
+            
 			// bones data
 			for (int32 j = 0; j < mesh->bones.size(); ++j) {
 				vk_demo::DVKBone& bone = mesh->bones[j];
 				std::string& boneName  = bone.name;
 				vk_demo::DVKNode* node = m_RoleModel->nodesMap[boneName];
-
+                // 注意行列顺序，Vertex * inverseBindPose * globalBone
 				m_BonesData.bones[j] = bone.inverseBindPose;
 				m_BonesData.bones[j].Append(node->GetGlobalMatrix());
-				m_BonesData.bones[j].Append(m_RoleModel->rootNode->localMatrix.Inverse());
+                // 这里要注意，我们的Bone动画使用的是全局变化矩阵，变换矩阵一直延续到了aiScene->mRoot节点。
+                // 因此我们需要将Bone变换矩阵与mesh的全局变化矩阵的逆矩阵做运算，来抵消掉mesh父节点之上的变换操作。
+				m_BonesData.bones[j].Append(mesh->linkNode->GetGlobalMatrix().Inverse());
 			}
-
+            
+            if (mesh->bones.size() == 0) {
+                m_BonesData.bones[0].SetIdentity();
+            }
+            
 			m_RoleMaterial->BeginObject();
 			m_RoleMaterial->SetLocalUniform("bonesData", &m_BonesData, sizeof(BonesTransformBlock));
             m_RoleMaterial->SetLocalUniform("uboMVP",    &m_MVPData,   sizeof(ModelViewProjectionBlock));
@@ -116,15 +122,20 @@ private:
         m_RoleMaterial->EndFrame();
         
 		SetupCommandBuffers(bufferIndex);
+        
 		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateAnimation(float time, float delta)
 	{
-		m_RoleModel->SetAnimation(0);
-		m_RoleModel->Update(time, delta);
+        if (m_AutoAnimation) {
+            m_RoleModel->Update(time, delta);
+        }
+        else {
+            m_RoleModel->GotoAnimation(m_AnimTime);
+        }
 	}
-
+    
 	void UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
@@ -134,6 +145,18 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SkeletonMatrix4x4Demo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
+            if (ImGui::SliderInt("Anim", &m_AnimIndex, 0, m_RoleModel->animations.size() - 1))
+            {
+                SetAnimation(m_AnimIndex);
+            }
+            
+            ImGui::Checkbox("AutoPlay", &m_AutoAnimation);
+            
+            if (!m_AutoAnimation)
+            {
+                ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
+            }
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 			ImGui::End();
 		}
@@ -142,14 +165,21 @@ private:
 		m_GUI->Update();
 	}
     
+    void SetAnimation(int32 index)
+    {
+        m_RoleModel->SetAnimation(index);
+        m_AnimDuration = m_RoleModel->animations[index].duration;
+        m_AnimTime     = 0.0f;
+        m_AnimIndex    = index;
+    }
+    
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
         
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
-			//"assets/models/xiaonan/nvhai.fbx",
-			"assets/models/goblin.dae",
+			"assets/models/xiaonan/nvhai.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{
@@ -160,6 +190,8 @@ private:
                 VertexAttribute::VA_SkinWeight
             }
 		);
+        
+        SetAnimation(0);
         
 		// shader
 		m_RoleShader = vk_demo::DVKShader::Create(
@@ -256,12 +288,8 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size();
+        boundCenter.z -= boundSize.Size() * 1.5f;
         boundCenter.y += 10;
-
-		boundCenter.z -= 50;
-
-		memset(&m_BonesData, 0, sizeof(BonesTransformBlock));
         
 		m_MVPData.model.SetIdentity();
         
@@ -271,8 +299,12 @@ private:
 
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+        
+        for (int32 i = 0; i < MAX_BONES; ++i) {
+            m_BonesData.bones[i].SetIdentity();
+        }
 	}
-
+    
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
@@ -298,6 +330,11 @@ private:
     vk_demo::DVKMaterial*       m_RoleMaterial = nullptr;
     
 	ImageGUIContext*			m_GUI = nullptr;
+    
+    bool                        m_AutoAnimation = false;
+    float                       m_AnimDuration = 0.0f;
+    float                       m_AnimTime = 0.0f;
+    int32                       m_AnimIndex = 0;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
