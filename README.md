@@ -158,3 +158,7 @@ Vulkan Examples
 
 ### [25_Bloom](https://github.com/BobLChen/VulkanDemos/tree/master/examples/25_Bloom)
 ![25_Bloom](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/25_Bloom.jpg)
+
+### [26_SkeletonMatrix4x4](https://github.com/BobLChen/VulkanDemos/tree/master/examples/26_SkeletonMatrix4x4)
+![26_Skeleton](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/26_Skeleton.gif)
+
