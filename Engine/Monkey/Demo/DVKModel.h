@@ -11,6 +11,7 @@
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
+#include "Math/Quat.h"
 
 #include "Vulkan/VulkanCommon.h"
 
@@ -96,11 +97,74 @@ namespace vk_demo
     
     struct DVKBone
     {
+		std::string     name;
         int32           index = -1;
         int32           parent = -1;
         Matrix4x4       inverseBindPose;
-        std::string     name;
+		Matrix4x4		globalTransform;
     };
+
+	template<class ValueType>
+	struct DVKAnimChannel
+	{
+		std::vector<float>	   keys;
+		std::vector<ValueType> values;
+
+		void GetValue(float key, ValueType& outPrevValue, ValueType& outNextValue, float& outAlpha)
+		{
+			outAlpha = 0.0f;
+
+			if (keys.size() == 0) {
+				return;
+			}
+
+			if (key <= keys.front()) {
+				outPrevValue = values.front();
+				outNextValue = values.front();
+				outAlpha     = 0.0f;
+				return;
+			}
+
+			if (key >= keys.back()) {
+				outPrevValue = values.back();
+				outNextValue = values.back();
+				outAlpha     = 0.0f;
+				return;
+			}
+
+			int32 frameIndex = 0;
+			for (int32 i = 0; i < keys.size() - 1; ++i) {
+				if (key <= keys[i]) {
+					frameIndex = i;
+					break;
+				}
+			}
+
+			outPrevValue = values[frameIndex];
+			outNextValue = values[(frameIndex + 1) % keys.size()];
+
+			float prevKey = keys[frameIndex];
+			float nextKey = keys[(frameIndex + 1) % keys.size()];
+			outAlpha      = (key - prevKey) / (nextKey - prevKey);
+		}
+	};
+
+	struct DVKAnimationClip
+	{
+		std::string					nodeName;
+		float						duration;
+		DVKAnimChannel<Vector3>		positions;
+		DVKAnimChannel<Vector3>		scales;
+		DVKAnimChannel<Quat>		rotations;
+	};
+
+	struct DVKAnimation
+	{
+		std::string name;
+		float		time = 0.0f;
+		float       duration = 0.0f;
+		std::unordered_map<std::string, DVKAnimationClip> clips;
+	};
     
     struct DVKMesh
     {
@@ -255,6 +319,12 @@ namespace vk_demo
 			linearNodes.clear();
         }
 
+		void Update(float time, float delta);
+
+		void SetAnimation(int32 index);
+
+		void GotoAnimation(float time);
+
 		VkVertexInputBindingDescription GetInputBinding();
 
 		std::vector<VkVertexInputAttributeDescription> GetInputAttributes();
@@ -276,7 +346,7 @@ namespace vk_demo
         DVKNode* LoadNode(const aiNode* node, const aiScene* scene);
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
-        
+
         void LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
 
         void LoadVertexDatas(std::unordered_map<uint32, VertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
@@ -288,14 +358,19 @@ namespace vk_demo
         void LoadAnim(const aiScene* aiScene);
         
     public:
-        
+        typedef std::unordered_map<std::string, DVKNode*> NodesMap;
+
         std::shared_ptr<VulkanDevice>	device;
         
         DVKNode*						rootNode;
         std::vector<DVKNode*>			linearNodes;
         std::vector<DVKMesh*>			meshes;
 
+		NodesMap						nodesMap;
+		
 		std::vector<VertexAttribute>	attributes;
+		std::vector<DVKAnimation>		animations;
+		int32							animIndex = -1;
 
 	private:
 

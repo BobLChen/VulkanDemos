@@ -7,6 +7,7 @@
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
+#include "Math/Quat.h"
 
 #include "Loader/ImageLoader.h"
 #include "File/FileManager.h"
@@ -77,6 +78,8 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		UpdateUI(time, delta);
 
+		UpdateAnimation(time, delta);
+
 		// 设置Room参数
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
         m_RoleMaterial->BeginFrame();
@@ -91,6 +94,12 @@ private:
         
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
+	}
+
+	void UpdateAnimation(float time, float delta)
+	{
+		m_RoleModel->SetAnimation(0);
+		m_RoleModel->Update(time, delta);
 	}
 
 	void UpdateUI(float time, float delta)

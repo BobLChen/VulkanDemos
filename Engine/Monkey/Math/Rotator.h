@@ -391,3 +391,15 @@ FORCEINLINE void Rotator::SetClosestToMe(Rotator& makeClosest) const
 	}
 }
 
+// inline functions
+template<class U>
+FORCEINLINE Rotator MMath::Lerp(const Rotator& a, const Rotator& b, const U& alpha)
+{
+	return a + (b - a).GetNormalized() * alpha;
+}
+
+template<class U>
+FORCEINLINE Rotator MMath::LerpRange(const Rotator& a, const Rotator& b, const U& alpha)
+{
+	return (a * (1 - alpha) + b * alpha).GetNormalized();
+}

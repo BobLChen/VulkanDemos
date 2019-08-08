@@ -75,18 +75,6 @@ Quat FindBetweenHelper(const Vector3& a, const Vector3& b, float normAB)
 
 // ---------------------------------------- Math ----------------------------------------
 
-template<class U>
-Rotator MMath::Lerp(const Rotator& a, const Rotator& b, const U& alpha)
-{
-	return a + (b - a).GetNormalized() * alpha;
-}
-
-template<class U>
-Rotator MMath::LerpRange(const Rotator& a, const Rotator& b, const U& alpha)
-{
-	return (a * (1 - alpha) + b * alpha).GetNormalized();
-}
-
 Vector3 MMath::LinePlaneIntersection(const Vector3 &point1, const Vector3 &point2, const Vector3 &planeOrigin, const Vector3 &planeNormal)
 {
 	return point1 + (point2 - point1) * (((planeOrigin - point1) | planeNormal) / ((point2 - point1) | planeNormal));
@@ -181,30 +169,6 @@ Vector3 MMath::VRandCone(Vector3 const& dir, float HorizontalConeHalfAngleRad, f
 	{
 		return dir.GetSafeNormal();
 	}
-}
-
-template<class U>
-Quat MMath::Lerp(const Quat& a, const Quat& b, const U& alpha)
-{
-	return Quat::slerp(a, b, alpha);
-}
-
-template<class U>
-Quat MMath::BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY)
-{
-	Quat result;
-	result = Lerp(
-		Quat::SlerpNotNormalized(p00, p10, fracX),
-		Quat::SlerpNotNormalized(p01, p11, fracX),
-		fracY
-	);
-	return result;
-}
-
-template<class U>
-Quat MMath::CubicInterp(const Quat& P0, const Quat& T0, const Quat& P1, const Quat& T1, const U& a)
-{
-	return Quat::Squad(P0, T0, P1, T1, a);
 }
 
 Vector2 MMath::GetAzimuthAndElevation(const Vector3 &Direction, const Vector3 &AxisX, const Vector3 &AxisY, const Vector3 &AxisZ)

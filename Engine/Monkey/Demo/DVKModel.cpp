@@ -147,7 +147,7 @@ namespace vk_demo
         
         return model;
     }
-    
+
     void DVKModel::LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
         std::unordered_map<std::string, int32> boneIndexMap;
@@ -464,6 +464,7 @@ namespace vk_demo
 			}
         }
         
+		nodesMap.insert(std::make_pair(vkNode->name, vkNode));
 		linearNodes.push_back(vkNode);
 		// children node
         for (int32 i = 0; i < aiNode->mNumChildren; ++i) 
@@ -480,14 +481,132 @@ namespace vk_demo
     {
         for (int32 i = 0; i < aiScene->mNumAnimations; ++i)
         {
-            aiAnimation* animation = aiScene->mAnimations[i];
-            for (int32 j = 0; j < animation->mNumChannels; ++j)
+            aiAnimation* aianimation = aiScene->mAnimations[i];
+			float timeTick = aianimation->mTicksPerSecond != 0 ? aianimation->mTicksPerSecond : 25.0f;
+
+			animations.push_back(DVKAnimation());
+			DVKAnimation& dvkAnimation = animations.back();
+            
+			for (int32 j = 0; j < aianimation->mNumChannels; ++j)
             {
-                aiNodeAnim* anim = animation->mChannels[j];
+                aiNodeAnim* nodeAnim = aianimation->mChannels[j];
+				std::string nodeName = nodeAnim->mNodeName.C_Str();
+
+				dvkAnimation.clips.insert(std::make_pair(nodeName, DVKAnimationClip()));
+
+				DVKAnimationClip& animClip = dvkAnimation.clips[nodeName];
+				animClip.nodeName = nodeName;
+				animClip.duration = 0.0f;
+				
+				// position
+				for (int32 index = 0; index < nodeAnim->mNumPositionKeys; ++index)
+				{
+					aiVectorKey& aikey = nodeAnim->mPositionKeys[index];
+					animClip.positions.keys.push_back(aikey.mTime / timeTick);
+					animClip.positions.values.push_back(Vector3(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z));
+					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
+				}
+
+				// scale
+				for (int32 index = 0; index < nodeAnim->mNumScalingKeys; ++index)
+				{
+					aiVectorKey& aikey = nodeAnim->mScalingKeys[index];
+					animClip.scales.keys.push_back(aikey.mTime / timeTick);
+					animClip.scales.values.push_back(Vector3(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z));
+					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
+				}
+
+				// rotation
+				for (int32 index = 0; index < nodeAnim->mNumRotationKeys; ++index)
+				{
+					aiQuatKey& aikey = nodeAnim->mRotationKeys[index];
+					animClip.rotations.keys.push_back(aikey.mTime / timeTick);
+					animClip.rotations.values.push_back(Quat(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z, aikey.mValue.w));
+					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
+				}
+
+				dvkAnimation.duration = MMath::Max(animClip.duration, dvkAnimation.duration);
             }
         }
     }
+
+	void DVKModel::GotoAnimation(float time)
+	{
+		if (animIndex == -1) {
+			return;
+		}
+
+		DVKAnimation& animation = animations[animIndex];
+
+		if (time <= 0.0f) {
+			time = 0.0f;
+		}
+
+		if (time >= animation.duration) {
+			time = animation.duration;
+		}
+
+		animation.time = time;
+
+		for (auto it = animation.clips.begin(); it != animation.clips.end(); ++it)
+		{
+			vk_demo::DVKAnimationClip& clip = it->second;
+			vk_demo::DVKNode* node = nodesMap[clip.nodeName];
+
+			float alpha = 0.0f;
+
+			// rotation
+			Quat prevRot(0, 0, 0, 1);
+			Quat nextRot(0, 0, 0, 1);
+			clip.rotations.GetValue(animation.time, prevRot, nextRot, alpha);
+			Quat retRot = MMath::Lerp(prevRot, nextRot, alpha);
+
+			// position
+			Vector3 prevPos(0, 0, 0);
+			Vector3 nextPos(0, 0, 0);
+			clip.positions.GetValue(animation.time, prevPos, nextPos, alpha);
+			Vector3 retPos = MMath::Lerp(prevPos, nextPos, alpha);
+
+			// scale
+			Vector3 prevScale(1, 1, 1);
+			Vector3 nextScale(1, 1, 1);
+			clip.scales.GetValue(animation.time, prevScale, nextScale, alpha);
+			Vector3 retScale = MMath::Lerp(prevScale, nextScale, alpha);
+
+			node->localMatrix.SetIdentity();
+			node->localMatrix.AppendScale(retScale);
+			node->localMatrix.Append(retRot.ToMatrix());
+			node->localMatrix.AppendTranslation(retPos);
+		}
+	}
     
+	void DVKModel::Update(float time, float delta)
+	{
+		if (animIndex == -1) {
+			return;
+		}
+
+		DVKAnimation& animation = animations[animIndex];
+		animation.time += delta;
+
+		if (animation.time >= animation.duration) {
+			animation.time = animation.time - animation.duration;
+		}
+
+		GotoAnimation(animation.time);
+	}
+
+	void DVKModel::SetAnimation(int32 index)
+	{
+		if (index >= animations.size()) {
+			return;
+		}
+		if (index < 0) {
+			return;
+		}
+		animIndex = index;
+	}
+
 	VkVertexInputBindingDescription DVKModel::GetInputBinding()
 	{
 		int32 stride = 0;
