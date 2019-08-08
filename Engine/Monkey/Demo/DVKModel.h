@@ -264,18 +264,28 @@ namespace vk_demo
         static DVKModel* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<float>& vertices, const std::vector<uint16>& indices, const std::vector<VertexAttribute>& attributes);
         
     protected:
+        struct VertexSkin
+        {
+            int32  used = 0;
+            int32  indices[4];
+            float  weights[4];
+        };
+        
+    protected:
         
         DVKNode* LoadNode(const aiNode* node, const aiScene* scene);
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
         
-        void LoadSkin(DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        void LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
 
-        void LoadVertexDatas(std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, const aiMesh* aiMesh, const aiScene* aiScene);
+        void LoadVertexDatas(std::unordered_map<uint32, VertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
         
         void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
         
         void LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        
+        void LoadAnim(const aiScene* aiScene);
         
     public:
         

@@ -15,6 +15,7 @@ layout (binding = 0) uniform MVPBlock
 
 layout (location = 0) out vec2 outUV;
 layout (location = 1) out vec3 outNormal;
+layout (location = 2) out vec4 outColor;
 
 out gl_PerVertex 
 {
@@ -24,10 +25,11 @@ out gl_PerVertex
 void main() 
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
-	vec3 normal  = normalize(normalMatrix * inNormal.xyz);
+	vec3 normal = normalize(normalMatrix * inNormal.xyz);
 	
-	outUV        = inUV0;
-	outNormal    = normal;
+	outUV       = inUV0;
+	outNormal   = normal;
+	outColor    = inSkinWeight;
 	
-	gl_Position  = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

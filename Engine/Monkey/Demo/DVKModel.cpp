@@ -1,6 +1,7 @@
 #include "DVKModel.h"
 
 #include "File/FileManager.h"
+#include "Math/Matrix4x4.h"
 
 #include <assimp/Importer.hpp> 
 #include <assimp/scene.h>     
@@ -45,6 +46,27 @@ namespace vk_demo
 			SimplifyTexturePath(material.specular);
 		}
 	}
+    
+    void FillMatrixWithAiMatrix(Matrix4x4& matrix, const aiMatrix4x4& aiMatrix)
+    {
+        matrix.m[0][0] = aiMatrix.a1;
+        matrix.m[0][1] = aiMatrix.a2;
+        matrix.m[0][2] = aiMatrix.a3;
+        matrix.m[0][3] = aiMatrix.a4;
+        matrix.m[1][0] = aiMatrix.b1;
+        matrix.m[1][1] = aiMatrix.b2;
+        matrix.m[1][2] = aiMatrix.b3;
+        matrix.m[1][3] = aiMatrix.b4;
+        matrix.m[2][0] = aiMatrix.c1;
+        matrix.m[2][1] = aiMatrix.c2;
+        matrix.m[2][2] = aiMatrix.c3;
+        matrix.m[2][3] = aiMatrix.c4;
+        matrix.m[3][0] = aiMatrix.d1;
+        matrix.m[3][1] = aiMatrix.d2;
+        matrix.m[3][2] = aiMatrix.d3;
+        matrix.m[3][3] = aiMatrix.d4;
+        matrix.SetTransposed();
+    }
     
     DVKModel* DVKModel::Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<float>& vertices, const std::vector<uint16>& indices, const std::vector<VertexAttribute>& attributes)
     {
@@ -121,67 +143,72 @@ namespace vk_demo
         const aiScene* scene = importer.ReadFileFromMemory(dataPtr, dataSize, assimpFlags);
         
 		model->LoadNode(scene->mRootNode, scene);
-
+        model->LoadAnim(scene);
+        
         return model;
     }
     
-    void DVKModel::LoadSkin(DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+    void DVKModel::LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
         std::unordered_map<std::string, int32> boneIndexMap;
+        
         for (int32 i = 0; i < aiMesh->mNumBones; ++i)
         {
             aiBone* boneInfo = aiMesh->mBones[i];
             std::string boneName(boneInfo->mName.C_Str());
-            int boneIndex = 0;
-            
-            // 收集Bone信息
+            int32 bondIndex  = 0;
+            // 收集Bone信息并编号
             auto it = boneIndexMap.find(boneName);
             if (it == boneIndexMap.end())
             {
-                boneIndex    = mesh->bones.size();
+                bondIndex    = mesh->bones.size();
                 DVKBone bone = {};
-                bone.index   = boneIndex;
+                bone.index   = bondIndex;
                 bone.parent  = -1;
                 bone.name    = boneName;
-                
-                bone.inverseBindPose.m[0][0] = boneInfo->mOffsetMatrix.a1;
-                bone.inverseBindPose.m[0][1] = boneInfo->mOffsetMatrix.a2;
-                bone.inverseBindPose.m[0][2] = boneInfo->mOffsetMatrix.a3;
-                bone.inverseBindPose.m[0][3] = boneInfo->mOffsetMatrix.a4;
-                bone.inverseBindPose.m[1][0] = boneInfo->mOffsetMatrix.b1;
-                bone.inverseBindPose.m[1][1] = boneInfo->mOffsetMatrix.b2;
-                bone.inverseBindPose.m[1][2] = boneInfo->mOffsetMatrix.b3;
-                bone.inverseBindPose.m[1][3] = boneInfo->mOffsetMatrix.b4;
-                bone.inverseBindPose.m[2][0] = boneInfo->mOffsetMatrix.c1;
-                bone.inverseBindPose.m[2][1] = boneInfo->mOffsetMatrix.c2;
-                bone.inverseBindPose.m[2][2] = boneInfo->mOffsetMatrix.c3;
-                bone.inverseBindPose.m[2][3] = boneInfo->mOffsetMatrix.c4;
-                bone.inverseBindPose.m[3][0] = boneInfo->mOffsetMatrix.d1;
-                bone.inverseBindPose.m[3][1] = boneInfo->mOffsetMatrix.d2;
-                bone.inverseBindPose.m[3][2] = boneInfo->mOffsetMatrix.d3;
-                bone.inverseBindPose.m[3][3] = boneInfo->mOffsetMatrix.d4;
-                bone.inverseBindPose.SetTransposed();
-                
+                FillMatrixWithAiMatrix(bone.inverseBindPose, boneInfo->mOffsetMatrix);
                 mesh->bones.push_back(bone);
-                boneIndexMap.insert(std::make_pair(boneName, boneIndex));
+                boneIndexMap.insert(std::make_pair(boneName, bondIndex));
             }
             else
             {
-                boneIndex = it->second;
+                bondIndex = it->second;
             }
-            
-            // 收集被Bone影响的顶点
+            // 收集被Bone影响的顶点信息
             for (uint32 j = 0; j < boneInfo->mNumWeights; ++j)
             {
-                uint32 vertexID = boneInfo->mWeights[j].mVertexId;
-                float  weight   = boneInfo->mWeights[j].mWeight;
-                
+                uint32 vertexID  = boneInfo->mWeights[j].mVertexId;
+                float  weight    = boneInfo->mWeights[j].mWeight;
+                VertexSkin* info = nullptr;
+                // 顶点->Bone
+                if (skinInfoMap.find(vertexID) == skinInfoMap.end()) {
+                    skinInfoMap.insert(std::make_pair(vertexID, VertexSkin()));
+                }
+                info = &(skinInfoMap[vertexID]);
+                // 只允许最多四个骨骼影响顶点
+                if (info->used >= 4) {
+                    break;
+                }
+                info->indices[info->used] = bondIndex;
+                info->weights[info->used] = weight;
+                info->used += 1;
             }
-            
         }
+        // 再次处理一遍skinInfoMap，把未使用的补齐
+        for (auto it = skinInfoMap.begin(); it != skinInfoMap.end(); ++it)
+        {
+            VertexSkin& info = it->second;
+            for (int32 i = info.used; i < 4; ++i)
+            {
+                info.indices[i] = 0;
+                info.weights[i] = 0.0f;
+            }
+        }
+        
+        mesh->isSkin = true;
     }
     
-    void DVKModel::LoadVertexDatas(std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, const aiMesh* aiMesh, const aiScene* aiScene)
+    void DVKModel::LoadVertexDatas(std::unordered_map<uint32, VertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
         Vector3 defaultColor = Vector3(MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f));
         
@@ -246,23 +273,45 @@ namespace vk_demo
                 }
                 else if (attributes[j] == VertexAttribute::VA_SkinIndex)
                 {
-                    vertices.push_back(0);
-                    vertices.push_back(0);
-                    vertices.push_back(0);
-                    vertices.push_back(0);
+                    if (mesh->isSkin)
+                    {
+                        VertexSkin& skin = skinInfoMap[i];
+                        vertices.push_back(skin.indices[0]);
+                        vertices.push_back(skin.indices[1]);
+                        vertices.push_back(skin.indices[2]);
+                        vertices.push_back(skin.indices[3]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
                 }
                 else if (attributes[j] == VertexAttribute::VA_SkinWeight)
                 {
-                    vertices.push_back(0.0f);
-                    vertices.push_back(0.0f);
-                    vertices.push_back(0.0f);
-                    vertices.push_back(0.0f);
+                    if (mesh->isSkin)
+                    {
+                        VertexSkin& skin = skinInfoMap[i];
+                        vertices.push_back(skin.weights[0]);
+                        vertices.push_back(skin.weights[1]);
+                        vertices.push_back(skin.weights[2]);
+                        vertices.push_back(skin.weights[3]);
+                    }
+                    else
+                    {
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                        vertices.push_back(0);
+                    }
                 }
                 else if (attributes[j] == VertexAttribute::VA_Custom0 ||
                          attributes[j] == VertexAttribute::VA_Custom1 ||
                          attributes[j] == VertexAttribute::VA_Custom2 ||
                          attributes[j] == VertexAttribute::VA_Custom3
-                         )
+                )
                 {
                     vertices.push_back(0.0f);
                     vertices.push_back(0.0f);
@@ -368,15 +417,16 @@ namespace vk_demo
 		}
         
         // load bones
+        std::unordered_map<uint32, VertexSkin> skinInfoMap;
         if (aiMesh->mNumBones > 0 && loadSkin) {
-            LoadSkin(mesh, aiMesh, aiScene);
+            LoadSkin(skinInfoMap, mesh, aiMesh, aiScene);
         }
         
         // load vertex data
         std::vector<float> vertices;
         Vector3 mmin(MAX_flt, MAX_flt, MAX_flt);
         Vector3 mmax(MIN_flt, MIN_flt, MIN_flt);
-        LoadVertexDatas(vertices, mmax, mmin, aiMesh, aiScene);
+        LoadVertexDatas(skinInfoMap, vertices, mmax, mmin, mesh, aiMesh, aiScene);
         
         // load indices
         std::vector<uint32> indices;
@@ -401,23 +451,7 @@ namespace vk_demo
 		}
 
 		// local matrix
-		vkNode->localMatrix.m[0][0] = aiNode->mTransformation.a1;
-		vkNode->localMatrix.m[0][1] = aiNode->mTransformation.a2;
-		vkNode->localMatrix.m[0][2] = aiNode->mTransformation.a3;
-		vkNode->localMatrix.m[0][3] = aiNode->mTransformation.a4;
-		vkNode->localMatrix.m[1][0] = aiNode->mTransformation.b1;
-		vkNode->localMatrix.m[1][1] = aiNode->mTransformation.b2;
-		vkNode->localMatrix.m[1][2] = aiNode->mTransformation.b3;
-		vkNode->localMatrix.m[1][3] = aiNode->mTransformation.b4;
-		vkNode->localMatrix.m[2][0] = aiNode->mTransformation.c1;
-		vkNode->localMatrix.m[2][1] = aiNode->mTransformation.c2;
-		vkNode->localMatrix.m[2][2] = aiNode->mTransformation.c3;
-		vkNode->localMatrix.m[2][3] = aiNode->mTransformation.c4;
-		vkNode->localMatrix.m[3][0] = aiNode->mTransformation.d1;
-		vkNode->localMatrix.m[3][1] = aiNode->mTransformation.d2;
-		vkNode->localMatrix.m[3][2] = aiNode->mTransformation.d3;
-		vkNode->localMatrix.m[3][3] = aiNode->mTransformation.d4;
-        vkNode->localMatrix.SetTransposed();
+        FillMatrixWithAiMatrix(vkNode->localMatrix, aiNode->mTransformation);
         
 		// mesh
         if (aiNode->mNumMeshes > 0) {
@@ -440,6 +474,18 @@ namespace vk_demo
         }
         
 		return vkNode;
+    }
+    
+    void DVKModel::LoadAnim(const aiScene* aiScene)
+    {
+        for (int32 i = 0; i < aiScene->mNumAnimations; ++i)
+        {
+            aiAnimation* animation = aiScene->mAnimations[i];
+            for (int32 j = 0; j < animation->mNumChannels; ++j)
+            {
+                aiNodeAnim* anim = animation->mChannels[j];
+            }
+        }
     }
     
 	VkVertexInputBindingDescription DVKModel::GetInputBinding()
