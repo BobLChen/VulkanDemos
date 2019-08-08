@@ -115,6 +115,10 @@ public:
 
 	FORCEINLINE Vector3 GetRotationAxis() const;
 
+	FORCEINLINE Matrix4x4 ToMatrix() const;
+
+	FORCEINLINE void ToMatrix(Matrix4x4& outMatrix) const;
+
 	FORCEINLINE float AngularDistance(const Quat& q) const;
 
 	FORCEINLINE bool ContainsNaN() const;
@@ -123,9 +127,9 @@ public:
 
 	static FORCEINLINE  Quat MakeFromEuler(const Vector3& euler);
 
-	static FORCEINLINE Quat FindBetweenNormals(const Vector3& normal1, const Vector3& mormal2);
+	static Quat FindBetweenNormals(const Vector3& normal1, const Vector3& mormal2);
 
-	static FORCEINLINE Quat FindBetweenVectors(const Vector3& vector1, const Vector3& vector2);
+	static Quat FindBetweenVectors(const Vector3& vector1, const Vector3& vector2);
 
 	static FORCEINLINE float Error(const Quat& q1, const Quat& q2);
 
@@ -135,9 +139,9 @@ public:
 
 	static FORCEINLINE Quat FastBilerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY);
 
-	static FORCEINLINE Quat SlerpNotNormalized(const Quat &quat1, const Quat &quat2, float slerp);
+	static Quat SlerpNotNormalized(const Quat &quat1, const Quat &quat2, float slerp);
 
-	static FORCEINLINE Quat SlerpFullPathNotNormalized(const Quat &quat1, const Quat &quat2, float alpha);
+	static Quat SlerpFullPathNotNormalized(const Quat &quat1, const Quat &quat2, float alpha);
 
 	static FORCEINLINE Quat Squad(const Quat& quat1, const Quat& tang1, const Quat& quat2, const Quat& tang2, float alpha);
 
@@ -171,7 +175,7 @@ public:
 	}
 };
 
-Quat::Quat(const Matrix4x4& m)
+FORCEINLINE Quat::Quat(const Matrix4x4& m)
 {
 	if (m.GetScaledAxis(Axis::X).IsNearlyZero() || m.GetScaledAxis(Axis::Y).IsNearlyZero() || m.GetScaledAxis(Axis::Z).IsNearlyZero())
 	{
@@ -609,6 +613,26 @@ FORCEINLINE float Quat::ErrorAutoNormalize(const Quat& a, const Quat& b)
 	return Quat::Error(q1, q2);
 }
 
+FORCEINLINE void Quat::ToMatrix(Matrix4x4& outMatrix) const
+{
+	const float x2 = x + x;  const float y2 = y + y;  const float z2 = z + z;
+	const float xx = x * x2; const float xy = x * y2; const float xz = x * z2;
+	const float yy = y * y2; const float yz = y * z2; const float zz = z * z2;
+	const float wx = w * x2; const float wy = w * y2; const float wz = w * z2;
+
+	outMatrix.m[0][0] = 1.0f - (yy + zz);	outMatrix.m[1][0] = xy - wz;				outMatrix.m[2][0] = xz + wy;			outMatrix.m[3][0] = 0;
+	outMatrix.m[0][1] = xy + wz;			outMatrix.m[1][1] = 1.0f - (xx + zz);		outMatrix.m[2][1] = yz - wx;			outMatrix.m[3][1] = 0;
+	outMatrix.m[0][2] = xz - wy;			outMatrix.m[1][2] = yz + wx;				outMatrix.m[2][2] = 1.0f - (xx + yy);	outMatrix.m[3][2] = 0;
+	outMatrix.m[0][3] = 0.0f;				outMatrix.m[1][3] = 0.0f;					outMatrix.m[2][3] = 0.0f;				outMatrix.m[3][3] = 1.0f;
+}
+
+FORCEINLINE Matrix4x4 Quat::ToMatrix() const
+{
+	Matrix4x4 matrix;
+	ToMatrix(matrix);
+	return matrix;
+}
+
 FORCEINLINE Quat Quat::FastLerp(const Quat& a, const Quat& b, const float alpha)
 {
 	const float dotResult = (a | b);
@@ -633,4 +657,29 @@ FORCEINLINE bool Quat::ContainsNaN() const
 		!MMath::IsFinite(z) ||
 		!MMath::IsFinite(w)
 	);
+}
+
+// inline functions
+template<class U>
+FORCEINLINE Quat MMath::Lerp(const Quat& a, const Quat& b, const U& alpha)
+{
+	return Quat::slerp(a, b, alpha);
+}
+
+template<class U>
+FORCEINLINE Quat MMath::BiLerp(const Quat& p00, const Quat& p10, const Quat& p01, const Quat& p11, float fracX, float fracY)
+{
+	Quat result;
+	result = Lerp(
+		Quat::SlerpNotNormalized(p00, p10, fracX),
+		Quat::SlerpNotNormalized(p01, p11, fracX),
+		fracY
+	);
+	return result;
+}
+
+template<class U>
+FORCEINLINE Quat MMath::CubicInterp(const Quat& P0, const Quat& T0, const Quat& P1, const Quat& T1, const U& a)
+{
+	return Quat::Squad(P0, T0, P1, T1, a);
 }

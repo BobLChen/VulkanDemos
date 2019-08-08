@@ -443,3 +443,18 @@ SETUP_SAMPLE_START(25_Bloom)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(25_Bloom)
+
+SETUP_SAMPLE_START(26_SkeletonMatrix4x4)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/26_SkeletonMatrix4x4/SkeletonMatrix4x4Demo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/26_SkeletonMatrix4x4/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(26_SkeletonMatrix4x4)

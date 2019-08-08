@@ -11,6 +11,7 @@
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 #include "Math/Matrix4x4.h"
+#include "Math/Quat.h"
 
 #include "Vulkan/VulkanCommon.h"
 
@@ -47,21 +48,16 @@ namespace vk_demo
         }
     };
     
-    struct DVKModelUniformBlock
-    {
-        Matrix4x4   model;
-    };
-
 	struct DVKPrimitive
 	{
-		DVKIndexBuffer*					indexBuffer = nullptr;
-        DVKVertexBuffer*				vertexBuffer = nullptr;
+		DVKIndexBuffer*		indexBuffer = nullptr;
+        DVKVertexBuffer*	vertexBuffer = nullptr;
 
-		std::vector<float>				vertices;
-		std::vector<uint16>				indices;
+		std::vector<float>	vertices;
+		std::vector<uint16>	indices;
         
-        int32                           vertexCount = 0;
-        int32                           indexCount = 0;
+        int32               vertexCount = 0;
+        int32               indexCount = 0;
 
 		DVKPrimitive()
 		{
@@ -94,19 +90,101 @@ namespace vk_demo
 		std::string		specular;
 	};
     
+    struct DVKBone
+    {
+		std::string     name;
+        int32           index = -1;
+        int32           parent = -1;
+        Matrix4x4       inverseBindPose;
+		Matrix4x4		globalTransform;
+    };
+
+	struct DVKVertexSkin
+	{
+		int32  used = 0;
+		int32  indices[4];
+		float  weights[4];
+	};
+
+	template<class ValueType>
+	struct DVKAnimChannel
+	{
+		std::vector<float>	   keys;
+		std::vector<ValueType> values;
+
+		void GetValue(float key, ValueType& outPrevValue, ValueType& outNextValue, float& outAlpha)
+		{
+			outAlpha = 0.0f;
+
+			if (keys.size() == 0) {
+				return;
+			}
+
+			if (key <= keys.front()) {
+				outPrevValue = values.front();
+				outNextValue = values.front();
+				outAlpha     = 0.0f;
+				return;
+			}
+
+			if (key >= keys.back()) {
+				outPrevValue = values.back();
+				outNextValue = values.back();
+				outAlpha     = 0.0f;
+				return;
+			}
+
+			int32 frameIndex = 0;
+			for (int32 i = 0; i < keys.size(); ++i) {
+				if (key <= keys[i]) {
+					frameIndex = i;
+					break;
+				}
+			}
+            
+			outPrevValue = values[frameIndex - 1];
+			outNextValue = values[frameIndex];
+
+			float prevKey = keys[frameIndex - 1];
+			float nextKey = keys[frameIndex];
+			outAlpha      = (key - prevKey) / (nextKey - prevKey);
+		}
+	};
+
+	struct DVKAnimationClip
+	{
+		std::string					nodeName;
+		float						duration;
+		DVKAnimChannel<Vector3>		positions;
+		DVKAnimChannel<Vector3>		scales;
+		DVKAnimChannel<Quat>		rotations;
+	};
+
+	struct DVKAnimation
+	{
+		std::string name;
+		float		time = 0.0f;
+		float       duration = 0.0f;
+		std::unordered_map<std::string, DVKAnimationClip> clips;
+	};
+    
     struct DVKMesh
     {
 		typedef std::vector<DVKPrimitive*> DVKPrimitives;
+        typedef std::vector<DVKBone> DVKBones;
 
 		DVKPrimitives	primitives;
 		DVKBoundingBox	bounding;
         DVKNode*		linkNode;
-
+        
+        DVKBones        bones;
+        bool            isSkin = false;
+        
 		DVKMaterialInfo	material;
         
 		int32			vertexCount;
 		int32			triangleCount;
-
+        
         DVKMesh()
             : linkNode(nullptr)
 			, vertexCount(0)
@@ -243,6 +321,12 @@ namespace vk_demo
 			linearNodes.clear();
         }
 
+		void Update(float time, float delta);
+
+		void SetAnimation(int32 index);
+
+		void GotoAnimation(float time);
+
 		VkVertexInputBindingDescription GetInputBinding();
 
 		std::vector<VkVertexInputAttributeDescription> GetInputAttributes();
@@ -257,19 +341,35 @@ namespace vk_demo
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
 
-    public:
+        void LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+
+        void LoadVertexDatas(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
         
+        void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
+        
+        void LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        
+        void LoadAnim(const aiScene* aiScene);
+        
+    public:
+        typedef std::unordered_map<std::string, DVKNode*> NodesMap;
+
         std::shared_ptr<VulkanDevice>	device;
         
         DVKNode*						rootNode;
         std::vector<DVKNode*>			linearNodes;
         std::vector<DVKMesh*>			meshes;
 
+		NodesMap						nodesMap;
+		
 		std::vector<VertexAttribute>	attributes;
+		std::vector<DVKAnimation>		animations;
+		int32							animIndex = -1;
 
 	private:
 
-		DVKCommandBuffer*				cmdBuffer;
+		DVKCommandBuffer*				cmdBuffer = nullptr;
+        bool                            loadSkin = false;
     };
     
 };
