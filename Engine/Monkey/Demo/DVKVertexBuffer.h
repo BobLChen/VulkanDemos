@@ -80,7 +80,7 @@ namespace vk_demo
 			format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		}
 		else if (attribute == VertexAttribute::VA_SkinIndex) {
-			format = VK_FORMAT_R32G32B32A32_SFLOAT;
+			format = VK_FORMAT_R32G32B32A32_SINT;
 		}
         else if (attribute == VertexAttribute::VA_Custom0 ||
                  attribute == VertexAttribute::VA_Custom1 ||

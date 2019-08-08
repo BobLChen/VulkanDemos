@@ -148,21 +148,21 @@ namespace vk_demo
         return model;
     }
 
-    void DVKModel::LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+    void DVKModel::LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
         std::unordered_map<std::string, int32> boneIndexMap;
         
         for (int32 i = 0; i < aiMesh->mNumBones; ++i)
         {
             aiBone* boneInfo = aiMesh->mBones[i];
+			int32 bondIndex  = 0;
             std::string boneName(boneInfo->mName.C_Str());
-            int32 bondIndex  = 0;
             // 收集Bone信息并编号
             auto it = boneIndexMap.find(boneName);
             if (it == boneIndexMap.end())
             {
                 bondIndex    = mesh->bones.size();
-                DVKBone bone = {};
+				DVKBone bone = {};
                 bone.index   = bondIndex;
                 bone.parent  = -1;
                 bone.name    = boneName;
@@ -177,27 +177,27 @@ namespace vk_demo
             // 收集被Bone影响的顶点信息
             for (uint32 j = 0; j < boneInfo->mNumWeights; ++j)
             {
-                uint32 vertexID  = boneInfo->mWeights[j].mVertexId;
-                float  weight    = boneInfo->mWeights[j].mWeight;
-                VertexSkin* info = nullptr;
+                uint32 vertexID = boneInfo->mWeights[j].mVertexId;
+                float  weight   = boneInfo->mWeights[j].mWeight;
                 // 顶点->Bone
                 if (skinInfoMap.find(vertexID) == skinInfoMap.end()) {
-                    skinInfoMap.insert(std::make_pair(vertexID, VertexSkin()));
+                    skinInfoMap.insert(std::make_pair(vertexID, DVKVertexSkin()));
                 }
-                info = &(skinInfoMap[vertexID]);
-                // 只允许最多四个骨骼影响顶点
-                if (info->used >= 4) {
-                    break;
-                }
+				DVKVertexSkin* info = &(skinInfoMap[vertexID]);
                 info->indices[info->used] = bondIndex;
                 info->weights[info->used] = weight;
                 info->used += 1;
+				// 只允许最多四个骨骼影响顶点
+				if (info->used >= 4) {
+					break;
+				}
             }
         }
+
         // 再次处理一遍skinInfoMap，把未使用的补齐
         for (auto it = skinInfoMap.begin(); it != skinInfoMap.end(); ++it)
         {
-            VertexSkin& info = it->second;
+			DVKVertexSkin& info = it->second;
             for (int32 i = info.used; i < 4; ++i)
             {
                 info.indices[i] = 0;
@@ -208,9 +208,13 @@ namespace vk_demo
         mesh->isSkin = true;
     }
     
-    void DVKModel::LoadVertexDatas(std::unordered_map<uint32, VertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
+    void DVKModel::LoadVertexDatas(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
-        Vector3 defaultColor = Vector3(MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f), MMath::RandRange(0.0f, 1.0f));
+        Vector3 defaultColor(
+			MMath::RandRange(0.0f, 1.0f), 
+			MMath::RandRange(0.0f, 1.0f), 
+			MMath::RandRange(0.0f, 1.0f)
+		);
         
         for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
         {
@@ -275,7 +279,7 @@ namespace vk_demo
                 {
                     if (mesh->isSkin)
                     {
-                        VertexSkin& skin = skinInfoMap[i];
+						DVKVertexSkin& skin = skinInfoMap[i];
                         vertices.push_back(skin.indices[0]);
                         vertices.push_back(skin.indices[1]);
                         vertices.push_back(skin.indices[2]);
@@ -293,7 +297,7 @@ namespace vk_demo
                 {
                     if (mesh->isSkin)
                     {
-                        VertexSkin& skin = skinInfoMap[i];
+						DVKVertexSkin& skin = skinInfoMap[i];
                         vertices.push_back(skin.weights[0]);
                         vertices.push_back(skin.weights[1]);
                         vertices.push_back(skin.weights[2]);
@@ -335,6 +339,7 @@ namespace vk_demo
     void DVKModel::LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
         int32 stride = vertices.size() / aiMesh->mNumVertices;
+
         if (indices.size() > 65535)
         {
             std::unordered_map<uint32, uint32> indicesMap;
@@ -417,7 +422,7 @@ namespace vk_demo
 		}
         
         // load bones
-        std::unordered_map<uint32, VertexSkin> skinInfoMap;
+        std::unordered_map<uint32, DVKVertexSkin> skinInfoMap;
         if (aiMesh->mNumBones > 0 && loadSkin) {
             LoadSkin(skinInfoMap, mesh, aiMesh, aiScene);
         }
@@ -457,15 +462,17 @@ namespace vk_demo
         if (aiNode->mNumMeshes > 0) {
 			for (int i = 0; i < aiNode->mNumMeshes; ++i) 
 			{
-				DVKMesh* vkMesh = LoadMesh(aiScene->mMeshes[aiNode->mMeshes[i]], aiScene);
+				DVKMesh* vkMesh  = LoadMesh(aiScene->mMeshes[aiNode->mMeshes[i]], aiScene);
 				vkMesh->linkNode = vkNode;
-				meshes.push_back(vkMesh);
 				vkNode->meshes.push_back(vkMesh);
+				meshes.push_back(vkMesh);
 			}
         }
         
+		// nodes map
 		nodesMap.insert(std::make_pair(vkNode->name, vkNode));
 		linearNodes.push_back(vkNode);
+
 		// children node
         for (int32 i = 0; i < aiNode->mNumChildren; ++i) 
 		{

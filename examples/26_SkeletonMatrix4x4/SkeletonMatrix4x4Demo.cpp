@@ -72,22 +72,42 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 projection;
 	};
+
+#define MAX_BONES 64
+	struct BonesTransformBlock
+	{
+		Matrix4x4 bones[MAX_BONES];
+	};
     
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
 		UpdateUI(time, delta);
 
-		UpdateAnimation(time, delta);
+		UpdateAnimation(0, 0);
 
 		// 设置Room参数
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
         m_RoleMaterial->BeginFrame();
         for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
         {
-            m_MVPData.model = m_RoleModel->meshes[i]->linkNode->GetGlobalMatrix();
+			vk_demo::DVKMesh* mesh = m_RoleModel->meshes[i];
+
+			// model data
+            m_MVPData.model = mesh->linkNode->GetGlobalMatrix();
+
+			// bones data
+			for (int32 j = 0; j < mesh->bones.size(); ++j) {
+				vk_demo::DVKBone& bone = mesh->bones[j];
+				std::string& boneName  = bone.name;
+				vk_demo::DVKNode* node = m_RoleModel->nodesMap[boneName];
+				m_BonesData.bones[j]   = m_RoleModel->rootNode->localMatrix.Inverse() * node->GetGlobalMatrix() * bone.inverseBindPose;
+			}
+
             m_RoleMaterial->BeginObject();
-            m_RoleMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+			m_RoleMaterial->SetLocalUniform("bonesData", &m_BonesData, sizeof(BonesTransformBlock));
+            m_RoleMaterial->SetLocalUniform("uboMVP",    &m_MVPData,   sizeof(ModelViewProjectionBlock));
             m_RoleMaterial->EndObject();
         }
         m_RoleMaterial->EndFrame();
@@ -125,7 +145,8 @@ private:
         
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/xiaonan/nvhai.fbx",
+			// "assets/models/xiaonan/nvhai.fbx",
+			"assets/models/goblin.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			{
@@ -234,6 +255,10 @@ private:
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
         boundCenter.z -= boundSize.Size();
         boundCenter.y += 10;
+
+		boundCenter.z -= 50;
+
+		memset(&m_BonesData, 0, sizeof(BonesTransformBlock));
         
 		m_MVPData.model.SetIdentity();
         
@@ -262,6 +287,8 @@ private:
 	bool 						m_Ready = false;
     
 	ModelViewProjectionBlock	m_MVPData;
+	BonesTransformBlock			m_BonesData;
+
 	vk_demo::DVKModel*			m_RoleModel = nullptr;
 	vk_demo::DVKShader*			m_RoleShader = nullptr;
 	vk_demo::DVKTexture*		m_RoleDiffuse = nullptr;

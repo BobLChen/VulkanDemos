@@ -48,21 +48,16 @@ namespace vk_demo
         }
     };
     
-    struct DVKModelUniformBlock
-    {
-        Matrix4x4   model;
-    };
-
 	struct DVKPrimitive
 	{
-		DVKIndexBuffer*					indexBuffer = nullptr;
-        DVKVertexBuffer*				vertexBuffer = nullptr;
+		DVKIndexBuffer*		indexBuffer = nullptr;
+        DVKVertexBuffer*	vertexBuffer = nullptr;
 
-		std::vector<float>				vertices;
-		std::vector<uint16>				indices;
+		std::vector<float>	vertices;
+		std::vector<uint16>	indices;
         
-        int32                           vertexCount = 0;
-        int32                           indexCount = 0;
+        int32               vertexCount = 0;
+        int32               indexCount = 0;
 
 		DVKPrimitive()
 		{
@@ -103,6 +98,13 @@ namespace vk_demo
         Matrix4x4       inverseBindPose;
 		Matrix4x4		globalTransform;
     };
+
+	struct DVKVertexSkin
+	{
+		int32  used = 0;
+		int32  indices[4];
+		float  weights[4];
+	};
 
 	template<class ValueType>
 	struct DVKAnimChannel
@@ -334,22 +336,14 @@ namespace vk_demo
         static DVKModel* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, const std::vector<float>& vertices, const std::vector<uint16>& indices, const std::vector<VertexAttribute>& attributes);
         
     protected:
-        struct VertexSkin
-        {
-            int32  used = 0;
-            int32  indices[4];
-            float  weights[4];
-        };
-        
-    protected:
         
         DVKNode* LoadNode(const aiNode* node, const aiScene* scene);
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
 
-        void LoadSkin(std::unordered_map<uint32, VertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        void LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
 
-        void LoadVertexDatas(std::unordered_map<uint32, VertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
+        void LoadVertexDatas(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
         
         void LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene);
         

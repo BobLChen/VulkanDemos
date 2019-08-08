@@ -170,8 +170,8 @@ namespace vk_demo
 			stride += VertexAttributeToSize(shader->attributes[i]);
 		}
 		VkVertexInputBindingDescription vertexInputBinding = {};
-		vertexInputBinding.binding = 0;
-		vertexInputBinding.stride = stride;
+		vertexInputBinding.binding   = 0;
+		vertexInputBinding.stride    = stride;
 		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 		// input attributes
