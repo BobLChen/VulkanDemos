@@ -37,8 +37,6 @@ void main()
 	boneMatrix += bonesData.bones[int(inSkinIndex.z)] * inSkinWeight.z;
 	boneMatrix += bonesData.bones[int(inSkinIndex.w)] * inSkinWeight.w;
 
-	// boneMatrix = bonesData.bones[int(inSkinIndex.x)];
-
 	mat4 modeMatrix   = uboMVP.modelMatrix * boneMatrix;
 	mat3 normalMatrix = transpose(inverse(mat3(modeMatrix)));
 
