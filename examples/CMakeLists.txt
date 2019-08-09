@@ -473,3 +473,18 @@ SETUP_SAMPLE_START(27_SkeletonPackIndexWeight)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(27_SkeletonPackIndexWeight)
+
+SETUP_SAMPLE_START(28_SkeletonQuat)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/28_SkeletonQuat/SkeletonQuatDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/28_SkeletonQuat/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(28_SkeletonQuat)
