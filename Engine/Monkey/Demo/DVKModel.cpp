@@ -629,6 +629,7 @@ namespace vk_demo
 		{
 			DVKBone* bone = bones[i];
 			DVKNode* node = nodesMap[bone->name];
+			// 注意行列矩阵的区别
 			bone->finalTransform = bone->inverseBindPose;
 			bone->finalTransform.Append(node->GetGlobalMatrix());
 		}
