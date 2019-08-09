@@ -163,6 +163,6 @@ Vulkan Examples
 ![26_Skeleton](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/26_Skeleton.gif)
 
 ### [27_SkeletonPackIndexWeight](https://github.com/BobLChen/VulkanDemos/tree/master/examples/27_SkeletonPackIndexWeight)
-- 4 bone index to 1 UInt32
-- 4 bone weight to 2 UInt32
+-Pack 4 bone index(uint32) to 1 UInt32
+-Pack 4 bone weight(float) to 2 UInt32
 Reduce 5 float per vertex
