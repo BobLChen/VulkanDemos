@@ -458,3 +458,18 @@ SETUP_SAMPLE_START(26_SkeletonMatrix4x4)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(26_SkeletonMatrix4x4)
+
+SETUP_SAMPLE_START(27_SkeletonPackIndexWeight)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/27_SkeletonPackIndexWeight/SkeletonPackIndexWeightDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/27_SkeletonPackIndexWeight/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(27_SkeletonPackIndexWeight)
