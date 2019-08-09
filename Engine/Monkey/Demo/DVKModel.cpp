@@ -142,38 +142,67 @@ namespace vk_demo
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFileFromMemory(dataPtr, dataSize, assimpFlags);
         
+		model->LoadBones(scene);
 		model->LoadNode(scene->mRootNode, scene);
         model->LoadAnim(scene);
         
         return model;
     }
 
+	void DVKModel::LoadBones(const aiScene* aiScene)
+	{
+		std::unordered_map<std::string, int32> boneIndexMap;
+		for (int32 i = 0; i < aiScene->mNumMeshes; ++i)
+		{
+			aiMesh* aimesh = aiScene->mMeshes[i];
+			for (int32 j = 0; j < aimesh->mNumBones; ++j)
+			{
+				aiBone* aibone   = aimesh->mBones[j];
+				std::string name = aibone->mName.C_Str();
+
+				auto it = boneIndexMap.find(name);
+				if (it == boneIndexMap.end())
+				{
+					// new bone
+					int32 index   = bones.size();
+					DVKBone* bone = new DVKBone();
+					bone->index   = index;
+					bone->parent  = -1;
+					bone->name    = name;
+					FillMatrixWithAiMatrix(bone->inverseBindPose, aibone->mOffsetMatrix);
+					// 记录Bone信息
+					bones.push_back(bone);
+					bonesMap.insert(std::make_pair(name, bone));
+					// cache
+					boneIndexMap.insert(std::make_pair(name, index));
+				}
+			}
+		}
+	}
+
     void DVKModel::LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
-        std::unordered_map<std::string, int32> boneIndexMap;
+        std::unordered_map<int32, int32> boneIndexMap;
         
         for (int32 i = 0; i < aiMesh->mNumBones; ++i)
         {
             aiBone* boneInfo = aiMesh->mBones[i];
-			int32 bondIndex  = 0;
             std::string boneName(boneInfo->mName.C_Str());
-            // 收集Bone信息并编号
-            auto it = boneIndexMap.find(boneName);
-            if (it == boneIndexMap.end())
-            {
-                bondIndex    = mesh->bones.size();
-				DVKBone bone = {};
-                bone.index   = bondIndex;
-                bone.parent  = -1;
-                bone.name    = boneName;
-                FillMatrixWithAiMatrix(bone.inverseBindPose, boneInfo->mOffsetMatrix);
-                mesh->bones.push_back(bone);
-                boneIndexMap.insert(std::make_pair(boneName, bondIndex));
-            }
-            else
-            {
-                bondIndex = it->second;
-            }
+			int32 boneIndex = bonesMap[boneName]->index;
+
+			// bone在mesh中的索引
+			int32 meshBoneIndex = 0;
+			auto it = boneIndexMap.find(boneIndex);
+			if (it == boneIndexMap.end()) {
+				meshBoneIndex = mesh->bones.size();
+				mesh->bones.push_back(boneIndex);
+				boneIndexMap.insert(std::make_pair(boneIndex, meshBoneIndex));
+			}
+			else
+			{
+				meshBoneIndex = it->second;
+			}
+
             // 收集被Bone影响的顶点信息
             for (uint32 j = 0; j < boneInfo->mNumWeights; ++j)
             {
@@ -184,7 +213,7 @@ namespace vk_demo
                     skinInfoMap.insert(std::make_pair(vertexID, DVKVertexSkin()));
                 }
 				DVKVertexSkin* info = &(skinInfoMap[vertexID]);
-                info->indices[info->used] = bondIndex;
+                info->indices[info->used] = meshBoneIndex;
                 info->weights[info->used] = weight;
                 info->used += 1;
 				// 只允许最多四个骨骼影响顶点
@@ -473,12 +502,29 @@ namespace vk_demo
 		nodesMap.insert(std::make_pair(vkNode->name, vkNode));
 		linearNodes.push_back(vkNode);
 
+		// bones parent
+		int32 boneParentIndex = -1;
+		{
+			auto it = bonesMap.find(vkNode->name);
+			if (it != bonesMap.end()) {
+				boneParentIndex = it->second->index;
+			}
+		}
+		
 		// children node
         for (int32 i = 0; i < aiNode->mNumChildren; ++i) 
 		{
             DVKNode* childNode = LoadNode(aiNode->mChildren[i], aiScene);
 			childNode->parent  = vkNode;
 			vkNode->children.push_back(childNode);
+
+			// bones relationship
+			{
+				auto it = bonesMap.find(childNode->name);
+				if (it != bonesMap.end()) {
+					it->second->parent = boneParentIndex;
+				}
+			}
         }
         
 		return vkNode;
@@ -585,7 +631,7 @@ namespace vk_demo
 		}
         
 		DVKAnimation& animation = animations[animIndex];
-		animation.time += delta;
+		animation.time += delta * animation.speed;
 
 		if (animation.time >= animation.duration) {
 			animation.time = animation.time - animation.duration;
@@ -603,6 +649,14 @@ namespace vk_demo
 			return;
 		}
 		animIndex = index;
+	}
+
+	DVKAnimation& DVKModel::GetAnimation(int32 index)
+	{
+		if (index == -1) {
+			index = animIndex;
+		}
+		return animations[index];
 	}
 
 	VkVertexInputBindingDescription DVKModel::GetInputBinding()

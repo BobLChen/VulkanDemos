@@ -96,7 +96,6 @@ namespace vk_demo
         int32           index = -1;
         int32           parent = -1;
         Matrix4x4       inverseBindPose;
-		Matrix4x4		globalTransform;
     };
 
 	struct DVKVertexSkin
@@ -165,25 +164,25 @@ namespace vk_demo
 		std::string name;
 		float		time = 0.0f;
 		float       duration = 0.0f;
+		float		speed = 1.0f;
 		std::unordered_map<std::string, DVKAnimationClip> clips;
 	};
     
     struct DVKMesh
     {
 		typedef std::vector<DVKPrimitive*> DVKPrimitives;
-        typedef std::vector<DVKBone> DVKBones;
 
-		DVKPrimitives	primitives;
-		DVKBoundingBox	bounding;
-        DVKNode*		linkNode;
+		DVKPrimitives		primitives;
+		DVKBoundingBox		bounding;
+        DVKNode*			linkNode;
         
-        DVKBones        bones;
-        bool            isSkin = false;
+		std::vector<int32>	bones;
+        bool				isSkin = false;
         
-		DVKMaterialInfo	material;
+		DVKMaterialInfo		material;
         
-		int32			vertexCount;
-		int32			triangleCount;
+		int32				vertexCount;
+		int32				triangleCount;
         
         DVKMesh()
             : linkNode(nullptr)
@@ -319,11 +318,18 @@ namespace vk_demo
 
 			meshes.clear();
 			linearNodes.clear();
+
+			for (int32 i = 0; i < bones.size(); ++i) {
+				delete bones[i];
+			}
+			bones.clear();
         }
 
 		void Update(float time, float delta);
 
 		void SetAnimation(int32 index);
+
+		DVKAnimation& GetAnimation(int32 index = -1);
 
 		void GotoAnimation(float time);
 
@@ -341,6 +347,8 @@ namespace vk_demo
         
 		DVKMesh* LoadMesh(const aiMesh* mesh, const aiScene* scene);
 
+		void LoadBones(const aiScene* aiScene);
+
         void LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
 
         void LoadVertexDatas(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, std::vector<float>& vertices, Vector3& mmax, Vector3& mmin, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene);
@@ -353,6 +361,7 @@ namespace vk_demo
         
     public:
         typedef std::unordered_map<std::string, DVKNode*> NodesMap;
+		typedef std::unordered_map<std::string, DVKBone*> BonesMap;
 
         std::shared_ptr<VulkanDevice>	device;
         
@@ -361,6 +370,9 @@ namespace vk_demo
         std::vector<DVKMesh*>			meshes;
 
 		NodesMap						nodesMap;
+
+		std::vector<DVKBone*>			bones;
+		BonesMap						bonesMap;
 		
 		std::vector<VertexAttribute>	attributes;
 		std::vector<DVKAnimation>		animations;
