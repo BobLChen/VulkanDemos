@@ -171,19 +171,18 @@ namespace vk_demo
     struct DVKMesh
     {
 		typedef std::vector<DVKPrimitive*> DVKPrimitives;
-        typedef std::vector<DVKBone> DVKBones;
 
-		DVKPrimitives	primitives;
-		DVKBoundingBox	bounding;
-        DVKNode*		linkNode;
+		DVKPrimitives		primitives;
+		DVKBoundingBox		bounding;
+        DVKNode*			linkNode;
         
-        DVKBones        bones;
-        bool            isSkin = false;
+		std::vector<int32>	bones;
+        bool				isSkin = false;
         
-		DVKMaterialInfo	material;
+		DVKMaterialInfo		material;
         
-		int32			vertexCount;
-		int32			triangleCount;
+		int32				vertexCount;
+		int32				triangleCount;
         
         DVKMesh()
             : linkNode(nullptr)
@@ -319,6 +318,11 @@ namespace vk_demo
 
 			meshes.clear();
 			linearNodes.clear();
+
+			for (int32 i = 0; i < bones.size(); ++i) {
+				delete bones[i];
+			}
+			bones.clear();
         }
 
 		void Update(float time, float delta);

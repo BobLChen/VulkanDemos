@@ -182,30 +182,27 @@ namespace vk_demo
 
     void DVKModel::LoadSkin(std::unordered_map<uint32, DVKVertexSkin>& skinInfoMap, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
-        std::unordered_map<std::string, int32> boneIndexMap;
+        std::unordered_map<int32, int32> boneIndexMap;
         
         for (int32 i = 0; i < aiMesh->mNumBones; ++i)
         {
             aiBone* boneInfo = aiMesh->mBones[i];
-			int32 boneIndex  = 0;
             std::string boneName(boneInfo->mName.C_Str());
-            // 收集Bone信息并编号
-            auto it = boneIndexMap.find(boneName);
-            if (it == boneIndexMap.end())
-            {
-                boneIndex    = mesh->bones.size();
-				DVKBone bone = {};
-                bone.index   = boneIndex;
-                bone.parent  = -1;
-                bone.name    = boneName;
-                FillMatrixWithAiMatrix(bone.inverseBindPose, boneInfo->mOffsetMatrix);
-                mesh->bones.push_back(bone);
-                boneIndexMap.insert(std::make_pair(boneName, boneIndex));
-            }
-            else
-            {
-                boneIndex = it->second;
-            }
+			int32 boneIndex = bonesMap[boneName]->index;
+
+			// bone在mesh中的索引
+			int32 meshBoneIndex = 0;
+			auto it = boneIndexMap.find(boneIndex);
+			if (it == boneIndexMap.end()) {
+				meshBoneIndex = mesh->bones.size();
+				mesh->bones.push_back(boneIndex);
+				boneIndexMap.insert(std::make_pair(boneIndex, meshBoneIndex));
+			}
+			else
+			{
+				meshBoneIndex = it->second;
+			}
+
             // 收集被Bone影响的顶点信息
             for (uint32 j = 0; j < boneInfo->mNumWeights; ++j)
             {
@@ -216,7 +213,7 @@ namespace vk_demo
                     skinInfoMap.insert(std::make_pair(vertexID, DVKVertexSkin()));
                 }
 				DVKVertexSkin* info = &(skinInfoMap[vertexID]);
-                info->indices[info->used] = boneIndex;
+                info->indices[info->used] = meshBoneIndex;
                 info->weights[info->used] = weight;
                 info->used += 1;
 				// 只允许最多四个骨骼影响顶点
