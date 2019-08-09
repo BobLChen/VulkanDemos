@@ -3,8 +3,7 @@
 layout (location = 0) in vec3  inPosition;
 layout (location = 1) in vec2  inUV0;
 layout (location = 2) in vec3  inNormal;
-layout (location = 3) in vec4  inSkinIndex;
-layout (location = 4) in vec4  inSkinWeight;
+layout (location = 3) in vec3  inSkinPack;
 
 layout (binding = 0) uniform MVPBlock 
 {
@@ -48,9 +47,9 @@ ivec2 UnPackUInt32To2Short(uint packIndex)
 void main() 
 {
 	// inSkinIndex.yzw and inSkinWeight.zw not used
-	ivec4 skinIndex   = UnPackUInt32To4Byte(uint(inSkinIndex.x));
-	ivec2 skinWeight0 = UnPackUInt32To2Short(uint(inSkinWeight.x));
-	ivec2 skinWeight1 = UnPackUInt32To2Short(uint(inSkinWeight.y));
+	ivec4 skinIndex   = UnPackUInt32To4Byte(uint(inSkinPack.x));
+	ivec2 skinWeight0 = UnPackUInt32To2Short(uint(inSkinPack.y));
+	ivec2 skinWeight1 = UnPackUInt32To2Short(uint(inSkinPack.z));
 	vec4  skinWeight  = vec4(skinWeight0 / 65535.0, skinWeight1 / 65535.0);
 
 	mat4 boneMatrix = bonesData.bones[skinIndex.x] * skinWeight.x;
@@ -65,7 +64,7 @@ void main()
 	
 	outUV       = inUV0;
 	outNormal   = normal;
-	outColor    = inSkinWeight;
+	outColor    = vec4(normal, 1.0);
 	
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * modeMatrix * vec4(inPosition.xyz, 1.0);
 }

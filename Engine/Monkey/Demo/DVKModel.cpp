@@ -131,6 +131,9 @@ namespace vk_demo
             else if (attributes[i] == VertexAttribute::VA_SkinWeight) {
                 model->loadSkin = true;
             }
+			else if (attributes[i] == VertexAttribute::VA_SkinPack) {
+				model->loadSkin = true;
+			}
         }
         
         uint32 dataSize = 0;
@@ -304,6 +307,36 @@ namespace vk_demo
                         vertices.push_back(defaultColor.z);
                     }
                 }
+				else if (attributes[j] == VertexAttribute::VA_SkinPack)
+				{
+					if (mesh->isSkin)
+					{
+						DVKVertexSkin& skin = skinInfoMap[i];
+
+						int32 idx0 = skin.indices[0];
+						int32 idx1 = skin.indices[1];
+						int32 idx2 = skin.indices[2];
+						int32 idx3 = skin.indices[3];
+						uint32 packIndex = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
+
+						uint16 weight0 = skin.weights[0] * 65535;
+						uint16 weight1 = skin.weights[1] * 65535;
+						uint16 weight2 = skin.weights[2] * 65535;
+						uint16 weight3 = skin.weights[3] * 65535;
+						uint32 packWeight0 = (weight0 << 16) + weight1;
+						uint32 packWeight1 = (weight2 << 16) + weight3;
+
+						vertices.push_back(packIndex);
+						vertices.push_back(packWeight0);
+						vertices.push_back(packWeight1);
+					}
+					else
+					{
+						vertices.push_back(0);
+						vertices.push_back(65535);
+						vertices.push_back(0);
+					}
+				}
                 else if (attributes[j] == VertexAttribute::VA_SkinIndex)
                 {
                     if (mesh->isSkin)

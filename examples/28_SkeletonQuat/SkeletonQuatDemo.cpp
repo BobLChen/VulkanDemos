@@ -175,9 +175,6 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
         
-		Matrix4x4 mat;
-		mat.ToQuat();
-
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/xiaonan/nvhai.fbx",
@@ -187,71 +184,9 @@ private:
                 VertexAttribute::VA_Position,
                 VertexAttribute::VA_UV0,
                 VertexAttribute::VA_Normal,
-                VertexAttribute::VA_SkinIndex,
-                VertexAttribute::VA_SkinWeight
+                VertexAttribute::VA_SkinPack,
             }
 		);
-
-		// 索引一般不会超过255，因此可以将四个索引打包到一个UInt32里面。
-		// 权重信息范围[0, 1]也可以压缩为16个Bit，打包到两个UInt32里面，动作可能会有抖动。
-		// uint32 packIndex   = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
-		// int32 unpackIndex0 = (packIndex >> 24) & 0xFF;
-		// int32 unpackIndex1 = (packIndex >> 16) & 0xFF;
-		// int32 unpackIndex2 = (packIndex >> 8)  & 0xFF;
-		// int32 unpackIndex3 = (packIndex >> 0)  & 0xFF;
-		for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
-		{
-			vk_demo::DVKMesh* mesh = m_RoleModel->meshes[i];
-			for (int32 j = 0; j < mesh->primitives.size(); ++j)
-			{
-				vk_demo::DVKPrimitive* primitive = mesh->primitives[j];
-				int32 stride = primitive->vertices.size() / primitive->vertexCount;
-				for (int32 vertID = 0; vertID < primitive->vertexCount; ++vertID)
-				{
-					uint32 idx = vertID * stride + stride - 8;
-
-					int32 idx0 = primitive->vertices[idx + 0];
-					int32 idx1 = primitive->vertices[idx + 1];
-					int32 idx2 = primitive->vertices[idx + 2];
-					int32 idx3 = primitive->vertices[idx + 3];
-					// packIndex
-					uint32 packIndex = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
-					primitive->vertices[idx + 0] = packIndex;
-					primitive->vertices[idx + 1] = packIndex;
-					primitive->vertices[idx + 2] = packIndex;
-					primitive->vertices[idx + 3] = packIndex;
-					// debug
-					int32 unpackIndex0 = (packIndex >> 24) & 0xFF;
-					int32 unpackIndex1 = (packIndex >> 16) & 0xFF;
-					int32 unpackIndex2 = (packIndex >> 8)  & 0xFF;
-					int32 unpackIndex3 = (packIndex >> 0)  & 0xFF;
-
-					// packWeight
-					uint16 weight0 = primitive->vertices[idx + 4] * 65535;
-					uint16 weight1 = primitive->vertices[idx + 5] * 65535;
-					uint16 weight2 = primitive->vertices[idx + 6] * 65535;
-					uint16 weight3 = primitive->vertices[idx + 7] * 65535;
-					uint32 packWeight0 = (weight0 << 16) + weight1;
-					uint32 packWeight1 = (weight2 << 16) + weight3;
-					primitive->vertices[idx + 4] = packWeight0;
-					primitive->vertices[idx + 5] = packWeight1;
-					primitive->vertices[idx + 6] = packWeight0;
-					primitive->vertices[idx + 7] = packWeight1;
-					// debug
-					float unpackWeight0 = ((packWeight0 >> 16)  & 0xFFFF) / 65535.0f;
-					float unpackWeight1 = ((packWeight0 >> 0)   & 0xFFFF) / 65535.0f;
-					float unpackWeight2 = ((packWeight1 >> 16)  & 0xFFFF) / 65535.0f; 
-					float unpackWeight3 = ((packWeight1 >> 0)   & 0xFFFF) / 65535.0f; 
-					// 权重信息精度较高，因此用UInt16来存储，可能动作会抖动。
-					// 当我们全部Pack好了之后，其实Index和Weight数据放到Vector3即可。从8个4Byte的数据降到3个4Byte的数据。
-				}
-				// 重建创建Buffer
-				delete primitive->vertexBuffer;
-				delete primitive->indexBuffer;
-				primitive->vertexBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->vertices, m_RoleModel->attributes);
-				primitive->indexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice,  cmdBuffer, primitive->indices);
-			}
-		}
 
         SetAnimation(0);
         
