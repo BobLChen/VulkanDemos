@@ -145,15 +145,15 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SkeletonMatrix4x4Demo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
-            if (ImGui::SliderInt("Anim", &m_AnimIndex, 0, m_RoleModel->animations.size() - 1))
-            {
+            if (ImGui::SliderInt("Anim", &m_AnimIndex, 0, m_RoleModel->animations.size() - 1)) {
                 SetAnimation(m_AnimIndex);
             }
+
+			ImGui::SliderFloat("Speed", &(m_RoleModel->GetAnimation().speed), 0.0f, 10.0f);
             
             ImGui::Checkbox("AutoPlay", &m_AutoAnimation);
             
-            if (!m_AutoAnimation)
-            {
+            if (!m_AutoAnimation) {
                 ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
             }
             
