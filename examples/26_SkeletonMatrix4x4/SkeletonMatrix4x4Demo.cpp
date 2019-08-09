@@ -98,15 +98,13 @@ private:
             m_MVPData.model = mesh->linkNode->GetGlobalMatrix();
             
 			// bones data
-			for (int32 j = 0; j < mesh->bones.size(); ++j) {
+			for (int32 j = 0; j < mesh->bones.size(); ++j) 
+			{
 				int32 boneIndex = mesh->bones[j];
 				vk_demo::DVKBone* bone = m_RoleModel->bones[boneIndex];
-				vk_demo::DVKNode* node = m_RoleModel->nodesMap[bone->name];
-                // 注意行列顺序，Vertex * inverseBindPose * globalBone
-				m_BonesData.bones[j] = bone->inverseBindPose;
-				m_BonesData.bones[j].Append(node->GetGlobalMatrix());
-                // 这里要注意，我们的Bone动画使用的是全局变化矩阵，变换矩阵一直延续到了aiScene->mRoot节点。
-                // 因此我们需要将Bone变换矩阵与mesh的全局变化矩阵的逆矩阵做运算，来抵消掉mesh父节点之上的变换操作。
+				m_BonesData.bones[j] = bone->finalTransform;
+				// 这里要注意，我们的Bone动画使用的是全局变化矩阵，变换矩阵一直延续到了aiScene->mRoot节点。
+				// 因此我们需要将Bone变换矩阵与mesh的全局变化矩阵的逆矩阵做运算，来抵消掉mesh父节点之上的变换操作。
 				m_BonesData.bones[j].Append(mesh->linkNode->GetGlobalMatrix().Inverse());
 			}
             

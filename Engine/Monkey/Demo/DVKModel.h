@@ -96,6 +96,7 @@ namespace vk_demo
         int32           index = -1;
         int32           parent = -1;
         Matrix4x4       inverseBindPose;
+		Matrix4x4		finalTransform;
     };
 
 	struct DVKVertexSkin

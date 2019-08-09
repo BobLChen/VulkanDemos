@@ -592,6 +592,7 @@ namespace vk_demo
 		DVKAnimation& animation = animations[animIndex];
         animation.time = MMath::Clamp(time, 0.0f, animation.duration);
         
+		// update nodes animation
 		for (auto it = animation.clips.begin(); it != animation.clips.end(); ++it)
 		{
 			vk_demo::DVKAnimationClip& clip = it->second;
@@ -621,6 +622,16 @@ namespace vk_demo
 			node->localMatrix.AppendScale(retScale);
 			node->localMatrix.Append(retRot.ToMatrix());
 			node->localMatrix.AppendTranslation(retPos);
+		}
+
+		// update bones
+		for (int32 i = 0; i < bones.size(); ++i)
+		{
+			DVKBone* bone = bones[i];
+			DVKNode* node = nodesMap[bone->name];
+			// 注意行列矩阵的区别
+			bone->finalTransform = bone->inverseBindPose;
+			bone->finalTransform.Append(node->GetGlobalMatrix());
 		}
 	}
     
