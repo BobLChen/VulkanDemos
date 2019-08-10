@@ -183,12 +183,6 @@ FORCEINLINE Quat::Quat(const Matrix4x4& m)
 		return;
 	}
 
-	if ((MMath::Abs(1.f - m.GetScaledAxis(Axis::X).SizeSquared()) <= KINDA_SMALL_NUMBER) && (MMath::Abs(1.f - m.GetScaledAxis(Axis::Y).SizeSquared()) <= KINDA_SMALL_NUMBER) && (MMath::Abs(1.f - m.GetScaledAxis(Axis::Z).SizeSquared()) <= KINDA_SMALL_NUMBER))
-	{
-		*this = Quat::Identity;
-		return;
-	}
-
 	float s;
 
 	const float tr = m.m[0][0] + m.m[1][1] + m.m[2][2];

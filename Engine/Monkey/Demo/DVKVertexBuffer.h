@@ -44,6 +44,9 @@ namespace vk_demo
 		else if (attribute == VertexAttribute::VA_SkinIndex) {
 			return 4 * sizeof(float);
 		}
+		else if (attribute == VertexAttribute::VA_SkinPack) {
+			return 3 * sizeof(float);
+		}
         else if (attribute == VertexAttribute::VA_Custom0 ||
                  attribute == VertexAttribute::VA_Custom1 ||
                  attribute == VertexAttribute::VA_Custom2 ||
@@ -74,6 +77,9 @@ namespace vk_demo
 			format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		}
 		else if (attribute == VertexAttribute::VA_Color) {
+			format = VK_FORMAT_R32G32B32_SFLOAT;
+		}
+		else if (attribute == VertexAttribute::VA_SkinPack) {
 			format = VK_FORMAT_R32G32B32_SFLOAT;
 		}
 		else if (attribute == VertexAttribute::VA_SkinWeight) {

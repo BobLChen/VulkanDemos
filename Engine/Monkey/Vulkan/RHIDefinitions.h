@@ -283,6 +283,7 @@ enum VertexAttribute
 	VA_Color,
 	VA_SkinWeight,
 	VA_SkinIndex,
+	VA_SkinPack,
 	VA_Custom0,
 	VA_Custom1,
 	VA_Custom2,
@@ -695,6 +696,9 @@ FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
 	}
 	else if (strcmp(name, "inSkinIndex") == 0) {
 		return VertexAttribute::VA_SkinIndex;
+	}
+	else if (strcmp(name, "inSkinPack") == 0) {
+		return VertexAttribute::VA_SkinPack;
 	}
 	else if (strcmp(name, "inCustom0") == 0) {
 		return VertexAttribute::VA_Custom0;

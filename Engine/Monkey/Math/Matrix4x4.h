@@ -185,9 +185,9 @@ public:
 
 	FORCEINLINE void To3x4MatrixTranspose(float* Out) const;
 
-	FORCEINLINE Rotator ToRotator() const;
+	Rotator ToRotator() const;
 
-	FORCEINLINE Quat ToQuat() const;
+	Quat ToQuat() const;
 
 	FORCEINLINE std::string ToString() const;
 
