@@ -76,7 +76,8 @@ private:
 #define MAX_BONES 64
 	struct BonesTransformBlock
 	{
-		Matrix4x4 bones[MAX_BONES];
+		Vector4 dualQuats[MAX_BONES * 2];
+		Vector4 debugParam;
 	};
     
 	void Draw(float time, float delta)
@@ -102,14 +103,32 @@ private:
 			{
 				int32 boneIndex = mesh->bones[j];
 				vk_demo::DVKBone* bone = m_RoleModel->bones[boneIndex];
-				m_BonesData.bones[j] = bone->finalTransform;
-				// 这里要注意，我们的Bone动画使用的是全局变化矩阵，变换矩阵一直延续到了aiScene->mRoot节点。
-				// 因此我们需要将Bone变换矩阵与mesh的全局变化矩阵的逆矩阵做运算，来抵消掉mesh父节点之上的变换操作。
-				m_BonesData.bones[j].Append(mesh->linkNode->GetGlobalMatrix().Inverse());
+
+				// 获取骨骼的最终Transform矩阵
+				// 也可以使用对偶四元素来替换矩阵的计算
+				Matrix4x4 boneTransform = bone->finalTransform;
+				boneTransform.Append(mesh->linkNode->GetGlobalMatrix().Inverse());
+
+				// 从Transform矩阵中获取四元数以及位移信息
+				Quat quat   = boneTransform.ToQuat();
+				Vector3 pos = boneTransform.GetOrigin();
+
+				// 转为使用对偶四元数
+				float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+				float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+				float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+				float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+
+				// 设置参数
+				m_BonesData.dualQuats[j * 2 + 0].Set(quat.x, quat.y, quat.z, quat.w);
+				m_BonesData.dualQuats[j * 2 + 1].Set(dx, dy, dz, dw);
 			}
-            
-            if (mesh->bones.size() == 0) {
-                m_BonesData.bones[0].SetIdentity();
+
+			// 没有骨骼数据设置默认
+            if (mesh->bones.size() == 0) 
+			{
+				m_BonesData.dualQuats[0].Set(0, 0, 0, 1);
+				m_BonesData.dualQuats[1].Set(0, 0, 0, 0);
             }
             
 			m_RoleMaterial->BeginObject();
@@ -147,8 +166,12 @@ private:
                 SetAnimation(m_AnimIndex);
             }
 
+			bool checked = m_BonesData.debugParam.x >= 1.0f;
+			ImGui::Checkbox("Optimize", &checked);
+			m_BonesData.debugParam.x = checked ? 1.0f : 0.0f;
+
 			ImGui::SliderFloat("Speed", &(m_RoleModel->GetAnimation().speed), 0.0f, 10.0f);
-            
+
             ImGui::Checkbox("AutoPlay", &m_AutoAnimation);
             
             if (!m_AutoAnimation) {
@@ -296,10 +319,8 @@ private:
 
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
-        
-        for (int32 i = 0; i < MAX_BONES; ++i) {
-            m_BonesData.bones[i].SetIdentity();
-        }
+
+		m_BonesData.debugParam.Set(0, 0, 0, 0);
 	}
     
 	void CreateGUI()

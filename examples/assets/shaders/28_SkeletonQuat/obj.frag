@@ -14,5 +14,5 @@ void main()
     vec3 lightDir = vec3(0, 1, -1);
     diffuse.xyz   = dot(lightDir, inNormal) * diffuse.xyz; 
 
-    outFragColor  = diffuse;
+    outFragColor  = diffuse * inColor;
 }

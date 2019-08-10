@@ -59,7 +59,7 @@ public:
 
 	FORCEINLINE Vector3 GetVector() const;
 
-	FORCEINLINE Quat Quaternion() const;
+	Quat Quaternion() const;
 
 	FORCEINLINE Vector3 Euler() const;
 
