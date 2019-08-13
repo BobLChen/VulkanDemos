@@ -175,3 +175,6 @@ Reduce 5 float per vertex
 
 ### [29_MSAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_MSAA)
 ![29_MSAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/29_MSAA.gif)
+
+### [30_FXAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/30_FXAA)
+![30_FXAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/30_FXAA.gif)
