@@ -262,13 +262,13 @@ private:
         
 		UpdateUI(time, delta);
         
-        m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 15.0f, Vector3::UpVector);
+        m_LineModel->rootNode->localMatrix.AppendRotation(delta * 15.0f, Vector3::UpVector);
 
 		vk_demo::DVKMaterial* material = m_MSAAEnable ? m_MSAAMaterial : m_NoneMaterial;
 		material->BeginFrame();
-        for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
+        for (int32 i = 0; i < m_LineModel->meshes.size(); ++i)
         {
-			vk_demo::DVKMesh* mesh = m_RoleModel->meshes[i];
+			vk_demo::DVKMesh* mesh = m_LineModel->meshes[i];
             m_MVPData.model = mesh->linkNode->GetGlobalMatrix();
 			material->BeginObject();
 			material->SetLocalUniform("uboMVP",    &m_MVPData,   sizeof(ModelViewProjectionBlock));
@@ -402,7 +402,7 @@ private:
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
-			m_RoleShader
+			m_LineShader
 		);
 		m_MSAAMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 		m_MSAAMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
@@ -416,7 +416,7 @@ private:
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
-			m_RoleShader
+			m_LineShader
 		);
 		m_NoneMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 		m_NoneMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
@@ -436,7 +436,7 @@ private:
 		GenerateLineSphere(vertices, 40, 1.0f);
 
 		// model
-		m_RoleModel = vk_demo::DVKModel::Create(
+		m_LineModel = vk_demo::DVKModel::Create(
 			m_VulkanDevice,
 			cmdBuffer,
 			vertices,
@@ -445,7 +445,7 @@ private:
 		);
 
 		// shader
-		m_RoleShader = vk_demo::DVKShader::Create(
+		m_LineShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
 			"assets/shaders/29_MSAA/obj.vert.spv",
@@ -461,8 +461,8 @@ private:
 	{
 		DestroyMaterials();
 
-		delete m_RoleShader;
-		delete m_RoleModel;
+		delete m_LineShader;
+		delete m_LineModel;
 
 		DestroyMSAATexture();
 	}
@@ -521,9 +521,9 @@ private:
         
 		vk_demo::DVKMaterial* material = m_MSAAEnable ? m_MSAAMaterial : m_NoneMaterial;
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
-        for (int32 j = 0; j < m_RoleModel->meshes.size(); ++j) {
+        for (int32 j = 0; j < m_LineModel->meshes.size(); ++j) {
 			material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-            m_RoleModel->meshes[j]->BindDrawCmd(commandBuffer);
+            m_LineModel->meshes[j]->BindDrawCmd(commandBuffer);
         }
         
         m_GUI->BindDrawCmd(commandBuffer, m_RenderPass, 0, m_MSAAEnable ? m_MSAACount : VK_SAMPLE_COUNT_1_BIT);
@@ -568,8 +568,8 @@ private:
 	vk_demo::DVKTexture*		m_MSAADepthTexture = nullptr;
 	bool						m_MSAAEnable = false;
 
-	vk_demo::DVKModel*			m_RoleModel = nullptr;
-	vk_demo::DVKShader*			m_RoleShader = nullptr;
+	vk_demo::DVKModel*			m_LineModel = nullptr;
+	vk_demo::DVKShader*			m_LineShader = nullptr;
     vk_demo::DVKMaterial*       m_MSAAMaterial = nullptr;
 	vk_demo::DVKMaterial*		m_NoneMaterial = nullptr;
 };
