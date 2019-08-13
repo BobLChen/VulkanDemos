@@ -252,7 +252,7 @@ namespace vk_demo
 		return texture;
     }
 
-	DVKTexture* DVKTexture::Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage)
+	DVKTexture* DVKTexture::Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -276,7 +276,7 @@ namespace vk_demo
         imageCreateInfo.format          = format;
         imageCreateInfo.mipLevels       = 1;
         imageCreateInfo.arrayLayers     = 1;
-        imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.samples         = sampleCount;
         imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
         imageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
         imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -338,6 +338,7 @@ namespace vk_demo
 		texture->device			= device;
 		texture->mipLevels		= 1;
 		texture->layerCount		= 1;
+		texture->numSamples     = sampleCount;
 
         return texture;
 	}

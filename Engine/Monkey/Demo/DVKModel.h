@@ -78,8 +78,15 @@ namespace vk_demo
 
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{
-			vertexBuffer->Bind(cmdBuffer);
-			indexBuffer->BindDraw(cmdBuffer);
+			if (vertexBuffer) {
+				vertexBuffer->Bind(cmdBuffer);
+			}
+			if (indexBuffer) {
+				indexBuffer->BindDraw(cmdBuffer);
+			}
+			if (vertexBuffer && !indexBuffer) {
+				vkCmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
+			}
 		}
 	};
 

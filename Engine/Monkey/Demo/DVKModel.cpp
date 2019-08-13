@@ -75,14 +75,24 @@ namespace vk_demo
         model->attributes = attributes;
         model->cmdBuffer  = cmdBuffer;
         
+		int32 stride = 0;
+		for (int32 i = 0; i < attributes.size(); ++i) {
+			stride += VertexAttributeToSize(attributes[i]);
+		}
+
         DVKPrimitive* primitive = new DVKPrimitive();
         primitive->vertices = vertices;
         primitive->indices  = indices;
-        
+		primitive->vertexCount = vertices.size() / stride * 4;
+		
         if (cmdBuffer)
         {
-            primitive->vertexBuffer = DVKVertexBuffer::Create(vulkanDevice, cmdBuffer, primitive->vertices, attributes);
-            primitive->indexBuffer  = DVKIndexBuffer::Create(vulkanDevice, cmdBuffer, primitive->indices);
+			if (vertices.size() > 0) {
+				primitive->vertexBuffer = DVKVertexBuffer::Create(vulkanDevice, cmdBuffer, primitive->vertices, attributes);
+			}
+			if (indices.size() > 0) {
+				primitive->indexBuffer = DVKIndexBuffer::Create(vulkanDevice, cmdBuffer, primitive->indices);
+			}
         }
         
         DVKMesh* mesh = new DVKMesh();
