@@ -98,25 +98,7 @@ public:
 
 	void EndFrame();
 
-    void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass = 0);
-    
-    bool Header(const char* caption);
-    
-    bool CheckBox(const char* caption, bool& value);
-    
-    bool CheckBox(const char* caption, int32& value);
-    
-    bool InputFloat(const char* caption, float& value, float step, uint32 precision);
-    
-    bool SliderFloat(const char* caption, float& value, float min, float max);
-    
-    bool SliderInt(const char* caption, int32& value, int32 min, int32 max);
-    
-    bool ComboBox(const char* caption, int32& itemindex, const std::vector<std::string>& items);
-    
-    bool Button(const char* caption);
-    
-    void Text(const char* formatstr, ...);
+    void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass = 0, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
     
 	inline float GetScale() const
 	{
@@ -129,7 +111,7 @@ protected:
 
 	void PreparePipelineResources();
 
-	void PreparePipeline(VkRenderPass renderPass, int32 subpass);
+	void PreparePipeline(VkRenderPass renderPass, int32 subpass, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 
 	void CreateBuffer(UIBuffer& buffer, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size);
 
@@ -156,6 +138,7 @@ protected:
 
 	VkRenderPass			m_LastRenderPass;
 	int32					m_LastSubPass = -1;
+	VkSampleCountFlagBits	m_LastSampleCount = VK_SAMPLE_COUNT_1_BIT;
 
     VkDeviceMemory          m_FontMemory;
     VkImage                 m_FontImage;

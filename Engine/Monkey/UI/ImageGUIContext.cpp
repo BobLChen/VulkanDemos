@@ -131,7 +131,7 @@ void ImageGUIContext::Init(const std::string& font)
 	PreparePipelineResources();
 }
 
-void ImageGUIContext::PreparePipeline(VkRenderPass renderPass, int32 subpass)
+void ImageGUIContext::PreparePipeline(VkRenderPass renderPass, int32 subpass, VkSampleCountFlagBits sampleCount)
 {
 	VkDevice device = m_VulkanDevice->GetInstanceHandle();
 	if (m_Pipeline != VK_NULL_HANDLE) {
@@ -175,7 +175,7 @@ void ImageGUIContext::PreparePipeline(VkRenderPass renderPass, int32 subpass)
 
 	VkPipelineMultisampleStateCreateInfo multisampleState;
 	ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-	multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisampleState.rasterizationSamples = sampleCount;
 
 	std::vector<VkDynamicState> dynamicStateEnables = {
 		VK_DYNAMIC_STATE_VIEWPORT,
@@ -717,7 +717,7 @@ void ImageGUIContext::CreateBuffer(UIBuffer& buffer, VkBufferUsageFlags usageFla
 	buffer.alignment = memReqs.alignment;
 }
 
-void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass)
+void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass, VkSampleCountFlagBits sampleCount)
 {
     ImDrawData* imDrawData = ImGui::GetDrawData();
 	int32_t vertexOffset   = 0;
@@ -733,8 +733,8 @@ void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const Vk
 		return;
 	}
 
-	if (m_LastRenderPass != renderPass || m_LastSubPass != subpass) {
-		PreparePipeline(renderPass, subpass);
+	if (m_LastRenderPass != renderPass || m_LastSubPass != subpass || m_LastSampleCount != sampleCount) {
+		PreparePipeline(renderPass, subpass, sampleCount);
 	}
 
 	ImGuiIO& io = ImGui::GetIO();
@@ -789,93 +789,4 @@ void ImageGUIContext::BindDrawCmd(const VkCommandBuffer& commandBuffer, const Vk
 	}
 
 	m_Updated = false;
-}
-
-bool ImageGUIContext::Header(const char* caption)
-{
-    return ImGui::CollapsingHeader(caption, ImGuiTreeNodeFlags_DefaultOpen);
-}
-
-bool ImageGUIContext::CheckBox(const char* caption, bool& value)
-{
-    bool res = ImGui::Checkbox(caption, &value);
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::CheckBox(const char* caption, int32& value)
-{
-    bool val = value == 1;
-	bool res = ImGui::Checkbox(caption, &val);
-	value = val;
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::InputFloat(const char* caption, float& value, float step, uint32 precision)
-{
-	bool res = ImGui::InputFloat(caption, &value, step, step * 10.0f, precision);
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::SliderFloat(const char* caption, float& value, float min, float max)
-{
-    bool res = ImGui::SliderFloat(caption, &value, min, max);
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::SliderInt(const char* caption, int32& value, int32 min, int32 max)
-{
-	bool res = ImGui::SliderInt(caption, &value, min, max);
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::ComboBox(const char* caption, int32& itemindex, const std::vector<std::string>& items)
-{
-    if (items.empty()) {
-		return false;
-	}
-
-	std::vector<const char*> charitems;
-	charitems.reserve(items.size());
-	for (size_t i = 0; i < items.size(); i++) {
-		charitems.push_back(items[i].c_str());
-	}
-
-	uint32_t itemCount = static_cast<uint32_t>(charitems.size());
-	bool res = ImGui::Combo(caption, &itemindex, &charitems[0], itemCount, itemCount);
-	if (res) { 
-		m_Updated = true;
-	}
-	return res;
-}
-
-bool ImageGUIContext::Button(const char* caption)
-{
-    bool res = ImGui::Button(caption);
-	if (res) { 
-		m_Updated = true;
-	};
-	return res;
-}
-
-void ImageGUIContext::Text(const char* formatstr, ...)
-{
-    va_list args;
-	va_start(args, formatstr);
-	ImGui::TextV(formatstr, args);
-	va_end(args);
 }
