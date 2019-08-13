@@ -14,7 +14,7 @@
 
 2、在那个黑框中输入（PS:没有--rescursive）
 
-```git clone https://github.com/BobLChen/VulkanTutorials.git```
+```git clone https://github.com/BobLChen/VulkanDemos.git```
 
 
 
