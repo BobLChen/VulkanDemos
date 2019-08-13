@@ -1,4 +1,4 @@
-﻿#include "DVKTexture.h"
+#include "DVKTexture.h"
 #include "DVKBuffer.h"
 
 #include "Math/Math.h"
@@ -9,11 +9,8 @@
 namespace vk_demo
 {
     
-	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
 	{
-		int32 size = width * height * 4;
-
-        VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
         
@@ -245,7 +242,7 @@ namespace vk_demo
             return nullptr;
         }
 
-        DVKTexture* texture = Create2D(rgbaData, width, height, vulkanDevice, cmdBuffer);
+        DVKTexture* texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer);
 
 		StbImage::Free(rgbaData);
 

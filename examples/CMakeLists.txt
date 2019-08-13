@@ -518,3 +518,18 @@ SETUP_SAMPLE_START(30_FXAA)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(30_FXAA)
+
+SETUP_SAMPLE_START(31_SkinInTexture)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/31_SkinInTexture/SkinInTextureDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/31_SkinInTexture/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(31_SkinInTexture)
