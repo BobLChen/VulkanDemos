@@ -170,6 +170,7 @@ Reduce 5 float per vertex
 
 ### [28_SkeletonQuat](https://github.com/BobLChen/VulkanDemos/tree/master/examples/28_SkeletonQuat)
 - Dual quat animation, reduce 8 float per bone. From matrix4x4 to 2 vector.
+
 ![28_SkeletonDualQuat](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/28_SkeletonDualQuat.gif)
 
 ### [29_MSAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_MSAA)
