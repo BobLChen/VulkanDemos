@@ -181,3 +181,7 @@ Reduce 5 float per vertex
 
 ### [30_FXAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/30_FXAA)
 ![30_FXAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/30_FXAA.gif)
+
+### [31_VertexTextureSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/31_SkinInTexture)
+- Store skeleton datas in texture and used in vertex shader.
+
