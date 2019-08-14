@@ -99,8 +99,8 @@ private:
 		
 		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
 
-		m_ParamData.animIndex.x = 64;
-		m_ParamData.animIndex.y = 32;
+		m_ParamData.animIndex.x = m_AnimTexture->width;
+		m_ParamData.animIndex.y = m_AnimTexture->height;
 		m_ParamData.animIndex.z = index * mesh->bones.size() * 2;
 		m_ParamData.animIndex.w = 0;
 	}
@@ -112,19 +112,13 @@ private:
 		UpdateUI(time, delta);
 		UpdateAnimation(time, delta);
         
-        // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
         m_RoleMaterial->BeginFrame();
-        for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
-        {
-			vk_demo::DVKMesh* mesh  = m_RoleModel->meshes[i];
-			// 标记是否为骨骼动画
-			m_ParamData.animIndex.w = mesh->bones.size() == 0 ? 0 : 1;
-			
-            m_ParamData.model = mesh->linkNode->GetGlobalMatrix();
-			m_RoleMaterial->BeginObject();
-            m_RoleMaterial->SetLocalUniform("paramData", &m_ParamData, sizeof(ParamDataBlock));
-            m_RoleMaterial->EndObject();
-        }
+		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
+		m_ParamData.animIndex.w = mesh->bones.size() == 0 ? 0 : 1;
+		m_ParamData.model = mesh->linkNode->GetGlobalMatrix();
+		m_RoleMaterial->BeginObject();
+		m_RoleMaterial->SetLocalUniform("paramData", &m_ParamData, sizeof(ParamDataBlock));
+		m_RoleMaterial->EndObject();
         m_RoleMaterial->EndFrame();
         
 		SetupCommandBuffers(bufferIndex);
@@ -135,6 +129,14 @@ private:
 	void UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
+
+		m_FrameCounter  += 1;
+		m_LastFrameTime += delta;
+		if (m_LastFrameTime >= 1.0f) {
+			m_LastFPS = m_FrameCounter;
+			m_FrameCounter  = 0;
+			m_LastFrameTime = 0.0f;
+		}
 
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -147,7 +149,7 @@ private:
                 ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
             }
             
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
@@ -165,7 +167,7 @@ private:
 
 	void CreateAnimTexture(vk_demo::DVKCommandBuffer* cmdBuffer)
 	{
-		std::vector<float> animData(64 * 32 * 4); // 21个骨骼 * 30帧动画数据 * 8
+		std::vector<float> animData(64 * 64 * 4); // 21个骨骼 * 30帧动画数据 * 8
 		vk_demo::DVKAnimation& animation = m_RoleModel->GetAnimation();
 		
 		// 获取关键帧信息
@@ -231,7 +233,7 @@ private:
 		// 创建Texture
 		m_AnimTexture = vk_demo::DVKTexture::Create2D(
 			(const uint8*)animData.data(), animData.size() * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT, 
-			64, 32,
+			64, 64,
 			m_VulkanDevice,
 			cmdBuffer
 		);
@@ -251,7 +253,7 @@ private:
         
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/xiaonan/nvhai.fbx",
+			"assets/models/Crab/DancingCrabDance.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{
@@ -261,6 +263,7 @@ private:
                 VertexAttribute::VA_SkinPack,
             }
 		);
+		m_RoleModel->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
 
 		// animation
 		SetAnimation(0);
@@ -270,13 +273,13 @@ private:
 		m_RoleShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/31_SkinInTexture/obj.vert.spv",
-			"assets/shaders/31_SkinInTexture/obj.frag.spv"
+			"assets/shaders/32_SkinInstance/obj.vert.spv",
+			"assets/shaders/32_SkinInstance/obj.frag.spv"
 		);
         
         // texture
         m_RoleDiffuse = vk_demo::DVKTexture::Create2D(
-            "assets/models/xiaonan/b001.jpg",
+            "assets/models/Crab/FullyAssembled_initialShadingGroup_Diffuse.jpg",
             m_VulkanDevice,
             cmdBuffer
         );
@@ -346,10 +349,8 @@ private:
         vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
         
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_RoleMaterial->GetPipeline());
-        for (int32 j = 0; j < m_RoleModel->meshes.size(); ++j) {
-            m_RoleMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-            m_RoleModel->meshes[j]->BindDrawCmd(commandBuffer);
-        }
+		m_RoleMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_RoleModel->meshes[0]->BindDrawCmd(commandBuffer);
         
         m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
         
@@ -364,7 +365,6 @@ private:
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
         boundCenter.z -= boundSize.Size() * 1.5f;
-        boundCenter.y += 10;
         
 		m_ParamData.model.SetIdentity();
         
@@ -373,7 +373,7 @@ private:
 		m_ParamData.view.SetInverse();
 
 		m_ParamData.projection.SetIdentity();
-		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
 	}
     
 	void CreateGUI()
@@ -407,6 +407,10 @@ private:
     float                       m_AnimDuration = 0.0f;
     float                       m_AnimTime = 0.0f;
     int32                       m_AnimIndex = 0;
+
+	int32						m_FrameCounter = 0;
+	float						m_LastFrameTime = 0.0f;
+	float						m_LastFPS = 0.0f;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
