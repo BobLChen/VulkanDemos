@@ -66,74 +66,63 @@ public:
 
 private:
 
-	struct ModelViewProjectionBlock
+	struct ParamDataBlock
 	{
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
+		Vector4 animIndex;
 	};
 
-#define MAX_BONES 64
-	struct BonesTransformBlock
+	void UpdateAnimation(float time, float delta)
 	{
-		Vector4 dualQuats[MAX_BONES * 2];
-		Vector4 debugParam;
-	};
-    
+		if (m_AutoAnimation) {
+			m_AnimTime += delta;
+		}
+
+		if (m_AnimTime > m_RoleModel->GetAnimation(0).duration) {
+			m_AnimTime = m_AnimTime - m_RoleModel->GetAnimation(0).duration;
+		}
+
+		// 计算出动画的索引
+		int32 index = 0;
+		for (int32 i = 0; i < m_Keys.size(); ++i) {
+			if (m_AnimTime <= m_Keys[i]) {
+				index = i;
+				break;
+			}
+		}
+
+		// 有两个装备不是骨骼动画，是挂接到骨骼上的，为了更新它们的动画，调用了下面的函数。
+		// 优化：挂接信息单独存储避免重复计算。骨骼的每一帧动画已经提前计算好存储到了Texture。
+		m_RoleModel->GotoAnimation(m_Keys[index]);
+		
+		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
+
+		m_ParamData.animIndex.x = 64;
+		m_ParamData.animIndex.y = 32;
+		m_ParamData.animIndex.z = index * mesh->bones.size() * 2;
+		m_ParamData.animIndex.w = 0;
+	}
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         
 		UpdateUI(time, delta);
-        
 		UpdateAnimation(time, delta);
         
-		// 设置Room参数
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
         m_RoleMaterial->BeginFrame();
         for (int32 i = 0; i < m_RoleModel->meshes.size(); ++i)
         {
-			vk_demo::DVKMesh* mesh = m_RoleModel->meshes[i];
-            
-			// model data
-            m_MVPData.model = mesh->linkNode->GetGlobalMatrix();
-            
-			// bones data
-			for (int32 j = 0; j < mesh->bones.size(); ++j) 
-			{
-				int32 boneIndex = mesh->bones[j];
-				vk_demo::DVKBone* bone = m_RoleModel->bones[boneIndex];
-
-				// 获取骨骼的最终Transform矩阵
-				// 也可以使用对偶四元素来替换矩阵的计算
-				Matrix4x4 boneTransform = bone->finalTransform;
-				boneTransform.Append(mesh->linkNode->GetGlobalMatrix().Inverse());
-
-				// 从Transform矩阵中获取四元数以及位移信息
-				Quat quat   = boneTransform.ToQuat();
-				Vector3 pos = boneTransform.GetOrigin();
-
-				// 转为使用对偶四元数
-				float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
-				float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
-				float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
-				float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
-
-				// 设置参数
-				m_BonesData.dualQuats[j * 2 + 0].Set(quat.x, quat.y, quat.z, quat.w);
-				m_BonesData.dualQuats[j * 2 + 1].Set(dx, dy, dz, dw);
-			}
-
-			// 没有骨骼数据设置默认
-            if (mesh->bones.size() == 0) 
-			{
-				m_BonesData.dualQuats[0].Set(0, 0, 0, 1);
-				m_BonesData.dualQuats[1].Set(0, 0, 0, 0);
-            }
-            
+			vk_demo::DVKMesh* mesh  = m_RoleModel->meshes[i];
+			// 标记是否为骨骼动画
+			m_ParamData.animIndex.w = mesh->bones.size() == 0 ? 0 : 1;
+			
+            m_ParamData.model = mesh->linkNode->GetGlobalMatrix();
 			m_RoleMaterial->BeginObject();
-			m_RoleMaterial->SetLocalUniform("bonesData", &m_BonesData, sizeof(BonesTransformBlock));
-            m_RoleMaterial->SetLocalUniform("uboMVP",    &m_MVPData,   sizeof(ModelViewProjectionBlock));
+            m_RoleMaterial->SetLocalUniform("paramData", &m_ParamData, sizeof(ParamDataBlock));
             m_RoleMaterial->EndObject();
         }
         m_RoleMaterial->EndFrame();
@@ -143,16 +132,6 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateAnimation(float time, float delta)
-	{
-        if (m_AutoAnimation) {
-            m_RoleModel->Update(time, delta);
-        }
-        else {
-            m_RoleModel->GotoAnimation(m_AnimTime);
-        }
-	}
-    
 	void UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
@@ -162,16 +141,6 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SkinInTextureDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
-            if (ImGui::SliderInt("Anim", &m_AnimIndex, 0, m_RoleModel->animations.size() - 1)) {
-                SetAnimation(m_AnimIndex);
-            }
-
-			bool checked = m_BonesData.debugParam.x >= 1.0f;
-			ImGui::Checkbox("Optimize", &checked);
-			m_BonesData.debugParam.x = checked ? 1.0f : 0.0f;
-
-			ImGui::SliderFloat("Speed", &(m_RoleModel->GetAnimation().speed), 0.0f, 10.0f);
-
             ImGui::Checkbox("AutoPlay", &m_AutoAnimation);
             
             if (!m_AutoAnimation) {
@@ -193,6 +162,88 @@ private:
         m_AnimTime     = 0.0f;
         m_AnimIndex    = index;
     }
+
+	void CreateAnimTexture(vk_demo::DVKCommandBuffer* cmdBuffer)
+	{
+		std::vector<float> animData(64 * 32 * 4); // 21个骨骼 * 30帧动画数据 * 8
+		vk_demo::DVKAnimation& animation = m_RoleModel->GetAnimation();
+		
+		// 获取关键帧信息
+		m_Keys.push_back(0);
+		for (auto it = animation.clips.begin(); it != animation.clips.end(); ++it)
+		{
+			vk_demo::DVKAnimationClip& clip = it->second;
+			for (int32 i = 0; i < clip.positions.keys.size(); ++i) {
+				if (m_Keys.back() < clip.positions.keys[i]) {
+					m_Keys.push_back(clip.positions.keys[i]);
+				}
+			}
+			for (int32 i = 0; i < clip.rotations.keys.size(); ++i) {
+				if (m_Keys.back() < clip.rotations.keys[i]) {
+					m_Keys.push_back(clip.rotations.keys[i]);
+				}
+			}
+			for (int32 i = 0; i < clip.scales.keys.size(); ++i) {
+				if (m_Keys.back() < clip.scales.keys[i]) {
+					m_Keys.push_back(clip.scales.keys[i]);
+				}
+			}
+		}
+
+		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
+		
+		// 存储每一帧所对应的动画数据
+		for (int32 i = 0; i < m_Keys.size(); ++i)
+		{
+			m_RoleModel->GotoAnimation(m_Keys[i]);
+			// 数据步长，一个节点的动画数据需要两个Vector存储。
+			int32 step = i * mesh->bones.size() * 8;
+			
+			for (int32 j = 0; j < mesh->bones.size(); ++j)
+			{
+				int32 boneIndex = mesh->bones[j];
+				vk_demo::DVKBone* bone = m_RoleModel->bones[boneIndex];
+				// 获取骨骼的最终Transform矩阵
+				// 也可以使用对偶四元素来替换矩阵的计算
+				Matrix4x4 boneTransform = bone->finalTransform;
+				boneTransform.Append(mesh->linkNode->GetGlobalMatrix().Inverse());
+				// 从Transform矩阵中获取四元数以及位移信息
+				Quat quat   = boneTransform.ToQuat();
+				Vector3 pos = boneTransform.GetOrigin();
+				// 转为使用对偶四元数
+				float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+				float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+				float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+				float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+				// 计算出当前帧当前骨骼在Texture中的坐标
+				int32 index = step + j * 8;
+				animData[index + 0] = quat.x;
+				animData[index + 1] = quat.y;
+				animData[index + 2] = quat.z;
+				animData[index + 3] = quat.w;
+				animData[index + 4] = dx;
+				animData[index + 5] = dy;
+				animData[index + 6] = dz;
+				animData[index + 7] = dw;
+			}
+		}
+		
+		// 创建Texture
+		m_AnimTexture = vk_demo::DVKTexture::Create2D(
+			(const uint8*)animData.data(), animData.size() * sizeof(float), VK_FORMAT_R32G32B32A32_SFLOAT, 
+			64, 32,
+			m_VulkanDevice,
+			cmdBuffer
+		);
+		m_AnimTexture->UpdateSampler(
+			VK_FILTER_NEAREST, 
+			VK_FILTER_NEAREST,
+			VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+		);
+	}
     
 	void LoadAssets()
 	{
@@ -211,7 +262,9 @@ private:
             }
 		);
 
-        SetAnimation(0);
+		// animation
+		SetAnimation(0);
+		CreateAnimTexture(cmdBuffer);
         
 		// shader
 		m_RoleShader = vk_demo::DVKShader::Create(
@@ -237,8 +290,7 @@ private:
         );
         m_RoleMaterial->PreparePipeline();
         m_RoleMaterial->SetTexture("diffuseMap", m_RoleDiffuse);
-        
-        // m_AnimTexture = vk_demo::DVKTexture::Create2D();
+		m_RoleMaterial->SetTexture("animMap", m_AnimTexture);
         
         delete cmdBuffer;
 	}
@@ -249,8 +301,7 @@ private:
         delete m_RoleDiffuse;
         delete m_RoleMaterial;
 		delete m_RoleModel;
-        
-        // delete m_AnimTexture;
+        delete m_AnimTexture;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -315,16 +366,14 @@ private:
         boundCenter.z -= boundSize.Size() * 1.5f;
         boundCenter.y += 10;
         
-		m_MVPData.model.SetIdentity();
+		m_ParamData.model.SetIdentity();
         
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
+		m_ParamData.view.SetIdentity();
+		m_ParamData.view.SetOrigin(boundCenter);
+		m_ParamData.view.SetInverse();
 
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
-
-		m_BonesData.debugParam.Set(0, 0, 0, 0);
+		m_ParamData.projection.SetIdentity();
+		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
 	}
     
 	void CreateGUI()
@@ -343,18 +392,17 @@ private:
     
 	bool 						m_Ready = false;
     
-	ModelViewProjectionBlock	m_MVPData;
-	BonesTransformBlock			m_BonesData;
+	ParamDataBlock				m_ParamData;
 
 	vk_demo::DVKModel*			m_RoleModel = nullptr;
 	vk_demo::DVKShader*			m_RoleShader = nullptr;
 	vk_demo::DVKTexture*		m_RoleDiffuse = nullptr;
     vk_demo::DVKMaterial*       m_RoleMaterial = nullptr;
     
-    vk_demo::DVKTexture*        m_AnimTexture = nullptr;
-    
 	ImageGUIContext*			m_GUI = nullptr;
     
+	vk_demo::DVKTexture*        m_AnimTexture = nullptr;
+	std::vector<float>			m_Keys;
     bool                        m_AutoAnimation = true;
     float                       m_AnimDuration = 0.0f;
     float                       m_AnimTime = 0.0f;
