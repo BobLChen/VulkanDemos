@@ -130,6 +130,14 @@ private:
 	{
 		m_GUI->StartFrame();
 
+		m_FrameCounter  += 1;
+		m_LastFrameTime += delta;
+		if (m_LastFrameTime >= 1.0f) {
+			m_LastFPS = m_FrameCounter;
+			m_FrameCounter  = 0;
+			m_LastFrameTime = 0.0f;
+		}
+
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
@@ -141,7 +149,7 @@ private:
                 ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
             }
             
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
@@ -399,6 +407,10 @@ private:
     float                       m_AnimDuration = 0.0f;
     float                       m_AnimTime = 0.0f;
     int32                       m_AnimIndex = 0;
+
+	int32						m_FrameCounter = 0;
+	float						m_LastFrameTime = 0.0f;
+	float						m_LastFPS = 0.0f;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
