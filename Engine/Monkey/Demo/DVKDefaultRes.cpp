@@ -50,7 +50,7 @@ namespace vk_demo
             }
         }
         
-        texture2D = DVKTexture::Create2D(rgba.data(), 64, 64, vulkanDevice, cmdBuffer);
+        texture2D = DVKTexture::Create2D(rgba.data(), 64 * 64 * 4, VK_FORMAT_R8G8B8A8_UNORM, 64, 64, vulkanDevice, cmdBuffer);
     }
     
     void DVKDefaultRes::Destroy()
