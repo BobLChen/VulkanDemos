@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -15,6 +15,8 @@
 
 #include <vector>
 #include <fstream>
+
+#define INSTANCE_COUNT 8192
 
 class SkinInTextureDemo : public DemoBase
 {
@@ -73,7 +75,13 @@ private:
 		Matrix4x4 projection;
 		Vector4 animIndex;
 	};
-
+    
+    struct InstanceData
+    {
+        Vector4 quat0;
+        Vector4 quat1;
+    };
+    
 	void UpdateAnimation(float time, float delta)
 	{
 		if (m_AutoAnimation) {
@@ -251,9 +259,17 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
         
+        // shader
+        m_RoleShader = vk_demo::DVKShader::Create(
+            m_VulkanDevice,
+            true,
+            "assets/shaders/32_SkinInstance/obj.vert.spv",
+            "assets/shaders/32_SkinInstance/obj.frag.spv"
+        );
+        
 		// model
 		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Crab/DancingCrabDance.fbx",
+			"assets/models/xiaonan/nvhai.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{
@@ -263,23 +279,18 @@ private:
                 VertexAttribute::VA_SkinPack,
             }
 		);
-		m_RoleModel->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
-
+        vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
+        primitive->instanceDatas.resize(8 * INSTANCE_COUNT);
+        primitive->indexBuffer->instanceCount = INSTANCE_COUNT;
+        primitive->instanceBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->instanceDatas, m_RoleShader->instancesAttributes);
+        
 		// animation
 		SetAnimation(0);
 		CreateAnimTexture(cmdBuffer);
         
-		// shader
-		m_RoleShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/32_SkinInstance/obj.vert.spv",
-			"assets/shaders/32_SkinInstance/obj.frag.spv"
-		);
-        
         // texture
         m_RoleDiffuse = vk_demo::DVKTexture::Create2D(
-            "assets/models/Crab/FullyAssembled_initialShadingGroup_Diffuse.jpg",
+            "assets/models/xiaonan/b001.jpg",
             m_VulkanDevice,
             cmdBuffer
         );
@@ -365,6 +376,7 @@ private:
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
         boundCenter.z -= boundSize.Size() * 1.5f;
+        boundCenter.y += 10.0f;
         
 		m_ParamData.model.SetIdentity();
         

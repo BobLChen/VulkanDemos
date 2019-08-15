@@ -284,6 +284,10 @@ enum VertexAttribute
 	VA_SkinWeight,
 	VA_SkinIndex,
 	VA_SkinPack,
+    VA_InstanceFloat1,
+    VA_InstanceFloat2,
+    VA_InstanceFloat3,
+    VA_InstanceFloat4,
 	VA_Custom0,
 	VA_Custom1,
 	VA_Custom2,
@@ -712,7 +716,6 @@ FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
 	else if (strcmp(name, "inCustom3") == 0) {
 		return VertexAttribute::VA_Custom3;
 	}
-
-	MLOGE("Not found attribute : %s", name);
+	
 	return VertexAttribute::VA_None;
 }

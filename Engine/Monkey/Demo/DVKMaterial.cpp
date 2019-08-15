@@ -1,4 +1,4 @@
-﻿#include "DVKMaterial.h"
+#include "DVKMaterial.h"
 #include "DVKDefaultRes.h"
 
 namespace vk_demo
@@ -6,7 +6,7 @@ namespace vk_demo
 
 	DVKRingBuffer*	DVKMaterial::ringBuffer = nullptr;
 	int32			DVKMaterial::ringBufferRefCount = 0;
-
+    
 	void DVKMaterial::InitRingBuffer(std::shared_ptr<VulkanDevice> vulkanDevice)
 	{
 		ringBuffer = new DVKRingBuffer();
@@ -163,40 +163,14 @@ namespace vk_demo
             pipeline = nullptr;
         }
         
-		// input binding info
-		// 一个材质简单的只能绑定一种
-		int32 stride = 0;
-		for (int32 i = 0; i < shader->attributes.size(); ++i) {
-			stride += VertexAttributeToSize(shader->attributes[i]);
-		}
-		VkVertexInputBindingDescription vertexInputBinding = {};
-		vertexInputBinding.binding   = 0;
-		vertexInputBinding.stride    = stride;
-		vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		// input attributes
-		// 一个材质也只能顺序的绑定一种
-		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs;
-		int32 offset = 0;
-		for (int32 i = 0; i < shader->attributes.size(); ++i)
-		{
-			VkVertexInputAttributeDescription inputAttribute = {};
-			inputAttribute.binding = 0;
-			inputAttribute.location = i;
-			inputAttribute.format = VertexAttributeToVkFormat(shader->attributes[i]);
-			inputAttribute.offset = offset;
-			offset += VertexAttributeToSize(shader->attributes[i]);
-			vertexInputAttributs.push_back(inputAttribute);
-		}
-
 		// pipeline
         pipelineInfo.shader = shader;
         pipeline = DVKPipeline::Create(
             vulkanDevice,
             pipelineCache,
             pipelineInfo,
-            { vertexInputBinding },
-			vertexInputAttributs,
+            shader->inputBindings,
+			shader->inputAttributes,
             shader->pipelineLayout,
             renderPass
         );
