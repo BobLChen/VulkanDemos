@@ -164,11 +164,11 @@ namespace vk_demo
 				}
 			}
             
-			outPrevValue = values[frameIndex - 1];
-			outNextValue = values[frameIndex];
+			outPrevValue = values[frameIndex + 0];
+			outNextValue = values[frameIndex + 1];
 
-			float prevKey = keys[frameIndex - 1];
-			float nextKey = keys[frameIndex];
+			float prevKey = keys[frameIndex + 0];
+			float nextKey = keys[frameIndex + 1];
 			outAlpha      = (key - prevKey) / (nextKey - prevKey);
 		}
 	};

@@ -5,8 +5,9 @@ layout (location = 1) in vec2 inUV0;
 layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec3 inSkinPack;
 
-layout (location = 4) in vec4 inInstancePos;
-layout (location = 5) in vec4 inInstanceRot; 
+layout (location = 4) in vec4 inInstanceQuat0;
+layout (location = 5) in vec4 inInstanceQuat1; 
+layout (location = 6) in float inInstanceAnim;
 
 layout (binding = 0) uniform MVPBlock 
 {
@@ -146,25 +147,26 @@ void main()
 	vec4 position;
 	vec3 normal;
 
-	if (paramData.animIndex.w > 0)
-	{
-		// skin info
-		ivec4 skinIndex   = UnPackUInt32To4Byte(uint(inSkinPack.x));
-		ivec2 skinWeight0 = UnPackUInt32To2Short(uint(inSkinPack.y));
-		ivec2 skinWeight1 = UnPackUInt32To2Short(uint(inSkinPack.z));
-		vec4  skinWeight  = vec4(skinWeight0 / 65535.0, skinWeight1 / 65535.0);
+	int animIndex = int(inInstanceAnim) + int(paramData.animIndex.z);
+	animIndex = animIndex % int(paramData.animIndex.w);
+	
+	// skin info
+	ivec4 skinIndex   = UnPackUInt32To4Byte(uint(inSkinPack.x));
+	ivec2 skinWeight0 = UnPackUInt32To2Short(uint(inSkinPack.y));
+	ivec2 skinWeight1 = UnPackUInt32To2Short(uint(inSkinPack.z));
+	vec4  skinWeight  = vec4(skinWeight0 / 65535.0, skinWeight1 / 65535.0);
 
-		mat2x4 dualQuat = CalcDualQuat(skinIndex, skinWeight, int(paramData.animIndex.z));
+	mat2x4 dualQuat = CalcDualQuat(skinIndex, skinWeight, animIndex);
 
-		position = vec4(DualQuatTransformPosition(dualQuat, inPosition.xyz), 1.0);
-		normal   = DualQuatTransformVector(dualQuat, inNormal);
-	}
-	else
-	{
-		position = vec4(inPosition, 1.0);
-		normal   = inNormal;
-	}
+	position = vec4(DualQuatTransformPosition(dualQuat, inPosition.xyz), 1.0);
+	normal   = DualQuatTransformVector(dualQuat, inNormal);
 
+	mat2x4 instanceDualQuat;
+	instanceDualQuat[0] = inInstanceQuat0;
+	instanceDualQuat[1] = inInstanceQuat1;
+	position = vec4(DualQuatTransformPosition(instanceDualQuat, position.xyz), 1.0);
+	normal   = DualQuatTransformVector(instanceDualQuat, normal);
+	
 	// 转换法线
 	mat3 normalMatrix = transpose(inverse(mat3(paramData.modelMatrix)));
 	normal = normalize(normalMatrix * normal);
@@ -172,5 +174,5 @@ void main()
 	outUV     = inUV0;
 	outNormal = normal;
 	
-	gl_Position = paramData.projectionMatrix * paramData.viewMatrix * paramData.modelMatrix * position;
+	gl_Position = paramData.projectionMatrix * paramData.viewMatrix * position;
 }

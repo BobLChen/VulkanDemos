@@ -16,7 +16,7 @@
 #include <vector>
 #include <fstream>
 
-#define INSTANCE_COUNT 8192
+#define INSTANCE_COUNT 8000
 
 class SkinInTextureDemo : public DemoBase
 {
@@ -101,16 +101,12 @@ private:
 			}
 		}
 
-		// 有两个装备不是骨骼动画，是挂接到骨骼上的，为了更新它们的动画，调用了下面的函数。
-		// 优化：挂接信息单独存储避免重复计算。骨骼的每一帧动画已经提前计算好存储到了Texture。
-		m_RoleModel->GotoAnimation(m_Keys[index]);
-		
 		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
 
 		m_ParamData.animIndex.x = m_AnimTexture->width;
 		m_ParamData.animIndex.y = m_AnimTexture->height;
 		m_ParamData.animIndex.z = index * mesh->bones.size() * 2;
-		m_ParamData.animIndex.w = 0;
+		m_ParamData.animIndex.w = m_Keys.size() * mesh->bones.size() * 2;
 	}
 
 	void Draw(float time, float delta)
@@ -122,7 +118,6 @@ private:
         
         m_RoleMaterial->BeginFrame();
 		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
-		m_ParamData.animIndex.w = mesh->bones.size() == 0 ? 0 : 1;
 		m_ParamData.model = mesh->linkNode->GetGlobalMatrix();
 		m_RoleMaterial->BeginObject();
 		m_RoleMaterial->SetLocalUniform("paramData", &m_ParamData, sizeof(ParamDataBlock));
@@ -151,12 +146,17 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SkinInTextureDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
+			vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
+
+			ImGui::SliderInt("Instance", &(primitive->indexBuffer->instanceCount), 1, INSTANCE_COUNT);
+
             ImGui::Checkbox("AutoPlay", &m_AutoAnimation);
             
             if (!m_AutoAnimation) {
                 ImGui::SliderFloat("Time", &m_AnimTime, 0.0f, m_AnimDuration);
             }
             
+			ImGui::Text("DrawCall:1");
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -263,8 +263,8 @@ private:
         m_RoleShader = vk_demo::DVKShader::Create(
             m_VulkanDevice,
             true,
-            "assets/shaders/32_SkinInstance/obj.vert.spv",
-            "assets/shaders/32_SkinInstance/obj.frag.spv"
+            "assets/shaders/30_SkinInstance/obj.vert.spv",
+            "assets/shaders/30_SkinInstance/obj.frag.spv"
         );
         
 		// model
@@ -279,14 +279,49 @@ private:
                 VertexAttribute::VA_SkinPack,
             }
 		);
-        vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
-        primitive->instanceDatas.resize(8 * INSTANCE_COUNT);
-        primitive->indexBuffer->instanceCount = INSTANCE_COUNT;
-        primitive->instanceBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->instanceDatas, m_RoleShader->instancesAttributes);
-        
+
 		// animation
 		SetAnimation(0);
 		CreateAnimTexture(cmdBuffer);
+
+		// instance data
+		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
+		Matrix4x4 meshGlobal = mesh->linkNode->GetGlobalMatrix();
+        vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
+        primitive->instanceDatas.resize(9 * INSTANCE_COUNT);
+
+		for (int32 i = 0; i < INSTANCE_COUNT; ++i)
+		{
+			Vector3 translate;
+			translate.x = MMath::RandRange(-300.0f, 300.0f);
+			translate.y = MMath::RandRange(-180.0f, 180.0f);
+			translate.z = MMath::RandRange(-150.0f, 150.0f);
+
+			Matrix4x4 matrix = meshGlobal;
+			matrix.AppendRotation(MMath::RandRange(0.0f, 360.0f), Vector3::UpVector);
+			matrix.AppendTranslation(translate);
+
+			Quat quat   = matrix.ToQuat();
+			Vector3 pos = matrix.GetOrigin();
+			float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+			float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+			float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+			float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+
+			int32 index = i * 9;
+			primitive->instanceDatas[index + 0] = quat.x;
+			primitive->instanceDatas[index + 1] = quat.y;
+			primitive->instanceDatas[index + 2] = quat.z;
+			primitive->instanceDatas[index + 3] = quat.w;
+			primitive->instanceDatas[index + 4] = dx;
+			primitive->instanceDatas[index + 5] = dy;
+			primitive->instanceDatas[index + 6] = dz;
+			primitive->instanceDatas[index + 7] = dw;
+			primitive->instanceDatas[index + 8] = MMath::RandRange(0, m_Keys.size()) * mesh->bones.size() * 2;
+		}
+
+        primitive->indexBuffer->instanceCount = 1024;
+        primitive->instanceBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->instanceDatas, m_RoleShader->instancesAttributes);
         
         // texture
         m_RoleDiffuse = vk_demo::DVKTexture::Create2D(
@@ -375,7 +410,7 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 1.5f;
+        boundCenter.z -= boundSize.Size() * 12.5f;
         boundCenter.y += 10.0f;
         
 		m_ParamData.model.SetIdentity();
@@ -385,7 +420,7 @@ private:
 		m_ParamData.view.SetInverse();
 
 		m_ParamData.projection.SetIdentity();
-		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
+		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
 	}
     
 	void CreateGUI()
