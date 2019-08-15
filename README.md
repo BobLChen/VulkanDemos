@@ -176,12 +176,17 @@ Reduce 5 float per vertex
 
 ![28_SkeletonDualQuat](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/28_SkeletonDualQuat.gif)
 
-### [29_MSAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_MSAA)
-![29_MSAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/29_MSAA.gif)
-
-### [30_FXAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/30_FXAA)
-![30_FXAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/30_FXAA.gif)
-
-### [31_VertexTextureSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/31_SkinInTexture)
+### [29_VertexTextureSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_SkinInTexture)
 - Store skeleton datas in texture and used in vertex shader.
+
+### [30_InstanceSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/30_SkinInstance)
+![30_InstanceSkin](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/32_SkinInstance.gif)
+
+### [31_MSAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/31_MSAA)
+![31_MSAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/29_MSAA.gif)
+
+### [32_FXAA](https://github.com/BobLChen/VulkanDemos/tree/master/examples/32_FXAA)
+![32_FXAA](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/30_FXAA.gif)
+
+
 
