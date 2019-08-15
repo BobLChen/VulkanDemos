@@ -52,8 +52,10 @@ namespace vk_demo
 	{
 		DVKIndexBuffer*		indexBuffer = nullptr;
         DVKVertexBuffer*	vertexBuffer = nullptr;
+        DVKVertexBuffer*    instanceBuffer = nullptr;
 
 		std::vector<float>	vertices;
+        std::vector<float>  instanceDatas;
 		std::vector<uint16>	indices;
         
         int32               vertexCount = 0;
@@ -72,19 +74,32 @@ namespace vk_demo
 			if (vertexBuffer) {
 				delete vertexBuffer;
 			}
+            if (instanceBuffer) {
+                delete instanceBuffer;
+            }
 			indexBuffer  = nullptr;
 			vertexBuffer = nullptr;
 		}
 
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{
-			if (vertexBuffer) {
-				vertexBuffer->Bind(cmdBuffer);
+			if (vertexBuffer)
+            {
+                vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(vertexBuffer->dvkBuffer->buffer), &(vertexBuffer->offset));
 			}
-			if (indexBuffer) {
+            
+            if (instanceBuffer)
+            {
+                vkCmdBindVertexBuffers(cmdBuffer, 1, 1, &(instanceBuffer->dvkBuffer->buffer), &(instanceBuffer->offset));
+            }
+			
+            if (indexBuffer)
+            {
 				indexBuffer->BindDraw(cmdBuffer);
 			}
-			if (vertexBuffer && !indexBuffer) {
+            
+			if (vertexBuffer && !indexBuffer)
+            {
 				vkCmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
 			}
 		}
@@ -142,8 +157,8 @@ namespace vk_demo
 			}
 
 			int32 frameIndex = 0;
-			for (int32 i = 0; i < keys.size(); ++i) {
-				if (key <= keys[i]) {
+			for (int32 i = 0; i < keys.size() - 1; ++i) {
+				if (key <= keys[i + 1]) {
 					frameIndex = i;
 					break;
 				}

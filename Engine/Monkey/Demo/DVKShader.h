@@ -451,13 +451,18 @@ namespace vk_demo
 		void Compile();
 
 		void GenerateLayout();
+        
+        void GenerateInputInfo();
 
 		void ProcessShaderModule(DVKShaderModule* shaderModule);
 
 	private:
-		std::vector<DVKAttribute>	inputAttributes;
+		std::vector<DVKAttribute> m_InputAttributes;
 
 	public:
+        
+        typedef std::vector<VkVertexInputBindingDescription>    InputBindingsVector;
+        typedef std::vector<VkVertexInputAttributeDescription>  InputAttributesVector;
 
 		DVKShaderModule*				vertShaderModule = nullptr;
 		DVKShaderModule*				fragShaderModule = nullptr;
@@ -471,8 +476,11 @@ namespace vk_demo
 
 		ShaderStageInfoArray			shaderStageCreateInfos;
 		DVKDescriptorSetLayoutsInfo		setLayoutsInfo;
-		std::vector<VertexAttribute>	attributes;
-
+		std::vector<VertexAttribute>	perVertexAttributes;
+        std::vector<VertexAttribute>    instancesAttributes;
+        InputBindingsVector             inputBindings;
+        InputAttributesVector           inputAttributes;
+        
 		DescriptorSetLayouts 			descriptorSetLayouts;
 		VkPipelineLayout 				pipelineLayout = VK_NULL_HANDLE;
 		DVKDescriptorSetPools			descriptorSetPools;
