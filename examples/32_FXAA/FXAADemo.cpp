@@ -217,8 +217,8 @@ private:
 		m_LineShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/obj.vert.spv",
-			"assets/shaders/30_FXAA/obj.frag.spv"
+			"assets/shaders/32_FXAA/obj.vert.spv",
+			"assets/shaders/32_FXAA/obj.frag.spv"
 		);
 
 		m_LineMaterial = vk_demo::DVKMaterial::Create(
@@ -237,40 +237,40 @@ private:
 		m_FXAADefaultShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/FXAA.vert.spv",
-			"assets/shaders/30_FXAA/FXAA_Default.frag.spv"
+			"assets/shaders/32_FXAA/FXAA.vert.spv",
+			"assets/shaders/32_FXAA/FXAA_Default.frag.spv"
 		);
 
 		// fxaa-fast
 		m_FXAAFastShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/FXAA.vert.spv",
-			"assets/shaders/30_FXAA/FXAA_Fastest.frag.spv"
+			"assets/shaders/32_FXAA/FXAA.vert.spv",
+			"assets/shaders/32_FXAA/FXAA_Fastest.frag.spv"
 		);
 
 		// fxaa-hight
 		m_FXAAHighShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/FXAA.vert.spv",
-			"assets/shaders/30_FXAA/FXAA_High_Quality.frag.spv"
+			"assets/shaders/32_FXAA/FXAA.vert.spv",
+			"assets/shaders/32_FXAA/FXAA_High_Quality.frag.spv"
 		);
 
 		// fxaa-best
 		m_FXAABestShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/FXAA.vert.spv",
-			"assets/shaders/30_FXAA/FXAA_Extreme_Quality.frag.spv"
+			"assets/shaders/32_FXAA/FXAA.vert.spv",
+			"assets/shaders/32_FXAA/FXAA_Extreme_Quality.frag.spv"
 		);
 
 		// faxaa-none
 		m_NormalShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/30_FXAA/Normal.vert.spv",
-			"assets/shaders/30_FXAA/Normal.frag.spv"
+			"assets/shaders/32_FXAA/Normal.vert.spv",
+			"assets/shaders/32_FXAA/Normal.frag.spv"
 		);
 
 		// fxaa-none

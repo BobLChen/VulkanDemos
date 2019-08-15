@@ -55,6 +55,19 @@ namespace vk_demo
         {
             return 4 * sizeof(float);
         }
+        else if (attribute == VertexAttribute::VA_InstanceFloat1) {
+            return 1 * sizeof(float);
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat2) {
+            return 2 * sizeof(float);
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat3) {
+            return 3 * sizeof(float);
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat4) {
+            return 4 * sizeof(float);
+        }
+        
 		return 0;
 	}
     
@@ -96,6 +109,19 @@ namespace vk_demo
         {
             format = VK_FORMAT_R32G32B32A32_SFLOAT;
         }
+        else if (attribute == VertexAttribute::VA_InstanceFloat1) {
+            format = VK_FORMAT_R32_SFLOAT;
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat2) {
+            format = VK_FORMAT_R32G32_SFLOAT;
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat3) {
+            format = VK_FORMAT_R32G32B32_SFLOAT;
+        }
+        else if (attribute == VertexAttribute::VA_InstanceFloat4) {
+            format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        }
+        
 		return format;
 	}
     

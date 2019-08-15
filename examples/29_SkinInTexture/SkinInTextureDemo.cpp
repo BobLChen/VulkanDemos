@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -270,8 +270,8 @@ private:
 		m_RoleShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/31_SkinInTexture/obj.vert.spv",
-			"assets/shaders/31_SkinInTexture/obj.frag.spv"
+			"assets/shaders/29_SkinInTexture/obj.vert.spv",
+			"assets/shaders/29_SkinInTexture/obj.frag.spv"
 		);
         
         // texture

@@ -448,8 +448,8 @@ private:
 		m_LineShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/29_MSAA/obj.vert.spv",
-			"assets/shaders/29_MSAA/obj.frag.spv"
+			"assets/shaders/31_MSAA/obj.vert.spv",
+			"assets/shaders/31_MSAA/obj.frag.spv"
 		);
         
 		CreateMaterials();

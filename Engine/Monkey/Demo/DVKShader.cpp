@@ -1,4 +1,5 @@
 #include "DVKShader.h"
+#include "DVKVertexBuffer.h"
 #include "spirv_cross.hpp"
 
 namespace vk_demo
@@ -186,15 +187,34 @@ namespace vk_demo
 			for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
 			{
 				spirv_cross::Resource& res = resources.stage_inputs[i];
-				const std::string &varName = compiler.get_name(res.id);
+                spirv_cross::SPIRType type = compiler.get_type(res.type_id);
+                const std::string &varName = compiler.get_name(res.id);
+                int32 inputAttributeSize   = type.vecsize;
+                
 				VertexAttribute attribute  = StringToVertexAttribute(varName.c_str());
-
+                if (attribute == VertexAttribute::VA_None)
+                {
+                    if (inputAttributeSize == 1) {
+                        attribute = VertexAttribute::VA_InstanceFloat1;
+                    }
+                    else if (inputAttributeSize == 2) {
+                        attribute = VertexAttribute::VA_InstanceFloat2;
+                    }
+                    else if (inputAttributeSize == 3) {
+                        attribute = VertexAttribute::VA_InstanceFloat3;
+                    }
+                    else if (inputAttributeSize == 4) {
+                        attribute = VertexAttribute::VA_InstanceFloat4;
+                    }
+                    MLOG("Not found attribute : %s, treat as instance attribute : %d.", varName.c_str(), int32(attribute));
+                }
+                
 				int32 location = compiler.get_decoration(res.id, spv::DecorationLocation);
 				// location必须连续
 				DVKAttribute dvkAttribute = {};
 				dvkAttribute.location  = location;
 				dvkAttribute.attribute = attribute;
-				inputAttributes.push_back(dvkAttribute);
+                m_InputAttributes.push_back(dvkAttribute);
 			}
 		}
 
@@ -208,27 +228,106 @@ namespace vk_demo
 		ProcessShaderModule(compShaderModule);
 		ProcessShaderModule(tescShaderModule);
 		ProcessShaderModule(teseShaderModule);
-		
-		// 对inputAttributes进行排序，获取Attributes列表
-		std::sort(inputAttributes.begin(), inputAttributes.end(), [](const DVKAttribute& a, const DVKAttribute& b) -> bool {
-			return a.location < b.location;
-		});
-
-		for (int32 i = 0; i < inputAttributes.size(); ++i) {
-			attributes.push_back(inputAttributes[i].attribute);
-		}
-
-		// 生成PipelineLayout
+        GenerateInputInfo();
 		GenerateLayout();
 	}
-
+    
+    void DVKShader::GenerateInputInfo()
+    {
+        // 对inputAttributes进行排序，获取Attributes列表
+        std::sort(m_InputAttributes.begin(), m_InputAttributes.end(), [](const DVKAttribute& a, const DVKAttribute& b) -> bool {
+            return a.location < b.location;
+        });
+        
+        // 对inputAttributes进行归类整理
+        for (int32 i = 0; i < m_InputAttributes.size(); ++i)
+        {
+            VertexAttribute attribute = m_InputAttributes[i].attribute;
+            if (attribute == VA_InstanceFloat1 || attribute == VA_InstanceFloat2 || attribute == VA_InstanceFloat3 || attribute == VA_InstanceFloat4)
+            {
+                instancesAttributes.push_back(attribute);
+            }
+            else
+            {
+                perVertexAttributes.push_back(attribute);
+            }
+        }
+        
+        // 生成Bindinfo
+        inputBindings.resize(0);
+        if (perVertexAttributes.size() > 0)
+        {
+            int32 stride = 0;
+            for (int32 i = 0; i < perVertexAttributes.size(); ++i) {
+                stride += VertexAttributeToSize(perVertexAttributes[i]);
+            }
+            VkVertexInputBindingDescription perVertexInputBinding = {};
+            perVertexInputBinding.binding   = 0;
+            perVertexInputBinding.stride    = stride;
+            perVertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            inputBindings.push_back(perVertexInputBinding);
+        }
+        
+        if (instancesAttributes.size() > 0)
+        {
+            int32 stride = 0;
+            for (int32 i = 0; i < instancesAttributes.size(); ++i) {
+                stride += VertexAttributeToSize(instancesAttributes[i]);
+            }
+            VkVertexInputBindingDescription instanceInputBinding = {};
+            instanceInputBinding.binding   = 1;
+            instanceInputBinding.stride    = stride;
+            instanceInputBinding.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+            inputBindings.push_back(instanceInputBinding);
+        }
+        
+        // 生成attributes info
+        int location = 0;
+        if (perVertexAttributes.size() > 0)
+        {
+            int32 offset = 0;
+            for (int32 i = 0; i < perVertexAttributes.size(); ++i)
+            {
+                VkVertexInputAttributeDescription inputAttribute = {};
+                inputAttribute.binding  = 0;
+                inputAttribute.location = location;
+                inputAttribute.format   = VertexAttributeToVkFormat(perVertexAttributes[i]);
+                inputAttribute.offset   = offset;
+                offset += VertexAttributeToSize(perVertexAttributes[i]);
+                inputAttributes.push_back(inputAttribute);
+                
+                location += 1;
+            }
+        }
+        
+        if (instancesAttributes.size() > 0)
+        {
+            int32 offset = 0;
+            for (int32 i = 0; i < instancesAttributes.size(); ++i)
+            {
+                VkVertexInputAttributeDescription inputAttribute = {};
+                inputAttribute.binding  = 1;
+                inputAttribute.location = location;
+                inputAttribute.format   = VertexAttributeToVkFormat(instancesAttributes[i]);
+                inputAttribute.offset   = offset;
+                offset += VertexAttributeToSize(instancesAttributes[i]);
+                inputAttributes.push_back(inputAttribute);
+                
+                location += 1;
+            }
+        }
+        
+    }
+    
 	void DVKShader::GenerateLayout()
 	{
         std::vector<DVKDescriptorSetLayoutInfo>& setLayouts = setLayoutsInfo.setLayouts;
+        
         // 先按照set进行排序
         std::sort(setLayouts.begin(), setLayouts.end(), [](const DVKDescriptorSetLayoutInfo& a, const DVKDescriptorSetLayoutInfo& b) -> bool {
             return a.set < b.set;
         });
+        
         // 再按照binding进行排序
         for (int32 i = 0; i < setLayouts.size(); ++i)
         {
@@ -237,7 +336,7 @@ namespace vk_demo
                 return a.binding < b.binding;
             });
         }
-
+        
 		for (int32 i = 0; i < setLayoutsInfo.setLayouts.size(); ++i)
 		{
 			VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;

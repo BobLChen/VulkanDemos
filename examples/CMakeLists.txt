@@ -489,12 +489,12 @@ SETUP_SAMPLE_START(28_SkeletonQuat)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(28_SkeletonQuat)
 
-SETUP_SAMPLE_START(29_MSAA)
+SETUP_SAMPLE_START(29_SkinInTexture)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/29_MSAA/MSAADemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/29_SkinInTexture/SkinInTextureDemo.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/29_MSAA/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/29_SkinInTexture/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -502,14 +502,14 @@ SETUP_SAMPLE_START(29_MSAA)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(29_MSAA)
+SETUP_SAMPLE_END(29_SkinInTexture)
 
-SETUP_SAMPLE_START(30_FXAA)
+SETUP_SAMPLE_START(30_SkinInstance)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/30_FXAA/FXAADemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/30_SkinInstance/SkinInstanceDemo.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/30_FXAA/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/30_SkinInstance/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -517,14 +517,14 @@ SETUP_SAMPLE_START(30_FXAA)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(30_FXAA)
+SETUP_SAMPLE_END(30_SkinInstance)
 
-SETUP_SAMPLE_START(31_SkinInTexture)
+SETUP_SAMPLE_START(31_MSAA)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/31_SkinInTexture/SkinInTextureDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/31_MSAA/MSAADemo.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/31_SkinInTexture/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/31_MSAA/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -532,4 +532,20 @@ SETUP_SAMPLE_START(31_SkinInTexture)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(31_SkinInTexture)
+SETUP_SAMPLE_END(31_MSAA)
+
+SETUP_SAMPLE_START(32_FXAA)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/32_FXAA/FXAADemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/32_FXAA/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(32_FXAA)
+
