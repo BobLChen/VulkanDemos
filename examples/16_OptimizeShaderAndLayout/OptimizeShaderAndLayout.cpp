@@ -154,7 +154,7 @@ private:
 			"assets/models/plane_z.obj",
 			m_VulkanDevice,
 			cmdBuffer,
-			m_ShaderTexture->attributes
+			m_ShaderTexture->perVertexAttributes
 		);
         
 		// 生成LUT 3D图数据

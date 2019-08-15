@@ -406,7 +406,7 @@ private:
 			"assets/models/littlesttokyo.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
-			m_Shader0->attributes
+			m_Shader0->perVertexAttributes
 		);
         
 		// quad model
@@ -425,7 +425,7 @@ private:
             cmdBuffer,
             vertices,
             indices,
-            m_Shader1->attributes
+            m_Shader1->perVertexAttributes
         );
 
 		delete cmdBuffer;
