@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -188,19 +188,9 @@ private:
 
 	void DestroyAssets()
 	{
-		delete m_SceneShader;
-
-		delete m_ModelScene;
-
-		for (int32 i = 0; i < m_SceneDiffuses.size(); ++i) {
-			delete m_SceneDiffuses[i];
-		}
-		m_SceneDiffuses.clear();
-
-		for (int32 i = 0; i < m_SceneMaterials.size(); ++i) {
-			delete m_SceneMaterials[i];
-		}
-		m_SceneMaterials.clear();
+        delete m_SkyModel;
+        delete m_SkyShader;
+        delete m_SkyMaterial;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -290,20 +280,14 @@ private:
 	}
 
 private:
-
-	typedef std::vector<vk_demo::DVKTexture*>			TextureArray;
-	typedef std::vector<vk_demo::DVKMaterial*>			MaterialArray;
-	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
-
+    
 	bool 						m_Ready = false;
 
 	ModelViewProjectionBlock	m_MVPData;
 
-	vk_demo::DVKModel*			m_ModelScene = nullptr;
-	vk_demo::DVKShader*			m_SceneShader = nullptr;
-	TextureArray				m_SceneDiffuses;
-	MaterialArray				m_SceneMaterials;
-	MatMeshArray				m_SceneMatMeshes;
+	vk_demo::DVKModel*			m_SkyModel = nullptr;
+	vk_demo::DVKShader*			m_SkyShader = nullptr;
+    vk_demo::DVKMaterial*       m_SkyMaterial = nullptr;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
