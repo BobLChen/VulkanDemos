@@ -456,7 +456,7 @@ private:
 			"assets/models/samplebuilding.dae",
 			m_VulkanDevice,
 			cmdBuffer,
-			m_Shader0->attributes
+			m_Shader0->perVertexAttributes
 		);
 		m_Model->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
 		delete cmdBuffer;
