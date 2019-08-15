@@ -65,7 +65,18 @@ public:
 	{
 
 	}
-
+    
+    virtual void UpdateFPS(float time, float delta)
+    {
+        m_FrameCounter  += 1;
+        m_LastFrameTime += delta;
+        if (m_LastFrameTime >= 1.0f) {
+            m_LastFPS = m_FrameCounter;
+            m_FrameCounter  = 0;
+            m_LastFrameTime = 0.0f;
+        }
+    }
+    
 	void Setup();
 
 	void Prepare() override
@@ -134,4 +145,8 @@ protected:
 	VkPipelineStageFlags			m_WaitStageMask;
     
 	VulkanSwapChainRef				m_SwapChain;
+    
+    int32                           m_FrameCounter = 0;
+    float                           m_LastFrameTime = 0.0f;
+    float                           m_LastFPS = 0.0f;
 };
