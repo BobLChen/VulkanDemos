@@ -39,10 +39,10 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
-		InitParmas();
 		CreateRenderTarget();
 		CreateGUI();
 		LoadAssets();
+		InitParmas();
 
 		m_Ready = true;
 
@@ -75,6 +75,13 @@ private:
 		Matrix4x4 projection;
 	};
 
+	struct DirectionalLightBlock
+	{
+		Matrix4x4 model;
+		Matrix4x4 view;
+		Matrix4x4 projection;
+	};
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -82,16 +89,28 @@ private:
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
 
+		// m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
+
 		// depth
-		m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
 		m_DepthMaterial->BeginFrame();
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-			m_MVPData.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+			m_LightCamera.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
 			m_DepthMaterial->BeginObject();
-			m_DepthMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+			m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
 			m_DepthMaterial->EndObject();
 		}
 		m_DepthMaterial->EndFrame();
+
+		// shade
+		m_ShadeMaterial->BeginFrame();
+		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+			m_MVPData.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+			m_ShadeMaterial->BeginObject();
+			m_ShadeMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+			m_ShadeMaterial->SetLocalUniform("lightMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+			m_ShadeMaterial->EndObject();
+		}
+		m_ShadeMaterial->EndFrame();
 
 		SetupCommandBuffers(bufferIndex);
 
@@ -117,21 +136,21 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_RTDepth = vk_demo::DVKTexture::Create2D(
+		m_ShadowMap = vk_demo::DVKTexture::Create2D(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
-			m_FrameWidth, m_FrameHeight,
+			2048, 2048,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
-		vk_demo::DVKRenderPassInfo passInfo(m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE);
-		m_RenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
+		vk_demo::DVKRenderPassInfo passInfo(m_ShadowMap, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE);
+		m_ShadowRTT = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
 	}
 
 	void DestroyRenderTarget()
 	{
-		delete m_RenderTarget;
+		delete m_ShadowRTT;
 	}
 
 	void LoadAssets()
@@ -142,10 +161,14 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Room/miniHouse_FBX.FBX",
+			"assets/models/samplescene.dae",
 			m_VulkanDevice,
 			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
+			{ 
+				VertexAttribute::VA_Position, 
+				VertexAttribute::VA_UV0, 
+				VertexAttribute::VA_Normal
+			}
 		);
 
 		// depth
@@ -158,14 +181,30 @@ private:
 
 		m_DepthMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
-			m_RenderPass,
+			m_ShadowRTT,
 			m_PipelineCache,
 			m_DepthShader
 		);
 		m_DepthMaterial->pipelineInfo.colorAttachmentCount = 0;
 		m_DepthMaterial->PreparePipeline();
 
-		delete cmdBuffer;
+		// shade
+		m_ShadeShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/34_SimpleShadow/obj.vert.spv",
+			"assets/shaders/34_SimpleShadow/obj.frag.spv"
+		);
+
+		// shade material
+		m_ShadeMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_ShadeShader
+		);
+		m_ShadeMaterial->PreparePipeline();
+		m_ShadeMaterial->SetTexture("shadowMap", m_ShadowMap);
 
 		// debug
 		m_DebugShader = vk_demo::DVKShader::Create(
@@ -183,7 +222,9 @@ private:
 		);
 
 		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("depthTexture", m_RTDepth);
+		m_DebugMaterial->SetTexture("depthTexture", m_ShadowMap);
+
+		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
@@ -196,7 +237,10 @@ private:
 		delete m_DebugMaterial;
 		delete m_DebugShader;
 
-		delete m_RTDepth;
+		delete m_ShadowMap;
+
+		delete m_ShadeShader;
+		delete m_ShadeMaterial;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -223,7 +267,7 @@ private:
 
 		// render target pass
 		{
-			m_RenderTarget->BeginRenderPass(commandBuffer);
+			m_ShadowRTT->BeginRenderPass(commandBuffer);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
 			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
@@ -231,7 +275,7 @@ private:
 				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
 			}
 
-			m_RenderTarget->EndRenderPass(commandBuffer);
+			m_ShadowRTT->EndRenderPass(commandBuffer);
 		}
 
 		// second pass
@@ -255,11 +299,30 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
-				m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+			// shade
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_ShadeMaterial->GetPipeline());
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+				m_ShadeMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
+				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
 			}
+
+			// debug
+			viewport.x = m_FrameWidth * 0.75f;
+			viewport.y = m_FrameHeight * 0.25f;
+			viewport.width  = m_FrameWidth * 0.25f;
+			viewport.height = -(float)m_FrameHeight * 0.25f;    // flip y axis
+			
+			scissor.offset.x = m_FrameWidth * 0.75f;
+			scissor.offset.y = 0;
+			scissor.extent.width  = m_FrameWidth  * 0.25f;
+			scissor.extent.height = m_FrameHeight * 0.25f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
+			m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
 			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
@@ -271,16 +334,27 @@ private:
 
 	void InitParmas()
 	{
+		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+
 		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 100.0f, -750.0f));
-		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
+		m_MVPData.view.SetOrigin(Vector3(0.0f, 50.0f, -50.0f));
+		m_MVPData.view.LookAt(boundCenter);
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+
+		m_LightCamera.view.SetIdentity();
+		m_LightCamera.view.SetOrigin(Vector3(-60.0f, 60.0f, 0.0f));
+		m_LightCamera.view.LookAt(boundCenter);
+		m_LightCamera.view.SetInverse();
+
+		m_LightCamera.projection.SetIdentity();
+		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 	}
 
 	void CreateGUI()
@@ -296,21 +370,37 @@ private:
 	}
 
 private:
+
+	typedef std::vector<vk_demo::DVKTexture*>			TextureArray;
+	typedef std::vector<vk_demo::DVKMaterial*>			MaterialArray;
+	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 	
 	bool 						m_Ready = false;
 
+	// Debug
 	vk_demo::DVKModel*			m_Quad = nullptr;
-	vk_demo::DVKRenderTarget*   m_RenderTarget = nullptr;
-	vk_demo::DVKTexture*        m_RTDepth = nullptr;
-
-	ModelViewProjectionBlock	m_MVPData;
-	vk_demo::DVKModel*			m_ModelScene = nullptr;
-	vk_demo::DVKShader*			m_DepthShader = nullptr;
-	vk_demo::DVKMaterial*		m_DepthMaterial = nullptr;
-
 	vk_demo::DVKMaterial*	    m_DebugMaterial;
 	vk_demo::DVKShader*		    m_DebugShader;
 
+	// Shadow Rendertarget
+	vk_demo::DVKRenderTarget*   m_ShadowRTT = nullptr;
+	vk_demo::DVKTexture*        m_ShadowMap = nullptr;
+
+	// depth 
+	vk_demo::DVKShader*			m_DepthShader = nullptr;
+	vk_demo::DVKMaterial*		m_DepthMaterial = nullptr;
+
+	// mvp
+	ModelViewProjectionBlock	m_MVPData;
+	vk_demo::DVKModel*			m_ModelScene = nullptr;
+
+	// light
+	DirectionalLightBlock		m_LightCamera;
+	
+	// obj render
+	vk_demo::DVKShader*			m_ShadeShader = nullptr;
+	vk_demo::DVKMaterial*		m_ShadeMaterial = nullptr;
+	
 	ImageGUIContext*			m_GUI = nullptr;
 };
 
