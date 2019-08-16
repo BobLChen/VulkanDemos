@@ -549,3 +549,17 @@ SETUP_SAMPLE_START(32_FXAA)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(32_FXAA)
 
+SETUP_SAMPLE_START(33_InstanceDraw)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/33_InstanceDraw/InstanceDrawDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/33_InstanceDraw/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(33_InstanceDraw)
