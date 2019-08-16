@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define INSTANCE_COUNT 10240
+#define INSTANCE_COUNT 20480
 
 class InstanceDrawDemo : public DemoBase
 {
@@ -101,9 +101,8 @@ private:
     
     void UpdateAnim(float time, float delta)
     {
-        m_MVPData.model.AppendRotation(1.0f, Vector3::RightVector);
-        m_MVPData.model.AppendRotation(1.5f, Vector3::ForwardVector);
-        m_MVPData.view.TranslateZ(MMath::Sin(time / 2) * 2.5f);
+        m_MVPData.model.AppendRotation(45.0f * delta, Vector3::RightVector);
+        m_MVPData.model.AppendRotation(60.0f * delta, Vector3::ForwardVector);
     }
 
 	void UpdateUI(float time, float delta)
@@ -121,6 +120,7 @@ private:
             ImGui::SliderInt("Instance", &(primitive->indexBuffer->instanceCount), 1, INSTANCE_COUNT);
             
             ImGui::Text("DrawCall:1");
+			ImGui::Text("Triangle:%d", primitive->indexCount / 3 * primitive->indexBuffer->instanceCount);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -278,7 +278,7 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 12.50f;
+        boundCenter.z -= boundSize.Size() * 20.0f;
         
         m_MVPData.model.SetIdentity();
         
@@ -313,7 +313,7 @@ private:
     vk_demo::DVKMaterial*       m_RoleMaterial = nullptr;
     vk_demo::DVKTexture*        m_RoleTexture = nullptr;
     
-    bool                        m_AutoSpin = true;
+    bool                        m_AutoSpin = false;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
