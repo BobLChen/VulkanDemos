@@ -563,3 +563,18 @@ SETUP_SAMPLE_START(33_InstanceDraw)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(33_InstanceDraw)
+
+SETUP_SAMPLE_START(34_SimpleShadow)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/34_SimpleShadow/SimpleShadowDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/34_SimpleShadow/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(34_SimpleShadow)
