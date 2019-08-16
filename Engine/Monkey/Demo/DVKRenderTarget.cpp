@@ -58,6 +58,11 @@ namespace vk_demo
             DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
             VkAttachmentDescription& attchmentDescription = descriptions[numAttachmentDescriptions];
 
+			extent3D.width  = texture->width;
+			extent3D.height = texture->height;
+			extent3D.depth  = texture->depth;
+			numSamples      = texture->numSamples;
+
             attchmentDescription.samples        = texture->numSamples;
             attchmentDescription.format         = texture->format;
             attchmentDescription.loadOp         = renderPassInfo.depthStencilRenderTarget.loadAction;

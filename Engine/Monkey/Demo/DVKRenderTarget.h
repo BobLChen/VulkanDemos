@@ -36,7 +36,7 @@ namespace vk_demo
         int32                   numColorRenderTargets;
         
         // Color, no depth
-        explicit DVKRenderPassInfo(DVKTexture* colorRT, VkAttachmentLoadOp colorLoadAction, VkAttachmentStoreOp colorStoreAction, DVKTexture* resolveRT = nullptr)
+        explicit DVKRenderPassInfo(DVKTexture* colorRT, VkAttachmentLoadOp colorLoadAction, VkAttachmentStoreOp colorStoreAction, DVKTexture* resolveRT)
         {
             numColorRenderTargets = 1;
 
