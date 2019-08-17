@@ -42,6 +42,8 @@ public:
 
 	explicit Vector3();
 
+	FORCEINLINE void Scale(float scale);
+
 	FORCEINLINE Vector3 operator^(const Vector3& v) const;
 
 	FORCEINLINE static Vector3 CrossProduct(const Vector3& a, const Vector3& b);
@@ -562,6 +564,13 @@ FORCEINLINE Vector3 Vector3::operator+(float bias) const
 FORCEINLINE Vector3 Vector3::operator*(float scale) const
 {
 	return Vector3(x * scale, y * scale, z * scale);
+}
+
+FORCEINLINE void Vector3::Scale(float scale)
+{
+	x *= scale;
+	y *= scale;
+	z *= scale;
 }
 
 FORCEINLINE Vector3 Vector3::operator/(float scale) const

@@ -71,6 +71,12 @@ public:
 
 	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
 
+	FORCEINLINE void SetOrientation(const Vector3& dir, const Vector3* up, float smooth);
+
+	FORCEINLINE void LookAt(float x, float y, float z, const Vector3* up = nullptr, float smooth = 1.0f);
+
+	FORCEINLINE void LookAt(Vector3 target, const Vector3* up = nullptr, float smooth = 1.0f);
+
 	FORCEINLINE void CopyRawFrom(int32 column, const Vector4 &vec);
 
 	FORCEINLINE void CopyRawTo(int32 column, Vector4 &vec) const;
@@ -528,6 +534,81 @@ FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
 	vec.y = m[1][column];
 	vec.z = m[2][column];
 	vec.w = m[3][column];
+}
+
+FORCEINLINE void Matrix4x4::LookAt(float x, float y, float z, const Vector3* up, float smooth)
+{
+	Vector3 position = GetOrigin();
+	Vector3 vector(x - position.x, y - position.y, z - position.z);
+	SetOrientation(vector, up, smooth);
+}
+
+FORCEINLINE void Matrix4x4::LookAt(Vector3 target, const Vector3* up, float smooth)
+{
+	LookAt(target.x, target.y, target.z, up, smooth);
+}
+
+FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up, float smooth)
+{
+	Vector3 scale;
+
+	Vector4 vec;
+	CopyColumnTo(0, vec);
+	scale.x = vec.Size3();
+	CopyColumnTo(1, vec);
+	scale.y = vec.Size3();
+	CopyColumnTo(2, vec);
+	scale.z = vec.Size3();
+
+	Vector3 tempDir = dir;
+	tempDir.Normalize();
+
+	Vector3 tempUP;
+	if (up == nullptr)
+	{
+		if (tempDir.x == 0.0f && MMath::Abs(tempDir.y) == 1 && tempDir.z == 0) {
+			tempUP = Vector3::ForwardVector;
+		}
+		else {
+			tempUP = Vector3::UpVector;
+		}
+	}
+	else
+	{
+		tempUP = *up;
+	}
+
+	if (smooth != 1.0f)
+	{
+		CopyColumnTo(2, vec);
+		vec.x = (vec.x + ((tempDir.x - vec.x) * smooth));
+		vec.y = (vec.y + ((tempDir.y - vec.y) * smooth));
+		vec.z = (vec.z + ((tempDir.z - vec.z) * smooth));
+		tempDir = vec;
+
+		CopyColumnTo(1, vec);
+		vec.x = (vec.x + ((tempUP.x - vec.x) * smooth));
+		vec.y = (vec.y + ((tempUP.y - vec.y) * smooth));
+		vec.z = (vec.z + ((tempUP.z - vec.z) * smooth));
+		tempUP = vec;
+	}
+
+	tempDir.Normalize();
+	tempUP.Normalize();
+
+	Vector3 rVec = Vector3::CrossProduct(tempUP, tempDir);
+	rVec.Normalize();
+
+	Vector3 uVec = Vector3::CrossProduct(tempDir, rVec);
+	uVec.Normalize();
+
+	rVec.Scale(scale.x);
+	uVec.Scale(scale.y);
+	tempDir.Scale(scale.z);
+    
+	CopyRawFrom(0, Vector4(rVec, 0.0f));
+	CopyRawFrom(1, Vector4(uVec, 0.0f));
+	CopyRawFrom(2, Vector4(tempDir, 0.0f));
 }
 
 FORCEINLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
@@ -1050,42 +1131,42 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axi
 FORCEINLINE Vector3 Matrix4x4::GetRight() const
 {
 	Vector4 right;
-	CopyRawTo(0, right);
+	CopyColumnTo(0, right);
 	return Vector3(right.x, right.y, right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetUp() const
 {
 	Vector4 up;
-	CopyRawTo(1, up);
+	CopyColumnTo(1, up);
 	return Vector3(up.x, up.y, up.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetForward() const
 {
 	Vector4 forward;
-	CopyRawTo(2, forward);
+    CopyColumnTo(2, forward);
 	return Vector3(forward.x, forward.y, forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetLeft() const
 {
 	Vector4 right;
-	CopyRawTo(0, right);
+	CopyColumnTo(0, right);
 	return Vector3(-right.x, -right.y, -right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetBackward() const
 {
 	Vector4 forward;
-	CopyRawTo(2, forward);
+	CopyColumnTo(2, forward);
 	return Vector3(-forward.x, -forward.y, -forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetDown() const
 {
 	Vector4 up;
-	CopyRawTo(1, up);
+	CopyColumnTo(1, up);
 	return Vector3(-up.x, -up.y, -up.z);
 }
 
