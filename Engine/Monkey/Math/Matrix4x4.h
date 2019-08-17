@@ -553,11 +553,11 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 	Vector3 scale;
 
 	Vector4 vec;
-	CopyRawTo(0, vec);
+	CopyColumnTo(0, vec);
 	scale.x = vec.Size3();
-	CopyRawTo(1, vec);
+	CopyColumnTo(1, vec);
 	scale.y = vec.Size3();
-	CopyRawTo(2, vec);
+	CopyColumnTo(2, vec);
 	scale.z = vec.Size3();
 
 	Vector3 tempDir = dir;
@@ -580,13 +580,13 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 
 	if (smooth != 1.0f)
 	{
-		CopyRawTo(2, vec);
+		CopyColumnTo(2, vec);
 		vec.x = (vec.x + ((tempDir.x - vec.x) * smooth));
 		vec.y = (vec.y + ((tempDir.y - vec.y) * smooth));
 		vec.z = (vec.z + ((tempDir.z - vec.z) * smooth));
 		tempDir = vec;
 
-		CopyRawTo(1, vec);
+		CopyColumnTo(1, vec);
 		vec.x = (vec.x + ((tempUP.x - vec.x) * smooth));
 		vec.y = (vec.y + ((tempUP.y - vec.y) * smooth));
 		vec.z = (vec.z + ((tempUP.z - vec.z) * smooth));
@@ -605,7 +605,7 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 	rVec.Scale(scale.x);
 	uVec.Scale(scale.y);
 	tempDir.Scale(scale.z);
-
+    
 	CopyRawFrom(0, Vector4(rVec, 0.0f));
 	CopyRawFrom(1, Vector4(uVec, 0.0f));
 	CopyRawFrom(2, Vector4(tempDir, 0.0f));
@@ -1131,42 +1131,42 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axi
 FORCEINLINE Vector3 Matrix4x4::GetRight() const
 {
 	Vector4 right;
-	CopyRawTo(0, right);
+	CopyColumnTo(0, right);
 	return Vector3(right.x, right.y, right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetUp() const
 {
 	Vector4 up;
-	CopyRawTo(1, up);
+	CopyColumnTo(1, up);
 	return Vector3(up.x, up.y, up.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetForward() const
 {
 	Vector4 forward;
-	CopyRawTo(2, forward);
+    CopyColumnTo(2, forward);
 	return Vector3(forward.x, forward.y, forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetLeft() const
 {
 	Vector4 right;
-	CopyRawTo(0, right);
+	CopyColumnTo(0, right);
 	return Vector3(-right.x, -right.y, -right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetBackward() const
 {
 	Vector4 forward;
-	CopyRawTo(2, forward);
+	CopyColumnTo(2, forward);
 	return Vector3(-forward.x, -forward.y, -forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetDown() const
 {
 	Vector4 up;
-	CopyRawTo(1, up);
+	CopyColumnTo(1, up);
 	return Vector3(-up.x, -up.y, -up.z);
 }
 

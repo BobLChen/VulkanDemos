@@ -10,6 +10,7 @@ layout (binding = 0) uniform MVPBlock
 	mat4 modelMatrix;
 	mat4 viewMatrix;
 	mat4 projectionMatrix;
+	vec4 notUsed;
 } uboMVP;
 
 out gl_PerVertex 

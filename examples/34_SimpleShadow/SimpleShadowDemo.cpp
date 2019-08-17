@@ -80,15 +80,31 @@ private:
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
+        Vector4 direction;
 	};
 
+    void UpdateLight(float time, float delta)
+    {
+        if (!m_AnimLight) {
+            return;
+        }
+        
+        m_LightCamera.view.SetIdentity();
+        m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
+        m_LightCamera.view.LookAt(Vector3(0, 0, 0));
+        m_LightCamera.view.SetInverse();
+        
+        m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
+    }
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
-
+        UpdateLight(time, delta);
+        
 		// m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
 
 		// depth
@@ -126,6 +142,9 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SimpleShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+            ImGui::Checkbox("Auto Spin", &m_AnimLight);
+            ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -349,9 +368,11 @@ private:
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 
 		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(-60.0f, 60.0f, 0.0f));
+        m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
 		m_LightCamera.view.LookAt(boundCenter);
 		m_LightCamera.view.SetInverse();
+        
+        m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
@@ -400,6 +421,8 @@ private:
 	// obj render
 	vk_demo::DVKShader*			m_ShadeShader = nullptr;
 	vk_demo::DVKMaterial*		m_ShadeMaterial = nullptr;
+    
+    bool                        m_AnimLight = true;
 	
 	ImageGUIContext*			m_GUI = nullptr;
 };
