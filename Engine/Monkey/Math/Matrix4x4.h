@@ -802,7 +802,10 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 
 FORCEINLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
 {
-	m[raw][0] = vec.x; m[raw][1] = vec.y; m[raw][2] = vec.z; m[raw][3] = vec.w;
+	m[raw][0] = vec.x;
+    m[raw][1] = vec.y;
+    m[raw][2] = vec.z;
+    m[raw][3] = vec.w;
 }
 
 FORCEINLINE void Matrix4x4::CopyRawTo(int32 raw, Vector4 &vec) const
@@ -929,8 +932,8 @@ FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
 
 	Vector4 temp;
 	temp.x = row3.x + v.x * col0.x + v.y * col0.y + v.z * col0.z;
-	temp.y = row3.y + v.y * col1.x + v.y * col1.y + v.z * col1.z;
-	temp.z = row3.z + v.z * col2.x + v.y * col2.y + v.z * col2.z;
+	temp.y = row3.y + v.x * col1.x + v.y * col1.y + v.z * col1.z;
+	temp.z = row3.z + v.x * col2.x + v.y * col2.y + v.z * col2.z;
 	temp.w = 1.0f;
 
 	return temp;
