@@ -88,13 +88,11 @@ private:
         if (!m_AnimLight) {
             return;
         }
-        
         m_LightCamera.view.SetIdentity();
         m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
         m_LightCamera.view.LookAt(Vector3(0, 0, 0));
-        m_LightCamera.view.SetInverse();
-        
         m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
+        m_LightCamera.view.SetInverse();
     }
     
 	void Draw(float time, float delta)
