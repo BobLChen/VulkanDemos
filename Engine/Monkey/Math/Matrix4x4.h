@@ -14,6 +14,14 @@
 struct Matrix4x4
 {
 public:
+
+	enum Style 
+	{
+		EulerAngles,
+		AxisAngle,
+		Quaternion
+	};
+
 	float m[4][4];
 
 	static const Matrix4x4 Identity;
@@ -70,6 +78,16 @@ public:
 	FORCEINLINE void CopyColumnFrom(int32 column, const Vector4 &vec);
 
 	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
+
+	FORCEINLINE void Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot);
+
+	FORCEINLINE void Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot);
+
+	FORCEINLINE Vector4 DeltaTransformVector(const Vector4& v);
+
+	FORCEINLINE void CopyRawDataTo(float* rawData);
+
+	FORCEINLINE void CopyRawDataFrom(float* rawData);
 
 	FORCEINLINE void SetOrientation(const Vector3& dir, const Vector3* up, float smooth);
 
@@ -135,6 +153,20 @@ public:
 
 	FORCEINLINE Vector3 GetScaleVector(float tolerance = SMALL_NUMBER) const;
 
+	FORCEINLINE Vector3 GetRotation();
+
+	FORCEINLINE void SetRotation(const Vector3& rotation);
+
+	FORCEINLINE Vector3 GetScale() const;
+
+	FORCEINLINE void ScaleX(float scale);
+
+	FORCEINLINE void ScaleY(float scale);
+
+	FORCEINLINE void ScaleZ(float scale);
+
+	FORCEINLINE void SetScale(const Vector3& scale, float smooth);
+
 	FORCEINLINE Matrix4x4 RemoveTranslation() const;
 
 	FORCEINLINE Matrix4x4 ConcatTranslation(const Vector3& translation) const;
@@ -158,6 +190,8 @@ public:
 	FORCEINLINE void SetAxis(int32 i, const Vector3& axis);
 
 	FORCEINLINE void SetOrigin(const Vector3& newOrigin);
+
+	FORCEINLINE void SetPosition(const Vector3& pos);
 
 	FORCEINLINE void SetAxes(Vector3* axis0 = nullptr, Vector3* axis1 = nullptr, Vector3* axis2 = nullptr, Vector3* origin = nullptr);
 
@@ -231,7 +265,10 @@ FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
 
 FORCEINLINE Matrix4x4::Matrix4x4()
 {
-
+	m[0][0] = 1; m[0][1] = 0;  m[0][2] = 0;  m[0][3] = 0;
+	m[1][0] = 0; m[1][1] = 1;  m[1][2] = 0;  m[1][3] = 0;
+	m[2][0] = 0; m[2][1] = 0;  m[2][2] = 1;  m[2][3] = 0;
+	m[3][0] = 0; m[3][1] = 0;  m[3][2] = 0;  m[3][3] = 1;
 }
 
 FORCEINLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW)
@@ -525,7 +562,10 @@ FORCEINLINE void Matrix4x4::Append(const Matrix4x4& other)
 
 FORCEINLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
 {
-	m[0][column] = vec.x; m[1][column] = vec.y; m[2][column] = vec.z; m[3][column] = vec.w;
+	m[0][column] = vec.x; 
+	m[1][column] = vec.y; 
+	m[2][column] = vec.z; 
+	m[3][column] = vec.w;
 }
 
 FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
@@ -536,10 +576,160 @@ FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
 	vec.w = m[3][column];
 }
 
+FORCEINLINE void Matrix4x4::CopyRawDataFrom(float* rawData)
+{
+	m[0][0] = rawData[0];	m[0][1] = rawData[1];	m[0][2] = rawData[2];	m[0][3] = rawData[3];
+	m[1][0] = rawData[4];	m[1][1] = rawData[5];	m[1][2] = rawData[6];	m[1][3] = rawData[7];
+	m[2][0] = rawData[8];	m[2][1] = rawData[9];	m[2][2] = rawData[10];	m[2][3] = rawData[11];
+	m[3][0] = rawData[12];	m[3][1] = rawData[13];	m[3][2] = rawData[14];	m[3][3] = rawData[15];
+}
+
+FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData)
+{
+	rawData[0] = m[0][0];
+	rawData[1] = m[0][1];
+	rawData[2] = m[0][2];
+	rawData[3] = m[0][3];
+
+	rawData[4] = m[1][0];
+	rawData[5] = m[1][1];
+	rawData[6] = m[1][2];
+	rawData[7] = m[1][3];
+
+	rawData[8] = m[2][0];
+	rawData[9] = m[2][1];
+	rawData[10] = m[2][2];
+	rawData[11] = m[2][3];
+
+	rawData[12] = m[3][0];
+	rawData[13] = m[3][1];
+	rawData[14] = m[3][2];
+	rawData[15] = m[4][3];
+}
+
+FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v)
+{
+	float x = v.x;
+	float y = v.y;
+	float z = v.z;
+	return Vector4(
+		(x * m[0][0] + y * m[1][0] + z * m[2][0]),
+		(x * m[0][1] + y * m[1][1] + z * m[2][1]),
+		(x * m[0][2] + y * m[1][2] + z * m[2][2]),
+		(x * m[0][3] + y * m[1][3] + z * m[2][3])
+	);
+}
+
+FORCEINLINE void Matrix4x4::Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot)
+{
+	SetIdentity();
+	AppendScale(scale);
+
+	Matrix4x4 temp;
+
+	float angle = -rot.x;
+	float v[] = { 1, 0, 0, 0, 0, MMath::Cos(angle), -MMath::Sin(angle), 0, 0, MMath::Sin(angle), MMath::Cos(angle), 0, 0, 0, 0 , 0 };
+	temp.CopyRawDataFrom(v);
+	Append(temp);
+	
+	angle = -rot.y;
+	float v0[] = {MMath::Cos(angle), 0, MMath::Sin(angle), 0, 0, 1, 0, 0, -MMath::Sin(angle), 0, MMath::Cos(angle), 0, 0, 0, 0, 0};
+	temp.CopyRawDataFrom(v0);
+	Append(temp);
+
+	angle = -rot.z;
+	float v1[] = {MMath::Cos(angle), -MMath::Sin(angle), 0, 0, MMath::Sin(angle), MMath::Cos(angle), 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+	temp.CopyRawDataFrom(v1);
+	Append(temp);
+
+	SetPosition(pos);
+	m[3][3] = 1.0f;
+}
+
+FORCEINLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot)
+{
+	float mr[16] = { 0.0f };
+	CopyRawDataTo(mr);
+
+	// postion
+	outPos.x = mr[12];
+	outPos.y = mr[13];
+	outPos.z = mr[14];
+	outPos.w = 1.0f;
+
+	mr[12] = mr[13] = mr[14] = 0.0f;
+
+	// scale
+	outScale.x = MMath::Sqrt(mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]);
+	outScale.y = MMath::Sqrt(mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]);
+	outScale.z = MMath::Sqrt(mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]);
+	outScale.w = 1.0f;
+
+	if (mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8]) + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8]) < 0) 
+	{
+		outScale.z = -outScale.z;
+	}
+	
+	mr[0]  /= outScale.x;
+	mr[1]  /= outScale.x;
+	mr[2]  /= outScale.x;
+	mr[4]  /= outScale.y;
+	mr[5]  /= outScale.y;
+	mr[6]  /= outScale.y;
+	mr[8]  /= outScale.z;
+	mr[9]  /= outScale.z;
+	mr[10] /= outScale.z;
+
+	if (style == Style::EulerAngles) 
+	{
+		outRot.y = MMath::Asin(-mr[2]);
+		if (mr[2] != 1 && mr[2] != -1) 
+		{
+			outRot.x = MMath::Atan2(mr[6], mr[10]);
+			outRot.z = MMath::Atan2(mr[1], mr[0]);
+			
+		} 
+		else 
+		{
+			outRot.z = 0;
+			outRot.x = MMath::Atan2(mr[4], mr[5]);
+		}
+	} 
+	else if (style == Style::AxisAngle) 
+	{
+		outRot.w = MMath::Acos((mr[0] + mr[5] + mr[10] - 1) / 2);
+		float len = MMath::Sqrt((mr[6] - mr[9]) * (mr[6] - mr[9]) + (mr[8] - mr[2]) * (mr[8] - mr[2]) + (mr[1] - mr[4]) * (mr[1] - mr[4]));
+		outRot.x = (mr[6] - mr[9]) / len;
+		outRot.y = (mr[8] - mr[2]) / len;
+		outRot.z = (mr[1] - mr[4]) / len;
+	} else if (style == Style::Quaternion) 
+	{
+		float tr = mr[0] + mr[5] + mr[10];
+		if (tr > 0) 
+		{
+			outRot.w = MMath::Sqrt(1 + tr) / 2;
+			outRot.x = (mr[6] - mr[9]) / (4 * outRot.w);
+			outRot.y = (mr[8] - mr[2]) / (4 * outRot.w);
+			outRot.z = (mr[1] - mr[4]) / (4 * outRot.w);
+		} 
+		else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
+			outRot.x = MMath::Sqrt(1 + mr[0] - mr[5] - mr[10])/2;
+			outRot.w = (mr[6] - mr[9]) / (4 * outRot.x);
+			outRot.y = (mr[1] + mr[4]) / (4 * outRot.x);
+			outRot.z = (mr[8] + mr[2]) / (4 * outRot.x);
+		} 
+		else {
+			outRot.z = MMath::Sqrt(1 + mr[10] - mr[0] - mr[5])/2;
+			outRot.x = (mr[8] + mr[2]) / (4 * outRot.z);
+			outRot.y = (mr[6] + mr[9]) / (4 * outRot.z);
+			outRot.w = (mr[1] - mr[4]) / (4 * outRot.z);
+		}
+	}
+}
+
 FORCEINLINE void Matrix4x4::LookAt(float x, float y, float z, const Vector3* up, float smooth)
 {
-	Vector3 position = GetOrigin();
-	Vector3 vector(x - position.x, y - position.y, z - position.z);
+	Vector3 vector(x - m[3][0], y - m[3][1], z - m[3][2]);
 	SetOrientation(vector, up, smooth);
 }
 
@@ -553,11 +743,11 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 	Vector3 scale;
 
 	Vector4 vec;
-	CopyColumnTo(0, vec);
+	CopyRawTo(0, vec);
 	scale.x = vec.Size3();
-	CopyColumnTo(1, vec);
+	CopyRawTo(1, vec);
 	scale.y = vec.Size3();
-	CopyColumnTo(2, vec);
+	CopyRawTo(2, vec);
 	scale.z = vec.Size3();
 
 	Vector3 tempDir = dir;
@@ -580,13 +770,13 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 
 	if (smooth != 1.0f)
 	{
-		CopyColumnTo(2, vec);
+		CopyRawTo(2, vec);
 		vec.x = (vec.x + ((tempDir.x - vec.x) * smooth));
 		vec.y = (vec.y + ((tempDir.y - vec.y) * smooth));
 		vec.z = (vec.z + ((tempDir.z - vec.z) * smooth));
 		tempDir = vec;
 
-		CopyColumnTo(1, vec);
+		CopyRawTo(1, vec);
 		vec.x = (vec.x + ((tempUP.x - vec.x) * smooth));
 		vec.y = (vec.y + ((tempUP.y - vec.y) * smooth));
 		vec.z = (vec.z + ((tempUP.z - vec.z) * smooth));
@@ -600,7 +790,6 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 	rVec.Normalize();
 
 	Vector3 uVec = Vector3::CrossProduct(tempDir, rVec);
-	uVec.Normalize();
 
 	rVec.Scale(scale.x);
 	uVec.Scale(scale.y);
@@ -729,7 +918,22 @@ FORCEINLINE Vector3 Matrix4x4::InverseTransformPosition(const Vector3 &v) const
 
 FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
 {
-	return TransformVector4(Vector4(v.x, v.y, v.z, 0.0f));
+	Vector4 col0;
+	Vector4 col1;
+	Vector4 col2;
+	Vector4 row3;
+	CopyColumnTo(0, col0);
+	CopyColumnTo(1, col1);
+	CopyColumnTo(2, col2);
+	CopyRawTo(3, row3);
+
+	Vector4 temp;
+	temp.x = row3.x + v.x * col0.x + v.y * col0.y + v.z * col0.z;
+	temp.y = row3.y + v.y * col1.x + v.y * col1.y + v.z * col1.z;
+	temp.z = row3.z + v.z * col2.x + v.y * col2.y + v.z * col2.z;
+	temp.w = 1.0f;
+
+	return temp;
 }
 
 FORCEINLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
@@ -954,6 +1158,125 @@ FORCEINLINE Vector3 Matrix4x4::ExtractScaling(float tolerance)
 	return scale3D;
 }
 
+FORCEINLINE void Matrix4x4::ScaleX(float scale)
+{
+	Vector4 right;
+	CopyRawTo(0, right);
+
+	float length = right.Size3();
+	right.x = right.x / length * scale;
+	right.y = right.y / length * scale;
+	right.z = right.z / length * scale;
+
+	CopyRawFrom(0, right);
+}
+
+FORCEINLINE void Matrix4x4::ScaleY(float scale)
+{
+	Vector4 up;
+	CopyRawTo(1, up);
+
+	float length = up.Size3();
+	up.x = up.x / length * scale;
+	up.y = up.y / length * scale;
+	up.z = up.z / length * scale;
+
+	CopyRawFrom(1, up);
+}
+
+FORCEINLINE void Matrix4x4::ScaleZ(float scale)
+{
+	Vector4 dir;
+	CopyRawTo(2, dir);
+
+	float length = dir.Size3();
+	dir.x = dir.x / length * scale;
+	dir.y = dir.y / length * scale;
+	dir.z = dir.z / length * scale;
+
+	CopyRawFrom(2, dir);
+}
+
+FORCEINLINE void Matrix4x4::SetScale(const Vector3& scale, float smooth)
+{
+	Vector4 right;
+	CopyRawTo(0, right);
+
+	Vector4 up;
+	CopyRawTo(1, up);
+
+	Vector4 dir;
+	CopyRawTo(2, dir);
+
+	Vector3 temp(right.Size3(), up.Size3(), dir.Size3());
+
+	float x = temp.x;
+	float y = temp.y;
+	float z = temp.z;
+
+	temp.x += (x - temp.x) * smooth;
+	temp.y += (y - temp.y) * smooth;
+	temp.z += (z - temp.z) * smooth;
+
+	right.x *= scale.x / x;
+	right.y *= scale.x / x;
+	right.z *= scale.x / x;
+
+	up.x *= scale.y / y;
+	up.y *= scale.y / y;
+	up.z *= scale.y / y;
+
+	dir.x *= scale.z / z;
+	dir.y *= scale.z / z;
+	dir.z *= scale.z / z;
+
+	CopyRawFrom(0, right);
+	CopyRawFrom(1, up);
+	CopyRawFrom(2, dir);
+}
+
+FORCEINLINE void Matrix4x4::SetRotation(const Vector3& rotation)
+{
+	Vector4 pos;
+	Vector4 rot;
+	Vector4 scale;
+
+	Decompose(Style::EulerAngles, pos, scale, rot);
+
+	rot.x = MMath::DegreesToRadians(rotation.x);
+	rot.y = MMath::DegreesToRadians(rotation.y);
+	rot.z = MMath::DegreesToRadians(rotation.z);
+
+	Recompose(pos, scale, rot);
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetRotation()
+{
+	Vector4 pos;
+	Vector4 rot;
+	Vector4 scale;
+
+	Decompose(Style::EulerAngles, pos, scale, rot);
+
+	return Vector3(MMath::RadiansToDegrees(rot.x), MMath::RadiansToDegrees(rot.y), MMath::RadiansToDegrees(rot.z));
+}
+
+FORCEINLINE Vector3 Matrix4x4::GetScale() const
+{
+	Vector4 temp;
+	
+	CopyRawTo(0, temp);
+	float scaleX = temp.Size3();
+	
+	CopyRawTo(1, temp);
+	float scaleY = temp.Size3();
+
+	CopyRawTo(2, temp);
+	float scaleZ = temp.Size3();
+
+	return Vector3(scaleX, scaleY, scaleZ);
+}
+
 FORCEINLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
 {
 	Vector3 scale3D(1, 1, 1);
@@ -1100,6 +1423,13 @@ FORCEINLINE void Matrix4x4::SetOrigin(const Vector3& newOrigin)
 	m[3][2] = newOrigin.z;
 }
 
+FORCEINLINE void Matrix4x4::SetPosition(const Vector3& pos)
+{
+	m[3][0] = pos.x;
+	m[3][1] = pos.y;
+	m[3][2] = pos.z;
+}
+
 FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axis2, Vector3* origin)
 {
 	if (axis0 != NULL)
@@ -1131,42 +1461,42 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axi
 FORCEINLINE Vector3 Matrix4x4::GetRight() const
 {
 	Vector4 right;
-	CopyColumnTo(0, right);
+	CopyRawTo(0, right);
 	return Vector3(right.x, right.y, right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetUp() const
 {
 	Vector4 up;
-	CopyColumnTo(1, up);
+	CopyRawTo(1, up);
 	return Vector3(up.x, up.y, up.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetForward() const
 {
 	Vector4 forward;
-    CopyColumnTo(2, forward);
+	CopyRawTo(2, forward);
 	return Vector3(forward.x, forward.y, forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetLeft() const
 {
 	Vector4 right;
-	CopyColumnTo(0, right);
+	CopyRawTo(0, right);
 	return Vector3(-right.x, -right.y, -right.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetBackward() const
 {
 	Vector4 forward;
-	CopyColumnTo(2, forward);
+	CopyRawTo(2, forward);
 	return Vector3(-forward.x, -forward.y, -forward.z);
 }
 
 FORCEINLINE Vector3 Matrix4x4::GetDown() const
 {
 	Vector4 up;
-	CopyColumnTo(1, up);
+	CopyRawTo(1, up);
 	return Vector3(-up.x, -up.y, -up.z);
 }
 
