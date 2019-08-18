@@ -193,3 +193,6 @@ Reduce 5 float per vertex
 
 ### [34_SimpleShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/34_SimpleShadow)
 ![34_SimpleShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/34_SimpleShadow.jpg)
+
+### [35_PCFShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/35_PCFShadow)
+![35_PCFShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/35_PCFShadow.jpg)
