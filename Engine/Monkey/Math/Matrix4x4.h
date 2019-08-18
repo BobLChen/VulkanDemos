@@ -35,7 +35,9 @@ public:
 
 	Matrix4x4(const Rotator& rot, const Vector3& origin);
 
-	FORCEINLINE void Perspective(float HalfFOV, float Width, float Height, float MinZ, float MaxZ);
+	FORCEINLINE void Perspective(float halfFOV, float width, float height, float minZ, float maxZ);
+
+	FORCEINLINE void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ);
 
 	FORCEINLINE void SetIdentity();
 
@@ -1633,7 +1635,7 @@ FORCEINLINE void Matrix4x4::Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis)
 	}
 }
 
-FORCEINLINE void  Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
+FORCEINLINE void Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
 {
 	float aspect = width / height;
 	float tanHalfFovy = MMath::Tan(fovy / 2);
@@ -1642,4 +1644,12 @@ FORCEINLINE void  Matrix4x4::Perspective(float fovy, float width, float height, 
 	m[1][0] = 0.0f;							m[1][1] = 1 / (tanHalfFovy);	m[1][2] = 0.0f;									m[1][3] = 0.0f;
 	m[2][0] = 0.0f;							m[2][1] = 0.0f;					m[2][2] = zFar / (zFar - zNear);				m[2][3] = 1;
 	m[3][0] = 0.0f;							m[3][1] = 0.0f;					m[3][2] = zFar * zNear / (zNear - zFar);		m[3][3] = 0.0f;
+}
+
+FORCEINLINE void Matrix4x4::Orthographic(float left, float right, float bottom, float top, float zNear, float zFar)
+{
+	m[0][0] = 2.0f / (right - left);			m[0][1] = 0.0f;								m[0][2] = 0.0f;						m[0][3] = 0.0f;
+	m[1][0] = 0.0f;								m[1][1] = 2.0f / (top - bottom);			m[1][2] = 0.0f;						m[1][3] = 0.0f;
+	m[2][0] = 0.0f;								m[2][1] = 0.0f;								m[2][2] = 1.0f / (zFar - zNear);	m[2][3] = 0.0f;
+	m[3][0] = -(right + left) / (right - left);	m[3][1] = -(top + bottom) / (top - bottom);	m[3][2] = -zNear / (zFar - zNear);	m[3][3] = 1.0f;
 }

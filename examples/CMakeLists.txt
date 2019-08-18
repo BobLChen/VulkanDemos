@@ -578,3 +578,18 @@ SETUP_SAMPLE_START(34_SimpleShadow)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(34_SimpleShadow)
+
+SETUP_SAMPLE_START(35_PCFShadow)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/35_PCFShadow/PCFShadowDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/35_PCFShadow/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(35_PCFShadow)
