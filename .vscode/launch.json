@@ -4,34 +4,34 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        {
-            "name": "Debug 0_SuperDemo",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/Debug/examples/0_SuperDemo",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
-            "externalConsole": true,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ],
-        },
+        // {
+        //     "name": "Debug 0_SuperDemo",
+        //     "type": "cppdbg",
+        //     "request": "launch",
+        //     "program": "${workspaceFolder}/build/Debug/examples/0_SuperDemo",
+        //     "args": [],
+        //     "stopAtEntry": false,
+        //     "cwd": "${workspaceFolder}",
+        //     "environment": [
+        //         {
+        //             "name": "LD_LIBRARY_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
+        //         },
+        //         {
+        //             "name": "VK_LAYER_PATH",
+        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+        //         }
+        //     ],
+        //     "externalConsole": true,
+        //     "MIMode": "gdb",
+        //     "setupCommands": [
+        //         {
+        //             "description": "Enable pretty-printing for gdb",
+        //             "text": "-enable-pretty-printing",
+        //             "ignoreFailures": true
+        //         }
+        //     ],
+        // },
         {
             "name": "Debug 2_Triangle",
             "type": "cppdbg",
@@ -625,6 +625,305 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Debug/examples/23_OptimizeRenderTarget",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 24_EdgeDetect",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/24_EdgeDetect",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 25_Bloom",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/25_Bloom",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 26_SkeletonMatrix4x4",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/26_SkeletonMatrix4x4",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 27_SkeletonPackIndexWeight",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/27_SkeletonPackIndexWeight",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 28_SkeletonQuat",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/28_SkeletonQuat",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 29_SkinInTexture",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/29_SkinInTexture",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 30_SkinInstance",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/30_SkinInstance",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 31_MSAA",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/31_MSAA",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 32_FXAA",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/32_FXAA",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 33_InstanceDraw",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/33_InstanceDraw",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },{
+            "name": "Debug 34_SimpleShadow",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/34_SimpleShadow",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

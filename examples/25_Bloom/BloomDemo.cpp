@@ -314,8 +314,8 @@ private:
 		m_BlurHShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/25_Bloom/blurH.vert.spv",
-			"assets/shaders/25_Bloom/blurH.frag.spv"
+			"assets/shaders/25_Bloom/BlurH.vert.spv",
+			"assets/shaders/25_Bloom/BlurH.frag.spv"
 		);
 		m_BlurHMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
@@ -333,8 +333,8 @@ private:
 		m_BlurVShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/25_Bloom/blurV.vert.spv",
-			"assets/shaders/25_Bloom/blurV.frag.spv"
+			"assets/shaders/25_Bloom/BlurV.vert.spv",
+			"assets/shaders/25_Bloom/BlurV.frag.spv"
 		);
 		m_BlurVMateria = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
