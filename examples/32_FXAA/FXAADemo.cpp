@@ -221,6 +221,10 @@ private:
 			"assets/shaders/32_FXAA/obj.frag.spv"
 		);
 
+		float range0 = m_VulkanDevice->GetLimits().lineWidthRange[0];
+		float range1 = m_VulkanDevice->GetLimits().lineWidthRange[1];
+		float lineWidth = MMath::Clamp(3.0f, range0, range1);
+
 		m_LineMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
@@ -229,7 +233,7 @@ private:
 		);
 		m_LineMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 		m_LineMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
-		m_LineMaterial->pipelineInfo.rasterizationState.lineWidth   = 3.0f; // 注意这里特别重要，如果非常细的Line，FXAA是搞不定的。
+		m_LineMaterial->pipelineInfo.rasterizationState.lineWidth   = lineWidth; // 注意这里特别重要，如果非常细的Line，FXAA是搞不定的。
 		m_LineMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
 		m_LineMaterial->PreparePipeline();
 

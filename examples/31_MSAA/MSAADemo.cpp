@@ -397,32 +397,41 @@ private:
 	{
 		DestroyMaterials();
 
+		float range0 = m_VulkanDevice->GetLimits().lineWidthRange[0];
+		float range1 = m_VulkanDevice->GetLimits().lineWidthRange[1];
+		float lineWidth = MMath::Clamp(3.0f, range0, range1);
+
 		// msaa material
-		m_MSAAMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_LineShader
-		);
-		m_MSAAMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		m_MSAAMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
-		m_MSAAMaterial->pipelineInfo.rasterizationState.lineWidth   = 1.0f;
-		m_MSAAMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-		m_MSAAMaterial->pipelineInfo.multisampleState.rasterizationSamples = m_MSAACount;
-		m_MSAAMaterial->PreparePipeline();
-		
-		// none msaa material
-		m_NoneMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_LineShader
-		);
-		m_NoneMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		m_NoneMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
-		m_NoneMaterial->pipelineInfo.rasterizationState.lineWidth   = 1.0f;
-		m_NoneMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-		m_NoneMaterial->PreparePipeline();
+		if (m_MSAAEnable)
+		{
+			m_MSAAMaterial = vk_demo::DVKMaterial::Create(
+				m_VulkanDevice,
+				m_RenderPass,
+				m_PipelineCache,
+				m_LineShader
+			);
+			m_MSAAMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			m_MSAAMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
+			m_MSAAMaterial->pipelineInfo.rasterizationState.lineWidth   = lineWidth;
+			m_MSAAMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+			m_MSAAMaterial->pipelineInfo.multisampleState.rasterizationSamples = m_MSAACount;
+			m_MSAAMaterial->PreparePipeline();
+		}
+		else
+		{
+			// none msaa material
+			m_NoneMaterial = vk_demo::DVKMaterial::Create(
+				m_VulkanDevice,
+				m_RenderPass,
+				m_PipelineCache,
+				m_LineShader
+			);
+			m_NoneMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+			m_NoneMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
+			m_NoneMaterial->pipelineInfo.rasterizationState.lineWidth   = lineWidth;
+			m_NoneMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
+			m_NoneMaterial->PreparePipeline();
+		}
 	}
 
 	void LoadAssets()
