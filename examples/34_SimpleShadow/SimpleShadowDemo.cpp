@@ -368,10 +368,9 @@ private:
 		m_LightCamera.view.SetIdentity();
         m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
 		m_LightCamera.view.LookAt(boundCenter);
+		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
         
-        m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 	}
