@@ -51,7 +51,27 @@ public:
     {
         return m_AppTitle.c_str();
     }
-    
+
+	const std::vector<const char*>& GetAppDeviceExtensions() const
+	{
+		return m_AppDeviceExtensions;
+	}
+
+	const std::vector<const char*>& GetAppInstanceExtensions() const
+	{
+		return m_AppInstanceExtensions;
+	}
+
+	void AddAppDeviceExtensions(const char* name)
+	{
+		m_AppDeviceExtensions.push_back(name);
+	}
+
+	void AddAppInstanceExtensions(const char* name)
+	{
+		m_AppInstanceExtensions.push_back(name);
+	}
+
 protected:
     
     void ParseAssetsPath(const std::vector<std::string>& cmdLine);
@@ -66,4 +86,7 @@ protected:
     std::string                         m_AppTitle;
 	std::string							m_AssetsPath;
 	bool								m_IsRequestingExit;
+
+	std::vector<const char*>			m_AppDeviceExtensions;
+	std::vector<const char*>			m_AppInstanceExtensions;
 };

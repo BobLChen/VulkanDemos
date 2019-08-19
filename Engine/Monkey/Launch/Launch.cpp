@@ -28,6 +28,14 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
     int32 height = g_AppModule->GetHeight();
     const char* title = g_AppModule->GetTitle().c_str();
     
+	for (const char* extension : g_AppModule->instanceExtensions) {
+		g_GameEngine->AddAppInstanceExtensions(extension);
+	}
+
+	for (const char* extension : g_AppModule->deviceExtensions) {
+		g_GameEngine->AddAppDeviceExtensions(extension);
+	}
+
     int32 errorLevel = g_GameEngine->PreInit(cmdLine, width, height, title);
 	if (errorLevel) {
 		return errorLevel;

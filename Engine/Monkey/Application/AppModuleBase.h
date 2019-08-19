@@ -267,6 +267,10 @@ protected:
 		}
 	}
 
+public:
+	std::vector<const char*>	deviceExtensions;
+	std::vector<const char*>	instanceExtensions;
+
 protected:
 
 	int32 						m_Width;

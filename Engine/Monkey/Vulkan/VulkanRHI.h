@@ -75,6 +75,16 @@ public:
 		return "Vulkan";
 	}
 
+	void AddAppDeviceExtensions(const char* name)
+	{
+		m_AppDeviceExtensions.push_back(name);
+	}
+
+	void AddAppInstanceExtensions(const char* name)
+	{
+		m_AppInstanceExtensions.push_back(name);
+	}
+
 protected:
 
 	void CreateInstance();
@@ -104,7 +114,9 @@ protected:
 	VkInstance							m_Instance;
     std::vector<const char*>			m_InstanceLayers;
     std::vector<const char*>			m_InstanceExtensions;
-    
+	std::vector<const char*>			m_AppDeviceExtensions;
+	std::vector<const char*>			m_AppInstanceExtensions;
+
     std::shared_ptr<VulkanDevice>		m_Device;
 
     std::shared_ptr<VulkanSwapChain>	m_SwapChain;

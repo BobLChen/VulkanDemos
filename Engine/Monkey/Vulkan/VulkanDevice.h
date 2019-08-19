@@ -119,6 +119,11 @@ public:
 		return *m_ImmediateContext;
 	}
 
+	void AddAppDeviceExtensions(const char* name)
+	{
+		m_AppDeviceExtensions.push_back(name);
+	}
+
 private:
     
     void MapFormatSupport(PixelFormat format, VkFormat vkFormat);
@@ -158,4 +163,6 @@ private:
     
     VulkanCommandListContextImmediate*      m_ImmediateContext;
     std::vector<VulkanCommandListContext*>  m_CommandContexts;
+
+	std::vector<const char*>				m_AppDeviceExtensions;
 };
