@@ -15,16 +15,16 @@
 #include <vector>
 #include <fstream>
 
-class PCFShadowDemo : public DemoBase
+class OmniShadowDemo : public DemoBase
 {
 public:
-	PCFShadowDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	OmniShadowDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 
 	}
 
-	virtual ~PCFShadowDemo()
+	virtual ~OmniShadowDemo()
 	{
 
 	}
@@ -75,16 +75,16 @@ private:
 		Matrix4x4 projection;
 	};
 
-	struct DirectionalLightBlock
+	struct LightCameraParamBlock
 	{
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 projection;
-		Vector4 direction;
 	};
 
 	struct ShadowParamBlock
 	{
+		Vector4 position;
 		Vector4 bias;
 	};
 
@@ -93,11 +93,11 @@ private:
 		if (!m_AnimLight) {
 			return;
 		}
-		m_LightCamera.view.SetIdentity();
+		/*m_LightCamera.view.SetIdentity();
 		m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
 		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-		m_LightCamera.view.SetInverse();
+		m_LightCamera.view.SetInverse();*/
 	}
 
 	void Draw(float time, float delta)
@@ -113,7 +113,7 @@ private:
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
 			m_LightCamera.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
 			m_DepthMaterial->BeginObject();
-			m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+			m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(LightCameraParamBlock));
 			m_DepthMaterial->EndObject();
 		}
 		m_DepthMaterial->EndFrame();
@@ -125,8 +125,7 @@ private:
 			m_MVPData.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
 			shadowMaterial->BeginObject();
 			shadowMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
-			shadowMaterial->SetLocalUniform("lightMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
-			shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam, sizeof(ShadowParamBlock));
+			shadowMaterial->SetLocalUniform("lightParam", &m_ShadowParam, sizeof(ShadowParamBlock));
 			shadowMaterial->EndObject();
 		}
 		shadowMaterial->EndFrame();
@@ -143,18 +142,17 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-			ImGui::Begin("PCFShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Begin("OmniShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 			ImGui::Checkbox("Auto Spin", &m_AnimLight);
-
 			ImGui::Combo("Shadow", &m_Selected, m_ShadowNames.data(), m_ShadowNames.size());
 
 			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 0.05f, "%.4f");
-
-			if (m_Selected != 0) 
-			{
+			if (m_Selected != 0) {
 				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
 			}
+
+			ImGui::SliderFloat("Light Range", &m_ShadowParam.position.w, 25.0f, 75.0f);
 			
 			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -167,11 +165,11 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_ShadowMap = vk_demo::DVKTexture::Create2D(
+		m_ShadowMap = vk_demo::DVKTexture::CreateCube(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
-			2048, 2048,
+			512, 512,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
@@ -192,7 +190,7 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplescene.dae",
+			"assets/models/shadowscene_fire.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -206,8 +204,8 @@ private:
 		m_DepthShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/35_PCFShadow/Depth.vert.spv",
-			"assets/shaders/35_PCFShadow/Depth.frag.spv"
+			"assets/shaders/36_OmniShadow/Depth.vert.spv",
+			"assets/shaders/36_OmniShadow/Depth.frag.spv"
 		);
 
 		m_DepthMaterial = vk_demo::DVKMaterial::Create(
@@ -223,8 +221,8 @@ private:
 		m_SimpleShadowShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/35_PCFShadow/SimpleShadow.vert.spv",
-			"assets/shaders/35_PCFShadow/SimpleShadow.frag.spv"
+			"assets/shaders/36_OmniShadow/SimpleShadow.vert.spv",
+			"assets/shaders/36_OmniShadow/SimpleShadow.frag.spv"
 		);
 
 		m_SimpleShadowMaterial = vk_demo::DVKMaterial::Create(
@@ -240,8 +238,8 @@ private:
 		m_PCFShadowShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/35_PCFShadow/PCFShadow.vert.spv",
-			"assets/shaders/35_PCFShadow/PCFShadow.frag.spv"
+			"assets/shaders/36_OmniShadow/PCFShadow.vert.spv",
+			"assets/shaders/36_OmniShadow/PCFShadow.frag.spv"
 		);
 
 		m_PCFShadowMaterial = vk_demo::DVKMaterial::Create(
@@ -264,8 +262,8 @@ private:
 		m_DebugShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/35_PCFShadow/Debug.vert.spv",
-			"assets/shaders/35_PCFShadow/Debug.frag.spv"
+			"assets/shaders/36_OmniShadow/Debug.vert.spv",
+			"assets/shaders/36_OmniShadow/Debug.frag.spv"
 		);
 
 		m_DebugMaterial = vk_demo::DVKMaterial::Create(
@@ -407,19 +405,15 @@ private:
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 
 		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
+		m_LightCamera.view.SetOrigin(Vector3(0, 25.0f, 0));
 		m_LightCamera.view.LookAt(boundCenter);
-		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
 
 		m_LightCamera.projection.SetIdentity();
-		// 正交投影区域能够包裹住场景即可，注意比例要与ShadowMap保持一致。
 		m_LightCamera.projection.Orthographic(-60, 60, -60, 60, 1.0f, 500.0f);
 
-		m_ShadowParam.bias.x = 0.005f;
-		m_ShadowParam.bias.y = 5.0f;
-		m_ShadowParam.bias.z = 0.0f;
-		m_ShadowParam.bias.w = 0.0f;
+		m_ShadowParam.position.Set(0.0f, 25.0f, 0.0f, 50.0f);
+		m_ShadowParam.bias.Set(0.005f, 5.0f, 0.0f, 0.0f);
 	}
 
 	void CreateGUI()
@@ -460,7 +454,7 @@ private:
 	vk_demo::DVKModel*			m_ModelScene = nullptr;
 
 	// light
-	DirectionalLightBlock		m_LightCamera;
+	LightCameraParamBlock		m_LightCamera;
 	ShadowParamBlock			m_ShadowParam;
 
 	// obj render
@@ -480,5 +474,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<PCFShadowDemo>(1400, 900, "PCFShadowDemo", cmdLine);
+	return std::make_shared<OmniShadowDemo>(1400, 900, "OmniShadowDemo", cmdLine);
 }

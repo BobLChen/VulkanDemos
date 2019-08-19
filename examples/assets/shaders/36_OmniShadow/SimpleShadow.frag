@@ -1,0 +1,38 @@
+#version 450
+
+layout (location = 0) in vec2 inUV;
+layout (location = 1) in vec3 inNormal;
+layout (location = 2) in vec3 inLightDir;
+
+layout (binding = 1) uniform LightMVPBlock 
+{
+	vec4 position;
+    vec4 bias;
+} lightParam;
+
+layout (binding  = 2) uniform samplerCube shadowMap;
+
+layout (location = 0) out vec4 outFragColor;
+
+float CalcAttenuation(float range, float d)
+{
+    return 1.0 - smoothstep(range * 0.75, range, d);
+}
+
+void main() 
+{
+    vec4 diffuse  = vec4(1.0, 1.0, 1.0, 1.0);
+
+    float dist    = length(inLightDir);
+    vec3 lightDir = inLightDir / dist;
+    float atten   = CalcAttenuation(lightParam.position.w, dist);
+    
+    diffuse.xyz  = dot(lightDir, inNormal) * diffuse.xyz * atten; 
+    outFragColor = diffuse;
+
+    float depth1 = texture(shadowMap, lightDir).r;
+    float shadow = 1.0;
+    
+    diffuse.xyz *= shadow;
+    outFragColor = diffuse;
+}

@@ -116,6 +116,21 @@ namespace vk_demo
         renderPassCreateInfo.dependencyCount = numDependencies;
         renderPassCreateInfo.pDependencies   = subpassDep;
 
+		if (rtLayout.extent3D.depth > 1)
+		{
+			const uint32 viewMask        = (1 << rtLayout.extent3D.depth) - 1;
+			const uint32 correlationMask = (1 << rtLayout.extent3D.depth) - 1;
+
+			VkRenderPassMultiviewCreateInfo multiviewCreateInfo;
+			ZeroVulkanStruct(multiviewCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
+			multiviewCreateInfo.subpassCount         = numSubpasses;
+			multiviewCreateInfo.pViewMasks           = &viewMask;
+			multiviewCreateInfo.correlationMaskCount = 1;
+			multiviewCreateInfo.pCorrelationMasks    = &correlationMask;
+
+			renderPassCreateInfo.pNext = &multiviewCreateInfo;
+		}
+
         VERIFYVULKANRESULT(vkCreateRenderPass(inDevice, &renderPassCreateInfo, VULKAN_CPU_ALLOCATOR, &renderPass));
     }
 
@@ -166,8 +181,8 @@ namespace vk_demo
 			subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 			subResRange.baseMipLevel   = 0;
 			subResRange.levelCount     = 1;
+			subResRange.layerCount     = texture->depth;
 			subResRange.baseArrayLayer = 0;
-			subResRange.layerCount     = 1;
 			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
 		}
 
@@ -179,8 +194,8 @@ namespace vk_demo
 			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 			subResRange.baseMipLevel   = 0;
 			subResRange.levelCount     = 1;
+			subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
 			subResRange.baseArrayLayer = 0;
-			subResRange.layerCount     = 1;
 			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
 		}
 
@@ -223,11 +238,11 @@ namespace vk_demo
 			DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
 			VkImage image = texture->image;
 			VkImageSubresourceRange subResRange = { };
-			subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subResRange.aspectMask	   = VK_IMAGE_ASPECT_COLOR_BIT;
 			subResRange.baseMipLevel   = 0;
 			subResRange.levelCount     = 1;
+			subResRange.layerCount	   = texture->depth;
 			subResRange.baseArrayLayer = 0;
-			subResRange.layerCount     = 1;
 			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
 		}
 
@@ -239,8 +254,8 @@ namespace vk_demo
 			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 			subResRange.baseMipLevel   = 0;
 			subResRange.levelCount     = 1;
+			subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
 			subResRange.baseArrayLayer = 0;
-			subResRange.layerCount     = 1;
 			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
 		}
     }
