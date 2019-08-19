@@ -107,6 +107,16 @@ void VulkanRHI::CreateInstance()
 {
 	GetInstanceLayersAndExtensions(m_InstanceExtensions, m_InstanceLayers, m_SupportsDebugUtilsExt);
 	
+	if (m_AppInstanceExtensions.size() > 0)
+	{
+		MLOG("Using app instance extensions");
+		for (int32 i = 0; i < m_AppInstanceExtensions.size(); ++i)
+		{
+			m_InstanceExtensions.push_back(m_AppInstanceExtensions[i]);
+			MLOG("* %s", m_AppInstanceExtensions[i]);
+		}
+	}
+	
 	VkApplicationInfo appInfo;
 	ZeroVulkanStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
 	appInfo.pApplicationName   = Engine::Get()->GetTitle();
@@ -241,6 +251,11 @@ void VulkanRHI::SelectAndInitDevice()
         deviceIndex = -1;
         return;
     }
-	
+
+	for (int32 i = 0; i < m_AppDeviceExtensions.size(); ++i)
+	{
+		m_Device->AddAppDeviceExtensions(m_AppDeviceExtensions[i]);
+	}
+
     m_Device->InitGPU(deviceIndex);
 }

@@ -58,6 +58,17 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	m_SlateApplication->MakeWindow(width, height, title);
 
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
+
+	for (int32 i = 0; i < m_AppInstanceExtensions.size(); ++i) 
+	{
+		m_VulkanRHI->AddAppInstanceExtensions(m_AppInstanceExtensions[i]);
+	}
+
+	for (int32 i = 0; i < m_AppDeviceExtensions.size(); ++i)
+	{
+		m_VulkanRHI->AddAppDeviceExtensions(m_AppDeviceExtensions[i]);
+	}
+
 	m_VulkanRHI->Init();
     
     ParseAssetsPath(cmdLine);
