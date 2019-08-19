@@ -21,7 +21,8 @@ public:
 	OmniShadowDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
-
+		deviceExtensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
+		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 	}
 
 	virtual ~OmniShadowDemo()
@@ -78,8 +79,9 @@ private:
 	struct LightCameraParamBlock
 	{
 		Matrix4x4 model;
-		Matrix4x4 view;
+		Matrix4x4 view[6];
 		Matrix4x4 projection;
+		Vector4 position;
 	};
 
 	struct ShadowParamBlock
@@ -109,6 +111,37 @@ private:
 		UpdateLight(time, delta);
 
 		// depth
+		// POSITIVE_X
+		m_LightCamera.view[0].SetIdentity();
+		m_LightCamera.view[0].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[0].LookAt(Vector3(1, 25, 0));
+		m_LightCamera.view[0].SetInverse();
+		// NEGATIVE_X
+		m_LightCamera.view[1].SetIdentity();
+		m_LightCamera.view[1].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[1].LookAt(Vector3(-1, 25, 0));
+		m_LightCamera.view[1].SetInverse();
+		// POSITIVE_Y
+		m_LightCamera.view[2].SetIdentity();
+		m_LightCamera.view[2].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[2].LookAt(Vector3(0, 26, 0));
+		m_LightCamera.view[2].SetInverse();
+		// NEGATIVE_Y
+		m_LightCamera.view[3].SetIdentity();
+		m_LightCamera.view[3].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[3].LookAt(Vector3(0, 24, 0));
+		m_LightCamera.view[3].SetInverse();
+		// POSITIVE_Z
+		m_LightCamera.view[4].SetIdentity();
+		m_LightCamera.view[4].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[4].LookAt(Vector3(0, 25, -1));
+		m_LightCamera.view[4].SetInverse();
+		// NEGATIVE_Z
+		m_LightCamera.view[5].SetIdentity();
+		m_LightCamera.view[5].SetOrigin(Vector3(0, 25, 0));
+		m_LightCamera.view[5].LookAt(Vector3(0, 25, 1));
+		m_LightCamera.view[5].SetInverse();
+		
 		m_DepthMaterial->BeginFrame();
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
 			m_LightCamera.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
@@ -186,8 +219,6 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
-
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/shadowscene_fire.dae",
@@ -258,24 +289,6 @@ private:
 		m_ShadowList.push_back(m_SimpleShadowMaterial);
 		m_ShadowList.push_back(m_PCFShadowMaterial);
 
-		// debug
-		m_DebugShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/36_OmniShadow/Debug.vert.spv",
-			"assets/shaders/36_OmniShadow/Debug.frag.spv"
-		);
-
-		m_DebugMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_DebugShader
-		);
-
-		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("depthTexture", m_ShadowMap);
-
 		delete cmdBuffer;
 	}
 
@@ -285,9 +298,6 @@ private:
 
 		delete m_DepthShader;
 		delete m_DepthMaterial;
-
-		delete m_DebugMaterial;
-		delete m_DebugShader;
 
 		delete m_ShadowMap;
 
@@ -323,9 +333,10 @@ private:
 		// render target pass
 		{
 			m_ShadowRTT->BeginRenderPass(commandBuffer);
-
+			
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) 
+			{
 				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
 				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
 			}
@@ -362,24 +373,6 @@ private:
 				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
 			}
 
-			// debug
-			viewport.x = m_FrameWidth * 0.75f;
-			viewport.y = m_FrameHeight * 0.25f;
-			viewport.width  = m_FrameWidth * 0.25f;
-			viewport.height = -(float)m_FrameHeight * 0.25f;    // flip y axis
-
-			scissor.offset.x = m_FrameWidth * 0.75f;
-			scissor.offset.y = 0;
-			scissor.extent.width  = m_FrameWidth  * 0.25f;
-			scissor.extent.height = m_FrameHeight * 0.25f;
-
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
-			m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-
 			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
 			vkCmdEndRenderPass(commandBuffer);
@@ -404,13 +397,12 @@ private:
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 
-		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(0, 25.0f, 0));
-		m_LightCamera.view.LookAt(boundCenter);
-		m_LightCamera.view.SetInverse();
+		m_LightCamera.model.SetIdentity();
 
 		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Orthographic(-60, 60, -60, 60, 1.0f, 500.0f);
+		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 500.0f);
+
+		m_LightCamera.position.Set(0.0f, 25.0f, 0.0f, 50.0f);
 
 		m_ShadowParam.position.Set(0.0f, 25.0f, 0.0f, 50.0f);
 		m_ShadowParam.bias.Set(0.005f, 5.0f, 0.0f, 0.0f);
@@ -435,11 +427,6 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 						m_Ready = false;
-
-	// Debug
-	vk_demo::DVKModel*			m_Quad = nullptr;
-	vk_demo::DVKMaterial*	    m_DebugMaterial;
-	vk_demo::DVKShader*		    m_DebugShader;
 
 	// Shadow Rendertarget
 	vk_demo::DVKRenderTarget*   m_ShadowRTT = nullptr;

@@ -19,7 +19,7 @@ float CalcAttenuation(float range, float d)
     return 1.0 - smoothstep(range * 0.75, range, d);
 }
 
-#define EPSILON 0.15
+#define EPSILON 0.01
 
 void main() 
 {
@@ -32,10 +32,13 @@ void main()
     diffuse.xyz  = dot(lightDir, inNormal) * diffuse.xyz * atten; 
     outFragColor = diffuse;
 
-    float depth  = texture(shadowMap, lightDir).r;
+    float depth  = texture(shadowMap, lightDir).r * lightParam.position.w;
     float shadow = 1.0;
-    shadow = (dist <= depth + EPSILON) ? 1.0 : 0.5;
+    shadow = (dist <= depth + EPSILON) ? 1.0 : 0.0;
     
     diffuse.xyz *= shadow;
+
+    diffuse.xyz  = texture(shadowMap, lightDir).rrr;
+
     outFragColor = diffuse;
 }
