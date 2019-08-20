@@ -59,6 +59,8 @@ namespace vk_demo
 
 		static DVKTexture* Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
 
+		static DVKTexture* CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
         static DVKTexture* Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
         
 		static DVKTexture* Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
@@ -80,6 +82,8 @@ namespace vk_demo
 		int32							layerCount = 1;
         VkSampleCountFlagBits           numSamples = VK_SAMPLE_COUNT_1_BIT;
         VkFormat                        format = VK_FORMAT_R8G8B8A8_UNORM;
+
+		bool							isCubeMap = false;
     };
     
 };
