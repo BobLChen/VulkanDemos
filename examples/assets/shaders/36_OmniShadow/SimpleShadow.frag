@@ -27,12 +27,15 @@ void main()
     vec3 lightDir = inLightDir / dist;
     float atten   = CalcAttenuation(lightParam.position.w, dist);
     
-    diffuse.xyz  = dot(lightDir, inNormal) * diffuse.xyz * atten; 
+    diffuse.xyz  = dot(-lightDir, inNormal) * diffuse.xyz * atten; 
     outFragColor = diffuse;
 
-    float depth1 = texture(shadowMap, lightDir).r;
+    float depth  = texture(shadowMap, lightDir).r;
     float shadow = 1.0;
+    shadow = (dist <= depth + lightParam.bias.x) ? 1.0 : 0.0;
     
     diffuse.xyz *= shadow;
+
+    // diffuse.xyz  = vec3(dist / 25.0f);
     outFragColor = diffuse;
 }

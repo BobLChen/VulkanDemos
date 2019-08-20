@@ -95,11 +95,9 @@ private:
 		if (!m_AnimLight) {
 			return;
 		}
-		/*m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
-		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
-		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-		m_LightCamera.view.SetInverse();*/
+
+		m_LightCamera.position = m_LightPosition;
+		m_ShadowParam.position = m_LightPosition;
 	}
 
 	void Draw(float time, float delta)
@@ -118,28 +116,28 @@ private:
 		m_LightCamera.view[0].SetInverse();
 		// NEGATIVE_X
 		m_LightCamera.view[1].SetIdentity();
-		m_LightCamera.view[1].SetOrigin(Vector3(0, 12.5f, 0));
-		m_LightCamera.view[1].LookAt(Vector3(-1, 12.5f, 0));
+		m_LightCamera.view[1].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[1].LookAt(Vector3(-1, m_LightPosition.y, 0));
 		m_LightCamera.view[1].SetInverse();
 		// POSITIVE_Y
 		m_LightCamera.view[2].SetIdentity();
-		m_LightCamera.view[2].SetOrigin(Vector3(0, 12.5f, 0));
-		m_LightCamera.view[2].LookAt(Vector3(0, 13.5f, 0));
+		m_LightCamera.view[2].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[2].LookAt(Vector3(0, m_LightPosition.y + 1, 0));
 		m_LightCamera.view[2].SetInverse();
 		// NEGATIVE_Y
 		m_LightCamera.view[3].SetIdentity();
-		m_LightCamera.view[3].SetOrigin(Vector3(0, 12.5f, 0));
-		m_LightCamera.view[3].LookAt(Vector3(0, 11.5f, 0));
+		m_LightCamera.view[3].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[3].LookAt(Vector3(0, m_LightPosition.y - 1, 0));
 		m_LightCamera.view[3].SetInverse();
 		// POSITIVE_Z
 		m_LightCamera.view[4].SetIdentity();
-		m_LightCamera.view[4].SetOrigin(Vector3(0, 12.5f, 0));
-		m_LightCamera.view[4].LookAt(Vector3(0, 12.5f, 1));
+		m_LightCamera.view[4].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[4].LookAt(Vector3(0, m_LightPosition.y, 1));
 		m_LightCamera.view[4].SetInverse();
 		// NEGATIVE_Z
 		m_LightCamera.view[5].SetIdentity();
-		m_LightCamera.view[5].SetOrigin(Vector3(0, 12.5f, 0));
-		m_LightCamera.view[5].LookAt(Vector3(0, 12.5f, -1));
+		m_LightCamera.view[5].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[5].LookAt(Vector3(0, m_LightPosition.y, -1));
 		m_LightCamera.view[5].SetInverse();
 		
 		m_DepthMaterial->BeginFrame();
@@ -182,10 +180,10 @@ private:
 
 			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 20.0f, "%.4f");
 			if (m_Selected != 0) {
-				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
+				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 1.0f);
 			}
 
-			ImGui::SliderFloat("Light Range", &m_ShadowParam.position.w, 25.0f, 75.0f);
+			ImGui::SliderFloat("Light Range", &m_LightPosition.w, 25.0f, 75.0f);
 			
 			ImGui::Text("ShadowMap:%dx%d", m_RTColor->width, m_RTColor->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -397,7 +395,7 @@ private:
 		Vector3 boundSize   = bounds.max - bounds.min;
 		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
-		m_LightPosition.Set(0.0f, 12.5f, 0.0f, 50.0f);
+		m_LightPosition.Set(0.0f, 12.5f, 0.0f, 45.0f);
 
 		m_MVPData.model.SetIdentity();
 
@@ -414,10 +412,7 @@ private:
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 500.0f);
 
-		m_LightCamera.position = m_LightPosition;
-
-		m_ShadowParam.position = m_LightPosition;
-		m_ShadowParam.bias.Set(0.005f, 5.0f, 0.0f, 0.0f);
+		m_ShadowParam.bias.Set(1.5f, 0.005f, 0.0f, 0.0f);
 	}
 
 	void CreateGUI()

@@ -34,7 +34,7 @@ void main()
 	outNormal     = normal;
 
 	vec4 worldPos = uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
-	outLightDir   = lightParam.position.xyz - worldPos.xyz;
+	outLightDir   = worldPos.xyz - lightParam.position.xyz;
 	
 	gl_Position   = uboMVP.projectionMatrix * uboMVP.viewMatrix * worldPos;
 }

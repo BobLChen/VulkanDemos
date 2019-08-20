@@ -19,6 +19,15 @@ float CalcAttenuation(float range, float d)
     return 1.0 - smoothstep(range * 0.75, range, d);
 }
 
+vec3 sampleOffsetDirections[20] = vec3[]
+(
+   vec3(1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3(1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3(1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3(1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3(0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+);
+
 void main() 
 {
     vec4 diffuse  = vec4(1.0, 1.0, 1.0, 1.0);
@@ -30,9 +39,13 @@ void main()
     diffuse.xyz  = dot(-lightDir, inNormal) * diffuse.xyz * atten; 
     outFragColor = diffuse;
 
-    float depth  = texture(shadowMap, lightDir).r;
     float shadow = 1.0;
-    shadow = (dist <= depth + lightParam.bias.x) ? 1.0 : 0.0;
+    for (int i = 0; i < 20; ++i)
+    {
+        float depth  = texture(shadowMap, lightDir + sampleOffsetDirections[i] * lightParam.bias.y).r;
+        shadow += (dist <= depth + lightParam.bias.x) ? 1.0 : 0.0;
+    }
+    shadow /= 25;
     
     diffuse.xyz *= shadow;
 
