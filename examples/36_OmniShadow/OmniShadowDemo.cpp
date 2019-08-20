@@ -113,33 +113,33 @@ private:
 		// depth
 		// POSITIVE_X
 		m_LightCamera.view[0].SetIdentity();
-		m_LightCamera.view[0].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[0].LookAt(Vector3(1, 25, 0));
+		m_LightCamera.view[0].SetOrigin(Vector3(0, m_LightPosition.y, 0));
+		m_LightCamera.view[0].LookAt(Vector3(1, m_LightPosition.y, 0));
 		m_LightCamera.view[0].SetInverse();
 		// NEGATIVE_X
 		m_LightCamera.view[1].SetIdentity();
-		m_LightCamera.view[1].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[1].LookAt(Vector3(-1, 25, 0));
+		m_LightCamera.view[1].SetOrigin(Vector3(0, 12.5f, 0));
+		m_LightCamera.view[1].LookAt(Vector3(-1, 12.5f, 0));
 		m_LightCamera.view[1].SetInverse();
 		// POSITIVE_Y
 		m_LightCamera.view[2].SetIdentity();
-		m_LightCamera.view[2].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[2].LookAt(Vector3(0, 26, 0));
+		m_LightCamera.view[2].SetOrigin(Vector3(0, 12.5f, 0));
+		m_LightCamera.view[2].LookAt(Vector3(0, 13.5f, 0));
 		m_LightCamera.view[2].SetInverse();
 		// NEGATIVE_Y
 		m_LightCamera.view[3].SetIdentity();
-		m_LightCamera.view[3].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[3].LookAt(Vector3(0, 24, 0));
+		m_LightCamera.view[3].SetOrigin(Vector3(0, 12.5f, 0));
+		m_LightCamera.view[3].LookAt(Vector3(0, 11.5f, 0));
 		m_LightCamera.view[3].SetInverse();
 		// POSITIVE_Z
 		m_LightCamera.view[4].SetIdentity();
-		m_LightCamera.view[4].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[4].LookAt(Vector3(0, 25, -1));
+		m_LightCamera.view[4].SetOrigin(Vector3(0, 12.5f, 0));
+		m_LightCamera.view[4].LookAt(Vector3(0, 12.5f, 1));
 		m_LightCamera.view[4].SetInverse();
 		// NEGATIVE_Z
 		m_LightCamera.view[5].SetIdentity();
-		m_LightCamera.view[5].SetOrigin(Vector3(0, 25, 0));
-		m_LightCamera.view[5].LookAt(Vector3(0, 25, 1));
+		m_LightCamera.view[5].SetOrigin(Vector3(0, 12.5f, 0));
+		m_LightCamera.view[5].LookAt(Vector3(0, 12.5f, -1));
 		m_LightCamera.view[5].SetInverse();
 		
 		m_DepthMaterial->BeginFrame();
@@ -180,14 +180,14 @@ private:
 			ImGui::Checkbox("Auto Spin", &m_AnimLight);
 			ImGui::Combo("Shadow", &m_Selected, m_ShadowNames.data(), m_ShadowNames.size());
 
-			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 0.05f, "%.4f");
+			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 20.0f, "%.4f");
 			if (m_Selected != 0) {
 				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
 			}
 
 			ImGui::SliderFloat("Light Range", &m_ShadowParam.position.w, 25.0f, 75.0f);
 			
-			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
+			ImGui::Text("ShadowMap:%dx%d", m_RTColor->width, m_RTColor->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -198,7 +198,15 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_ShadowMap = vk_demo::DVKTexture::CreateCube(
+		m_RTColor = vk_demo::DVKTexture::CreateCube(
+			m_VulkanDevice, 
+			VK_FORMAT_R32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			512, 512,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		m_RTDepth = vk_demo::DVKTexture::CreateCube(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -206,13 +214,18 @@ private:
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
-		vk_demo::DVKRenderPassInfo passInfo(m_ShadowMap, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE);
+		vk_demo::DVKRenderPassInfo passInfo(
+			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
+		);
 		m_ShadowRTT = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
 	}
 
 	void DestroyRenderTarget()
 	{
 		delete m_ShadowRTT;
+		delete m_RTColor;
+		delete m_RTDepth;
 	}
 
 	void LoadAssets()
@@ -245,7 +258,6 @@ private:
 			m_PipelineCache,
 			m_DepthShader
 		);
-		m_DepthMaterial->pipelineInfo.colorAttachmentCount = 0;
 		m_DepthMaterial->PreparePipeline();
 
 		// simple shadow
@@ -263,7 +275,7 @@ private:
 			m_SimpleShadowShader
 		);
 		m_SimpleShadowMaterial->PreparePipeline();
-		m_SimpleShadowMaterial->SetTexture("shadowMap", m_ShadowMap);
+		m_SimpleShadowMaterial->SetTexture("shadowMap", m_RTColor);
 
 		// pcf shadow
 		m_PCFShadowShader = vk_demo::DVKShader::Create(
@@ -280,7 +292,7 @@ private:
 			m_PCFShadowShader
 		);
 		m_PCFShadowMaterial->PreparePipeline();
-		m_PCFShadowMaterial->SetTexture("shadowMap", m_ShadowMap);
+		m_PCFShadowMaterial->SetTexture("shadowMap", m_RTColor);
 
 		// ui used
 		m_ShadowNames.push_back("Simple");
@@ -298,8 +310,6 @@ private:
 
 		delete m_DepthShader;
 		delete m_DepthMaterial;
-
-		delete m_ShadowMap;
 
 		delete m_SimpleShadowShader;
 		delete m_SimpleShadowMaterial;
@@ -387,6 +397,8 @@ private:
 		Vector3 boundSize   = bounds.max - bounds.min;
 		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
+		m_LightPosition.Set(0.0f, 12.5f, 0.0f, 50.0f);
+
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
@@ -402,9 +414,9 @@ private:
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 500.0f);
 
-		m_LightCamera.position.Set(0.0f, 25.0f, 0.0f, 50.0f);
+		m_LightCamera.position = m_LightPosition;
 
-		m_ShadowParam.position.Set(0.0f, 25.0f, 0.0f, 50.0f);
+		m_ShadowParam.position = m_LightPosition;
 		m_ShadowParam.bias.Set(0.005f, 5.0f, 0.0f, 0.0f);
 	}
 
@@ -430,7 +442,8 @@ private:
 
 	// Shadow Rendertarget
 	vk_demo::DVKRenderTarget*   m_ShadowRTT = nullptr;
-	vk_demo::DVKTexture*        m_ShadowMap = nullptr;
+	vk_demo::DVKTexture*        m_RTDepth = nullptr;
+	vk_demo::DVKTexture*		m_RTColor = nullptr;
 
 	// depth 
 	vk_demo::DVKShader*			m_DepthShader = nullptr;
@@ -450,6 +463,8 @@ private:
 
 	vk_demo::DVKShader*			m_PCFShadowShader = nullptr;
 	vk_demo::DVKMaterial*		m_PCFShadowMaterial = nullptr;
+
+	Vector4						m_LightPosition;
 
 	bool                        m_AnimLight = true;
 	int32						m_Selected = 1;
