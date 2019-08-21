@@ -608,3 +608,18 @@ SETUP_SAMPLE_START(36_OmniShadow)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(36_OmniShadow)
+
+SETUP_SAMPLE_START(37_CascadedShadow)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/37_CascadedShadow/CascadedShadowDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/37_CascadedShadow/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(37_CascadedShadow)
