@@ -184,9 +184,11 @@ private:
 
 		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
 
+		auto limit = m_VulkanDevice->GetLimits();
+
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/scene.fbx",
+			"assets/models/scene1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -383,38 +385,31 @@ private:
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
+	void MatrixLookAtLH(Matrix4x4& matrix, const Vector3& eye, const Vector3& at)
+	{
+		Vector3 up    = Vector3(0, 1, 0);
+		Vector3 zaxis = (at - eye).GetSafeNormal();
+		Vector3 xaxis = Vector3::CrossProduct(up, zaxis).GetSafeNormal();
+		Vector3 yaxis = Vector3::CrossProduct(zaxis, xaxis);
+		
+		matrix.CopyColumnFrom(0, Vector4(xaxis, -Vector3::DotProduct(xaxis, eye)));
+		matrix.CopyColumnFrom(1, Vector4(yaxis, -Vector3::DotProduct(yaxis, eye)));
+		matrix.CopyColumnFrom(2, Vector4(zaxis, -Vector3::DotProduct(zaxis, eye)));
+		matrix.CopyColumnFrom(3, Vector4(0, 0, 0, 1));
+	}
+
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        
-		m_MVPData.model.SetIdentity();
-        
-        m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - 10.0f));
-        m_MVPData.view.LookAt(boundCenter);
-        m_MVPData.view.Inverse();
-        
-        m_MVPData.view.SetIdentity();
-        m_MVPData.view.SetOrigin(Vector3(0.0f, -25.0f, 0.0f));
-        m_MVPData.view.LookAt(boundCenter.x, boundCenter.y - 50.0f, boundCenter.z);
-        m_MVPData.view.SetInverse();
-        
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
-        
-		m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(150.0f, 300, 250));
-        m_LightCamera.view.LookAt(boundCenter);
-		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-		m_LightCamera.view.SetInverse();
+		MatrixLookAtLH(m_MVPData.view, Vector3(30.0f, 5.0f, -30.0f), Vector3(-500.0f, 0.0f, 50.0f));
+        // m_MVPData.view.Inverse();
 
-        int32 orthSize = 256;
+		m_MVPData.projection.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 615.263611f);
         
-		m_LightCamera.projection.SetIdentity();
-		// 正交投影区域能够包裹住场景即可，注意比例要与ShadowMap保持一致。
-		m_LightCamera.projection.Orthographic(-orthSize, orthSize, -orthSize, orthSize, 1.0f, 3000.0f);
+		MatrixLookAtLH(m_LightCamera.view, Vector3(-345.0f, 300.0f, -15.0f), Vector3(0.0f, 0.0f, 0.0f));
+		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
+		// m_LightCamera.view.SetInverse();
+
+		m_LightCamera.projection.Perspective(PI / 4, 1.0f, 1.0f, 0.1f, 1000.0f);
 
 		m_ShadowParam.bias.x = 0.0002f;
 		m_ShadowParam.bias.y = 0.5f;
