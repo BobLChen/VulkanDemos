@@ -15,8 +15,6 @@
 #include <vector>
 #include <fstream>
 
-#define OBJ_SIZE 200
-
 class CascadedShadowDemo : public DemoBase
 {
 public:
@@ -95,13 +93,58 @@ private:
 		if (!m_AnimLight) {
 			return;
 		}
-//        m_LightCamera.view.SetIdentity();
-//        m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
-//        m_LightCamera.view.LookAt(Vector3(0, 0, 0));
-//        m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-//        m_LightCamera.view.SetInverse();
+		m_LightCamera.view.SetIdentity();
+		m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
+		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
+		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
+		m_LightCamera.view.SetInverse();
 	}
-
+    
+    void UpdateDepthMaterial()
+    {
+        // depth
+        m_DepthMaterial->BeginFrame();
+        
+        // ground
+        m_LightCamera.model = m_GroundModel->meshes[0]->linkNode->GetGlobalMatrix();
+        m_DepthMaterial->BeginObject();
+        m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+        m_DepthMaterial->EndObject();
+        
+        // Torus
+        m_LightCamera.model = m_TorusModel->meshes[0]->linkNode->GetGlobalMatrix();
+        m_DepthMaterial->BeginObject();
+        m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+        m_DepthMaterial->EndObject();
+        
+        m_DepthMaterial->EndFrame();
+    }
+    
+    void UpdateShadeMaterial()
+    {
+        // shade
+        vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
+        shadowMaterial->BeginFrame();
+        
+        // ground
+        m_MVPData.model = m_GroundModel->meshes[0]->linkNode->GetGlobalMatrix();
+        shadowMaterial->BeginObject();
+        shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPData,      sizeof(ModelViewProjectionBlock));
+        shadowMaterial->SetLocalUniform("lightMVP",    &m_LightCamera,  sizeof(DirectionalLightBlock));
+        shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,  sizeof(ShadowParamBlock));
+        shadowMaterial->EndObject();
+        
+        // torus
+        m_MVPData.model = m_TorusModel->meshes[0]->linkNode->GetGlobalMatrix();
+        shadowMaterial->BeginObject();
+        shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPData,      sizeof(ModelViewProjectionBlock));
+        shadowMaterial->SetLocalUniform("lightMVP",    &m_LightCamera,  sizeof(DirectionalLightBlock));
+        shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,  sizeof(ShadowParamBlock));
+        shadowMaterial->EndObject();
+        
+        shadowMaterial->EndFrame();
+    }
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -109,28 +152,9 @@ private:
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
 		UpdateLight(time, delta);
-
-		// depth
-		m_DepthMaterial->BeginFrame();
-		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-			m_DepthMaterial->BeginObject();
-			m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
-			m_DepthMaterial->EndObject();
-		}
-		m_DepthMaterial->EndFrame();
-
-		// shade
-		vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
-		shadowMaterial->BeginFrame();
-		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-			shadowMaterial->BeginObject();
-			shadowMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
-			shadowMaterial->SetLocalUniform("lightMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
-			shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam, sizeof(ShadowParamBlock));
-			shadowMaterial->EndObject();
-		}
-		shadowMaterial->EndFrame();
-
+        UpdateDepthMaterial();
+        UpdateShadeMaterial();
+        
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -146,12 +170,16 @@ private:
 			ImGui::Begin("CascadedShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 			ImGui::Checkbox("Auto Spin", &m_AnimLight);
+
 			ImGui::Combo("Shadow", &m_Selected, m_ShadowNames.data(), m_ShadowNames.size());
+
 			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 0.05f, "%.4f");
-			if (m_Selected != 0) {
+
+			if (m_Selected != 0) 
+			{
 				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
 			}
-            
+			
 			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -167,7 +195,7 @@ private:
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
-			1024, 1024,
+			2048, 2048,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
@@ -185,12 +213,9 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
-
-		auto limit = m_VulkanDevice->GetLimits();
-
-		// room model
-		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/torusknot.obj",
+        
+		m_TorusModel = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/torus.obj",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -198,7 +223,18 @@ private:
 				VertexAttribute::VA_Normal
 			}
 		);
-
+        
+        m_GroundModel = vk_demo::DVKModel::LoadFromFile(
+            "assets/models/plane.obj",
+            m_VulkanDevice,
+            cmdBuffer,
+            {
+                VertexAttribute::VA_Position,
+                VertexAttribute::VA_Normal
+            }
+        );
+        m_GroundModel->rootNode->localMatrix.AppendScale(Vector3(100, 100, 100));
+        
 		// depth
 		m_DepthShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -280,7 +316,8 @@ private:
 
 	void DestroyAssets()
 	{
-		delete m_ModelScene;
+		delete m_TorusModel;
+        delete m_GroundModel;
 
 		delete m_DepthShader;
 		delete m_DepthMaterial;
@@ -324,11 +361,15 @@ private:
 			m_ShadowRTT->BeginRenderPass(commandBuffer);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
-			}
-
+			
+            // ground
+            m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+            m_GroundModel->meshes[0]->BindDrawCmd(commandBuffer);
+            
+            // trus
+            m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 1);
+            m_TorusModel->meshes[0]->BindDrawCmd(commandBuffer);
+            
 			m_ShadowRTT->EndRenderPass(commandBuffer);
 		}
 
@@ -356,11 +397,15 @@ private:
 			// shade
 			vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMaterial->GetPipeline());
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-				shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
-			}
-
+			
+            // ground
+            shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+            m_GroundModel->meshes[0]->BindDrawCmd(commandBuffer);
+            
+            // shade
+            shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 1);
+            m_TorusModel->meshes[0]->BindDrawCmd(commandBuffer);
+            
 			// debug
 			viewport.x = m_FrameWidth * 0.75f;
 			viewport.y = m_FrameHeight * 0.25f;
@@ -389,21 +434,32 @@ private:
 
 	void InitParmas()
 	{
-		m_MVPData.view.SetPosition(Vector3(0, 100, -50));
-		m_MVPData.view.LookAt(0, 0, 0);
-        m_MVPData.view.Inverse();
-		
-		m_MVPData.projection.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 615.263611f);
-        
-		m_LightCamera.view.SetPosition(Vector3(500, 500, 0));
-		m_LightCamera.view.LookAt(0, 0, 0);
-		m_LightCamera.direction = m_LightCamera.view.GetForward().GetSafeNormal();
+		vk_demo::DVKBoundingBox bounds = m_TorusModel->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+
+		m_MVPData.model.SetIdentity();
+
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(Vector3(0.0f, 300.0f, -500.0f));
+		m_MVPData.view.LookAt(Vector3(0, 0, 0));
+		m_MVPData.view.SetInverse();
+
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
+
+		m_LightCamera.view.SetIdentity();
+		m_LightCamera.view.SetOrigin(Vector3(-700.0f, 400.0f, 0.0f));
+		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
+		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
+        
+        int32 size = 512;
+		m_LightCamera.projection.SetIdentity();
+		m_LightCamera.projection.Orthographic(-size, size, -size, size, 1.0f, 3000.0f);
 
-		m_LightCamera.projection.Perspective(PI / 4, 1.0f, 1.0f, 0.1f, 1000.0f);
-
-		m_ShadowParam.bias.x = 0.0002f;
-		m_ShadowParam.bias.y = 0.5f;
+		m_ShadowParam.bias.x = 0.005f;
+		m_ShadowParam.bias.y = 5.0f;
 		m_ShadowParam.bias.z = 0.0f;
 		m_ShadowParam.bias.w = 0.0f;
 	}
@@ -443,9 +499,9 @@ private:
 
 	// mvp
 	ModelViewProjectionBlock	m_MVPData;
-	vk_demo::DVKModel*			m_ModelScene = nullptr;
-	vk_demo::DVKModel*			m_GroundModel = nullptr;
-
+	vk_demo::DVKModel*			m_TorusModel = nullptr;
+    vk_demo::DVKModel*          m_GroundModel = nullptr;
+    
 	// light
 	DirectionalLightBlock		m_LightCamera;
 	ShadowParamBlock			m_ShadowParam;
@@ -456,7 +512,7 @@ private:
 
 	vk_demo::DVKShader*			m_PCFShadowShader = nullptr;
 	vk_demo::DVKMaterial*		m_PCFShadowMaterial = nullptr;
-    
+
 	bool                        m_AnimLight = true;
 	int32						m_Selected = 1;
 	std::vector<const char*>	m_ShadowNames;
