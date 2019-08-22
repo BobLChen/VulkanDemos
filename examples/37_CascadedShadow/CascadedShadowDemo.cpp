@@ -434,10 +434,7 @@ private:
 
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_TorusModel->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-
+		// model view projection
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
@@ -448,6 +445,7 @@ private:
 		m_MVPData.projection.SetIdentity();
 		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 
+		// light camera
 		m_LightCamera.view.SetIdentity();
 		m_LightCamera.view.SetOrigin(Vector3(-700.0f, 400.0f, 0.0f));
 		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
@@ -458,10 +456,84 @@ private:
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Orthographic(-size, size, -size, size, 1.0f, 3000.0f);
 
+		// shadow bias
 		m_ShadowParam.bias.x = 0.005f;
 		m_ShadowParam.bias.y = 5.0f;
 		m_ShadowParam.bias.z = 0.0f;
 		m_ShadowParam.bias.w = 0.0f;
+
+		UpdateCascadeShadow();
+	}
+
+	void UpdateCascadeShadow()
+	{
+		Matrix4x4 invProjection = m_MVPData.projection.Inverse();
+		Matrix4x4 invModelview  = m_MVPData.view.Inverse();
+
+		Vector3 direction = Vector3(0, 0, 1);
+		Vector3 side = Vector3::CrossProduct(Vector3(0.0f, 0.0f, 1.0f), direction);
+		Vector3 up   = Vector3::CrossProduct(direction, side);
+		
+		Vector3 points[8] = {
+			Vector3(-1.0f,-1.0f,-1.0f), Vector3(1.0f,-1.0f,-1.0f), Vector3(-1.0f,1.0f,-1.0f), Vector3(1.0f,1.0f,-1.0f),
+			Vector3(-1.0f,-1.0f, 1.0f), Vector3(1.0f,-1.0f, 1.0f), Vector3(-1.0f,1.0f, 1.0f), Vector3(1.0f,1.0f, 1.0f),
+		};
+
+		for(int32 i = 0; i < 8; i++) {
+			Vector4 point = invProjection.TransformVector4(Vector4(points[i]));
+			points[i] = Vector3(point) / point.w;
+		}
+
+		Vector3 directions[4];
+		for(int32 i = 0; i < 4; i++) {
+			directions[i] = (points[i + 4] - points[i]).GetSafeNormal();
+		}
+
+		float zNear = 0.1f;
+		float zFar  = 1000.0f;
+		float shadowRange = 2000.0f;
+		float shadowDistribute = 0.25f;
+
+		for (int32 i = 0; i < 4; ++i)
+		{
+			float k0   = (float)(i + 0) / 4;
+			float k1   = (float)(i + 1) / 4;
+			float fmin = MMath::Lerp(zNear * powf(zFar / zNear,k0), zNear + (zFar - zNear) * k0, shadowDistribute);
+			float fmax = MMath::Lerp(zNear * powf(zFar / zNear,k1), zNear + (zFar - zNear) * k1, shadowDistribute);
+
+			Vector3 mmin(1000);
+			Vector3 mmax(-1000);
+			for(int j = 0; j < 4; j++) {
+				Vector3 tmin = points[j] + directions[j] * fmin;
+				Vector3 tmax = points[j] + directions[j] * fmax;
+				if (mmin.x > tmin.x) mmin.x = tmin.x;
+				if (mmax.x < tmin.x) mmax.x = tmin.x;
+				if (mmin.y > tmin.y) mmin.y = tmin.y;
+				if (mmax.y < tmin.y) mmax.y = tmin.y;
+				if (mmin.z > tmin.z) mmin.z = tmin.z;
+				if (mmax.z < tmin.z) mmax.z = tmin.z;
+
+				if (mmin.x > tmax.x) mmin.x = tmax.x;
+				if (mmax.x < tmax.x) mmax.x = tmax.x;
+				if (mmin.y > tmax.y) mmin.y = tmax.y;
+				if (mmax.y < tmax.y) mmax.y = tmax.y;
+				if (mmin.z > tmax.z) mmin.z = tmax.z;
+				if (mmax.z < tmax.z) mmax.z = tmax.z;
+			}
+
+			Vector3 extend = mmax - mmin;
+			Vector3 center = mmin + extend * 0.5f;
+			
+			float halfSize = 512 / 2.0f;
+			Vector3 target = invModelview.TransformVector4(center);
+			float x = MMath::CeilToFloat(Vector3::DotProduct(target, up)   * halfSize / extend.Size()) * extend.Size() / halfSize;
+			float y = MMath::CeilToFloat(Vector3::DotProduct(target, side) * halfSize / extend.Size()) * extend.Size() / halfSize;
+			target = up * x + side * y + direction * Vector3::DotProduct(target,direction);
+			
+			MLOG("");
+			//projections[i] = ortho(bs.getRadius(),-bs.getRadius(),bs.getRadius(),-bs.getRadius(),shadow_range / 1000.0f,shadow_range);
+			//modelviews[i] = lookAt(target + direction * shadow_range / 2.0f,target - direction * shadow_range / 2.0f,up);
+		}
 	}
 
 	void CreateGUI()
