@@ -1,21 +1,19 @@
 #version 450
 
 layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec3 inShadowCoord;
+layout (location = 1) in vec4 inLightViewPos;
 
-layout (binding = 1) uniform LightMVPBlock 
+layout (binding = 1) uniform LightsMVPBlock 
 {
-	mat4 modelMatrix;
 	mat4 viewMatrix;
-	mat4 projectionMatrix;
+	vec4 cascadeScale[4];
+	vec4 cascadeOffset[4];
+	mat4 projMatrix[4];
+	vec4 offset[4];
 	vec4 direction;
-} lightMVP;
-
-layout (binding = 3) uniform ShadowParamBlock 
-{
 	vec4 bias;
-    vec4 offset;
-} shadowParam;
+    vec4 debug;
+} lightMVP;
 
 layout (binding  = 2) uniform sampler2D shadowMap;
 
@@ -59,27 +57,54 @@ const vec4 cascadeColor[4] =
 
 void main() 
 {
-    vec2 shadowCoord = inShadowCoord.xy * shadowParam.offset.xy + shadowParam.offset.zw;
+    ivec2 texDim     = textureSize(shadowMap, 0);
+    int cascadeFound = 0;
+    int cascadeIndex = 0;
+    vec4 shadowMapTextureCoord = vec4(0, 0, 0, 0);
+
+    float maxBorder = (texDim.x - 1.0f) / texDim.x;
+    float minBorder = 1.0f / texDim.x;
+
+    for (int index = 0; index < 4 && cascadeFound == 0; ++index)
+    {
+        shadowMapTextureCoord  = inLightViewPos * lightMVP.cascadeScale[index];
+        shadowMapTextureCoord += lightMVP.cascadeOffset[index];
+        if (min(shadowMapTextureCoord.x, shadowMapTextureCoord.y) > minBorder && max(shadowMapTextureCoord.x, shadowMapTextureCoord.y) < maxBorder)
+        {
+            cascadeIndex = index;
+            cascadeFound = 1;
+        }
+    }
+
+    vec4 lightProjPos  = lightMVP.projMatrix[cascadeIndex] * inLightViewPos;
+    lightProjPos.xyzw /= lightProjPos.w;
+	lightProjPos.xy    = lightProjPos.xy * 0.5 + 0.5;
+	lightProjPos.y     = 1.0 - lightProjPos.y;
+    
+    vec3 shadowCoord = vec3(lightProjPos.xy * lightMVP.bias.zw + lightMVP.offset[cascadeIndex].xy, lightProjPos.z);
 
     vec4 diffuse  = vec4(1.0, 1.0, 1.0, 1.0);
     vec3 lightDir = normalize(lightMVP.direction.xyz);
     
-    diffuse.xyz  = dot(lightDir, inNormal) * diffuse.xyz; 
-    outFragColor = diffuse;
+    diffuse.xyz   = dot(lightDir, inNormal) * diffuse.xyz; 
 
-    float depth0 = inShadowCoord.z - shadowParam.bias.x;
-    ivec2 texDim = textureSize(shadowMap, 0) / 2;
-    vec2 texStep = vec2(1.0 / texDim.x, 1.0 / texDim.y);
+    float depth0  = shadowCoord.z - lightMVP.bias.x;
+    vec2 texStep  = vec2(1.0 / texDim.x / 2, 1.0 / texDim.y / 2);
 
     float shadow = 0.0;
     for (int i = 0; i < 25; ++i)
     {
-        vec2 offset  = Poisson25[i] * texStep * shadowParam.bias.y;
+        vec2 offset  = Poisson25[i] * texStep * lightMVP.bias.y;
         float depth1 = texture(shadowMap, shadowCoord.xy + offset).r;
         shadow += depth0 >= depth1 ? 0.0 : 1.0;
     }
     shadow /= 25;
-    
+
     diffuse.xyz *= shadow;
+
+    if (lightMVP.debug.x > 0) {
+        diffuse.xyz *= cascadeColor[cascadeIndex].xyz;
+    }
+
     outFragColor = diffuse;
 }

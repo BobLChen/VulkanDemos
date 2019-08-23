@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define SHADOW_TEX_SIZE 2048
+#define SHADOW_TEX_SIZE 512
 
 class CascadedShadowDemo : public DemoBase
 {
@@ -189,18 +189,16 @@ private:
 		Matrix4x4 proj;
 	};
 
-	struct ShadowLightBlock
+	struct CascadeParamBlock
 	{
-		Matrix4x4 model;
 		Matrix4x4 view;
-		Matrix4x4 projection;
+		Vector4   cascadeScale[4];
+		Vector4   cascadeOffset[4];
+		Matrix4x4 cascadeProj[4];
+		Vector4   offset[4];
 		Vector4   direction;
-	};
-
-	struct ShadowParamBlock
-	{
-		Vector4 bias;
-		Vector4 offset;
+		Vector4   bias;
+		Vector4   debug;
 	};
 
 	struct Triangle 
@@ -695,12 +693,16 @@ private:
 			ImGui::Checkbox("Auto Spin", &m_AnimLight);
 
 			ImGui::Combo("Shadow", &m_SelectedShadow, m_ShadowNames.data(), m_ShadowNames.size());
-			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 0.05f, "%.4f");
+			ImGui::SliderFloat("Bias", &m_CascadeParam.bias.x, 0.0f, 0.05f, "%.4f");
 			if (m_SelectedShadow != 0) {
-				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
+				ImGui::SliderFloat("Step", &m_CascadeParam.bias.y, 0.0f, 10.0f);
 			}
 
 			ImGui::Combo("Camera", &m_CameraIndex, m_CameraNames.data(), m_CameraNames.size());
+
+			bool check = m_CascadeParam.debug.x > 0;
+			ImGui::Checkbox("Debug", &check);
+			m_CascadeParam.debug.x = check ? 1 : 0;
 
 			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -853,32 +855,31 @@ private:
 
 	void RenderDepthScene(VkCommandBuffer commandBuffer)
 	{
-		float halfWidth  = SHADOW_TEX_SIZE * 0.5f;
-		float halfHeight = SHADOW_TEX_SIZE * 0.5f;
+		float half = SHADOW_TEX_SIZE * 0.5f;
 
 		VkViewport viewport = {};
 		viewport.x        = 0;
-		viewport.y        = halfHeight;
-		viewport.width    = halfWidth;
-		viewport.height   = halfHeight * -1;
+		viewport.y        = half;
+		viewport.width    = half;
+		viewport.height   = half * -1;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
 		scissor.offset.x = 0;
 		scissor.offset.y = 0;
-		scissor.extent.width  = halfWidth;
-		scissor.extent.height = halfHeight;
+		scissor.extent.width  = half;
+		scissor.extent.height = half;
 
 		m_ShadowRTT->BeginRenderPass(commandBuffer);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
 		m_DepthMaterial->BeginFrame();
 
 		Vector2 offsets[4] = {
-			Vector2(0,         halfHeight),
-			Vector2(halfWidth, halfHeight),
-			Vector2(0,         halfHeight * 2),
-			Vector2(halfWidth, halfHeight * 2)
+			Vector2(0,    half),
+			Vector2(half, half),
+			Vector2(0,    half * 2),
+			Vector2(half, half * 2)
 		};
 
 		int32 count = 0;
@@ -887,20 +888,19 @@ private:
 			viewport.x = offsets[cascade].x;
 			viewport.y = offsets[cascade].y;
 			scissor.offset.x = offsets[cascade].x;
-			scissor.offset.y = offsets[cascade].y - halfHeight;
+			scissor.offset.y = offsets[cascade].y - half;
 
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
 			Camera* activeCamera = &(m_CascadeCamera[cascade]);
 			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-				m_ShadowLightParam.model      = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
-				m_ShadowLightParam.view       = activeCamera->GetView();
-				m_ShadowLightParam.projection = activeCamera->GetProj();
-				m_ShadowLightParam.direction  = activeCamera->GetView().GetForward() * (-1);
+				m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+				m_MVPParam.view  = activeCamera->GetView();
+				m_MVPParam.proj  = activeCamera->GetProj();
 
 				m_DepthMaterial->BeginObject();
-				m_DepthMaterial->SetLocalUniform("uboMVP", &m_ShadowLightParam, sizeof(ShadowLightBlock));
+				m_DepthMaterial->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
 				m_DepthMaterial->EndObject();
 
 				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, count);
@@ -922,39 +922,44 @@ private:
 		Camera* activeCamera = GetActiveCamera();
 		shadowMaterial->BeginFrame();
 
-		Vector2 offsets[4] = {
-			Vector2(0.0f, 0.0f),
-			Vector2(0.5f, 0.0f),
-			Vector2(0.0f, 0.5f),
-			Vector2(0.5f, 0.5f)
-		};
+		m_CascadeParam.view = m_LightCamera.GetView();
+		m_CascadeParam.direction = m_LightCamera.GetView().GetForward() * -1;
 
-		int32 count = 0;
-		for (int32 cascade = 0; cascade < 4; ++cascade)
+		Matrix4x4 textureScale;
+		textureScale.AppendScale(Vector3(0.5f, -0.5f, 1.0f));
+		textureScale.AppendTranslation(Vector3(0.5f, 0.5f, 0.0f));
+		for (int32 i = 0; i < 4; ++i) 
 		{
-			m_ShadowParam.bias.z   = cascade;
-			m_ShadowParam.offset.x = 0.5f;
-			m_ShadowParam.offset.y = 0.5f;
-			m_ShadowParam.offset.z = offsets[cascade].x;
-			m_ShadowParam.offset.w = offsets[cascade].y;
+			Matrix4x4 shadowTextre;
+			shadowTextre.Append(m_CascadeCamera[i].GetProj());
+			shadowTextre.Append(textureScale);
 
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) 
-			{
-				m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
-				m_MVPParam.view  = activeCamera->GetView();
-				m_MVPParam.proj  = activeCamera->GetProj();
+			m_CascadeParam.cascadeScale[i].x = shadowTextre.m[0][0];
+			m_CascadeParam.cascadeScale[i].y = shadowTextre.m[1][1];
+			m_CascadeParam.cascadeScale[i].z = shadowTextre.m[2][2];
+			m_CascadeParam.cascadeScale[i].w = 1.0f;
 
-				shadowMaterial->BeginObject();
-				shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-				shadowMaterial->SetLocalUniform("lightMVP",    &m_ShadowLightParam, sizeof(ShadowLightBlock));
-				shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,      sizeof(ShadowParamBlock));
-				shadowMaterial->EndObject();
+			m_CascadeParam.cascadeOffset[i].x = shadowTextre.m[3][0];
+			m_CascadeParam.cascadeOffset[i].y = shadowTextre.m[3][1];
+			m_CascadeParam.cascadeOffset[i].z = shadowTextre.m[3][2];
+			m_CascadeParam.cascadeOffset[i].w = 0;
 
-				shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, count);
-				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
+			m_CascadeParam.cascadeProj[i] = m_CascadeCamera[i].GetProj();
+		}
 
-				count += 1;
-			}
+		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) 
+		{
+			m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+			m_MVPParam.view  = activeCamera->GetView();
+			m_MVPParam.proj  = activeCamera->GetProj();
+
+			shadowMaterial->BeginObject();
+			shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
+			shadowMaterial->SetLocalUniform("lightMVP",    &m_CascadeParam,     sizeof(CascadeParamBlock));
+			shadowMaterial->EndObject();
+
+			shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
+			m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
 		}
 
 		shadowMaterial->EndFrame();
@@ -1052,10 +1057,20 @@ private:
 		);
 		m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1.0f, 1000.0f);
 		
-		m_ShadowParam.bias.x = 0.0001f;
-		m_ShadowParam.bias.y = 1.0f;
-		m_ShadowParam.bias.z = 0.0f;
-		m_ShadowParam.bias.w = 0.0f;
+		m_CascadeParam.bias.x = 0.01f;
+		m_CascadeParam.bias.y = 1.0f;
+		m_CascadeParam.bias.z = 0.5f;
+		m_CascadeParam.bias.w = 0.5f;
+
+		m_CascadeParam.debug.x = 0;
+		m_CascadeParam.debug.y = 0;
+		m_CascadeParam.debug.z = 0;
+		m_CascadeParam.debug.w = 0;
+
+		m_CascadeParam.offset[0].Set(0.0f, 0.0f, 0.0f, 0.0f);
+		m_CascadeParam.offset[1].Set(0.5f, 0.0f, 0.0f, 0.0f);
+		m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
+		m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
 	}
 
 	void CreateGUI()
@@ -1100,8 +1115,7 @@ private:
 
 	// params
 	ModelViewProjectionBlock	m_MVPParam;
-	ShadowLightBlock			m_ShadowLightParam;
-	ShadowParamBlock			m_ShadowParam;
+	CascadeParamBlock			m_CascadeParam;
 
 	// shadow render
 	vk_demo::DVKShader*			m_SimpleShadowShader = nullptr;
