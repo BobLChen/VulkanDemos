@@ -67,11 +67,11 @@ public:
 
 	FORCEINLINE void RotateAxis(const Vector3& axis, float angle, const Vector3* pivot);
 
-	FORCEINLINE void RotateX(float angle, bool local, const Vector3* pivot);
+	FORCEINLINE void RotateX(float angle, bool local = true, const Vector3* pivot = nullptr);
 
-	FORCEINLINE void RotateY(float angle, bool local, const Vector3* pivot);
+	FORCEINLINE void RotateY(float angle, bool local = true, const Vector3* pivot = nullptr);
 
-	FORCEINLINE void RotateZ(float angle, bool local, const Vector3* pivot);
+	FORCEINLINE void RotateZ(float angle, bool local = true, const Vector3* pivot = nullptr);
 	
 	FORCEINLINE void AppendScale(const Vector3& scale);
 
