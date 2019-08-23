@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define SHADOW_TEX_SIZE 512
+#define SHADOW_TEX_SIZE 2048
 
 class CascadedShadowDemo : public DemoBase
 {
@@ -101,7 +101,7 @@ private:
 			}
 		}
 		
-		void SetProj(float fovy, float width, float height, float zNear, float zFar)
+		void Perspective(float fovy, float width, float height, float zNear, float zFar)
 		{
 			m_Fov    = fovy;
 			m_Near   = zNear;
@@ -111,7 +111,7 @@ private:
 			m_Projection.Perspective(fovy, width, height, zNear, zFar);
 		}
 
-		void SetProj(float left, float right, float bottom, float top, float minZ, float maxZ)
+		void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ)
 		{
 			m_Near = minZ;
 			m_Far  = maxZ;
@@ -200,6 +200,7 @@ private:
 	struct ShadowParamBlock
 	{
 		Vector4 bias;
+		Vector4 offset;
 	};
 
 	struct Triangle 
@@ -583,7 +584,7 @@ private:
 		// cascade infos
 		float cameraNearFarRange   = m_ViewCamera.GetFar() - m_ViewCamera.GetNear();
 		float cascadePartitionsMax = 100;
-		float cascadePartitions[4] = { 4, 5, 6, 100 };
+		float cascadePartitions[4] = { 4, 5, 6, 10 };
 
 		// calc cascade projection
 		for (int32 cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex) 
@@ -649,7 +650,7 @@ private:
 			ComputeNearAndFar(nearPlane, farPlane, lightCameraOrthographicMin, lightCameraOrthographicMax, sceneAABBPointsLightSpace );
 			
 			m_CascadeCamera[cascadeIndex].SetView(m_LightCamera.GetView());
-			m_CascadeCamera[cascadeIndex].SetProj(lightCameraOrthographicMin.x, lightCameraOrthographicMax.x, lightCameraOrthographicMin.y, lightCameraOrthographicMax.y, nearPlane, farPlane);
+			m_CascadeCamera[cascadeIndex].Orthographic(lightCameraOrthographicMin.x, lightCameraOrthographicMax.x, lightCameraOrthographicMin.y, lightCameraOrthographicMax.y, nearPlane, farPlane);
 			m_CascadePartitionsFrustum[cascadeIndex] = frustumIntervalEnd;
 		}
 	}
@@ -677,41 +678,6 @@ private:
 		UpdateUI(time, delta);
 		UpdateCascade();
 		GetActiveCamera()->Update(time, delta);
-
-		Camera* activeCamera = nullptr;
-
-		// depth params
-		activeCamera = &m_LightCamera;
-		m_DepthMaterial->BeginFrame();
-		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-			m_ShadowLightParam.model      = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
-			m_ShadowLightParam.view       = activeCamera->GetView();
-			m_ShadowLightParam.projection = activeCamera->GetProj();
-			m_ShadowLightParam.direction  = activeCamera->GetView().GetForward() * (-1);
-			
-			m_DepthMaterial->BeginObject();
-			m_DepthMaterial->SetLocalUniform("uboMVP", &m_ShadowLightParam, sizeof(ShadowLightBlock));
-			m_DepthMaterial->EndObject();
-		}
-		m_DepthMaterial->EndFrame();
-
-		// shade params
-		activeCamera = GetActiveCamera();
-		vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_SelectedShadow];
-		shadowMaterial->BeginFrame();
-		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-			m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
-			m_MVPParam.view  = activeCamera->GetView();
-			m_MVPParam.proj  = activeCamera->GetProj();
-			
-			shadowMaterial->BeginObject();
-			shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			shadowMaterial->SetLocalUniform("lightMVP",    &m_ShadowLightParam, sizeof(ShadowLightBlock));
-			shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,      sizeof(ShadowParamBlock));
-			shadowMaterial->EndObject();
-		}
-		shadowMaterial->EndFrame();
-
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -885,6 +851,134 @@ private:
 		delete m_PCFShadowMaterial;
 	}
 
+	void RenderDepthScene(VkCommandBuffer commandBuffer)
+	{
+		float halfWidth  = SHADOW_TEX_SIZE * 0.5f;
+		float halfHeight = SHADOW_TEX_SIZE * 0.5f;
+
+		VkViewport viewport = {};
+		viewport.x        = 0;
+		viewport.y        = halfHeight;
+		viewport.width    = halfWidth;
+		viewport.height   = halfHeight * -1;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width  = halfWidth;
+		scissor.extent.height = halfHeight;
+
+		m_ShadowRTT->BeginRenderPass(commandBuffer);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
+		m_DepthMaterial->BeginFrame();
+
+		Vector2 offsets[4] = {
+			Vector2(0,         halfHeight),
+			Vector2(halfWidth, halfHeight),
+			Vector2(0,         halfHeight * 2),
+			Vector2(halfWidth, halfHeight * 2)
+		};
+
+		int32 count = 0;
+		for (int32 cascade = 0; cascade < 4; ++cascade)
+		{
+			viewport.x = offsets[cascade].x;
+			viewport.y = offsets[cascade].y;
+			scissor.offset.x = offsets[cascade].x;
+			scissor.offset.y = offsets[cascade].y - halfHeight;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			Camera* activeCamera = &(m_CascadeCamera[cascade]);
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+				m_ShadowLightParam.model      = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+				m_ShadowLightParam.view       = activeCamera->GetView();
+				m_ShadowLightParam.projection = activeCamera->GetProj();
+				m_ShadowLightParam.direction  = activeCamera->GetView().GetForward() * (-1);
+
+				m_DepthMaterial->BeginObject();
+				m_DepthMaterial->SetLocalUniform("uboMVP", &m_ShadowLightParam, sizeof(ShadowLightBlock));
+				m_DepthMaterial->EndObject();
+
+				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, count);
+				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
+
+				count += 1;
+			}
+		}
+		
+		m_DepthMaterial->EndFrame();
+		m_ShadowRTT->EndRenderPass(commandBuffer);
+	}
+
+	void RenderScene(VkCommandBuffer commandBuffer)
+	{
+		vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_SelectedShadow];
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMaterial->GetPipeline());
+
+		Camera* activeCamera = GetActiveCamera();
+		shadowMaterial->BeginFrame();
+
+		Vector2 offsets[4] = {
+			Vector2(0.0f, 0.0f),
+			Vector2(0.5f, 0.0f),
+			Vector2(0.0f, 0.5f),
+			Vector2(0.5f, 0.5f)
+		};
+
+		int32 count = 0;
+		for (int32 cascade = 0; cascade < 4; ++cascade)
+		{
+			m_ShadowParam.bias.z   = cascade;
+			m_ShadowParam.offset.x = 0.5f;
+			m_ShadowParam.offset.y = 0.5f;
+			m_ShadowParam.offset.z = offsets[cascade].x;
+			m_ShadowParam.offset.w = offsets[cascade].y;
+
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) 
+			{
+				m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+				m_MVPParam.view  = activeCamera->GetView();
+				m_MVPParam.proj  = activeCamera->GetProj();
+
+				shadowMaterial->BeginObject();
+				shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
+				shadowMaterial->SetLocalUniform("lightMVP",    &m_ShadowLightParam, sizeof(ShadowLightBlock));
+				shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,      sizeof(ShadowParamBlock));
+				shadowMaterial->EndObject();
+
+				shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, count);
+				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
+
+				count += 1;
+			}
+		}
+
+		shadowMaterial->EndFrame();
+	}
+
+	void BeginMainPass(VkCommandBuffer commandBuffer, int32 backBufferIndex)
+	{
+		VkClearValue clearValues[2];
+		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo;
+		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+		renderPassBeginInfo.renderPass               = m_RenderPass;
+		renderPassBeginInfo.framebuffer              = m_FrameBuffers[backBufferIndex];
+		renderPassBeginInfo.clearValueCount          = 2;
+		renderPassBeginInfo.pClearValues             = clearValues;
+		renderPassBeginInfo.renderArea.offset.x      = 0;
+		renderPassBeginInfo.renderArea.offset.y      = 0;
+		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
+		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
+		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
 	void SetupCommandBuffers(int32 backBufferIndex)
 	{
 		VkViewport viewport = {};
@@ -908,80 +1002,55 @@ private:
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
 		// render target pass
-		{
-			m_ShadowRTT->BeginRenderPass(commandBuffer);
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
-			}
-
-			m_ShadowRTT->EndRenderPass(commandBuffer);
-		}
+		RenderDepthScene(commandBuffer);
 
 		// second pass
-		{
-			VkClearValue clearValues[2];
-			clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
-			clearValues[1].depthStencil = { 1.0f, 0 };
+		BeginMainPass(commandBuffer, backBufferIndex);
 
-			VkRenderPassBeginInfo renderPassBeginInfo;
-			ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-			renderPassBeginInfo.renderPass               = m_RenderPass;
-			renderPassBeginInfo.framebuffer              = m_FrameBuffers[backBufferIndex];
-			renderPassBeginInfo.clearValueCount          = 2;
-			renderPassBeginInfo.pClearValues             = clearValues;
-			renderPassBeginInfo.renderArea.offset.x      = 0;
-			renderPassBeginInfo.renderArea.offset.y      = 0;
-			renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
-			renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
-			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+		// shade
+		RenderScene(commandBuffer);
 
-			// shade
-			vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_SelectedShadow];
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMaterial->GetPipeline());
-			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
-				shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
-			}
+		// debug
+		viewport.x = m_FrameWidth * 0.75f;
+		viewport.y = m_FrameHeight * 0.25f;
+		viewport.width  = m_FrameWidth * 0.25f;
+		viewport.height = -(float)m_FrameHeight * 0.25f;    // flip y axis
 
-			// debug
-			viewport.x = m_FrameWidth * 0.75f;
-			viewport.y = m_FrameHeight * 0.25f;
-			viewport.width  = m_FrameWidth * 0.25f;
-			viewport.height = -(float)m_FrameHeight * 0.25f;    // flip y axis
+		scissor.offset.x = m_FrameWidth * 0.75f;
+		scissor.offset.y = 0;
+		scissor.extent.width  = m_FrameWidth  * 0.25f;
+		scissor.extent.height = m_FrameHeight * 0.25f;
 
-			scissor.offset.x = m_FrameWidth * 0.75f;
-			scissor.offset.y = 0;
-			scissor.extent.width  = m_FrameWidth  * 0.25f;
-			scissor.extent.height = m_FrameHeight * 0.25f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
+		m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
-			m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
-			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
-
-			vkCmdEndRenderPass(commandBuffer);
-		}
+		vkCmdEndRenderPass(commandBuffer);
 
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetView(Vector3(-54.8184776f, 16.3495007f, -9.28904152f), Vector3(-53.8369446f, 16.1607456f, -9.25806427f));
-		m_ViewCamera.SetProj(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
+		m_ViewCamera.SetView(
+			Vector3(-54.8184776f, 16.3495007f, -9.28904152f), 
+			Vector3(-53.8369446f, 16.1607456f, -9.25806427f)
+		);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
 		
-		m_LightCamera.SetView(Vector3(-1.03371346f, 136.269257f, 116.271263f), Vector3(-1.05090559f, 135.513031f, 115.617210f));
-		m_LightCamera.SetProj(PI / 4, 1.0f, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1000.0f);
+		m_LightCamera.SetView(
+			Vector3(-1.03371346f, 136.269257f, 116.271263f), 
+			Vector3(-1.05090559f, 135.513031f, 115.617210f)
+		);
+		m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1.0f, 1000.0f);
 		
 		m_ShadowParam.bias.x = 0.0001f;
 		m_ShadowParam.bias.y = 1.0f;

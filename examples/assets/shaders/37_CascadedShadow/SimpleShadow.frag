@@ -14,6 +14,7 @@ layout (binding = 1) uniform LightMVPBlock
 layout (binding = 3) uniform ShadowParamBlock 
 {
 	vec4 bias;
+    vec4 offset;
 } shadowParam;
 
 layout (binding  = 2) uniform sampler2D shadowMap;
@@ -22,6 +23,8 @@ layout (location = 0) out vec4 outFragColor;
 
 void main() 
 {
+    vec2 shadowCoord = inShadowCoord.xy * shadowParam.offset.xy + shadowParam.offset.zw;
+
     vec4 diffuse  = vec4(1.0, 1.0, 1.0, 1.0);
     vec3 lightDir = normalize(lightMVP.direction.xyz);
     
@@ -29,7 +32,7 @@ void main()
     outFragColor  = diffuse;
 
     float depth0  = inShadowCoord.z - shadowParam.bias.x;
-    float depth1  = texture(shadowMap, inShadowCoord.xy).r;
+    float depth1  = texture(shadowMap, shadowCoord.xy).r;
     float shadow  = 1.0;
 
     if (depth0 >= depth1) {

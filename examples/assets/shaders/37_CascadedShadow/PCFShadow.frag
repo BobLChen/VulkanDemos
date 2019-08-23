@@ -14,6 +14,7 @@ layout (binding = 1) uniform LightMVPBlock
 layout (binding = 3) uniform ShadowParamBlock 
 {
 	vec4 bias;
+    vec4 offset;
 } shadowParam;
 
 layout (binding  = 2) uniform sampler2D shadowMap;
@@ -48,8 +49,18 @@ const vec2 Poisson25[25] = vec2[](
     vec2(0.991882, -0.657338)
 );
 
+const vec4 cascadeColor[4] = 
+{
+    vec4 (1.0f, 0.0f, 0.0f, 1.0f),
+    vec4 (0.0f, 1.0f, 0.0f, 1.0f),
+    vec4 (0.0f, 0.0f, 1.0f, 1.0f),
+    vec4 (1.0f, 0.0f, 1.0f, 1.0f),
+};
+
 void main() 
 {
+    vec2 shadowCoord = inShadowCoord.xy * shadowParam.offset.xy + shadowParam.offset.zw;
+
     vec4 diffuse  = vec4(1.0, 1.0, 1.0, 1.0);
     vec3 lightDir = normalize(lightMVP.direction.xyz);
     
@@ -57,14 +68,14 @@ void main()
     outFragColor = diffuse;
 
     float depth0 = inShadowCoord.z - shadowParam.bias.x;
-    ivec2 texDim = textureSize(shadowMap, 0);
+    ivec2 texDim = textureSize(shadowMap, 0) / 2;
     vec2 texStep = vec2(1.0 / texDim.x, 1.0 / texDim.y);
 
     float shadow = 0.0;
     for (int i = 0; i < 25; ++i)
     {
         vec2 offset  = Poisson25[i] * texStep * shadowParam.bias.y;
-        float depth1 = texture(shadowMap, inShadowCoord.xy + offset).r;
+        float depth1 = texture(shadowMap, shadowCoord.xy + offset).r;
         shadow += depth0 >= depth1 ? 0.0 : 1.0;
     }
     shadow /= 25;
