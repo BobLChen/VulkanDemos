@@ -403,7 +403,7 @@ private:
 
 		// scene model
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/littlesttokyo.fbx",
+			"assets/models/Room/miniHouse_FBX.FBX",
 			m_VulkanDevice,
 			cmdBuffer,
 			m_Shader0->perVertexAttributes
@@ -588,7 +588,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 0.55f;
+        boundCenter.z -= boundSize.Size();
         
 		// dynamic
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;

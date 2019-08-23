@@ -138,7 +138,7 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/littlesttokyo.fbx",
+			"assets/models/Room/miniHouse_FBX.FBX",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
@@ -360,7 +360,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 0.75f;
+        boundCenter.z -= boundSize.Size();
         
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
         // world matrix dynamicbuffer
