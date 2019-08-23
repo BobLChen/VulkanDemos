@@ -99,62 +99,354 @@ private:
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
 	}
-    
-    void UpdateDepthMaterial()
-    {
-        // depth
-        m_DepthMaterial->BeginFrame();
-        
-        // ground
-        m_LightCamera.model = m_GroundModel->meshes[0]->linkNode->GetGlobalMatrix();
-        m_DepthMaterial->BeginObject();
-        m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
-        m_DepthMaterial->EndObject();
-        
-        // Torus
-        m_LightCamera.model = m_TorusModel->meshes[0]->linkNode->GetGlobalMatrix();
-        m_DepthMaterial->BeginObject();
-        m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
-        m_DepthMaterial->EndObject();
-        
-        m_DepthMaterial->EndFrame();
-    }
-    
-    void UpdateShadeMaterial()
-    {
-        // shade
-        vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
-        shadowMaterial->BeginFrame();
-        
-        // ground
-        m_MVPData.model = m_GroundModel->meshes[0]->linkNode->GetGlobalMatrix();
-        shadowMaterial->BeginObject();
-        shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPData,      sizeof(ModelViewProjectionBlock));
-        shadowMaterial->SetLocalUniform("lightMVP",    &m_LightCamera,  sizeof(DirectionalLightBlock));
-        shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,  sizeof(ShadowParamBlock));
-        shadowMaterial->EndObject();
-        
-        // torus
-        m_MVPData.model = m_TorusModel->meshes[0]->linkNode->GetGlobalMatrix();
-        shadowMaterial->BeginObject();
-        shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPData,      sizeof(ModelViewProjectionBlock));
-        shadowMaterial->SetLocalUniform("lightMVP",    &m_LightCamera,  sizeof(DirectionalLightBlock));
-        shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam,  sizeof(ShadowParamBlock));
-        shadowMaterial->EndObject();
-        
-        shadowMaterial->EndFrame();
-    }
-    
+
+	void CreateAABBPoints(Vector4* aabbPoints, Vector4 center, Vector4 extent)
+	{
+		static const Vector4 extentsMap[] = 
+		{ 
+			Vector4( 1.0f,  1.0f, -1.0f,  1.0f), 
+			Vector4(-1.0f,  1.0f, -1.0f,  1.0f), 
+			Vector4( 1.0f, -1.0f, -1.0f,  1.0f), 
+			Vector4(-1.0f, -1.0f, -1.0f,  1.0f), 
+			Vector4( 1.0f,  1.0f,  1.0f,  1.0f), 
+			Vector4(-1.0f,  1.0f,  1.0f,  1.0f), 
+			Vector4( 1.0f, -1.0f,  1.0f,  1.0f), 
+			Vector4(-1.0f, -1.0f,  1.0f,  1.0f) 
+		};
+
+		for (int32 index = 0; index < 8; ++index) 
+		{
+			aabbPoints[index] = extentsMap[index] * extent + center; 
+		}
+	}
+
+	struct Frustum
+	{
+		Vector3 Origin;            // Origin of the frustum (and projection).
+		Vector4 Orientation;       // Unit quaternion representing rotation.
+
+		float RightSlope;           // Positive X slope (X/Z).
+		float LeftSlope;            // Negative X slope.
+		float TopSlope;             // Positive Y slope (Y/Z).
+		float BottomSlope;          // Negative Y slope.
+		float Near, Far;            // Z of the near plane and far plane.
+	};
+
+	void ComputeFrustumFromProjection(Frustum& out, Matrix4x4& projection )
+	{
+		static Vector4 HomogenousPoints[6] =
+		{
+			Vector4( 1.0f,  0.0f, 1.0f, 1.0f),   // right (at far plane)
+			Vector4(-1.0f,  0.0f, 1.0f, 1.0f),   // left
+			Vector4( 0.0f,  1.0f, 1.0f, 1.0f),   // top
+			Vector4( 0.0f, -1.0f, 1.0f, 1.0f),   // bottom
+
+			Vector4(0.0f, 0.0f, 0.0f, 1.0f),     // near
+			Vector4(0.0f, 0.0f, 1.0f, 1.0f)      // far
+		};
+
+		Matrix4x4 matInverse = projection.Inverse();
+
+		// Compute the frustum corners in world space.
+		Vector4 Points[6];
+		for(int32 i = 0; i < 6; i++ )
+		{
+			// Transform point.
+			Points[i] = matInverse.TransformVector4(HomogenousPoints[i]);
+		}
+
+		out.Origin = Vector3(0.0f, 0.0f, 0.0f );
+		out.Orientation = Vector4( 0.0f, 0.0f, 0.0f, 1.0f );
+
+		// Compute the slopes.
+		Points[0] = Points[0] * 1.0f / Points[0].z;
+		Points[1] = Points[1] * 1.0f / Points[1].z;
+		Points[2] = Points[2] * 1.0f / Points[2].z;
+		Points[3] = Points[3] * 1.0f / Points[3].z;
+
+		out.RightSlope = Points[0].x;
+		out.LeftSlope = Points[1].x;
+		out.TopSlope = Points[2].y;
+		out.BottomSlope = Points[3].y;
+
+		// Compute near and far.
+		Points[4] = Points[4] * 1.0f / Points[4].z;
+		Points[5] = Points[5] * 1.0f / Points[5].z;
+
+		out.Near = Points[4].z;
+		out.Far = Points[5].z;
+
+		return;
+	}
+
+	Vector4 XMVectorSelect(Vector4 V1,Vector4 V2,Vector4 Control)
+	{
+		Vector4 result;
+		result.x = MMath::Lerp(V1.x, V2.x, Control.x);
+		result.y = MMath::Lerp(V1.y, V2.y, Control.y);
+		result.z = MMath::Lerp(V1.z, V2.z, Control.z);
+		result.w = MMath::Lerp(V1.w, V2.w, Control.w);
+		return result;
+	}
+
+	void CreateFrustumPointsFromCascadeInterval(float fCascadeIntervalBegin, float fCascadeIntervalEnd, Matrix4x4& projection, Vector4* pvCornerPointsWorld) 
+	{
+
+		Frustum viewFrust;
+		ComputeFrustumFromProjection(viewFrust, projection);
+		viewFrust.Near = fCascadeIntervalBegin;
+		viewFrust.Far = fCascadeIntervalEnd;
+
+		static const Vector4 vGrabY = Vector4(0,1,0,0);
+		static const Vector4 vGrabX = Vector4(1,0,0,0);
+
+		Vector4 vRightTop = Vector4(viewFrust.RightSlope,viewFrust.TopSlope,1.0f,1.0f);
+		Vector4 vLeftBottom = Vector4(viewFrust.LeftSlope,viewFrust.BottomSlope,1.0f,1.0f);
+		Vector4 vNear = Vector4(viewFrust.Near,viewFrust.Near,viewFrust.Near,1.0f);
+		Vector4 vFar = Vector4(viewFrust.Far,viewFrust.Far,viewFrust.Far,1.0f);
+		Vector4 vRightTopNear = vRightTop * vNear;
+		Vector4 vRightTopFar = vRightTop * vFar;
+		Vector4 vLeftBottomNear = vLeftBottom * vNear;
+		Vector4 vLeftBottomFar = vLeftBottom * vFar;
+
+		pvCornerPointsWorld[0] = vRightTopNear;
+		pvCornerPointsWorld[1] = XMVectorSelect( vRightTopNear, vLeftBottomNear, vGrabX );
+		pvCornerPointsWorld[2] = vLeftBottomNear;
+		pvCornerPointsWorld[3] = XMVectorSelect( vRightTopNear, vLeftBottomNear,vGrabY );
+
+		pvCornerPointsWorld[4] = vRightTopFar;
+		pvCornerPointsWorld[5] = XMVectorSelect( vRightTopFar, vLeftBottomFar, vGrabX );
+		pvCornerPointsWorld[6] = vLeftBottomFar;
+		pvCornerPointsWorld[7] = XMVectorSelect( vRightTopFar ,vLeftBottomFar, vGrabY );
+
+	}
+
+	void UpdateCascade()
+	{
+		Matrix4x4 viewCameraProjection = m_MVPData.projection;
+		Matrix4x4 viewCameraView       = m_MVPData.view;
+
+		Matrix4x4 lightView            = m_LightCamera.view;
+		Matrix4x4 inverseViewCamera    = viewCameraView.Inverse();
+
+		static const Vector4 multiplySetzwToZero(1.0f, 1.0f, 0.0f, 0.0f);
+
+		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
+		Vector4 extend = Vector4((bounds.max - bounds.min) * 0.5f, 0.0f);
+		Vector4 center = Vector4(bounds.min + extend, 1.0f);
+		
+		Vector4 sceneAABBPointsLightSpace[8];
+		CreateAABBPoints(sceneAABBPointsLightSpace, center, extend);
+		for (int index = 0; index < 8; ++index) 
+		{
+			sceneAABBPointsLightSpace[index] = lightView.TransformVector4(sceneAABBPointsLightSpace[index]);
+		}
+
+		float fFrustumIntervalBegin;
+		float fFrustumIntervalEnd;
+		Vector4 vLightCameraOrthographicMin;
+		Vector4 vLightCameraOrthographicMax;
+		float fCameraNearFarRange = 1000.0f - 1.0f;
+
+		Vector4 vWorldUnitsPerTexel(0, 0, 0, 0); 
+		
+		float m_iCascadePartitionsMax = 100;
+
+		float m_iCascadePartitionsZeroToOne[4];
+		m_iCascadePartitionsZeroToOne[0] = 4;
+		m_iCascadePartitionsZeroToOne[1] = 5;
+		m_iCascadePartitionsZeroToOne[2] = 6;
+		m_iCascadePartitionsZeroToOne[3] = 100;
+
+		for(int32 iCascadeIndex=0; iCascadeIndex < 4; ++iCascadeIndex ) 
+		{
+			fFrustumIntervalBegin = 0.0f;
+
+			// Scale the intervals between 0 and 1. They are now percentages that we can scale with.
+			fFrustumIntervalEnd    = (float)m_iCascadePartitionsZeroToOne[ iCascadeIndex ];        
+			fFrustumIntervalBegin /= (float)m_iCascadePartitionsMax;
+			fFrustumIntervalEnd   /= (float)m_iCascadePartitionsMax;
+			fFrustumIntervalBegin  = fFrustumIntervalBegin * fCameraNearFarRange;
+			fFrustumIntervalEnd    = fFrustumIntervalEnd * fCameraNearFarRange;
+			
+			Vector4 vFrustumPoints[8];
+			CreateFrustumPointsFromCascadeInterval(fFrustumIntervalBegin, fFrustumIntervalEnd, 
+				viewCameraProjection, vFrustumPoints);
+
+			vLightCameraOrthographicMin.Set(MAX_flt, MAX_flt, MAX_flt, MAX_flt);
+			vLightCameraOrthographicMax.Set(MIN_flt, MIN_flt, MIN_flt, MIN_flt);
+
+			//XMVECTOR vTempTranslatedCornerPoint;
+			//// This next section of code calculates the min and max values for the orthographic projection.
+			//for( int icpIndex=0; icpIndex < 8; ++icpIndex ) 
+			//{
+			//	// Transform the frustum from camera view space to world space.
+			//	vFrustumPoints[icpIndex] = XMVector4Transform ( vFrustumPoints[icpIndex], matInverseViewCamera );
+			//	// Transform the point from world space to Light Camera Space.
+			//	vTempTranslatedCornerPoint = XMVector4Transform ( vFrustumPoints[icpIndex], matLightCameraView );
+			//	// Find the closest point.
+			//	vLightCameraOrthographicMin = XMVectorMin ( vTempTranslatedCornerPoint, vLightCameraOrthographicMin );
+			//	vLightCameraOrthographicMax = XMVectorMax ( vTempTranslatedCornerPoint, vLightCameraOrthographicMax );
+			//}
+
+
+			//// This code removes the shimmering effect along the edges of shadows due to
+			//// the light changing to fit the camera.
+			//if( m_eSelectedCascadesFit == FIT_TO_SCENE ) 
+			//{
+			//	// Fit the ortho projection to the cascades far plane and a near plane of zero. 
+			//	// Pad the projection to be the size of the diagonal of the Frustum partition. 
+			//	// 
+			//	// To do this, we pad the ortho transform so that it is always big enough to cover 
+			//	// the entire camera view frustum.
+			//	XMVECTOR vDiagonal = vFrustumPoints[0] - vFrustumPoints[6];
+			//	vDiagonal = XMVector3Length( vDiagonal );
+
+			//	// The bound is the length of the diagonal of the frustum interval.
+			//	float fCascadeBound = XMVectorGetX( vDiagonal );
+
+			//	// The offset calculated will pad the ortho projection so that it is always the same size 
+			//	// and big enough to cover the entire cascade interval.
+			//	XMVECTOR vBoarderOffset = ( vDiagonal - 
+			//		( vLightCameraOrthographicMax - vLightCameraOrthographicMin ) ) 
+			//		* g_vHalfVector;
+			//	// Set the Z and W components to zero.
+			//	vBoarderOffset *= g_vMultiplySetzwToZero;
+
+			//	// Add the offsets to the projection.
+			//	vLightCameraOrthographicMax += vBoarderOffset;
+			//	vLightCameraOrthographicMin -= vBoarderOffset;
+
+			//	// The world units per texel are used to snap the shadow the orthographic projection
+			//	// to texel sized increments.  This keeps the edges of the shadows from shimmering.
+			//	float fWorldUnitsPerTexel = fCascadeBound / (float)m_CopyOfCascadeConfig.m_iBufferSize;
+			//	vWorldUnitsPerTexel = XMVectorSet( fWorldUnitsPerTexel, fWorldUnitsPerTexel, 0.0f, 0.0f ); 
+
+
+			//} 
+			//else if( m_eSelectedCascadesFit == FIT_TO_CASCADES ) 
+			//{
+
+			//	// We calculate a looser bound based on the size of the PCF blur.  This ensures us that we're 
+			//	// sampling within the correct map.
+			//	float fScaleDuetoBlureAMT = ( (float)( m_iShadowBlurSize * 2 + 1 ) 
+			//		/(float)m_CopyOfCascadeConfig.m_iBufferSize );
+			//	XMVECTORF32 vScaleDuetoBlureAMT = { fScaleDuetoBlureAMT, fScaleDuetoBlureAMT, 0.0f, 0.0f };
+
+
+			//	float fNormalizeByBufferSize = ( 1.0f / (float)m_CopyOfCascadeConfig.m_iBufferSize );
+			//	XMVECTOR vNormalizeByBufferSize = XMVectorSet( fNormalizeByBufferSize, fNormalizeByBufferSize, 0.0f, 0.0f );
+
+			//	// We calculate the offsets as a percentage of the bound.
+			//	XMVECTOR vBoarderOffset = vLightCameraOrthographicMax - vLightCameraOrthographicMin;
+			//	vBoarderOffset *= g_vHalfVector;
+			//	vBoarderOffset *= vScaleDuetoBlureAMT;
+			//	vLightCameraOrthographicMax += vBoarderOffset;
+			//	vLightCameraOrthographicMin -= vBoarderOffset;
+
+			//	// The world units per texel are used to snap  the orthographic projection
+			//	// to texel sized increments.  
+			//	// Because we're fitting tighly to the cascades, the shimmering shadow edges will still be present when the 
+			//	// camera rotates.  However, when zooming in or strafing the shadow edge will not shimmer.
+			//	vWorldUnitsPerTexel = vLightCameraOrthographicMax - vLightCameraOrthographicMin;
+			//	vWorldUnitsPerTexel *= vNormalizeByBufferSize;
+
+			//}
+
+
+			//if( m_bMoveLightTexelSize ) 
+			//{
+
+			//	// We snape the camera to 1 pixel increments so that moving the camera does not cause the shadows to jitter.
+			//	// This is a matter of integer dividing by the world space size of a texel
+			//	vLightCameraOrthographicMin /= vWorldUnitsPerTexel;
+			//	vLightCameraOrthographicMin = XMVectorFloor( vLightCameraOrthographicMin );
+			//	vLightCameraOrthographicMin *= vWorldUnitsPerTexel;
+
+			//	vLightCameraOrthographicMax /= vWorldUnitsPerTexel;
+			//	vLightCameraOrthographicMax = XMVectorFloor( vLightCameraOrthographicMax );
+			//	vLightCameraOrthographicMax *= vWorldUnitsPerTexel;
+
+			//}
+
+			////These are the unconfigured near and far plane values.  They are purposly awful to show 
+			//// how important calculating accurate near and far planes is.
+			//float fNearPlane = 0.0f;
+			//float fFarPlane = 10000.0f;
+
+			//if( m_eSelectedNearFarFit == FIT_NEARFAR_AABB ) 
+			//{
+
+			//	XMVECTOR vLightSpaceSceneAABBminValue = g_vFLTMAX;  // world space scene aabb 
+			//	XMVECTOR vLightSpaceSceneAABBmaxValue = g_vFLTMIN;       
+			//	// We calculate the min and max vectors of the scene in light space. The min and max "Z" values of the  
+			//	// light space AABB can be used for the near and far plane. This is easier than intersecting the scene with the AABB
+			//	// and in some cases provides similar results.
+			//	for(int index=0; index< 8; ++index) 
+			//	{
+			//		vLightSpaceSceneAABBminValue = XMVectorMin( vSceneAABBPointsLightSpace[index], vLightSpaceSceneAABBminValue );
+			//		vLightSpaceSceneAABBmaxValue = XMVectorMax( vSceneAABBPointsLightSpace[index], vLightSpaceSceneAABBmaxValue );
+			//	}
+
+			//	// The min and max z values are the near and far planes.
+			//	fNearPlane = XMVectorGetZ( vLightSpaceSceneAABBminValue );
+			//	fFarPlane = XMVectorGetZ( vLightSpaceSceneAABBmaxValue );
+			//} 
+			//else if( m_eSelectedNearFarFit == FIT_NEARFAR_SCENE_AABB ) 
+			//{
+			//	// By intersecting the light frustum with the scene AABB we can get a tighter bound on the near and far plane.
+			//	ComputeNearAndFar( fNearPlane, fFarPlane, vLightCameraOrthographicMin, 
+			//		vLightCameraOrthographicMax, vSceneAABBPointsLightSpace );
+			//} 
+			//else 
+			//{
+
+			//}
+			//// Craete the orthographic projection for this cascade.
+			//D3DXMatrixOrthoOffCenterLH( &m_matShadowProj[ iCascadeIndex ], 
+			//	XMVectorGetX( vLightCameraOrthographicMin ), 
+			//	XMVectorGetX( vLightCameraOrthographicMax ), 
+			//	XMVectorGetY( vLightCameraOrthographicMin ), 
+			//	XMVectorGetY( vLightCameraOrthographicMax ), 
+			//	fNearPlane, fFarPlane );
+
+			//m_fCascadePartitionsFrustum[ iCascadeIndex ] = fFrustumIntervalEnd;
+		}
+		//m_matShadowView = *m_pLightCamera->GetViewMatrix();
+	}
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
+		UpdateCascade();
 		UpdateLight(time, delta);
-        UpdateDepthMaterial();
-        UpdateShadeMaterial();
-        
+
+		// depth
+		m_DepthMaterial->BeginFrame();
+		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+			m_LightCamera.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+			m_DepthMaterial->BeginObject();
+			m_DepthMaterial->SetLocalUniform("uboMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+			m_DepthMaterial->EndObject();
+		}
+		m_DepthMaterial->EndFrame();
+
+		// shade
+		vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
+		shadowMaterial->BeginFrame();
+		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+			m_MVPData.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
+			shadowMaterial->BeginObject();
+			shadowMaterial->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
+			shadowMaterial->SetLocalUniform("lightMVP", &m_LightCamera, sizeof(DirectionalLightBlock));
+			shadowMaterial->SetLocalUniform("shadowParam", &m_ShadowParam, sizeof(ShadowParamBlock));
+			shadowMaterial->EndObject();
+		}
+		shadowMaterial->EndFrame();
+
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -179,7 +471,7 @@ private:
 			{
 				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 10.0f);
 			}
-			
+
 			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -213,28 +505,18 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
-        
-		m_TorusModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/torus.obj",
+
+		// room model
+		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/samplescene.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
-				VertexAttribute::VA_Position,
+				VertexAttribute::VA_Position, 
 				VertexAttribute::VA_Normal
 			}
 		);
-        
-        m_GroundModel = vk_demo::DVKModel::LoadFromFile(
-            "assets/models/plane.obj",
-            m_VulkanDevice,
-            cmdBuffer,
-            {
-                VertexAttribute::VA_Position,
-                VertexAttribute::VA_Normal
-            }
-        );
-        m_GroundModel->rootNode->localMatrix.AppendScale(Vector3(100, 100, 100));
-        
+
 		// depth
 		m_DepthShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -316,8 +598,7 @@ private:
 
 	void DestroyAssets()
 	{
-		delete m_TorusModel;
-        delete m_GroundModel;
+		delete m_ModelScene;
 
 		delete m_DepthShader;
 		delete m_DepthMaterial;
@@ -361,15 +642,11 @@ private:
 			m_ShadowRTT->BeginRenderPass(commandBuffer);
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
-			
-            // ground
-            m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-            m_GroundModel->meshes[0]->BindDrawCmd(commandBuffer);
-            
-            // trus
-            m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 1);
-            m_TorusModel->meshes[0]->BindDrawCmd(commandBuffer);
-            
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+				m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
+				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
+			}
+
 			m_ShadowRTT->EndRenderPass(commandBuffer);
 		}
 
@@ -397,15 +674,11 @@ private:
 			// shade
 			vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_Selected];
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMaterial->GetPipeline());
-			
-            // ground
-            shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-            m_GroundModel->meshes[0]->BindDrawCmd(commandBuffer);
-            
-            // shade
-            shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 1);
-            m_TorusModel->meshes[0]->BindDrawCmd(commandBuffer);
-            
+			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
+				shadowMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
+				m_ModelScene->meshes[j]->BindDrawCmd(commandBuffer);
+			}
+
 			// debug
 			viewport.x = m_FrameWidth * 0.75f;
 			viewport.y = m_FrameHeight * 0.25f;
@@ -432,108 +705,33 @@ private:
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
+	void MatrixLookAtLH(Matrix4x4& matrix, const Vector3& eye, const Vector3& at)
+	{
+		Vector3 up    = Vector3(0, 1, 0);
+		Vector3 zaxis = (at - eye).GetSafeNormal();
+		Vector3 xaxis = Vector3::CrossProduct(up, zaxis).GetSafeNormal();
+		Vector3 yaxis = Vector3::CrossProduct(zaxis, xaxis);
+			
+		matrix.CopyColumnFrom(0, Vector4(xaxis, -Vector3::DotProduct(xaxis, eye)));
+		matrix.CopyColumnFrom(1, Vector4(yaxis, -Vector3::DotProduct(yaxis, eye)));
+		matrix.CopyColumnFrom(2, Vector4(zaxis, -Vector3::DotProduct(zaxis, eye)));
+		matrix.CopyColumnFrom(3, Vector4(0, 0, 0, 1));
+	}
+
 	void InitParmas()
 	{
-		// model view projection
-		m_MVPData.model.SetIdentity();
+		MatrixLookAtLH(m_MVPData.view, Vector3(-54.8184776f, 16.3495007f, -9.28904152f), Vector3(-53.8369446f, 16.1607456f, -9.25806427f));
+		m_MVPData.projection.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0.0f, 300.0f, -500.0f));
-		m_MVPData.view.LookAt(Vector3(0, 0, 0));
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
-
-		// light camera
-		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(-700.0f, 400.0f, 0.0f));
-		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
+		MatrixLookAtLH(m_LightCamera.view, Vector3(-1.03371346f, 136.269257f, 116.271263f), Vector3(-1.05090559f, 135.513031f, 115.617210f));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
-		m_LightCamera.view.SetInverse();
-        
-        int32 size = 512;
-		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Orthographic(-size, size, -size, size, 1.0f, 3000.0f);
 
-		// shadow bias
-		m_ShadowParam.bias.x = 0.005f;
+		m_LightCamera.projection.Perspective(PI / 4, 1.0f, 1.0f, 1.0f, 1000.0f);
+
+		m_ShadowParam.bias.x = 0.0001f;
 		m_ShadowParam.bias.y = 5.0f;
 		m_ShadowParam.bias.z = 0.0f;
 		m_ShadowParam.bias.w = 0.0f;
-
-		UpdateCascadeShadow();
-	}
-
-	void UpdateCascadeShadow()
-	{
-		Matrix4x4 invProjection = m_MVPData.projection.Inverse();
-		Matrix4x4 invModelview  = m_MVPData.view.Inverse();
-
-		Vector3 direction = Vector3(0, 0, 1);
-		Vector3 side = Vector3::CrossProduct(Vector3(0.0f, 0.0f, 1.0f), direction);
-		Vector3 up   = Vector3::CrossProduct(direction, side);
-		
-		Vector3 points[8] = {
-			Vector3(-1.0f,-1.0f,-1.0f), Vector3(1.0f,-1.0f,-1.0f), Vector3(-1.0f,1.0f,-1.0f), Vector3(1.0f,1.0f,-1.0f),
-			Vector3(-1.0f,-1.0f, 1.0f), Vector3(1.0f,-1.0f, 1.0f), Vector3(-1.0f,1.0f, 1.0f), Vector3(1.0f,1.0f, 1.0f),
-		};
-
-		for(int32 i = 0; i < 8; i++) {
-			Vector4 point = invProjection.TransformVector4(Vector4(points[i]));
-			points[i] = Vector3(point) / point.w;
-		}
-
-		Vector3 directions[4];
-		for(int32 i = 0; i < 4; i++) {
-			directions[i] = (points[i + 4] - points[i]).GetSafeNormal();
-		}
-
-		float zNear = 0.1f;
-		float zFar  = 1000.0f;
-		float shadowRange = 2000.0f;
-		float shadowDistribute = 0.25f;
-
-		for (int32 i = 0; i < 4; ++i)
-		{
-			float k0   = (float)(i + 0) / 4;
-			float k1   = (float)(i + 1) / 4;
-			float fmin = MMath::Lerp(zNear * powf(zFar / zNear,k0), zNear + (zFar - zNear) * k0, shadowDistribute);
-			float fmax = MMath::Lerp(zNear * powf(zFar / zNear,k1), zNear + (zFar - zNear) * k1, shadowDistribute);
-
-			Vector3 mmin(1000);
-			Vector3 mmax(-1000);
-			for(int j = 0; j < 4; j++) {
-				Vector3 tmin = points[j] + directions[j] * fmin;
-				Vector3 tmax = points[j] + directions[j] * fmax;
-				if (mmin.x > tmin.x) mmin.x = tmin.x;
-				if (mmax.x < tmin.x) mmax.x = tmin.x;
-				if (mmin.y > tmin.y) mmin.y = tmin.y;
-				if (mmax.y < tmin.y) mmax.y = tmin.y;
-				if (mmin.z > tmin.z) mmin.z = tmin.z;
-				if (mmax.z < tmin.z) mmax.z = tmin.z;
-
-				if (mmin.x > tmax.x) mmin.x = tmax.x;
-				if (mmax.x < tmax.x) mmax.x = tmax.x;
-				if (mmin.y > tmax.y) mmin.y = tmax.y;
-				if (mmax.y < tmax.y) mmax.y = tmax.y;
-				if (mmin.z > tmax.z) mmin.z = tmax.z;
-				if (mmax.z < tmax.z) mmax.z = tmax.z;
-			}
-
-			Vector3 extend = mmax - mmin;
-			Vector3 center = mmin + extend * 0.5f;
-			
-			float halfSize = 512 / 2.0f;
-			Vector3 target = invModelview.TransformVector4(center);
-			float x = MMath::CeilToFloat(Vector3::DotProduct(target, up)   * halfSize / extend.Size()) * extend.Size() / halfSize;
-			float y = MMath::CeilToFloat(Vector3::DotProduct(target, side) * halfSize / extend.Size()) * extend.Size() / halfSize;
-			target = up * x + side * y + direction * Vector3::DotProduct(target,direction);
-			
-			MLOG("");
-			//projections[i] = ortho(bs.getRadius(),-bs.getRadius(),bs.getRadius(),-bs.getRadius(),shadow_range / 1000.0f,shadow_range);
-			//modelviews[i] = lookAt(target + direction * shadow_range / 2.0f,target - direction * shadow_range / 2.0f,up);
-		}
 	}
 
 	void CreateGUI()
@@ -571,9 +769,8 @@ private:
 
 	// mvp
 	ModelViewProjectionBlock	m_MVPData;
-	vk_demo::DVKModel*			m_TorusModel = nullptr;
-    vk_demo::DVKModel*          m_GroundModel = nullptr;
-    
+	vk_demo::DVKModel*			m_ModelScene = nullptr;
+
 	// light
 	DirectionalLightBlock		m_LightCamera;
 	ShadowParamBlock			m_ShadowParam;
@@ -585,7 +782,7 @@ private:
 	vk_demo::DVKShader*			m_PCFShadowShader = nullptr;
 	vk_demo::DVKMaterial*		m_PCFShadowMaterial = nullptr;
 
-	bool                        m_AnimLight = true;
+	bool                        m_AnimLight = false;
 	int32						m_Selected = 1;
 	std::vector<const char*>	m_ShadowNames;
 	MaterialArray				m_ShadowList;
