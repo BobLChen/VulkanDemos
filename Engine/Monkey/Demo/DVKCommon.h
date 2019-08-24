@@ -12,3 +12,5 @@
 #include "DVKShader.h"
 #include "DVKDefaultRes.h"
 #include "DVKMaterial.h"
+#include "DVKCamera.h"
+#include "DVKRenderTarget.h"

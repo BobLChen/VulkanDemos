@@ -480,7 +480,7 @@ FORCEINLINE void Matrix4x4::RotateX(float angle, bool local, const Vector3* pivo
 		RotateAxis(vec, angle, pivot);
 	}
 	else {
-		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+		RotateAxis(Vector3::RightVector, angle, pivot);
 	}
 }
 
@@ -491,7 +491,7 @@ FORCEINLINE void Matrix4x4::RotateY(float angle, bool local, const Vector3* pivo
 		RotateAxis(vec, angle, pivot);
 	}
 	else {
-		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+		RotateAxis(Vector3::UpVector, angle, pivot);
 	}
 }
 
@@ -502,7 +502,7 @@ FORCEINLINE void Matrix4x4::RotateZ(float angle, bool local, const Vector3* pivo
 		RotateAxis(vec, angle, pivot);
 	}
 	else {
-		RotateAxis(Vector3(1, 0, 0), angle, pivot);
+		RotateAxis(Vector3::ForwardVector, angle, pivot);
 	}
 }
 
