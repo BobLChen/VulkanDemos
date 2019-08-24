@@ -675,7 +675,6 @@ private:
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
 		UpdateCascade();
-		GetActiveCamera()->Update(time, delta);
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -689,8 +688,6 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("CascadedShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-
-			ImGui::Checkbox("Auto Spin", &m_AnimLight);
 
 			ImGui::Combo("Shadow", &m_SelectedShadow, m_ShadowNames.data(), m_ShadowNames.size());
 			ImGui::SliderFloat("Bias", &m_CascadeParam.bias.x, 0.0f, 0.05f, "%.4f");
@@ -1129,7 +1126,6 @@ private:
 	Camera						m_CascadeCamera[4];
 	
 	// ui
-	bool                        m_AnimLight = false;
 	int32						m_SelectedShadow = 1;
 	std::vector<const char*>	m_ShadowNames;
 	MaterialArray				m_ShadowList;
