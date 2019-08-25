@@ -95,6 +95,10 @@ public:
 
 	FORCEINLINE void FindBestAxisVectors3(Vector4& axis1, Vector4& axis2) const;
 
+	FORCEINLINE Vector4 Min(const Vector4& a, const Vector4& b) const;
+
+	FORCEINLINE Vector4 Max(const Vector4& a, const Vector4& b) const;
+
 	FORCEINLINE void DiagnosticCheckNaN() 
 	{
 
@@ -325,6 +329,26 @@ FORCEINLINE bool Vector4::IsNearlyZero3(float tolerance) const
 FORCEINLINE Vector4 Vector4::Reflect3(const Vector4& normal) const
 {
 	return 2.0f * Dot3(*this, normal) * normal - *this;
+}
+
+FORCEINLINE Vector4 Vector4::Min(const Vector4& a, const Vector4& b) const
+{
+	Vector4 result;
+	result.x = MMath::Min(a.x, b.x);
+	result.y = MMath::Min(a.y, b.y);
+	result.z = MMath::Min(a.z, b.z);
+	result.w = MMath::Min(a.w, b.w);
+	return result;
+}
+
+FORCEINLINE Vector4 Vector4::Max(const Vector4& a, const Vector4& b) const
+{
+	Vector4 result;
+	result.x = MMath::Max(a.x, b.x);
+	result.y = MMath::Max(a.y, b.y);
+	result.z = MMath::Max(a.z, b.z);
+	result.w = MMath::Max(a.w, b.w);
+	return result;
 }
 
 FORCEINLINE void Vector4::FindBestAxisVectors3(Vector4& axis1, Vector4& axis2) const

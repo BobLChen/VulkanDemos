@@ -34,10 +34,9 @@ namespace vk_demo
 			dvkBuffer = nullptr;
 		}
 
-		void BindDraw(VkCommandBuffer cmdBuffer)
+		void Bind(VkCommandBuffer cmdBuffer)
 		{
 			vkCmdBindIndexBuffer(cmdBuffer, dvkBuffer->buffer, 0, indexType);
-			vkCmdDrawIndexed(cmdBuffer, indexCount, instanceCount, 0, 0, 0);
 		}
 
 		static DVKIndexBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<uint16> indices, VkIndexType type = VK_INDEX_TYPE_UINT16);

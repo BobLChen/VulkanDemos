@@ -83,24 +83,23 @@ namespace vk_demo
 
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{
-			if (vertexBuffer)
-            {
+			if (vertexBuffer) {
                 vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(vertexBuffer->dvkBuffer->buffer), &(vertexBuffer->offset));
 			}
             
-            if (instanceBuffer)
-            {
+            if (instanceBuffer) {
                 vkCmdBindVertexBuffers(cmdBuffer, 1, 1, &(instanceBuffer->dvkBuffer->buffer), &(instanceBuffer->offset));
             }
 			
-            if (indexBuffer)
-            {
-				indexBuffer->BindDraw(cmdBuffer);
+            if (indexBuffer) {
+				vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->dvkBuffer->buffer, 0, indexBuffer->indexType);
 			}
             
-			if (vertexBuffer && !indexBuffer)
-            {
+			if (vertexBuffer && !indexBuffer) {
 				vkCmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
+			}
+			else {
+				vkCmdDrawIndexed(cmdBuffer, indexBuffer->indexCount, indexBuffer->instanceCount, 0, 0, 0);
 			}
 		}
 	};
