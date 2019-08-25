@@ -349,7 +349,7 @@ private:
     
 	ImageGUIContext*			m_GUI = nullptr;
     
-    bool                        m_AutoAnimation = false;
+    bool                        m_AutoAnimation = true;
     float                       m_AnimDuration = 0.0f;
     float                       m_AnimTime = 0.0f;
     int32                       m_AnimIndex = 0;

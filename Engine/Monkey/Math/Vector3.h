@@ -118,9 +118,9 @@ public:
 
 	FORCEINLINE Vector3 GetAbs() const;
 
-	FORCEINLINE Vector3 Min(const Vector3& a, const Vector3& b) const;
+	FORCEINLINE static Vector3 Min(const Vector3& a, const Vector3& b);
 
-	FORCEINLINE Vector3 Max(const Vector3& a, const Vector3& b) const;
+	FORCEINLINE static Vector3 Max(const Vector3& a, const Vector3& b);
 
 	FORCEINLINE float Size() const;
 
@@ -431,7 +431,7 @@ FORCEINLINE Vector3 Vector3::VectorPlaneProject(const Vector3& v, const Vector3&
 	return v - v.ProjectOnToNormal(planeNormal);
 }
 
-FORCEINLINE Vector3 Vector3::Min(const Vector3& a, const Vector3& b) const
+FORCEINLINE Vector3 Vector3::Min(const Vector3& a, const Vector3& b)
 {
 	Vector3 result;
 	result.x = MMath::Min(a.x, b.x);
@@ -440,7 +440,7 @@ FORCEINLINE Vector3 Vector3::Min(const Vector3& a, const Vector3& b) const
 	return result;
 }
 
-FORCEINLINE Vector3 Vector3::Max(const Vector3& a, const Vector3& b) const
+FORCEINLINE Vector3 Vector3::Max(const Vector3& a, const Vector3& b)
 {
 	Vector3 result;
 	result.x = MMath::Max(a.x, b.x);

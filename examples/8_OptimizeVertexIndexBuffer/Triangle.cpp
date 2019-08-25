@@ -166,6 +166,8 @@ private:
 			
 			m_VertexBuffer->Bind(m_CommandBuffers[i]);
 			m_IndexBuffer->Bind(m_CommandBuffers[i]);
+
+			vkCmdDrawIndexed(m_CommandBuffers[i], m_IndexBuffer->indexCount, m_IndexBuffer->instanceCount, 0, 0, 0);
 			
 			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
 

@@ -243,12 +243,9 @@ namespace vk_demo
         Matrix4x4					localMatrix;
         Matrix4x4					globalMatrix;
 
-		int32						index;
-        
         DVKNode()
             : name("None")
             , parent(nullptr)
-			, index(-1)
         {
             
         }
@@ -268,42 +265,34 @@ namespace vk_demo
             return globalMatrix;
         }
 
-		DVKBoundingBox GetBounds()
+		void CalcBounds(DVKBoundingBox& outBounds)
 		{
-			DVKBoundingBox bounds;
-			bounds.min.Set(MAX_flt, MAX_flt, MAX_flt);
-			bounds.max.Set(MIN_flt, MIN_flt, MIN_flt);
-
 			if (meshes.size() > 0) 
 			{
+				const Matrix4x4& matrix = GetGlobalMatrix();
 				for (int32 i = 0; i < meshes.size(); ++i)
 				{
-					const Matrix4x4& matrix = GetGlobalMatrix();
 					Vector3 mmin = matrix.TransformPosition(meshes[i]->bounding.min);
 					Vector3 mmax = matrix.TransformPosition(meshes[i]->bounding.max);
-
-					bounds.min.x = MMath::Min(bounds.min.x, mmin.x);
-					bounds.min.y = MMath::Min(bounds.min.y, mmin.y);
-					bounds.min.z = MMath::Min(bounds.min.z, mmin.z);
-
-					bounds.max.x = MMath::Max(bounds.max.x, mmax.x);
-					bounds.max.y = MMath::Max(bounds.max.y, mmax.y);
-					bounds.max.z = MMath::Max(bounds.max.z, mmax.z);
+					outBounds.min = Vector3::Min(outBounds.min, mmin);
+					outBounds.min = Vector3::Min(outBounds.min, mmax);
+					outBounds.max = Vector3::Max(outBounds.max, mmin);
+					outBounds.max = Vector3::Max(outBounds.max, mmax);
 				}
 			}
 
 			for (int32 i = 0; i < children.size(); ++i) 
 			{
-				DVKBoundingBox childBounds = children[i]->GetBounds();
-				bounds.min.x = MMath::Min(bounds.min.x, childBounds.min.x);
-				bounds.min.y = MMath::Min(bounds.min.y, childBounds.min.y);
-				bounds.min.z = MMath::Min(bounds.min.z, childBounds.min.z);
-
-				bounds.max.x = MMath::Max(bounds.max.x, childBounds.max.x);
-				bounds.max.y = MMath::Max(bounds.max.y, childBounds.max.y);
-				bounds.max.z = MMath::Max(bounds.max.z, childBounds.max.z);
+				children[i]->CalcBounds(outBounds);
 			}
+		}
 
+		DVKBoundingBox GetBounds()
+		{
+			DVKBoundingBox bounds;
+			bounds.min.Set( MAX_int32,  MAX_int32,  MAX_int32);
+			bounds.max.Set(-MAX_int32, -MAX_int32, -MAX_int32);
+			CalcBounds(bounds);
 			return bounds;
 		}
         

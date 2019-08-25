@@ -612,7 +612,7 @@ private:
 		// debug params
 		m_DebugParam.attachmentIndex = 0;
 		m_DebugParam.zNear = 300.0f;
-		m_DebugParam.zFar = 1000.0f;
+		m_DebugParam.zFar = 1500.0f;
 		m_DebugBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
