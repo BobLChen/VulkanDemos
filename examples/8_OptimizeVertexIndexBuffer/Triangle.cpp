@@ -165,7 +165,7 @@ private:
 			vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 			
 			m_VertexBuffer->Bind(m_CommandBuffers[i]);
-			m_IndexBuffer->BindDraw(m_CommandBuffers[i]);
+			m_IndexBuffer->Bind(m_CommandBuffers[i]);
 			
 			m_GUI->BindDrawCmd(m_CommandBuffers[i], m_RenderPass);
 

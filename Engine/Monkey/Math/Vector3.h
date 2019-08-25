@@ -118,6 +118,10 @@ public:
 
 	FORCEINLINE Vector3 GetAbs() const;
 
+	FORCEINLINE Vector3 Min(const Vector3& a, const Vector3& b) const;
+
+	FORCEINLINE Vector3 Max(const Vector3& a, const Vector3& b) const;
+
 	FORCEINLINE float Size() const;
 
 	FORCEINLINE float SizeSquared() const;
@@ -425,6 +429,24 @@ FORCEINLINE Vector3 Vector3::PointPlaneProject(const Vector3& point, const Vecto
 FORCEINLINE Vector3 Vector3::VectorPlaneProject(const Vector3& v, const Vector3& planeNormal)
 {
 	return v - v.ProjectOnToNormal(planeNormal);
+}
+
+FORCEINLINE Vector3 Vector3::Min(const Vector3& a, const Vector3& b) const
+{
+	Vector3 result;
+	result.x = MMath::Min(a.x, b.x);
+	result.y = MMath::Min(a.y, b.y);
+	result.z = MMath::Min(a.z, b.z);
+	return result;
+}
+
+FORCEINLINE Vector3 Vector3::Max(const Vector3& a, const Vector3& b) const
+{
+	Vector3 result;
+	result.x = MMath::Max(a.x, b.x);
+	result.y = MMath::Max(a.y, b.y);
+	result.z = MMath::Max(a.z, b.z);
+	return result;
 }
 
 FORCEINLINE bool Vector3::Parallel(const Vector3& normal1, const Vector3& normal2, float parallelCosineThreshold)
