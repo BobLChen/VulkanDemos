@@ -271,8 +271,8 @@ namespace vk_demo
 		DVKBoundingBox GetBounds()
 		{
 			DVKBoundingBox bounds;
-			bounds.min.Set(0, 0, 0);
-			bounds.max.Set(0, 0, 0);
+			bounds.min.Set(MAX_flt, MAX_flt, MAX_flt);
+			bounds.max.Set(MIN_flt, MIN_flt, MIN_flt);
 
 			if (meshes.size() > 0) 
 			{
