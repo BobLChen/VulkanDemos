@@ -201,7 +201,7 @@ private:
             primitive->instanceDatas[index + 7] = dw;
         }
         
-        primitive->indexBuffer->instanceCount = 1024;
+        primitive->indexBuffer->instanceCount = INSTANCE_COUNT;
         primitive->instanceBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, primitive->instanceDatas, m_RoleShader->instancesAttributes);
         
 		delete cmdBuffer;

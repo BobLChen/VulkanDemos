@@ -473,7 +473,7 @@ private:
 		// calc cascade projection
 		for (int32 cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex) 
 		{
-			float frustumIntervalEnd   = cascadePartitions[cascadeIndex] / cascadePartitionsMax * cameraNearFarRange;        
+			float frustumIntervalEnd   = m_CascadePartitions[cascadeIndex] / cascadePartitionsMax * cameraNearFarRange;        
 			float frustumIntervalBegin = frustumIntervalBegin = 0.0f / cascadePartitionsMax * cameraNearFarRange;
 
 			Vector4 frustumPoints[8];
@@ -596,10 +596,10 @@ private:
 
 			// Cascade
 
-			ImGui::SliderFloat("Level1", &cascadePartitions[0], 1, 100);
-			ImGui::SliderFloat("Level2", &cascadePartitions[1], 1, 100);
-			ImGui::SliderFloat("Level3", &cascadePartitions[2], 1, 100);
-			ImGui::SliderFloat("Level4", &cascadePartitions[3], 1, 100);
+			ImGui::SliderFloat("Level1", &m_CascadePartitions[0], 1, 100);
+			ImGui::SliderFloat("Level2", &m_CascadePartitions[1], 1, 100);
+			ImGui::SliderFloat("Level3", &m_CascadePartitions[2], 1, 100);
+			ImGui::SliderFloat("Level4", &m_CascadePartitions[3], 1, 100);
 
 			ImGui::Separator();
 
@@ -977,10 +977,10 @@ private:
 		m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
 		m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
 
-		cascadePartitions[0] = 6.5f;
-		cascadePartitions[1] = 7.5f;
-		cascadePartitions[2] = 8.5f;
-		cascadePartitions[3] = 15.0f;
+		m_CascadePartitions[0] = 6.5f;
+		m_CascadePartitions[1] = 7.5f;
+		m_CascadePartitions[2] = 8.5f;
+		m_CascadePartitions[3] = 15.0f;
 	}
 
 	void CreateGUI()
@@ -1037,7 +1037,7 @@ private:
 	// cascade
 	float						m_CascadePartitionsFrustum[4];
 	vk_demo::DVKCamera			m_CascadeCamera[4];
-	float						cascadePartitions[4];
+	float						m_CascadePartitions[4];
 
 	// ui
 	int32						m_SelectedShadow = 1;
