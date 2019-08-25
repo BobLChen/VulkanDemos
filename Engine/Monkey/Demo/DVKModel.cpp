@@ -501,8 +501,8 @@ namespace vk_demo
         
         // load vertex data
         std::vector<float> vertices;
-        Vector3 mmin(MAX_flt, MAX_flt, MAX_flt);
-        Vector3 mmax(MIN_flt, MIN_flt, MIN_flt);
+        Vector3 mmin( MAX_int32,  MAX_int32,  MAX_int32);
+        Vector3 mmax(-MAX_int32, -MAX_int32, -MAX_int32);
         LoadVertexDatas(skinInfoMap, vertices, mmax, mmin, mesh, aiMesh, aiScene);
         
         // load indices
