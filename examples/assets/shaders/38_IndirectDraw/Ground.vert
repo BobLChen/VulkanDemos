@@ -4,15 +4,28 @@ layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inUV0;
 layout (location = 2) in vec3 inNormal;
 
-layout (binding = 0) uniform ViewProjBlock 
+layout (binding = 0) uniform MVPBlock 
 {
-    mat4 modelMatrix;
+	mat4 modelMatrix;
 	mat4 viewMatrix;
 	mat4 projectionMatrix;
 } uboMVP;
 
-layout (location = 0) out vec2 outUV0;
-layout (location = 1) out vec3 outNormal;
+layout (binding = 1) uniform LightsMVPBlock 
+{
+	mat4 viewMatrix;
+	vec4 cascadeScale[4];
+	vec4 cascadeOffset[4];
+	mat4 projMatrix[4];
+	vec4 offset[4];
+	vec4 direction;
+	vec4 bias;
+	vec4 debug;
+} lightMVP;
+
+layout (location = 0) out vec3 outNormal;
+layout (location = 1) out vec2 outUV;
+layout (location = 2) out vec4 outLightViewPos;
 
 out gl_PerVertex 
 {
@@ -21,10 +34,12 @@ out gl_PerVertex
 
 void main() 
 {
+	vec4 worldPos = uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
 	vec3 normal = normalize(normalMatrix * inNormal.xyz);
 	outNormal = normal;
-	outUV0    = inUV0;
+	outUV = inUV0;
+	outLightViewPos = lightMVP.viewMatrix * worldPos;
 
-	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * worldPos;
 }

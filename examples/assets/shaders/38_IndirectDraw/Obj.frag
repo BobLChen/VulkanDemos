@@ -17,4 +17,8 @@ void main()
 
     float NDotL = clamp(dot(inNormal, vec3(0, 1, 0)), 0, 1.0);
     outFragColor = diffuse * NDotL;
+
+    if (NDotL < 0.25) {
+        outFragColor.xyz += vec3(0.25, 0.25, 0.25);
+    }
 }

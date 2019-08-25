@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -15,8 +15,8 @@
 #include <vector>
 #include <fstream>
 
-#define SHADOW_TEX_SIZE 1024
-#define INSTANCE_COUNT  1024
+#define SHADOW_TEX_SIZE 2048
+#define INSTANCE_COUNT  256
 #define GROUND_RADIUS   15000.0f
 
 class IndirectDrawDemo : public DemoBase
@@ -43,8 +43,8 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
+        CreateRenderTarget();
 		CreateGUI();
-		CreateRenderTarget();
 		LoadAssets();
 		InitParmas();
 
@@ -457,9 +457,9 @@ private:
 		Matrix4x4 lightView         = m_LightCamera.GetView();
 
 		// scene bounds
-		Vector4 extend = Vector4((m_SceneBounds.max - m_SceneBounds.min) * 0.5f, 0.0f);
-		Vector4 center = Vector4(m_SceneBounds.min + extend, 1.0f);
-
+		Vector4 extend = Vector4(10.0f, 10.0f, 10.0f, 1.0f);
+		Vector4 center = Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        
 		// Light space scene aabb
 		Vector4 sceneAABBPointsLightSpace[8];
 		ExtentAABBPoints(sceneAABBPointsLightSpace, center, extend);
@@ -474,7 +474,7 @@ private:
 		// calc cascade projection
 		for (int32 cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex) 
 		{
-			float frustumIntervalEnd   = cascadePartitions[cascadeIndex] / cascadePartitionsMax * cameraNearFarRange;        
+			float frustumIntervalEnd   = m_CascadePartitions[cascadeIndex] / cascadePartitionsMax * cameraNearFarRange;        
 			float frustumIntervalBegin = frustumIntervalBegin = 0.0f / cascadePartitionsMax * cameraNearFarRange;
 
 			Vector4 frustumPoints[8];
@@ -530,10 +530,10 @@ private:
 				lightCameraOrthographicMax *= worldUnitsPerTexelVector;
 			}
 
-			float nearPlane = 0.0f;
-			float farPlane  = 10000.0f;
-			ComputeNearAndFar(nearPlane, farPlane, lightCameraOrthographicMin, lightCameraOrthographicMax, sceneAABBPointsLightSpace );
-
+			float nearPlane = 1000.0f;
+			float farPlane  = 50000.0f;
+			// ComputeNearAndFar(nearPlane, farPlane, lightCameraOrthographicMin, lightCameraOrthographicMax, sceneAABBPointsLightSpace);
+            
 			m_CascadeCamera[cascadeIndex].SetTransform(m_LightCamera.GetTransform());
 			m_CascadeCamera[cascadeIndex].Orthographic(lightCameraOrthographicMin.x, lightCameraOrthographicMax.x, lightCameraOrthographicMin.y, lightCameraOrthographicMax.y, nearPlane, farPlane);
 			m_CascadePartitionsFrustum[cascadeIndex] = frustumIntervalEnd;
@@ -566,10 +566,25 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("IndirectDrawDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-			ImGui::Text("MultiDrawIndirect Supported:", m_VulkanDevice->GetPhysicalFeatures().multiDrawIndirect ? "True" : "False");
-
-
-
+			ImGui::Text("Supported:%s", m_VulkanDevice->GetPhysicalFeatures().multiDrawIndirect ? "True" : "False");
+            
+            // shadow bias
+            ImGui::SliderFloat("Bias", &m_CascadeParam.bias.x, 0.0f, 0.05f, "%.4f");
+            ImGui::SliderFloat("Step", &m_CascadeParam.bias.y, 0.0f, 10.0f);
+            ImGui::Separator();
+            
+            // Cascade
+            ImGui::SliderFloat("Level1", &m_CascadePartitions[0], 1, 100);
+            ImGui::SliderFloat("Level2", &m_CascadePartitions[1], 1, 100);
+            ImGui::SliderFloat("Level3", &m_CascadePartitions[2], 1, 100);
+            ImGui::SliderFloat("Level4", &m_CascadePartitions[3], 1, 100);
+            
+            bool check = m_CascadeParam.debug.x > 0;
+            ImGui::Checkbox("Debug", &check);
+            m_CascadeParam.debug.x = check ? 1 : 0;
+            
+            ImGui::Separator();
+            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -598,13 +613,68 @@ private:
 
 	void DestroyRenderTarget()
 	{
+        delete m_ShadowMap;
 		delete m_ShadowRTT;
 	}
 
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+        
+        m_Quad = vk_demo::DVKDefaultRes::fullQuad;
+        
+        // depth
+		m_DepthShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/38_IndirectDraw/Depth.vert.spv",
+			"assets/shaders/38_IndirectDraw/Depth.frag.spv"
+		);
 
+		m_DepthMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_ShadowRTT,
+			m_PipelineCache,
+			m_DepthShader
+		);
+		m_DepthMaterial->pipelineInfo.colorAttachmentCount = 0;
+		m_DepthMaterial->PreparePipeline();
+        
+		// pcf shadow
+		m_PCFShadowShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/38_IndirectDraw/PCFShadow.vert.spv",
+			"assets/shaders/38_IndirectDraw/PCFShadow.frag.spv"
+		);
+
+		m_PCFShadowMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_PCFShadowShader
+		);
+		m_PCFShadowMaterial->PreparePipeline();
+		m_PCFShadowMaterial->SetTexture("shadowMap", m_ShadowMap);
+		
+		// debug
+		m_DebugShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/38_IndirectDraw/Debug.vert.spv",
+			"assets/shaders/38_IndirectDraw/Debug.frag.spv"
+		);
+
+		m_DebugMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+
+		m_DebugMaterial->PreparePipeline();
+		m_DebugMaterial->SetTexture("depthTexture", m_ShadowMap);
+		
 		// ground model
 		m_GroundModel = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/plane_circle.fbx",
@@ -640,7 +710,8 @@ private:
 		);
 		m_GroundMaterial->PreparePipeline();
 		m_GroundMaterial->SetTexture("diffuseMap", m_GroundDiffuseMap);
-
+        m_GroundMaterial->SetTexture("shadowMap", m_ShadowMap);
+        
 		// plants model
 		m_PlantsModel = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/plants/plants.fbx",
@@ -698,11 +769,10 @@ private:
 
 		m_SceneBounds.min.Set( MAX_int32,  MAX_int32,  MAX_int32);
 		m_SceneBounds.max.Set(-MAX_int32, -MAX_int32, -MAX_int32);
-
+        
 		// 准备Buffer
 		for (int32 i = 0; i < m_PlantsModel->meshes.size(); ++i)
 		{
-			vk_demo::DVKBoundingBox& bounds = m_PlantsModel->meshes[i]->bounding;
 			for (int32 p = 0; p < m_PlantsModel->meshes[i]->primitives.size(); ++p)
 			{
 				vk_demo::DVKPrimitive* primitive = m_PlantsModel->meshes[i]->primitives[p];
@@ -857,6 +927,15 @@ private:
 
 	void DestroyAssets()
 	{
+        delete m_DepthShader;
+        delete m_DepthMaterial;
+        
+        delete m_DebugMaterial;
+        delete m_DebugShader;
+        
+        delete m_PCFShadowShader;
+        delete m_PCFShadowMaterial;
+        
 		delete m_PlantsModel;
 		delete m_PlantsDiffuseMap;
 		delete m_PlantsShader;
@@ -872,9 +951,103 @@ private:
 		delete m_GroundShader;
 		delete m_GroundMaterial;
 	}
-
+    
+    void RenderPlantsDepth(VkCommandBuffer commandBuffer)
+    {
+        float half = SHADOW_TEX_SIZE * 0.5f;
+        
+        VkViewport viewport = {};
+        viewport.x        = 0;
+        viewport.y        = half;
+        viewport.width    = half;
+        viewport.height   = half * -1;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        
+        VkRect2D scissor = {};
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        scissor.extent.width  = half;
+        scissor.extent.height = half;
+        
+        m_ShadowRTT->BeginRenderPass(commandBuffer);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DepthMaterial->GetPipeline());
+        m_DepthMaterial->BeginFrame();
+        
+        Vector2 offsets[4] = {
+            Vector2(0,    half),
+            Vector2(half, half),
+            Vector2(0,    half * 2),
+            Vector2(half, half * 2)
+        };
+        
+        for (int32 cascade = 0; cascade < 4; ++cascade)
+        {
+            viewport.x = offsets[cascade].x;
+            viewport.y = offsets[cascade].y;
+            scissor.offset.x = offsets[cascade].x;
+            scissor.offset.y = offsets[cascade].y - half;
+            
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+            vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+            
+            m_MVPParam.model.SetIdentity();
+            m_MVPParam.view = m_CascadeCamera[cascade].GetView();
+            m_MVPParam.proj = m_CascadeCamera[cascade].GetProjection();
+            
+            m_DepthMaterial->BeginObject();
+            m_DepthMaterial->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
+            m_DepthMaterial->EndObject();
+            m_DepthMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, cascade);
+            
+            VkDeviceSize offsets[1] = { 0 };
+            vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(m_IndirectVertexBuffer->buffer), offsets);
+            vkCmdBindVertexBuffers(commandBuffer, 1, 1, &(m_IndirectInstanceBuffer->buffer), offsets);
+            vkCmdBindIndexBuffer(commandBuffer, m_IndirectIndexBuffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+            
+            if (m_VulkanDevice->GetPhysicalFeatures().multiDrawIndirect) {
+                vkCmdDrawIndexedIndirect(commandBuffer, m_IndirectCmdBuffer->buffer, 0, m_IndirectCommands.size(), sizeof(VkDrawIndexedIndirectCommand));
+            }
+            else
+            {
+                for (int32 i = 0; i < m_IndirectCommands.size(); ++i)
+                {
+                    vkCmdDrawIndexedIndirect(commandBuffer, m_IndirectCmdBuffer->buffer, i * sizeof(VkDrawIndexedIndirectCommand), 1, sizeof(VkDrawIndexedIndirectCommand));
+                }
+            }
+        }
+        
+        m_DepthMaterial->EndFrame();
+        m_ShadowRTT->EndRenderPass(commandBuffer);
+    }
+    
 	void RenderGround(VkCommandBuffer commandBuffer)
 	{
+        m_CascadeParam.view = m_LightCamera.GetView();
+        m_CascadeParam.direction = m_LightCamera.GetTransform().GetForward() * -1;
+        
+        Matrix4x4 textureScale;
+        textureScale.AppendScale(Vector3(0.5f, -0.5f, 1.0f));
+        textureScale.AppendTranslation(Vector3(0.5f, 0.5f, 0.0f));
+        for (int32 i = 0; i < 4; ++i)
+        {
+            Matrix4x4 shadowTextre;
+            shadowTextre.Append(m_CascadeCamera[i].GetProjection());
+            shadowTextre.Append(textureScale);
+            
+            m_CascadeParam.cascadeScale[i].x = shadowTextre.m[0][0];
+            m_CascadeParam.cascadeScale[i].y = shadowTextre.m[1][1];
+            m_CascadeParam.cascadeScale[i].z = shadowTextre.m[2][2];
+            m_CascadeParam.cascadeScale[i].w = 1.0f;
+            
+            m_CascadeParam.cascadeOffset[i].x = shadowTextre.m[3][0];
+            m_CascadeParam.cascadeOffset[i].y = shadowTextre.m[3][1];
+            m_CascadeParam.cascadeOffset[i].z = shadowTextre.m[3][2];
+            m_CascadeParam.cascadeOffset[i].w = 0;
+            
+            m_CascadeParam.cascadeProj[i] = m_CascadeCamera[i].GetProjection();
+        }
+        
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GroundMaterial->GetPipeline());
 		m_GroundMaterial->BeginFrame();
 
@@ -886,8 +1059,9 @@ private:
 
 			m_GroundMaterial->BeginObject();
 			m_GroundMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			m_GroundMaterial->EndObject();
-
+            m_GroundMaterial->SetLocalUniform("lightMVP",    &m_CascadeParam,     sizeof(CascadeParamBlock));
+            m_GroundMaterial->EndObject();
+            
 			m_GroundMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
 			m_GroundModel->meshes[j]->BindDrawCmd(commandBuffer);
 		}
@@ -899,7 +1073,11 @@ private:
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PlantsMaterial->GetPipeline());
 		m_PlantsMaterial->BeginFrame();
-
+        
+        m_MVPParam.model.SetIdentity();
+        m_MVPParam.view = m_ViewCamera.GetView();
+        m_MVPParam.proj = m_ViewCamera.GetProjection();
+        
 		m_PlantsMaterial->BeginObject();
 		m_PlantsMaterial->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
 		m_PlantsMaterial->EndObject();
@@ -942,54 +1120,104 @@ private:
 		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
 		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
 		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        
+        VkViewport viewport = {};
+        viewport.x        = 0;
+        viewport.y        = m_FrameHeight;
+        viewport.width    = m_FrameWidth;
+        viewport.height   = -(float)m_FrameHeight;    // flip y axis
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        
+        VkRect2D scissor = {};
+        scissor.extent.width  = m_FrameWidth;
+        scissor.extent.height = m_FrameHeight;
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 	}
-
+    
+    void RenderDebug(VkCommandBuffer commandBuffer)
+    {
+        VkViewport viewport = {};
+        viewport.x        = m_FrameWidth * 0.75f;
+        viewport.y        = m_FrameHeight * 0.25f;
+        viewport.width    = m_FrameWidth * 0.25f;
+        viewport.height   = -(float)m_FrameHeight * 0.25f;    // flip y axis
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        
+        VkRect2D scissor = {};
+        scissor.offset.x = m_FrameWidth * 0.75f;
+        scissor.offset.y = 0;
+        scissor.extent.width  = m_FrameWidth  * 0.25f;
+        scissor.extent.height = m_FrameHeight * 0.25f;
+        
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+        
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
+        m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+        m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+    }
+    
 	void SetupCommandBuffers(int32 backBufferIndex)
 	{
-		VkViewport viewport = {};
-		viewport.x        = 0;
-		viewport.y        = m_FrameHeight;
-		viewport.width    = m_FrameWidth;
-		viewport.height   = -(float)m_FrameHeight;    // flip y axis
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.extent.width  = m_FrameWidth;
-		scissor.extent.height = m_FrameHeight;
-		scissor.offset.x = 0;
-		scissor.offset.y = 0;
-
 		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
 
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
-
+        
+        // render target pass
+        RenderPlantsDepth(commandBuffer);
+        
 		// second pass
 		BeginMainPass(commandBuffer, backBufferIndex);
 
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
-
 		RenderPlants(commandBuffer);
-
 		RenderGround(commandBuffer);
-
+        RenderDebug(commandBuffer);
+        
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
-
+        
 		vkCmdEndRenderPass(commandBuffer);
-
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 5000.0f, -10000.0f);
-		m_ViewCamera.LookAt(0, 0, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 100000.0f);
+        m_ViewCamera.SetPosition(0, 5000.0f, -10000.0f);
+        m_ViewCamera.LookAt(0, 0, -1000.0f);
+        m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 100000.0f);
+        
+        m_LightCamera.SetPosition(-30000.0f, 25000.0f, -5000.0f);
+        m_LightCamera.LookAt(0, 0, 0);
+        m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 10000.0f, 500000.0f);
+        
+        m_CascadeParam.bias.x = 0.0005f;
+        m_CascadeParam.bias.y = 2.5f;
+        m_CascadeParam.bias.z = 0.5f;
+        m_CascadeParam.bias.w = 0.5f;
+        
+        m_CascadeParam.debug.x = 0;
+        m_CascadeParam.debug.y = 0;
+        m_CascadeParam.debug.z = 0;
+        m_CascadeParam.debug.w = 0;
+        
+        m_CascadeParam.offset[0].Set(0.0f, 0.0f, 0.0f, 0.0f);
+        m_CascadeParam.offset[1].Set(0.5f, 0.0f, 0.0f, 0.0f);
+        m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
+        m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
+        
+        m_CascadePartitions[0] = 7.5f;
+        m_CascadePartitions[1] = 15.0f;
+        m_CascadePartitions[2] = 30.0f;
+        m_CascadePartitions[3] = 45.0f;
 	}
-
+    
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
@@ -1011,6 +1239,18 @@ private:
 
 	bool 						m_Ready = false;
 
+    // Debug
+    vk_demo::DVKModel*          m_Quad = nullptr;
+    vk_demo::DVKMaterial*       m_DebugMaterial;
+    vk_demo::DVKShader*         m_DebugShader;
+    
+    // depth
+    vk_demo::DVKShader*         m_DepthShader = nullptr;
+    vk_demo::DVKMaterial*       m_DepthMaterial = nullptr;
+    
+    vk_demo::DVKShader*         m_PCFShadowShader = nullptr;
+    vk_demo::DVKMaterial*       m_PCFShadowMaterial = nullptr;
+    
 	// shadow map
 	vk_demo::DVKRenderTarget*   m_ShadowRTT = nullptr;
 	vk_demo::DVKTexture*        m_ShadowMap = nullptr;
@@ -1018,7 +1258,7 @@ private:
 	// cascade
 	float						m_CascadePartitionsFrustum[4];
 	vk_demo::DVKCamera			m_CascadeCamera[4];
-	float						cascadePartitions[4];
+	float						m_CascadePartitions[4];
 	vk_demo::DVKBoundingBox		m_SceneBounds;
 
 	// light camera
@@ -1047,7 +1287,8 @@ private:
 
 	// params
 	ModelViewProjectionBlock	m_MVPParam;
-
+    CascadeParamBlock           m_CascadeParam;
+    
 	ImageGUIContext*			m_GUI = nullptr;
 };
 
