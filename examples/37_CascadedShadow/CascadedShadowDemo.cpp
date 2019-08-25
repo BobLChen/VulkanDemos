@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define SHADOW_TEX_SIZE 512
+#define SHADOW_TEX_SIZE 1024
 
 class CascadedShadowDemo : public DemoBase
 {
@@ -69,118 +69,6 @@ public:
 	}
 
 private:
-
-	struct Camera
-	{
-	public:
-
-		float moveSpeed = 10.0f;
-		float rotateSpeed = 30.0f;
-
-		void Update(float time, float delta)
-		{
-			if (InputManager::IsKeyDown(KeyboardType::KEY_W)) {
-				m_View.TranslateZ(moveSpeed * delta);
-			}
-			else if (InputManager::IsKeyDown(KeyboardType::KEY_S)) {
-				m_View.TranslateZ(-moveSpeed * delta);
-			}
-
-			if (InputManager::IsKeyDown(KeyboardType::KEY_A)) {
-				m_View.RotateY(-rotateSpeed * delta);
-			}
-			else if (InputManager::IsKeyDown(KeyboardType::KEY_D)) {
-				m_View.RotateY(rotateSpeed * delta);
-			}
-
-			if (InputManager::IsKeyDown(KeyboardType::KEY_F)) {
-				m_View.TranslateY(moveSpeed * delta);
-			}
-			else if (InputManager::IsKeyDown(KeyboardType::KEY_G)) {
-				m_View.TranslateY(-moveSpeed * delta);
-			}
-		}
-		
-		void Perspective(float fovy, float width, float height, float zNear, float zFar)
-		{
-			m_Fov    = fovy;
-			m_Near   = zNear;
-			m_Far    = zFar;
-			m_Aspect = width / height;
-
-			m_Projection.Perspective(fovy, width, height, zNear, zFar);
-		}
-
-		void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ)
-		{
-			m_Near = minZ;
-			m_Far  = maxZ;
-			m_Projection.Orthographic(left, right, bottom, top, minZ, maxZ);
-		}
-
-		void SetView(const Vector3& eye, const Vector3& at)
-		{
-			Vector3 up    = Vector3(0, 1, 0);
-			Vector3 zaxis = (at - eye).GetSafeNormal();
-			Vector3 xaxis = Vector3::CrossProduct(up, zaxis).GetSafeNormal();
-			Vector3 yaxis = Vector3::CrossProduct(zaxis, xaxis);
-
-			m_View.CopyColumnFrom(0, Vector4(xaxis, -Vector3::DotProduct(xaxis, eye)));
-			m_View.CopyColumnFrom(1, Vector4(yaxis, -Vector3::DotProduct(yaxis, eye)));
-			m_View.CopyColumnFrom(2, Vector4(zaxis, -Vector3::DotProduct(zaxis, eye)));
-			m_View.CopyColumnFrom(3, Vector4(0, 0, 0, 1));
-		}
-
-		FORCEINLINE void SetView(const Matrix4x4& view)
-		{
-			m_View = view;
-		}
-
-		FORCEINLINE void SetProj(const Matrix4x4& proj)
-		{
-			m_Projection = proj;
-		}
-
-		FORCEINLINE const Matrix4x4& GetView() const
-		{
-			return m_View;
-		}
-
-		FORCEINLINE const Matrix4x4& GetProj() const
-		{
-			return m_Projection;
-		}
-
-		FORCEINLINE const float GetNear() const
-		{
-			return m_Near;
-		}
-
-		FORCEINLINE const float GetFar() const
-		{
-			return m_Far;
-		}
-
-		FORCEINLINE const float GetAspect() const
-		{
-			return m_Aspect;
-		}
-
-		FORCEINLINE const float GetFov() const
-		{
-			return m_Fov;
-		}
-
-	protected:
-
-		float     m_Near = 1.0f;
-		float     m_Far = 1000.0f;
-		float     m_Aspect = 1.0f;
-		float     m_Fov = PI / 4.0f;
-
-		Matrix4x4 m_View;
-		Matrix4x4 m_Projection;
-	};
 
 	struct ModelViewProjectionBlock
 	{
@@ -239,7 +127,7 @@ private:
 		}
 	}
 
-	void ComputeFrustumFromProjection(Frustum& out, Matrix4x4& projection)
+	void ComputeFrustumFromProjection(Frustum& out, const Matrix4x4& projection)
 	{
 		static Vector4 homogenousPoints[6] =
 		{
@@ -282,7 +170,7 @@ private:
 		return result;
 	}
 
-	void CreateFrustumPointsFromCascadeInterval(float cascadeIntervalBegin, float cascadeIntervalEnd, Matrix4x4& projection, Vector4* cornerPointsWorld) 
+	void CreateFrustumPointsFromCascadeInterval(float cascadeIntervalBegin, float cascadeIntervalEnd, const Matrix4x4& projection, Vector4* cornerPointsWorld)
 	{
 		static const Vector4 grabY = Vector4(0, 1, 0, 0);
 		static const Vector4 grabX = Vector4(1, 0, 0, 0);
@@ -367,7 +255,7 @@ private:
 			triangleList[0].culled = false;
 
 			int32 triangleCnt = 1;
-			
+
 			for (int32 frustumPlaneIndex = 0; frustumPlaneIndex < 4; ++frustumPlaneIndex) 
 			{
 				float edge = 0.0f;
@@ -562,16 +450,15 @@ private:
 		static const Vector4 vector1100(1.0f, 1.0f, 0.0f, 0.0f);
 		static const Vector4 vectorHalf(0.5f, 0.5f, 0.5f, 0.5f);
 
-		Matrix4x4 viewCameraProjection = m_ViewCamera.GetProj();
-		Matrix4x4 viewCameraView       = m_ViewCamera.GetView();
-		Matrix4x4 inverseViewCamera    = viewCameraView.Inverse();
-		Matrix4x4 lightView            = m_LightCamera.GetView();
-		
+		Matrix4x4 viewCameraView    = m_ViewCamera.GetView();
+		Matrix4x4 inverseViewCamera = viewCameraView.Inverse();
+		Matrix4x4 lightView         = m_LightCamera.GetView();
+
 		// scene bounds
 		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
 		Vector4 extend = Vector4((bounds.max - bounds.min) * 0.5f, 0.0f);
 		Vector4 center = Vector4(bounds.min + extend, 1.0f);
-		
+
 		// Light space scene aabb
 		Vector4 sceneAABBPointsLightSpace[8];
 		ExtentAABBPoints(sceneAABBPointsLightSpace, center, extend);
@@ -582,8 +469,7 @@ private:
 		// cascade infos
 		float cameraNearFarRange   = m_ViewCamera.GetFar() - m_ViewCamera.GetNear();
 		float cascadePartitionsMax = 100;
-		float cascadePartitions[4] = { 4, 5, 6, 10 };
-
+		
 		// calc cascade projection
 		for (int32 cascadeIndex = 0; cascadeIndex < 4; ++cascadeIndex) 
 		{
@@ -591,7 +477,7 @@ private:
 			float frustumIntervalBegin = frustumIntervalBegin = 0.0f / cascadePartitionsMax * cameraNearFarRange;
 
 			Vector4 frustumPoints[8];
-			CreateFrustumPointsFromCascadeInterval(frustumIntervalBegin, frustumIntervalEnd, viewCameraProjection, frustumPoints);
+			CreateFrustumPointsFromCascadeInterval(frustumIntervalBegin, frustumIntervalEnd, m_ViewCamera.GetProjection(), frustumPoints);
 
 			Vector4 lightCameraOrthographicMin(MAX_flt, MAX_flt, MAX_flt, MAX_flt);
 			Vector4 lightCameraOrthographicMax(MIN_flt, MIN_flt, MIN_flt, MIN_flt);
@@ -604,8 +490,8 @@ private:
 				lightCameraOrthographicMin = VectorMin(tempTranslatedCornerPoint, lightCameraOrthographicMin);
 				lightCameraOrthographicMax = VectorMax(tempTranslatedCornerPoint, lightCameraOrthographicMax);
 			}
-			
-			Vector4 worldUnitsPerTexelVector(0, 0, 0, 0); 
+
+			Vector4 worldUnitsPerTexelVector(0, 0, 0, 0);
 
 			// fit to scene
 			{
@@ -621,7 +507,7 @@ private:
 				float worldUnitsPerTexel = cascadeBound / m_ShadowMap->width;
 				worldUnitsPerTexelVector.Set(worldUnitsPerTexel, worldUnitsPerTexel, 0.0f, 0.0f);
 			}
-			
+
 			// fit light size
 			{
 				lightCameraOrthographicMin /= worldUnitsPerTexelVector;
@@ -646,16 +532,16 @@ private:
 			float nearPlane = 0.0f;
 			float farPlane  = 10000.0f;
 			ComputeNearAndFar(nearPlane, farPlane, lightCameraOrthographicMin, lightCameraOrthographicMax, sceneAABBPointsLightSpace );
-			
-			m_CascadeCamera[cascadeIndex].SetView(m_LightCamera.GetView());
+
+			m_CascadeCamera[cascadeIndex].SetTransform(m_LightCamera.GetTransform());
 			m_CascadeCamera[cascadeIndex].Orthographic(lightCameraOrthographicMin.x, lightCameraOrthographicMax.x, lightCameraOrthographicMin.y, lightCameraOrthographicMax.y, nearPlane, farPlane);
 			m_CascadePartitionsFrustum[cascadeIndex] = frustumIntervalEnd;
 		}
 	}
 
-	Camera* GetActiveCamera()
+	vk_demo::DVKCamera* GetActiveCamera()
 	{
-		Camera* activeCamera = nullptr;
+		vk_demo::DVKCamera* activeCamera = nullptr;
 		if (m_CameraIndex == 0) {
 			activeCamera = &m_ViewCamera;
 		}
@@ -673,14 +559,19 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+
+		if (!hovered) {
+			GetActiveCamera()->Update(time, delta);
+		}
+		
 		UpdateCascade();
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -689,25 +580,46 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("CascadedShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			// shadow bias
 			ImGui::Combo("Shadow", &m_SelectedShadow, m_ShadowNames.data(), m_ShadowNames.size());
 			ImGui::SliderFloat("Bias", &m_CascadeParam.bias.x, 0.0f, 0.05f, "%.4f");
 			if (m_SelectedShadow != 0) {
 				ImGui::SliderFloat("Step", &m_CascadeParam.bias.y, 0.0f, 10.0f);
 			}
 
+			ImGui::Separator();
+
+			// Light Camera
 			ImGui::Combo("Camera", &m_CameraIndex, m_CameraNames.data(), m_CameraNames.size());
+
+			ImGui::Separator();
+
+			// Cascade
+
+			ImGui::SliderFloat("Level1", &cascadePartitions[0], 1, 100);
+			ImGui::SliderFloat("Level2", &cascadePartitions[1], 1, 100);
+			ImGui::SliderFloat("Level3", &cascadePartitions[2], 1, 100);
+			ImGui::SliderFloat("Level4", &cascadePartitions[3], 1, 100);
+
+			ImGui::Separator();
 
 			bool check = m_CascadeParam.debug.x > 0;
 			ImGui::Checkbox("Debug", &check);
 			m_CascadeParam.debug.x = check ? 1 : 0;
+
+			ImGui::Separator();
 
 			ImGui::Text("ShadowMap:%dx%d", m_ShadowMap->width, m_ShadowMap->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void CreateRenderTarget()
@@ -890,11 +802,11 @@ private:
 			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-			Camera* activeCamera = &(m_CascadeCamera[cascade]);
+			vk_demo::DVKCamera* activeCamera = &(m_CascadeCamera[cascade]);
 			for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
 				m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
 				m_MVPParam.view  = activeCamera->GetView();
-				m_MVPParam.proj  = activeCamera->GetProj();
+				m_MVPParam.proj  = activeCamera->GetProjection();
 
 				m_DepthMaterial->BeginObject();
 				m_DepthMaterial->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
@@ -906,7 +818,7 @@ private:
 				count += 1;
 			}
 		}
-		
+
 		m_DepthMaterial->EndFrame();
 		m_ShadowRTT->EndRenderPass(commandBuffer);
 	}
@@ -916,11 +828,11 @@ private:
 		vk_demo::DVKMaterial* shadowMaterial = m_ShadowList[m_SelectedShadow];
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMaterial->GetPipeline());
 
-		Camera* activeCamera = GetActiveCamera();
+		vk_demo::DVKCamera* activeCamera = GetActiveCamera();
 		shadowMaterial->BeginFrame();
 
 		m_CascadeParam.view = m_LightCamera.GetView();
-		m_CascadeParam.direction = m_LightCamera.GetView().GetForward() * -1;
+		m_CascadeParam.direction = m_LightCamera.GetTransform().GetForward() * -1;
 
 		Matrix4x4 textureScale;
 		textureScale.AppendScale(Vector3(0.5f, -0.5f, 1.0f));
@@ -928,7 +840,7 @@ private:
 		for (int32 i = 0; i < 4; ++i) 
 		{
 			Matrix4x4 shadowTextre;
-			shadowTextre.Append(m_CascadeCamera[i].GetProj());
+			shadowTextre.Append(m_CascadeCamera[i].GetProjection());
 			shadowTextre.Append(textureScale);
 
 			m_CascadeParam.cascadeScale[i].x = shadowTextre.m[0][0];
@@ -941,14 +853,14 @@ private:
 			m_CascadeParam.cascadeOffset[i].z = shadowTextre.m[3][2];
 			m_CascadeParam.cascadeOffset[i].w = 0;
 
-			m_CascadeParam.cascadeProj[i] = m_CascadeCamera[i].GetProj();
+			m_CascadeParam.cascadeProj[i] = m_CascadeCamera[i].GetProjection();
 		}
 
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) 
 		{
 			m_MVPParam.model = m_ModelScene->meshes[j]->linkNode->GetGlobalMatrix();
 			m_MVPParam.view  = activeCamera->GetView();
-			m_MVPParam.proj  = activeCamera->GetProj();
+			m_MVPParam.proj  = activeCamera->GetProjection();
 
 			shadowMaterial->BeginObject();
 			shadowMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
@@ -1042,18 +954,14 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetView(
-			Vector3(-54.8184776f, 16.3495007f, -9.28904152f), 
-			Vector3(-53.8369446f, 16.1607456f, -9.25806427f)
-		);
+		m_ViewCamera.SetPosition(0, 50.0f, -100.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
-		
-		m_LightCamera.SetView(
-			Vector3(-1.03371346f, 136.269257f, 116.271263f), 
-			Vector3(-1.05090559f, 135.513031f, 115.617210f)
-		);
+
+		m_LightCamera.SetPosition(-250.0f, 150.0f, -50.0f);
+		m_LightCamera.LookAt(0, 0, 0);
 		m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1.0f, 1000.0f);
-		
+
 		m_CascadeParam.bias.x = 0.01f;
 		m_CascadeParam.bias.y = 1.0f;
 		m_CascadeParam.bias.z = 0.5f;
@@ -1068,6 +976,11 @@ private:
 		m_CascadeParam.offset[1].Set(0.5f, 0.0f, 0.0f, 0.0f);
 		m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
 		m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
+
+		cascadePartitions[0] = 6.5f;
+		cascadePartitions[1] = 7.5f;
+		cascadePartitions[2] = 8.5f;
+		cascadePartitions[3] = 15.0f;
 	}
 
 	void CreateGUI()
@@ -1107,8 +1020,8 @@ private:
 	vk_demo::DVKModel*			m_ModelScene = nullptr;
 
 	// view
-	Camera						m_ViewCamera;
-	Camera						m_LightCamera;
+	vk_demo::DVKCamera		    m_ViewCamera;
+	vk_demo::DVKCamera		    m_LightCamera;
 
 	// params
 	ModelViewProjectionBlock	m_MVPParam;
@@ -1123,8 +1036,9 @@ private:
 
 	// cascade
 	float						m_CascadePartitionsFrustum[4];
-	Camera						m_CascadeCamera[4];
-	
+	vk_demo::DVKCamera			m_CascadeCamera[4];
+	float						cascadePartitions[4];
+
 	// ui
 	int32						m_SelectedShadow = 1;
 	std::vector<const char*>	m_ShadowNames;
