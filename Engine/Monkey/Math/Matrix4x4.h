@@ -81,13 +81,13 @@ public:
 
 	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
 
-	FORCEINLINE void Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot);
+	FORCEINLINE void Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const;
 
 	FORCEINLINE void Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot);
 
-	FORCEINLINE Vector4 DeltaTransformVector(const Vector4& v);
+	FORCEINLINE Vector4 DeltaTransformVector(const Vector4& v) const;
 
-	FORCEINLINE void CopyRawDataTo(float* rawData);
+	FORCEINLINE void CopyRawDataTo(float* rawData) const;
 
 	FORCEINLINE void CopyRawDataFrom(float* rawData);
 
@@ -155,7 +155,7 @@ public:
 
 	FORCEINLINE Vector3 GetScaleVector(float tolerance = SMALL_NUMBER) const;
 
-	FORCEINLINE Vector3 GetRotation();
+	FORCEINLINE Vector3 GetRotation() const;
 
 	FORCEINLINE void SetRotation(const Vector3& rotation);
 
@@ -586,7 +586,7 @@ FORCEINLINE void Matrix4x4::CopyRawDataFrom(float* rawData)
 	m[3][0] = rawData[12];	m[3][1] = rawData[13];	m[3][2] = rawData[14];	m[3][3] = rawData[15];
 }
 
-FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData)
+FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData) const
 {
 	rawData[0] = m[0][0];
 	rawData[1] = m[0][1];
@@ -609,7 +609,7 @@ FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData)
 	rawData[15] = m[4][3];
 }
 
-FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v)
+FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v) const
 {
 	float x = v.x;
 	float y = v.y;
@@ -648,7 +648,7 @@ FORCEINLINE void Matrix4x4::Recompose(const Vector4& pos, const Vector4& scale, 
 	m[3][3] = 1.0f;
 }
 
-FORCEINLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot)
+FORCEINLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const
 {
 	float mr[16] = { 0.0f };
 	CopyRawDataTo(mr);
@@ -1255,7 +1255,7 @@ FORCEINLINE void Matrix4x4::SetRotation(const Vector3& rotation)
 	Recompose(pos, scale, rot);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetRotation()
+FORCEINLINE Vector3 Matrix4x4::GetRotation() const
 {
 	Vector4 pos;
 	Vector4 rot;
