@@ -16,7 +16,7 @@
 #include <fstream>
 
 #define SHADOW_TEX_SIZE 2048
-#define INSTANCE_COUNT  256
+#define INSTANCE_COUNT  512
 #define GROUND_RADIUS   15000.0f
 
 class IndirectDrawDemo : public DemoBase
@@ -584,7 +584,7 @@ private:
             m_CascadeParam.debug.x = check ? 1 : 0;
             
             ImGui::Separator();
-            
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -1189,8 +1189,8 @@ private:
 
 	void InitParmas()
 	{
-        m_ViewCamera.SetPosition(0, 5000.0f, -10000.0f);
-        m_ViewCamera.LookAt(0, 0, -1000.0f);
+		m_ViewCamera.SetRotation(Vector3(23, 80, 0));
+        m_ViewCamera.SetPosition(-10710, 2860, -2154);
         m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 100000.0f);
         
         m_LightCamera.SetPosition(-30000.0f, 25000.0f, -5000.0f);
@@ -1198,7 +1198,7 @@ private:
         m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 10000.0f, 500000.0f);
         
         m_CascadeParam.bias.x = 0.0005f;
-        m_CascadeParam.bias.y = 2.5f;
+        m_CascadeParam.bias.y = 1.0f;
         m_CascadeParam.bias.z = 0.5f;
         m_CascadeParam.bias.w = 0.5f;
         
@@ -1212,10 +1212,10 @@ private:
         m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
         m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
         
-        m_CascadePartitions[0] = 7.5f;
-        m_CascadePartitions[1] = 15.0f;
-        m_CascadePartitions[2] = 30.0f;
-        m_CascadePartitions[3] = 45.0f;
+        m_CascadePartitions[0] = 4.0f;
+        m_CascadePartitions[1] = 8.0f;
+        m_CascadePartitions[2] = 12.0f;
+        m_CascadePartitions[3] = 25.0f;
 	}
     
 	void CreateGUI()
