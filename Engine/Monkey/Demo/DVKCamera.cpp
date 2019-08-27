@@ -6,6 +6,7 @@ namespace vk_demo
 
 	DVKCamera::DVKCamera()
 	{
+		freeze = Vector3(0, 0, 0);
 		m_LastMouse = InputManager::GetMousePosition();
 	}
 
@@ -36,6 +37,10 @@ namespace vk_demo
 		{
 			m_SpinZ = (m_World.GetOrigin().Size() + 0.1f) * speedFactor * InputManager::GetMouseDelta() / 20.0f;
 		}
+
+		m_SpinX *= 1.0f - freeze.y;
+		m_SpinY *= 1.0f - freeze.x;
+		m_SpinZ *= 1.0f - freeze.z;
 
 		m_World.TranslateZ(m_SpinZ);
 		m_World.RotateY(m_SpinX, false, &Vector3::ZeroVector);

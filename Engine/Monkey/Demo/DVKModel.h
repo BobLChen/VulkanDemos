@@ -81,6 +81,31 @@ namespace vk_demo
 			vertexBuffer = nullptr;
 		}
 
+		void DrawOnly(VkCommandBuffer cmdBuffer)
+		{
+			if (vertexBuffer && !indexBuffer) {
+				vkCmdDraw(cmdBuffer, vertexCount, 1, 0, 0);
+			}
+			else {
+				vkCmdDrawIndexed(cmdBuffer, indexBuffer->indexCount, indexBuffer->instanceCount, 0, 0, 0);
+			}
+		}
+
+		void BindOnly(VkCommandBuffer cmdBuffer)
+		{
+			if (vertexBuffer) {
+				vkCmdBindVertexBuffers(cmdBuffer, 0, 1, &(vertexBuffer->dvkBuffer->buffer), &(vertexBuffer->offset));
+			}
+
+			if (instanceBuffer) {
+				vkCmdBindVertexBuffers(cmdBuffer, 1, 1, &(instanceBuffer->dvkBuffer->buffer), &(instanceBuffer->offset));
+			}
+
+			if (indexBuffer) {
+				vkCmdBindIndexBuffer(cmdBuffer, indexBuffer->dvkBuffer->buffer, 0, indexBuffer->indexType);
+			}
+		}
+
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{
 			if (vertexBuffer) {
@@ -213,6 +238,20 @@ namespace vk_demo
         {
             
         }
+
+		void BindOnly(VkCommandBuffer cmdBuffer)
+		{
+			for (int i = 0; i < primitives.size(); ++i) {
+				primitives[i]->BindOnly(cmdBuffer);
+			}
+		}
+
+		void DrawOnly(VkCommandBuffer cmdBuffer)
+		{
+			for (int i = 0; i < primitives.size(); ++i) {
+				primitives[i]->DrawOnly(cmdBuffer);
+			}
+		}
 
 		void BindDrawCmd(VkCommandBuffer cmdBuffer)
 		{

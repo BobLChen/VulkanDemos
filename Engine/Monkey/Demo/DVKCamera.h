@@ -53,7 +53,7 @@ namespace vk_demo
 
 		FORCEINLINE void LookAt(const Vector3& target, float smooth = 1.0f)
 		{
-			m_World.LookAt(target, &Vector3::UpVector, smooth);
+			m_World.LookAt(target, nullptr, smooth);
 		}
 
 		FORCEINLINE void LookAt(const Vector3& target, const Vector3& up, float smooth = 1.0f)
@@ -208,6 +208,7 @@ namespace vk_demo
 		float		smooth = 1.0f;
 		float		speed = 1.0f;
 		float		speedFactor = 0.5f;
+		Vector3		freeze;
 
 	protected:
 

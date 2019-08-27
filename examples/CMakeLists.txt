@@ -638,3 +638,18 @@ SETUP_SAMPLE_START(38_IndirectDraw)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(38_IndirectDraw)
+
+SETUP_SAMPLE_START(39_OcclusionQueries)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/39_OcclusionQueries/OcclusionQueryDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/39_OcclusionQueries/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(39_OcclusionQueries)
