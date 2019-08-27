@@ -208,3 +208,7 @@ Reduce 5 float per vertex
 
 ### [39_OcclusionQueries](https://github.com/BobLChen/VulkanDemos/tree/master/examples/39_OcclusionQueries)
 ![39_OcclusionQueries](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/39_GpuQuery.gif)
+
+### [40_QueryStatistics](https://github.com/BobLChen/VulkanDemos/tree/master/examples/40_QueryStatistics)
+![40_QueryStatistics](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/40_QueryStatistics.jpg)
+
