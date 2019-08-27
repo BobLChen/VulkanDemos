@@ -653,3 +653,18 @@ SETUP_SAMPLE_START(39_OcclusionQueries)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(39_OcclusionQueries)
+
+SETUP_SAMPLE_START(40_QueryStatistics)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/40_QueryStatistics/QueryStatisticsDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/40_QueryStatistics/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(40_QueryStatistics)
