@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define STATS_COUNT 8
+#define QUERY_STATS_COUNT 8
 
 class QueryStatisticsDemo : public DemoBase
 {
@@ -89,8 +89,8 @@ private:
 		vkGetQueryPoolResults(
 			m_Device, 
 			m_QueryPool, 
-			0, STATS_COUNT, sizeof(uint64) * STATS_COUNT, m_QueryStats, sizeof(uint64), 
-			VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
+			0, 1, sizeof(uint64) * QUERY_STATS_COUNT, m_QueryStats, sizeof(uint64), 
+			VK_QUERY_RESULT_64_BIT
 		);
 
 		SetupCommandBuffers(bufferIndex);
@@ -106,6 +106,11 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("QueryStatisticsDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+			for (int32 i = 0; i < m_StatNames.size(); ++i)
+			{
+				ImGui::Text("%s : %d", m_StatNames[i], m_QueryStats[i]);
+			}
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -125,12 +130,31 @@ private:
 
 		VkQueryPoolCreateInfo queryPoolCreateInfo;
 		ZeroVulkanStruct(queryPoolCreateInfo, VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO);
-		queryPoolCreateInfo.queryType  = VK_QUERY_TYPE_OCCLUSION;
-		queryPoolCreateInfo.queryCount = STATS_COUNT;
+		queryPoolCreateInfo.queryType  = VK_QUERY_TYPE_PIPELINE_STATISTICS;
+		queryPoolCreateInfo.queryCount = QUERY_STATS_COUNT;
+		queryPoolCreateInfo.pipelineStatistics = 
+			VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_VERTICES_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_VERTEX_SHADER_INVOCATIONS_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_FRAGMENT_SHADER_INVOCATIONS_BIT | 
+			VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT |
+			VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT;
 		VERIFYVULKANRESULT(vkCreateQueryPool(m_Device, &queryPoolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_QueryPool));
 
+		m_StatNames.resize(QUERY_STATS_COUNT);
+		m_StatNames[0] = "Vertex count";
+		m_StatNames[1] = "Primitives count";
+		m_StatNames[2] = "Vert shader invocations";
+		m_StatNames[3] = "Clipping invocations";
+		m_StatNames[4] = "Clipping primtives";
+		m_StatNames[5] = "Frag shader invocations";
+		m_StatNames[6] = "Tessellation control shader patches";
+		m_StatNames[7] = "Tessellation evaluation shader invocations";
+
 		m_ModelSphere = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/sphere.obj",
+			"assets/models/samplescene.dae",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -142,8 +166,8 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/39_OcclusionQueries/Solid.vert.spv",
-			"assets/shaders/39_OcclusionQueries/Solid.frag.spv"
+			"assets/shaders/40_QueryStatistics/Solid.vert.spv",
+			"assets/shaders/40_QueryStatistics/Solid.frag.spv"
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(
@@ -189,7 +213,7 @@ private:
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
-		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, STATS_COUNT);
+		vkCmdResetQueryPool(commandBuffer, m_QueryPool, 0, QUERY_STATS_COUNT);
 
 		VkClearValue clearValues[2];
 		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
@@ -210,6 +234,7 @@ private:
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
+		vkCmdBeginQuery(commandBuffer, m_QueryPool, 0, 0);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 
 		m_Material->BeginFrame();
@@ -227,22 +252,20 @@ private:
 			m_ModelSphere->meshes[i]->BindDrawCmd(commandBuffer);
 		}
 		m_Material->EndFrame();
+		vkCmdEndQuery(commandBuffer, m_QueryPool, 0);
 		
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
-
 		vkCmdEndRenderPass(commandBuffer);
-
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void InitParmas()
 	{
-		m_ViewCamera.freeze.x = 1.0f;
-		m_ViewCamera.SetPosition(0, 19.73f, -800.0f);
+		m_ViewCamera.SetPosition(0, 19.73f, -100.0f);
 		m_ViewCamera.LookAt(0, 19.73f, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight() * 0.5f, 1.0f, 1500.0f);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 
-		memset(m_QueryStats, 65535, sizeof(uint64) * STATS_COUNT);
+		memset(m_QueryStats, 65535, sizeof(uint64) * QUERY_STATS_COUNT);
 	}
 
 	void CreateGUI()
@@ -269,7 +292,8 @@ private:
 
 	vk_demo::DVKCamera		    m_ViewCamera;
 
-	uint64						m_QueryStats[8];
+	uint64						m_QueryStats[QUERY_STATS_COUNT];
+	std::vector<const char*>	m_StatNames;
 	ModelViewProjectionBlock	m_MVPParam;
 
 	ImageGUIContext*			m_GUI = nullptr;
