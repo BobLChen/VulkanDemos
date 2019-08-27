@@ -205,3 +205,6 @@ Reduce 5 float per vertex
 
 ### [38_IndirectDraw](https://github.com/BobLChen/VulkanDemos/tree/master/examples/38_IndirectDraw)
 ![38_IndirectDraw](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/38_IndirectDraw.jpg)
+
+### [39_OcclusionQueries](https://github.com/BobLChen/VulkanDemos/tree/master/examples/39_OcclusionQueries)
+![39_OcclusionQueries](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/39_GpuQuery.gif)
