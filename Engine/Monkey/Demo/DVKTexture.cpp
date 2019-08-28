@@ -1,5 +1,6 @@
 #include "DVKTexture.h"
 #include "DVKBuffer.h"
+#include "DVKUtils.h"
 
 #include "Math/Math.h"
 #include "File/FileManager.h"
@@ -9,7 +10,7 @@
 namespace vk_demo
 {
     
-	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags)
+	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout)
 	{
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
@@ -26,16 +27,18 @@ namespace vk_demo
         
         // image info
         VkImage                         image = VK_NULL_HANDLE;
-        VkImageLayout                   imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo           descriptorInfo = {};
 
-		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) 
+		{
 			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
-		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) 
+		{
 			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		}
 		
@@ -66,21 +69,14 @@ namespace vk_demo
 		cmdBuffer->Begin();
 
         VkImageSubresourceRange subresourceRange = {};
-        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.levelCount = 1;
-        subresourceRange.layerCount = 1;
+        subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.levelCount     = 1;
+        subresourceRange.layerCount     = 1;
+		subresourceRange.baseArrayLayer = 0;
+		subresourceRange.baseMipLevel   = 0;
         
-        {
-            VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = 0;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        }
+		// undefined to TransferDest
+		vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, subresourceRange);
         
         VkBufferImageCopy bufferCopyRegion = {};
         bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -91,22 +87,15 @@ namespace vk_demo
         bufferCopyRegion.imageExtent.height = height;
         bufferCopyRegion.imageExtent.depth  = 1;
         
+		// copy buffer to image
         vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
         
-        {
-            VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        }
-
+		// TransferDest to TransferSrc
+		vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, subresourceRange);
+        
         // Generate the mip chain
-        for (uint32_t i = 1; i < mipLevels; i++) {
+        for (uint32_t i = 1; i < mipLevels; i++)
+		{
             VkImageBlit imageBlit = {};
             
 			int32 mip0Width  = MMath::Max(width  >> (i - 1), 1);
@@ -129,52 +118,27 @@ namespace vk_demo
             imageBlit.dstOffsets[1].z = 1;
             
             VkImageSubresourceRange mipSubRange = {};
-            mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-            mipSubRange.baseMipLevel = i;
-            mipSubRange.levelCount   = 1;
-            mipSubRange.layerCount   = 1;
+            mipSubRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            mipSubRange.baseMipLevel   = i;
+            mipSubRange.levelCount     = 1;
+            mipSubRange.layerCount     = 1;
+			mipSubRange.baseArrayLayer = 0;
             
-            {
-                VkImageMemoryBarrier imageMemoryBarrier;
-                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                imageMemoryBarrier.srcAccessMask = 0;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                imageMemoryBarrier.image = image;
-                imageMemoryBarrier.subresourceRange = mipSubRange;
-                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            }
+			// undefined to dst
+			vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, mipSubRange);
             
+			// blit image
             vkCmdBlitImage(cmdBuffer->cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
             
-            {
-                VkImageMemoryBarrier imageMemoryBarrier;
-                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                imageMemoryBarrier.image = image;
-                imageMemoryBarrier.subresourceRange = mipSubRange;
-                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            }
+			// dst to src
+			vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, mipSubRange);
         }
 
 		subresourceRange.levelCount = mipLevels;
-		
-		{
-			VkImageMemoryBarrier imageMemoryBarrier;
-			ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			imageMemoryBarrier.image = image;
-			imageMemoryBarrier.subresourceRange = subresourceRange;
-			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-		}
 
+		// dst to layout
+		vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferSource, imageLayout, subresourceRange);
+		
 		cmdBuffer->End();
 		cmdBuffer->Submit();
 
@@ -208,14 +172,14 @@ namespace vk_demo
 
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
-		descriptorInfo.imageLayout = imageLayout;
+		descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
 		texture->format         = format;
 		texture->height         = height;
 		texture->image          = image;
-		texture->imageLayout    = imageLayout;
+		texture->imageLayout    = GetImageLayout(imageLayout);
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
@@ -227,7 +191,7 @@ namespace vk_demo
         return texture;
 	}
 
-    DVKTexture* DVKTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags)
+    DVKTexture* DVKTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout)
     {
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
@@ -249,14 +213,14 @@ namespace vk_demo
             return nullptr;
         }
 
-        DVKTexture* texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer, imageUsageFlags);
+        DVKTexture* texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer, imageUsageFlags, imageLayout);
 
 		StbImage::Free(rgbaData);
 
 		return texture;
     }
 
-	DVKTexture* DVKTexture::CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+	DVKTexture* DVKTexture::CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -267,7 +231,6 @@ namespace vk_demo
 
 		// image info
 		VkImage                         image = VK_NULL_HANDLE;
-		VkImageLayout                   imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
 		VkImageView                     imageView = VK_NULL_HANDLE;
 		VkSampler                       imageSampler = VK_NULL_HANDLE;
@@ -325,9 +288,25 @@ namespace vk_demo
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
+		if (imageLayout != ImageLayoutBarrier::Undefined) 
+		{
+			VkImageSubresourceRange subresourceRange = {};
+			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.levelCount     = 1;
+			subresourceRange.layerCount     = 6;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.baseMipLevel   = 0;
+
+			cmdBuffer->Begin();
+
+			vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, imageLayout, subresourceRange);
+
+			cmdBuffer->Submit();
+		}
+
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
-		descriptorInfo.imageLayout = imageLayout;
+		descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
@@ -336,7 +315,7 @@ namespace vk_demo
 		texture->height         = height;
 		texture->depth			= 6;
 		texture->image          = image;
-		texture->imageLayout    = imageLayout;
+		texture->imageLayout    = GetImageLayout(imageLayout);
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
@@ -349,7 +328,7 @@ namespace vk_demo
 		return texture;
 	}
 
-	DVKTexture* DVKTexture::Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+	DVKTexture* DVKTexture::Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -363,7 +342,6 @@ namespace vk_demo
         VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
-		VkImageLayout					imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		VkDescriptorImageInfo           descriptorInfo = {};
         
         // 创建image
@@ -417,9 +395,25 @@ namespace vk_demo
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
+		if (imageLayout != ImageLayoutBarrier::Undefined)
+		{
+			VkImageSubresourceRange subresourceRange = {};
+			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.levelCount     = 1;
+			subresourceRange.layerCount     = 1;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.baseMipLevel   = 0;
+
+			cmdBuffer->Begin();
+
+			vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, imageLayout, subresourceRange);
+
+			cmdBuffer->Submit();
+		}
+
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
-		descriptorInfo.imageLayout = imageLayout;
+		descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
@@ -428,7 +422,7 @@ namespace vk_demo
 		texture->height         = height;
 		texture->depth			= 1;
 		texture->image          = image;
-		texture->imageLayout    = imageLayout;
+		texture->imageLayout    = GetImageLayout(imageLayout);
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
@@ -470,7 +464,7 @@ namespace vk_demo
 		descriptorInfo.sampler = imageSampler;
 	}
 
-	DVKTexture* DVKTexture::Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+	DVKTexture* DVKTexture::Create2DArray(const std::vector<std::string> filenames, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, ImageLayoutBarrier imageLayout)
 	{
 		struct ImageInfo
 		{
@@ -483,10 +477,12 @@ namespace vk_demo
 
 		// 加载图集数据
 		std::vector<ImageInfo> images(filenames.size());
-		for (int32 i = 0; i < filenames.size(); ++i) {
+		for (int32 i = 0; i < filenames.size(); ++i) 
+		{
 			uint32 dataSize = 0;
 			uint8* dataPtr  = nullptr;
-			if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize)) {
+			if (!FileManager::ReadFile(filenames[i], dataPtr, dataSize)) 
+			{
 				MLOGE("Failed load image : %s", filenames[i].c_str());
 				return nullptr;
 			}
@@ -499,7 +495,8 @@ namespace vk_demo
 			delete[] dataPtr;
 			dataPtr = nullptr;
 
-			if (!imageInfo.data) {
+			if (!imageInfo.data) 
+			{
 				MLOGE("Failed load image : %s", filenames[i].c_str());
 				return nullptr;
 			}
@@ -526,7 +523,8 @@ namespace vk_demo
 			width * height * 4 * numArray
 		);
         
-		for (int32 i = 0; i < images.size(); ++i) {
+		for (int32 i = 0; i < images.size(); ++i) 
+		{
 			uint8* src  = images[i].data;
 			uint32 size = width * height * 4;
 			stagingBuffer->Map(size, size * i);
@@ -538,7 +536,6 @@ namespace vk_demo
 		
 		// image info
         VkImage                image = VK_NULL_HANDLE;
-        VkImageLayout          imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         VkDeviceMemory         imageMemory = VK_NULL_HANDLE;
         VkImageView            imageView = VK_NULL_HANDLE;
         VkSampler              imageSampler = VK_NULL_HANDLE;
@@ -571,22 +568,13 @@ namespace vk_demo
 		cmdBuffer->Begin();
 
 		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.levelCount   = 1;
-		subresourceRange.layerCount   = numArray;
-		subresourceRange.baseMipLevel = 0;
+		subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.levelCount     = 1;
+		subresourceRange.layerCount     = numArray;
+		subresourceRange.baseMipLevel   = 0;
+		subresourceRange.baseArrayLayer = 0;
         
-		{
-			VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = 0;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-		}
+		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, subresourceRange);
         
 		std::vector<VkBufferImageCopy> bufferCopyRegions;
 		for (int32 i = 0; i < images.size(); ++i)
@@ -605,20 +593,11 @@ namespace vk_demo
 		
 		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
         
-		{
-			VkImageMemoryBarrier imageMemoryBarrier;
-			ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-			imageMemoryBarrier.image = image;
-			imageMemoryBarrier.subresourceRange = subresourceRange;
-			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-		}
+		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, subresourceRange);
         
         // Generate the mip chain
-        for (uint32_t i = 1; i < mipLevels; i++) {
+        for (uint32_t i = 1; i < mipLevels; i++) 
+		{
             VkImageBlit imageBlit = {};
             
             imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -636,36 +615,17 @@ namespace vk_demo
             imageBlit.dstOffsets[1].z = 1;
             
             VkImageSubresourceRange mipSubRange = {};
-            mipSubRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-            mipSubRange.baseMipLevel = i;
-            mipSubRange.levelCount   = 1;
-            mipSubRange.layerCount   = numArray;
+            mipSubRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            mipSubRange.baseMipLevel   = i;
+            mipSubRange.levelCount     = 1;
+            mipSubRange.layerCount     = numArray;
+			mipSubRange.baseArrayLayer = 0;
             
-            {
-                VkImageMemoryBarrier imageMemoryBarrier;
-                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                imageMemoryBarrier.srcAccessMask = 0;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                imageMemoryBarrier.image = image;
-                imageMemoryBarrier.subresourceRange = mipSubRange;
-                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            }
+			ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, mipSubRange);
             
             vkCmdBlitImage(cmdBuffer->cmdBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
             
-            {
-                VkImageMemoryBarrier imageMemoryBarrier;
-                ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-                imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-                imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-                imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-                imageMemoryBarrier.image = image;
-                imageMemoryBarrier.subresourceRange = mipSubRange;
-                vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-            }
+			ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, mipSubRange);
         }
         
         subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -673,17 +633,7 @@ namespace vk_demo
         subresourceRange.layerCount   = numArray;
         subresourceRange.baseMipLevel = 0;
         
-        {
-            VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-        }
+		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferSource, imageLayout, subresourceRange);
         
 		cmdBuffer->End();
 		cmdBuffer->Submit();
@@ -719,14 +669,14 @@ namespace vk_demo
         
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
-		descriptorInfo.imageLayout = imageLayout;
+		descriptorInfo.imageLayout = GetImageLayout(imageLayout);
         
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
 		texture->format         = format;
 		texture->height         = height;
 		texture->image          = image;
-		texture->imageLayout    = imageLayout;
+		texture->imageLayout    = GetImageLayout(imageLayout);
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
@@ -738,7 +688,7 @@ namespace vk_demo
 		return texture;
 	}
     
-	DVKTexture* DVKTexture::Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+	DVKTexture* DVKTexture::Create3D(VkFormat format, const uint8* rgbaData, int32 size, int32 width, int32 height, int32 depth, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, ImageLayoutBarrier imageLayout)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -754,7 +704,6 @@ namespace vk_demo
 		
 		// image info
         VkImage                         image = VK_NULL_HANDLE;
-        VkImageLayout                   imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
@@ -788,22 +737,13 @@ namespace vk_demo
         cmdBuffer->Begin();
         
 		VkImageSubresourceRange subresourceRange = {};
-		subresourceRange.aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT;
-		subresourceRange.levelCount   = 1;
-		subresourceRange.layerCount   = 1;
-		subresourceRange.baseMipLevel = 0;
+		subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+		subresourceRange.levelCount     = 1;
+		subresourceRange.layerCount     = 1;
+		subresourceRange.baseMipLevel   = 0;
+		subresourceRange.baseArrayLayer = 0;
         
-		{
-			VkImageMemoryBarrier imageMemoryBarrier;
-            ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            imageMemoryBarrier.srcAccessMask = 0;
-            imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-            vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);	
-		}
+		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::TransferDest, subresourceRange);
         
 		VkBufferImageCopy bufferCopyRegion = {};
 		bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -816,17 +756,7 @@ namespace vk_demo
         
 		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
         
-		{
-			VkImageMemoryBarrier imageMemoryBarrier;
-			ZeroVulkanStruct(imageMemoryBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-			imageMemoryBarrier.image = image;
-			imageMemoryBarrier.subresourceRange = subresourceRange;
-			vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
-		}
+		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, imageLayout, subresourceRange);
 		
 		cmdBuffer->End();
 		cmdBuffer->Submit();
@@ -872,7 +802,7 @@ namespace vk_demo
 
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
-		descriptorInfo.imageLayout = imageLayout;
+		descriptorInfo.imageLayout = GetImageLayout(imageLayout);
 
 		DVKTexture* texture   = new DVKTexture();
 		texture->descriptorInfo = descriptorInfo;
@@ -881,7 +811,7 @@ namespace vk_demo
 		texture->height         = height;
 		texture->depth          = depth;
 		texture->image          = image;
-		texture->imageLayout    = imageLayout;
+		texture->imageLayout    = GetImageLayout(imageLayout);
 		texture->imageMemory    = imageMemory;
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
