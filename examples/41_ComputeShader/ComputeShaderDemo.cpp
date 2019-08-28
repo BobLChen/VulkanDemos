@@ -42,6 +42,7 @@ public:
 		CreateGUI();
 		InitParmas();
 		LoadAssets();
+		ProcessImage();
 
 		m_Ready = true;
 
@@ -71,6 +72,38 @@ private:
 		Matrix4x4 model;
 		Matrix4x4 view;
 		Matrix4x4 proj;
+	};
+
+	struct ComputeResource
+	{
+		VkCommandPool					commandPool;
+		VkCommandBuffer					commandBuffer;
+		VkFence							fence;
+
+		VkDescriptorPool				descriptorPool;
+		VkDescriptorSetLayout			descriptorSetLayout;
+		VkPipelineLayout				pipelineLayout;
+
+		VkDescriptorSet					descriptorSets[3];
+		VkPipeline						pipelines[3];
+		vk_demo::DVKTexture*			targets[3];
+		
+		void Destroy(VkDevice device)
+		{
+			vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+			vkDestroyCommandPool(device, commandPool, VULKAN_CPU_ALLOCATOR);
+			
+			vkDestroyFence(device, fence, VULKAN_CPU_ALLOCATOR);
+			
+			vkDestroyDescriptorPool(device, descriptorPool, VULKAN_CPU_ALLOCATOR);
+			vkDestroyPipelineLayout(device, pipelineLayout, VULKAN_CPU_ALLOCATOR);
+
+			for (int32 i = 0; i < 3; ++i)
+			{
+				vkDestroyPipeline(device, pipelines[i], VULKAN_CPU_ALLOCATOR);
+				delete targets[i];
+			}
+		}
 	};
 
 	void Draw(float time, float delta)
@@ -110,6 +143,173 @@ private:
 		return hovered;
 	}
 
+	void ProcessImage()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+		cmdBuffer->Begin();
+
+		// create target image
+		{
+			for (int32 i = 0; i < 3; ++i)
+			{
+				m_ComputeRes.targets[i] = vk_demo::DVKTexture::Create2D(
+					m_VulkanDevice,
+					VK_FORMAT_R8G8B8A8_UNORM,
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					m_Texture->width, m_Texture->height,
+					VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+					VK_SAMPLE_COUNT_1_BIT
+				);
+
+				m_ComputeRes.targets[i]->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+				m_ComputeRes.targets[i]->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+				
+				VkImageSubresourceRange subResRange = { };
+				subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+				subResRange.baseMipLevel   = 0;
+				subResRange.levelCount     = 1;
+				subResRange.layerCount     = m_ComputeRes.targets[i]->depth;
+				subResRange.baseArrayLayer = 0;
+				vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, m_ComputeRes.targets[i]->image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ComputeGeneralRW, subResRange);
+			}
+		}
+
+		cmdBuffer->Submit();
+
+		// DescriptorSetLayout
+		{
+			std::vector<VkDescriptorSetLayoutBinding> bindings(2);
+			bindings[0].binding            = 0;
+			bindings[0].descriptorCount    = 1;
+			bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[0].pImmutableSamplers = nullptr;
+			bindings[0].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT; 
+			bindings[1].binding            = 1;
+			bindings[1].descriptorCount    = 1;
+			bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			bindings[1].pImmutableSamplers = nullptr;
+			bindings[1].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT; 
+
+			VkDescriptorSetLayoutCreateInfo layoutCreateInfo;
+			ZeroVulkanStruct(layoutCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
+			layoutCreateInfo.pBindings    = bindings.data();
+			layoutCreateInfo.bindingCount = bindings.size();
+			VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &layoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.descriptorSetLayout));
+		}
+
+		// PipelineLayout
+		{
+			VkPipelineLayoutCreateInfo layoutCreateInfo;
+			ZeroVulkanStruct(layoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+			layoutCreateInfo.setLayoutCount = 1;
+			layoutCreateInfo.pSetLayouts    = &m_ComputeRes.descriptorSetLayout;
+			VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &layoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.pipelineLayout));
+		}
+		
+		// pool
+		{
+			VkDescriptorPoolSize poolSize = {};
+			poolSize.descriptorCount = 2 * 3;
+			poolSize.type            = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+			VkDescriptorPoolCreateInfo poolCreateInfo;
+			ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+			poolCreateInfo.poolSizeCount = 1;
+			poolCreateInfo.maxSets       = 3;
+			poolCreateInfo.pPoolSizes    = &poolSize;
+			VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.descriptorPool));
+		}
+
+		// DescriptorSet
+		{
+			VkDescriptorSetAllocateInfo allocInfo;
+			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+			allocInfo.descriptorPool     = m_ComputeRes.descriptorPool;
+			allocInfo.descriptorSetCount = 1;
+			allocInfo.pSetLayouts        = &m_ComputeRes.descriptorSetLayout;
+			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[0]));
+			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[1]));
+			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[2]));
+		}
+
+		// update set
+		{
+			for (int32 i = 0; i < 3; ++i)
+			{
+				VkWriteDescriptorSet writeDescriptorSet;
+				ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+				writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				writeDescriptorSet.dstSet          = m_ComputeRes.descriptorSets[i];
+				writeDescriptorSet.dstBinding      = 0;
+				writeDescriptorSet.descriptorCount = 1;
+				writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
+				vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+				writeDescriptorSet.dstBinding      = 1;
+				writeDescriptorSet.pImageInfo      = &(m_ComputeRes.targets[i]->descriptorInfo);
+				vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+			}
+		}
+
+		// pipeline
+		{
+			VkComputePipelineCreateInfo computeCreateInfo;
+			ZeroVulkanStruct(computeCreateInfo, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
+			computeCreateInfo.layout = m_ComputeRes.pipelineLayout;
+			
+			const char* shaderNames[3] = {
+				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
+				"assets/shaders/41_ComputeShader/Emboss.comp.spv",
+				"assets/shaders/41_ComputeShader/Sharpen.comp.spv",
+			};
+
+			vk_demo::DVKShaderModule* shaderModules[3];
+
+			for (int32 i = 0; i < 3; ++i)
+			{
+				// load shader
+				shaderModules[i] = vk_demo::DVKShaderModule::Create(m_VulkanDevice, shaderNames[i], VK_SHADER_STAGE_COMPUTE_BIT);
+
+				// stage info
+				VkPipelineShaderStageCreateInfo stageInfo;
+				ZeroVulkanStruct(stageInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
+				stageInfo.stage  = shaderModules[i]->stage;
+				stageInfo.module = shaderModules[i]->handle;
+				stageInfo.pName  = "main";
+
+				// compute info
+				computeCreateInfo.stage = stageInfo;
+				VERIFYVULKANRESULT(vkCreateComputePipelines(m_Device, m_PipelineCache, 1, &computeCreateInfo, VULKAN_CPU_ALLOCATOR, &(m_ComputeRes.pipelines[i])));
+			}
+		}
+
+		// command pool
+		{
+			VkCommandPoolCreateInfo poolCreateInfo;
+			ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+			poolCreateInfo.queueFamilyIndex = m_VulkanDevice->GetComputeQueue()->GetFamilyIndex();
+			poolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			VERIFYVULKANRESULT(vkCreateCommandPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandPool));
+
+			VkCommandBufferAllocateInfo allocInfo;
+			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+			allocInfo.commandPool        = m_ComputeRes.commandPool;
+			allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocInfo.commandBufferCount = 1;
+			VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandBuffer));
+		}
+
+		// fence
+		{
+			VkFenceCreateInfo fenceCreateInfo;
+			ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+			fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+			VERIFYVULKANRESULT(vkCreateFence(m_Device, &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.fence));
+		}
+
+		MLOG("");
+	}
+
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
@@ -128,7 +328,8 @@ private:
 		m_Texture = vk_demo::DVKTexture::Create2D(
 			"assets/textures/game0.jpg", 
 			m_VulkanDevice, 
-			cmdBuffer
+			cmdBuffer,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
 		);
 
 		m_Shader = vk_demo::DVKShader::Create(
@@ -254,6 +455,8 @@ private:
 
 	vk_demo::DVKCamera		    m_ViewCamera;
 	ModelViewProjectionBlock	m_MVPParam;
+
+	ComputeResource				m_ComputeRes;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };

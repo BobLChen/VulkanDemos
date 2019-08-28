@@ -9,7 +9,7 @@
 namespace vk_demo
 {
     
-	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags)
 	{
         int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
@@ -31,7 +31,14 @@ namespace vk_demo
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo           descriptorInfo = {};
-        
+
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
+			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		}
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
+			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		}
+		
         // 创建image
         VkImageCreateInfo imageCreateInfo;
         ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
@@ -44,7 +51,7 @@ namespace vk_demo
         imageCreateInfo.sharingMode     = VK_SHARING_MODE_EXCLUSIVE;
         imageCreateInfo.initialLayout   = VK_IMAGE_LAYOUT_UNDEFINED;
         imageCreateInfo.extent          = { (uint32_t)width, (uint32_t)height, 1 };
-        imageCreateInfo.usage           = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        imageCreateInfo.usage           = imageUsageFlags;
         VERIFYVULKANRESULT(vkCreateImage(device, &imageCreateInfo, VULKAN_CPU_ALLOCATOR, &image));
         
         // bind image buffer
@@ -220,7 +227,7 @@ namespace vk_demo
         return texture;
 	}
 
-    DVKTexture* DVKTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer)
+    DVKTexture* DVKTexture::Create2D(const std::string& filename, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags)
     {
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
@@ -242,7 +249,7 @@ namespace vk_demo
             return nullptr;
         }
 
-        DVKTexture* texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer);
+        DVKTexture* texture = Create2D(rgbaData, width * height * 4, VK_FORMAT_R8G8B8A8_UNORM, width, height, vulkanDevice, cmdBuffer, imageUsageFlags);
 
 		StbImage::Free(rgbaData);
 
@@ -353,10 +360,10 @@ namespace vk_demo
         
         // image info
         VkImage                         image = VK_NULL_HANDLE;
-        VkImageLayout                   imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
         VkImageView                     imageView = VK_NULL_HANDLE;
         VkSampler                       imageSampler = VK_NULL_HANDLE;
+		VkImageLayout					imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		VkDescriptorImageInfo           descriptorInfo = {};
         
         // 创建image
