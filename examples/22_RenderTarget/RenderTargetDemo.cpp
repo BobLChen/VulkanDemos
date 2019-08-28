@@ -806,22 +806,22 @@ private:
 		m_RenderTarget.width  = m_FrameWidth;
 		m_RenderTarget.height = m_FrameHeight;
 
-		m_RenderTarget.color = vk_demo::DVKTexture::Create2D(
-			m_VulkanDevice, 
+		m_RenderTarget.color = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
 			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
-		m_RenderTarget.depth = vk_demo::DVKTexture::Create2D(
+        
+		m_RenderTarget.depth = vk_demo::DVKTexture::CreateRenderTarget(
             m_VulkanDevice,
             PixelFormatToVkFormat(m_DepthFormat, false),
             VK_IMAGE_ASPECT_DEPTH_BIT,
             m_FrameWidth, m_FrameHeight,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
         );
-
+        
 		std::vector<VkAttachmentDescription> attchmentDescriptions(2);
 		// Color attachment
 		attchmentDescriptions[0].format         = m_RenderTarget.color->format;
@@ -950,7 +950,6 @@ private:
 				m_PipelineCache,
 				m_SceneShader
 			);
-			VkPipelineDepthStencilStateCreateInfo& depthStencilState = m_SceneMaterials[i]->pipelineInfo.depthStencilState;
 			m_SceneMaterials[i]->PreparePipeline();
 			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneDiffuses[i]);
 		}

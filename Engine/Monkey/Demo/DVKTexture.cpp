@@ -219,6 +219,14 @@ namespace vk_demo
 
 		return texture;
     }
+    
+    DVKTexture* DVKTexture::CreateCubeRenderTarget(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+    {
+        DVKTexture* texture = CreateCube(vulkanDevice, nullptr, format, aspect, width, height, usage, sampleCount);
+        texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        texture->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return texture;
+    }
 
 	DVKTexture* DVKTexture::CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
 	{
@@ -288,7 +296,7 @@ namespace vk_demo
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
-		if (imageLayout != ImageLayoutBarrier::Undefined) 
+		if (cmdBuffer != nullptr && imageLayout != ImageLayoutBarrier::Undefined)
 		{
 			VkImageSubresourceRange subresourceRange = {};
 			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -303,6 +311,10 @@ namespace vk_demo
 
 			cmdBuffer->Submit();
 		}
+        else
+        {
+            imageLayout = ImageLayoutBarrier::Undefined;
+        }
 
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;
@@ -328,6 +340,23 @@ namespace vk_demo
 		return texture;
 	}
 
+    DVKTexture* DVKTexture::CreateAttachment(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage)
+    {
+        DVKTexture* texture = Create2D(vulkanDevice, nullptr, format, aspect, width, height, usage);
+        texture->descriptorInfo.sampler = VK_NULL_HANDLE;
+        texture->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return texture;
+    }
+    
+    DVKTexture* DVKTexture::CreateRenderTarget(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
+    {
+        DVKTexture* texture = Create2D(vulkanDevice, nullptr, format, aspect, width, height, usage, sampleCount);
+        texture->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        return texture;
+    }
+    
 	DVKTexture* DVKTexture::Create2D(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
@@ -395,7 +424,7 @@ namespace vk_demo
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
 
-		if (imageLayout != ImageLayoutBarrier::Undefined)
+		if (cmdBuffer != nullptr && imageLayout != ImageLayoutBarrier::Undefined)
 		{
 			VkImageSubresourceRange subresourceRange = {};
 			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -410,6 +439,10 @@ namespace vk_demo
 
 			cmdBuffer->Submit();
 		}
+        else
+        {
+            imageLayout = ImageLayoutBarrier::Undefined;
+        }
 
 		descriptorInfo.sampler     = imageSampler;
 		descriptorInfo.imageView   = imageView;

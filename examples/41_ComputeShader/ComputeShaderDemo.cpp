@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -145,37 +145,25 @@ private:
 
 	void ProcessImage()
 	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
-		cmdBuffer->Begin();
-
 		// create target image
 		{
+            vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 			for (int32 i = 0; i < 3; ++i)
 			{
 				m_ComputeRes.targets[i] = vk_demo::DVKTexture::Create2D(
 					m_VulkanDevice,
+                    cmdBuffer,
 					VK_FORMAT_R8G8B8A8_UNORM,
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					m_Texture->width, m_Texture->height,
 					VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-					VK_SAMPLE_COUNT_1_BIT
+					VK_SAMPLE_COUNT_1_BIT,
+                    ImageLayoutBarrier::ComputeGeneralRW
 				);
-
-				m_ComputeRes.targets[i]->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-				m_ComputeRes.targets[i]->imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-				
-				VkImageSubresourceRange subResRange = { };
-				subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-				subResRange.baseMipLevel   = 0;
-				subResRange.levelCount     = 1;
-				subResRange.layerCount     = m_ComputeRes.targets[i]->depth;
-				subResRange.baseArrayLayer = 0;
-				vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, m_ComputeRes.targets[i]->image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ComputeGeneralRW, subResRange);
 			}
+            delete cmdBuffer;
 		}
-
-		cmdBuffer->Submit();
-
+        
 		// DescriptorSetLayout
 		{
 			std::vector<VkDescriptorSetLayoutBinding> bindings(2);

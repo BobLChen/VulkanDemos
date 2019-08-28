@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -160,50 +160,46 @@ protected:
 
 		for (int32 i = 0; i < m_AttachsColor.size(); ++i)
 		{
-			m_AttachsColor[i] = vk_demo::DVKTexture::Create2D(
-				m_VulkanDevice, 
+			m_AttachsColor[i] = vk_demo::DVKTexture::CreateAttachment(
+				m_VulkanDevice,
 				PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				fwidth, fheight,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
-			m_AttachsColor[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
         
         for (int32 i = 0; i < m_AttachsNormal.size(); ++i)
         {
-            m_AttachsNormal[i] = vk_demo::DVKTexture::Create2D(
+            m_AttachsNormal[i] = vk_demo::DVKTexture::CreateAttachment(
                 m_VulkanDevice,
 				VK_FORMAT_R16G16B16A16_SFLOAT,
                 VK_IMAGE_ASPECT_COLOR_BIT,
                 fwidth, fheight,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
             );
-            m_AttachsNormal[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
         }
 
 		for (int32 i = 0; i < m_AttachsPosition.size(); ++i)
 		{
-			m_AttachsPosition[i] = vk_demo::DVKTexture::Create2D(
+			m_AttachsPosition[i] = vk_demo::DVKTexture::CreateAttachment(
 				m_VulkanDevice,
 				VK_FORMAT_R16G16B16A16_SFLOAT,
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				fwidth, fheight,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
-			m_AttachsPosition[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
         
 		for (int32 i = 0; i < m_AttachsDepth.size(); ++i)
 		{
-			m_AttachsDepth[i] = vk_demo::DVKTexture::Create2D(
-				m_VulkanDevice, 
+			m_AttachsDepth[i] = vk_demo::DVKTexture::CreateAttachment(
+				m_VulkanDevice,
 				PixelFormatToVkFormat(m_DepthFormat, false), 
 				VK_IMAGE_ASPECT_DEPTH_BIT,
 				fwidth, fheight,
 				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT
 			);
-			m_AttachsDepth[i]->descriptorInfo.sampler = VK_NULL_HANDLE;
 		}
 	}
 

@@ -72,7 +72,26 @@ namespace vk_demo
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, 
 			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
 		);
-
+        
+        static DVKTexture* CreateAttachment(
+            std::shared_ptr<VulkanDevice> vulkanDevice,
+            VkFormat format,
+            VkImageAspectFlags aspect,
+            int32 width,
+            int32 height,
+            VkImageUsageFlags usage
+        );
+        
+        static DVKTexture* CreateRenderTarget(
+            std::shared_ptr<VulkanDevice> vulkanDevice,
+            VkFormat format,
+            VkImageAspectFlags aspect,
+            int32 width,
+            int32 height,
+            VkImageUsageFlags usage,
+            VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
+        );
+        
 		static DVKTexture* Create2D(
 			std::shared_ptr<VulkanDevice> vulkanDevice,
 			DVKCommandBuffer* cmdBuffer,
@@ -82,7 +101,7 @@ namespace vk_demo
 			int32 height, 
 			VkImageUsageFlags usage, 
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
+			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
 		);
 
 		static DVKTexture* CreateCube(
@@ -94,9 +113,19 @@ namespace vk_demo
 			int32 height, 
 			VkImageUsageFlags usage, 
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
-			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
+			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
 		);
-
+        
+        static DVKTexture* CreateCubeRenderTarget(
+            std::shared_ptr<VulkanDevice> vulkanDevice,
+            VkFormat format,
+            VkImageAspectFlags aspect,
+            int32 width,
+            int32 height,
+            VkImageUsageFlags usage,
+            VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT
+        );
+        
         static DVKTexture* Create2DArray(
 			const std::vector<std::string> filenames, 
 			std::shared_ptr<VulkanDevice> vulkanDevice, 
@@ -115,7 +144,7 @@ namespace vk_demo
 			DVKCommandBuffer* cmdBuffer,
 			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
 		);
-
+        
     public:
         VkDevice						device = nullptr;
         
