@@ -265,7 +265,7 @@ namespace vk_demo
 		
 		vkCmdBindDescriptorSets(
 			commandBuffer, 
-			VK_PIPELINE_BIND_POINT_GRAPHICS, 
+			bindPoint, 
 			GetPipelineLayout(), 
 			0, GetDescriptorSets().size(), GetDescriptorSets().data(), 
 			dynamicOffsetCount, dynOffsets

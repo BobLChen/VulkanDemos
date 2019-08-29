@@ -119,7 +119,13 @@ void DemoBase::CreateCommandBuffers()
 	cmdPoolInfo.queueFamilyIndex = GetVulkanRHI()->GetDevice()->GetPresentQueue()->GetFamilyIndex();
 	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	VERIFYVULKANRESULT(vkCreateCommandPool(device, &cmdPoolInfo, VULKAN_CPU_ALLOCATOR, &m_CommandPool));
-        
+
+	VkCommandPoolCreateInfo computePoolInfo;
+	ZeroVulkanStruct(computePoolInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+	computePoolInfo.queueFamilyIndex = GetVulkanRHI()->GetDevice()->GetComputeQueue()->GetFamilyIndex();
+	computePoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	VERIFYVULKANRESULT(vkCreateCommandPool(device, &computePoolInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeCommandPool));
+
     VkCommandBufferAllocateInfo cmdBufferInfo;
     ZeroVulkanStruct(cmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
     cmdBufferInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -140,4 +146,6 @@ void DemoBase::DestroyCommandBuffers()
     }
 
 	vkDestroyCommandPool(device, m_CommandPool, VULKAN_CPU_ALLOCATOR);
+    
+    vkDestroyCommandPool(device, m_ComputeCommandPool, VULKAN_CPU_ALLOCATOR);
 }

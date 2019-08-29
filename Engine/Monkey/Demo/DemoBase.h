@@ -140,6 +140,7 @@ protected:
 	VkSemaphore 					m_RenderComplete;
 
 	VkCommandPool					m_CommandPool;
+	VkCommandPool					m_ComputeCommandPool;
 	std::vector<VkCommandBuffer>	m_CommandBuffers;
     
 	VkPipelineStageFlags			m_WaitStageMask;
