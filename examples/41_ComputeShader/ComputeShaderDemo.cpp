@@ -152,6 +152,7 @@ private:
 
 	void ProcessImage()
 	{
+		// https://docs.microsoft.com/zh-cn/windows/win32/direct3dhlsl/sv-dispatchthreadid
 		// command pool
 		{
 			VkCommandPoolCreateInfo poolCreateInfo;
