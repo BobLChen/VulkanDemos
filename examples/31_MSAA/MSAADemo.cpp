@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -67,7 +67,7 @@ public:
 	void CreateMSAATexture()
 	{
 		// msaa color texture
-		m_MSAAColorTexture = vk_demo::DVKTexture::Create2D(
+		m_MSAAColorTexture = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false),
 			VK_IMAGE_ASPECT_COLOR_BIT,
@@ -75,9 +75,9 @@ public:
 			VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 			m_MSAACount
 		);
-
+        
 		// msaa depth texture
-		m_MSAADepthTexture = vk_demo::DVKTexture::Create2D(
+		m_MSAADepthTexture = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,

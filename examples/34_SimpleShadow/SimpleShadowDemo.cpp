@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -153,14 +153,14 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_ShadowMap = vk_demo::DVKTexture::Create2D(
+		m_ShadowMap = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			2048, 2048,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
+        
 		vk_demo::DVKRenderPassInfo passInfo(m_ShadowMap, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE);
 		m_ShadowRTT = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
 	}

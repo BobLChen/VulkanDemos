@@ -26,6 +26,82 @@ namespace vk_demo
         
         return shaderModule;
     }
+
+	inline VkImageLayout GetImageLayout(ImageLayoutBarrier target)
+	{
+		VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		switch (target)
+		{
+			case ImageLayoutBarrier::Undefined:
+			{
+				layout = VK_IMAGE_LAYOUT_UNDEFINED;
+			}
+			break;
+
+			case ImageLayoutBarrier::TransferDest:
+			{
+				layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::ColorAttachment:
+			{
+				layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::DepthStencilAttachment:
+			{
+				layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::TransferSource:
+			{
+				layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::Present:
+			{
+				layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+			}
+			break;
+
+			case ImageLayoutBarrier::PixelShaderRead:
+			{
+				layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::PixelDepthStencilRead:
+			{
+				layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::ComputeGeneralRW:
+			{
+				layout = VK_IMAGE_LAYOUT_GENERAL;
+			}
+			break;
+
+			case ImageLayoutBarrier::PixelGeneralRW:
+			{
+				layout = VK_IMAGE_LAYOUT_GENERAL;
+			}
+			break;
+
+			default:
+			{
+				MLOGE("Unknown ImageLayoutBarrier %d", (int32)target);
+			}
+			break;
+		}
+
+		return layout;
+	}
     
     inline VkPipelineStageFlags GetImageBarrierFlags(ImageLayoutBarrier target, VkAccessFlags& accessFlags, VkImageLayout& layout)
     {

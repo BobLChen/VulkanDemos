@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -224,6 +224,7 @@ private:
 		float range0 = m_VulkanDevice->GetLimits().lineWidthRange[0];
 		float range1 = m_VulkanDevice->GetLimits().lineWidthRange[1];
 		float lineWidth = MMath::Clamp(3.0f, range0, range1);
+        lineWidth = MMath::Min(lineWidth, m_VulkanDevice->GetLimits().lineWidthRange[1]);
 
 		m_LineMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
@@ -344,22 +345,22 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_RTColor = vk_demo::DVKTexture::Create2D(
-			m_VulkanDevice, 
+		m_RTColor = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
 			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
-		m_RTDepth = vk_demo::DVKTexture::Create2D(
+        
+		m_RTDepth = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
+        
 		vk_demo::DVKRenderPassInfo passInfo(
 			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
 			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE

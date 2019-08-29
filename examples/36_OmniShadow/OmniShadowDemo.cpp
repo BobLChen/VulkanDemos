@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -196,22 +196,22 @@ private:
 
 	void CreateRenderTarget()
 	{
-		m_RTColor = vk_demo::DVKTexture::CreateCube(
-			m_VulkanDevice, 
+		m_RTColor = vk_demo::DVKTexture::CreateCubeRenderTarget(
+			m_VulkanDevice,
 			VK_FORMAT_R32_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			512, 512,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
-		m_RTDepth = vk_demo::DVKTexture::CreateCube(
+        
+		m_RTDepth = vk_demo::DVKTexture::CreateCubeRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			512, 512,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-
+        
 		vk_demo::DVKRenderPassInfo passInfo(
 			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
 			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE

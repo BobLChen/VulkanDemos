@@ -668,3 +668,18 @@ SETUP_SAMPLE_START(40_QueryStatistics)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(40_QueryStatistics)
+
+SETUP_SAMPLE_START(41_ComputeShader)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/41_ComputeShader/ComputeShaderDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/41_ComputeShader/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(41_ComputeShader)
