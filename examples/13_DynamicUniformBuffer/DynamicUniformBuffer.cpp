@@ -272,7 +272,7 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo;
         pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.vert.spv");
 		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/13_DynamicUniformBuffer/obj.frag.spv");
 		
@@ -284,7 +284,7 @@ private:
 		pipelineInfo.blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 		pipelineInfo.blendAttachmentStates[0].alphaBlendOp        = VK_BLEND_OP_ADD;
 
-		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipeline = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
 		vkDestroyShaderModule(m_Device, pipelineInfo.vertShaderModule, VULKAN_CPU_ALLOCATOR);
 		vkDestroyShaderModule(m_Device, pipelineInfo.fragShaderModule, VULKAN_CPU_ALLOCATOR);
@@ -469,7 +469,7 @@ private:
 	int32							m_Selected = 0;
 	float							m_GlobalAlpha = 1.0f;
 
-    vk_demo::DVKPipeline*           m_Pipeline = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline = nullptr;
 
 	vk_demo::DVKModel*				m_Model = nullptr;
 

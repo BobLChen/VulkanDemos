@@ -17,7 +17,7 @@
 namespace vk_demo
 {
 
-	struct DVKPipelineInfo
+	struct DVKGfxPipelineInfo
 	{
 		VkPipelineInputAssemblyStateCreateInfo		inputAssemblyState;
 		VkPipelineRasterizationStateCreateInfo		rasterizationState;
@@ -36,7 +36,7 @@ namespace vk_demo
 		int32			subpass = 0;
         int32           colorAttachmentCount = 1;
 
-		DVKPipelineInfo()
+		DVKGfxPipelineInfo()
 		{
 			ZeroVulkanStruct(inputAssemblyState, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);
 			inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -143,18 +143,18 @@ namespace vk_demo
 
 	};
 
-	class DVKPipeline
+	class DVKGfxPipeline
 	{
 	public:
 		
-		DVKPipeline()
+		DVKGfxPipeline()
 			: vulkanDevice(nullptr)
 			, pipeline(VK_NULL_HANDLE)
 		{
 
 		}
 
-		~DVKPipeline()
+		~DVKGfxPipeline()
 		{
 			VkDevice device = vulkanDevice->GetInstanceHandle();
 			if (pipeline != VK_NULL_HANDLE) {
@@ -162,10 +162,10 @@ namespace vk_demo
 			}
 		}
 
-		static DVKPipeline* Create(
+		static DVKGfxPipeline* Create(
 			std::shared_ptr<VulkanDevice> vulkanDevice,
 			VkPipelineCache pipelineCache,
-			DVKPipelineInfo& pipelineInfo, 
+			DVKGfxPipelineInfo& pipelineInfo, 
 			const std::vector<VkVertexInputBindingDescription>& inputBindings, 
 			const std::vector<VkVertexInputAttributeDescription>& vertexInputAttributs,
 			VkPipelineLayout pipelineLayout,

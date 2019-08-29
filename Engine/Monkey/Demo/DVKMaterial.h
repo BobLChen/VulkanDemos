@@ -158,8 +158,8 @@ namespace vk_demo
         VkRenderPass            renderPass = VK_NULL_HANDLE;
         VkPipelineCache         pipelineCache = VK_NULL_HANDLE;
         
-        DVKPipelineInfo         pipelineInfo;
-        DVKPipeline*            pipeline = nullptr;
+        DVKGfxPipelineInfo         pipelineInfo;
+        DVKGfxPipeline*            pipeline = nullptr;
         DVKDescriptorSet*		descriptorSet = nullptr;
 
 		uint32					dynamicOffsetCount;

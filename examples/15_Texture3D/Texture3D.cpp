@@ -360,25 +360,25 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo0;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo0;
         pipelineInfo0.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.vert.spv");
 		pipelineInfo0.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/texture.frag.spv");
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipeline0 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo1;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo1;
         pipelineInfo1.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/lut.vert.spv");
         pipelineInfo1.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/lut.frag.spv");
-        m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        m_Pipeline1 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo2;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo2;
         pipelineInfo2.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug0.vert.spv");
         pipelineInfo2.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug0.frag.spv");
-        m_Pipeline2 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        m_Pipeline2 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo3;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo3;
         pipelineInfo3.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug1.vert.spv");
         pipelineInfo3.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/15_Texture3D/debug1.frag.spv");
-        m_Pipeline3 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+        m_Pipeline3 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
 		vkDestroyShaderModule(m_Device, pipelineInfo0.vertShaderModule, VULKAN_CPU_ALLOCATOR);
 		vkDestroyShaderModule(m_Device, pipelineInfo0.fragShaderModule, VULKAN_CPU_ALLOCATOR);
@@ -526,10 +526,10 @@ private:
 	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
 	vk_demo::DVKTexture*			m_Tex3DLut  = nullptr;
 	
-    vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline2 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline3 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline2 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline3 = nullptr;
     
 	vk_demo::DVKModel*				m_Model = nullptr;
 
