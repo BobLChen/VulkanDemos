@@ -421,6 +421,8 @@ namespace vk_demo
 			
 		}
 
+		static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* comp); 
+
 		static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);
         
         static DVKShader* Create(std::shared_ptr<VulkanDevice> vulkanDevice, bool dynamicUBO, const char* vert, const char* frag, const char* geom = nullptr, const char* comp = nullptr, const char* tesc = nullptr, const char* tese = nullptr);

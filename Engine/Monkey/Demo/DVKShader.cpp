@@ -59,6 +59,11 @@ namespace vk_demo
         return shader;
     }
 
+	DVKShader* DVKShader::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* comp)
+	{
+		return Create(vulkanDevice, true, nullptr, nullptr, nullptr, comp, nullptr, nullptr);
+	}
+
 	DVKShader* DVKShader::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const char* vert, const char* frag, const char* geom, const char* comp, const char* tesc, const char* tese)
 	{
         return Create(vulkanDevice, false, vert, frag, geom, comp, tesc, tese);
@@ -89,7 +94,7 @@ namespace vk_demo
 			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
-			
+
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
