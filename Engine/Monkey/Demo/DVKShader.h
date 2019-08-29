@@ -9,6 +9,8 @@
 #include "DVKBuffer.h"
 #include "DVKTexture.h"
 
+#include "spirv_cross.hpp"
+
 #include "File/FileManager.h"
 #include "Vulkan/VulkanCommon.h"
 
@@ -139,7 +141,28 @@ namespace vk_demo
 		{
 			
 		}
-
+        
+        void WriteStorageImage(const std::string& name, DVKTexture* texture)
+        {
+            auto it = setLayoutsInfo.paramsMap.find(name);
+            if (it == setLayoutsInfo.paramsMap.end()) {
+                MLOGE("Failed write buffer, %s not found!", name.c_str());
+                return;
+            }
+            
+            auto bindInfo = it->second;
+            
+            VkWriteDescriptorSet writeDescriptorSet;
+            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+            writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
+            writeDescriptorSet.descriptorCount = 1;
+            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            writeDescriptorSet.pBufferInfo     = nullptr;
+            writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
+            writeDescriptorSet.dstBinding      = bindInfo.binding;
+            vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
+        }
+        
 		void WriteImage(const std::string& name, DVKTexture* texture)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
@@ -455,7 +478,17 @@ namespace vk_demo
 		void GenerateLayout();
         
         void GenerateInputInfo();
+        
+        void ProcessstorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        
+        void ProcessInput(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        
+        void ProcessTextures(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
 
+        void ProcessAttachments(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        
+        void ProcessUniformBuffers(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        
 		void ProcessShaderModule(DVKShaderModule* shaderModule);
 
 	private:

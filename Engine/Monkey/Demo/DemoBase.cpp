@@ -146,4 +146,6 @@ void DemoBase::DestroyCommandBuffers()
     }
 
 	vkDestroyCommandPool(device, m_CommandPool, VULKAN_CPU_ALLOCATOR);
+    
+    vkDestroyCommandPool(device, m_ComputeCommandPool, VULKAN_CPU_ALLOCATOR);
 }

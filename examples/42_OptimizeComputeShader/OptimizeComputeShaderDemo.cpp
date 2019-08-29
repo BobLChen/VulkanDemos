@@ -4,6 +4,7 @@
 #include "Demo/DVKCommon.h"
 #include "Demo/DVKTexture.h"
 #include "Demo/DVKRenderTarget.h"
+#include "Demo/DVKCompute.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -73,31 +74,7 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 proj;
 	};
-
-	struct ComputeResource
-	{
-		VkDescriptorPool				descriptorPool;
-		VkDescriptorSetLayout			descriptorSetLayout;
-		VkPipelineLayout				pipelineLayout;
-
-		VkDescriptorSet					descriptorSets[3];
-		VkPipeline						pipelines[3];
-		vk_demo::DVKTexture*			targets[3];
-
-		void Destroy(VkDevice device)
-		{
-			vkDestroyDescriptorPool(device, descriptorPool, VULKAN_CPU_ALLOCATOR);
-			vkDestroyDescriptorSetLayout(device, descriptorSetLayout, VULKAN_CPU_ALLOCATOR);
-			vkDestroyPipelineLayout(device, pipelineLayout, VULKAN_CPU_ALLOCATOR);
-
-			for (int32 i = 0; i < 3; ++i)
-			{
-				vkDestroyPipeline(device, pipelines[i], VULKAN_CPU_ALLOCATOR);
-				delete targets[i];
-			}
-		}
-	};
-
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -130,7 +107,7 @@ private:
 				}
 				else
 				{
-					m_Material->SetTexture("diffuseMap", m_ComputeRes.targets[m_FilterIndex - 1]);
+					m_Material->SetTexture("diffuseMap", m_ComputeTargets[m_FilterIndex - 1]);
 				}
 			}
 
@@ -148,144 +125,45 @@ private:
 
 	void ProcessImage()
 	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
 
 		// create target image
-		{
-			for (int32 i = 0; i < 3; ++i)
-			{
-				m_ComputeRes.targets[i] = vk_demo::DVKTexture::Create2D(
-					m_VulkanDevice,
-					cmdBuffer,
-					VK_FORMAT_R8G8B8A8_UNORM,
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					m_Texture->width, m_Texture->height,
-					VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-					VK_SAMPLE_COUNT_1_BIT,
-					ImageLayoutBarrier::ComputeGeneralRW
-				);
-			}
-		}
-
-		// DescriptorSetLayout
-		{
-			std::vector<VkDescriptorSetLayoutBinding> bindings(2);
-			bindings[0].binding            = 0;
-			bindings[0].descriptorCount    = 1;
-			bindings[0].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			bindings[0].pImmutableSamplers = nullptr;
-			bindings[0].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT; 
-			bindings[1].binding            = 1;
-			bindings[1].descriptorCount    = 1;
-			bindings[1].descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			bindings[1].pImmutableSamplers = nullptr;
-			bindings[1].stageFlags         = VK_SHADER_STAGE_COMPUTE_BIT; 
-
-			VkDescriptorSetLayoutCreateInfo layoutCreateInfo;
-			ZeroVulkanStruct(layoutCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-			layoutCreateInfo.pBindings    = bindings.data();
-			layoutCreateInfo.bindingCount = bindings.size();
-			VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(m_Device, &layoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.descriptorSetLayout));
-		}
-
-		// PipelineLayout
-		{
-			VkPipelineLayoutCreateInfo layoutCreateInfo;
-			ZeroVulkanStruct(layoutCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-			layoutCreateInfo.setLayoutCount = 1;
-			layoutCreateInfo.pSetLayouts    = &m_ComputeRes.descriptorSetLayout;
-			VERIFYVULKANRESULT(vkCreatePipelineLayout(m_Device, &layoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.pipelineLayout));
-		}
-
-		// pool
-		{
-			VkDescriptorPoolSize poolSize = {};
-			poolSize.descriptorCount = 2 * 3;
-			poolSize.type            = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-
-			VkDescriptorPoolCreateInfo poolCreateInfo;
-			ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-			poolCreateInfo.poolSizeCount = 1;
-			poolCreateInfo.maxSets       = 3;
-			poolCreateInfo.pPoolSizes    = &poolSize;
-			VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.descriptorPool));
-		}
-
-		// DescriptorSet
-		{
-			VkDescriptorSetAllocateInfo allocInfo;
-			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-			allocInfo.descriptorPool     = m_ComputeRes.descriptorPool;
-			allocInfo.descriptorSetCount = 1;
-			allocInfo.pSetLayouts        = &m_ComputeRes.descriptorSetLayout;
-			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[0]));
-			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[1]));
-			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_ComputeRes.descriptorSets[2]));
-		}
-
-		// update set
-		{
-			for (int32 i = 0; i < 3; ++i)
-			{
-				VkWriteDescriptorSet writeDescriptorSet;
-				ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-				writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-				writeDescriptorSet.dstSet          = m_ComputeRes.descriptorSets[i];
-				writeDescriptorSet.dstBinding      = 0;
-				writeDescriptorSet.descriptorCount = 1;
-				writeDescriptorSet.pImageInfo      = &(m_Texture->descriptorInfo);
-				vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-
-				writeDescriptorSet.dstBinding      = 1;
-				writeDescriptorSet.pImageInfo      = &(m_ComputeRes.targets[i]->descriptorInfo);
-				vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-			}
-		}
-
-		// pipeline
-		{
-			VkComputePipelineCreateInfo computeCreateInfo;
-			ZeroVulkanStruct(computeCreateInfo, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
-			computeCreateInfo.layout = m_ComputeRes.pipelineLayout;
-
-			const char* shaderNames[3] = {
-				"assets/shaders/41_ComputeShader/Emboss.comp.spv",
-				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
-				"assets/shaders/41_ComputeShader/Sharpen.comp.spv",
-			};
-
-			auto shader = vk_demo::DVKShader::Create(m_VulkanDevice, "assets/shaders/41_ComputeShader/Emboss.comp.spv");
-
-			vk_demo::DVKShaderModule* shaderModules[3];
-
-			for (int32 i = 0; i < 3; ++i)
-			{
-				// load shader
-				shaderModules[i] = vk_demo::DVKShaderModule::Create(m_VulkanDevice, shaderNames[i], VK_SHADER_STAGE_COMPUTE_BIT);
-
-				// stage info
-				VkPipelineShaderStageCreateInfo stageInfo;
-				ZeroVulkanStruct(stageInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
-				stageInfo.stage  = shaderModules[i]->stage;
-				stageInfo.module = shaderModules[i]->handle;
-				stageInfo.pName  = "main";
-
-				// compute info
-				computeCreateInfo.stage = stageInfo;
-				VERIFYVULKANRESULT(vkCreateComputePipelines(m_Device, m_PipelineCache, 1, &computeCreateInfo, VULKAN_CPU_ALLOCATOR, &(m_ComputeRes.pipelines[i])));
-
-				delete shaderModules[i];
-			}
-		}
-
+        for (int32 i = 0; i < 3; ++i)
+        {
+            m_ComputeTargets[i] = vk_demo::DVKTexture::Create2D(
+                m_VulkanDevice,
+                cmdBuffer,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                m_Texture->width, m_Texture->height,
+                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+                VK_SAMPLE_COUNT_1_BIT,
+                ImageLayoutBarrier::ComputeGeneralRW
+            );
+        }
+        
+        const char* shaderNames[3] = {
+            "assets/shaders/42_OptimizeComputeShader/Emboss.comp.spv",
+            "assets/shaders/42_OptimizeComputeShader/Edgedetect.comp.spv",
+            "assets/shaders/42_OptimizeComputeShader/Sharpen.comp.spv",
+        };
+        
+        for (int32 i = 0; i < 3; ++i)
+        {
+            m_ComputeShaders[i]    = vk_demo::DVKShader::Create(m_VulkanDevice, shaderNames[i]);
+            m_ComputeProcessors[i] = vk_demo::DVKComputeProcessor::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShaders[i]);
+            m_ComputeProcessors[i]->SetStorageTexture("inputImage", m_Texture);
+            m_ComputeProcessors[i]->SetStorageTexture("outputImage", m_ComputeTargets[i]);
+        }
+        
 		// compute command
 		cmdBuffer->Begin();
 
 		for (int32 i = 0; i < 3; ++i)
 		{
-			vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeRes.pipelines[i]);
-			vkCmdBindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeRes.pipelineLayout, 0, 1, &(m_ComputeRes.descriptorSets[i]), 0, 0);
-			vkCmdDispatch(cmdBuffer->cmdBuffer, m_ComputeRes.targets[i]->width / 16, m_ComputeRes.targets[i]->height / 16, 1);
+			vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeProcessors[i]->GetPipeline());
+            m_ComputeProcessors[i]->BindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+			vkCmdDispatch(cmdBuffer->cmdBuffer, m_ComputeTargets[i]->width / 16, m_ComputeTargets[i]->height / 16, 1);
 		}
 
 		cmdBuffer->End();
@@ -297,6 +175,8 @@ private:
 		m_FilterNames[1] = "Emboss";
 		m_FilterNames[2] = "Edgedetect";
 		m_FilterNames[3] = "Sharpen";
+        
+        delete cmdBuffer;
 	}
 
 	void LoadAssets()
@@ -344,8 +224,13 @@ private:
 
 	void DestroyAssets()
 	{
-		m_ComputeRes.Destroy(m_Device);
-
+        for (int32 i = 0; i < 3; ++i)
+        {
+            delete m_ComputeShaders[i];
+            delete m_ComputeTargets[i];
+            delete m_ComputeProcessors[i];
+        }
+        
 		delete m_ModelPlane;
 		delete m_Texture;
 
@@ -438,22 +323,24 @@ private:
 
 private:
 
-	bool 						m_Ready = false;
+	bool 						    m_Ready = false;
 
-	vk_demo::DVKModel*			m_ModelPlane = nullptr;
-	vk_demo::DVKMaterial*		m_Material = nullptr;
-	vk_demo::DVKShader*			m_Shader = nullptr;
-	vk_demo::DVKTexture*		m_Texture = nullptr;
+	vk_demo::DVKModel*			    m_ModelPlane = nullptr;
+	vk_demo::DVKMaterial*		    m_Material = nullptr;
+	vk_demo::DVKShader*			    m_Shader = nullptr;
+	vk_demo::DVKTexture*		    m_Texture = nullptr;
 
-	vk_demo::DVKCamera		    m_ViewCamera;
-	ModelViewProjectionBlock	m_MVPParam;
+	vk_demo::DVKCamera		        m_ViewCamera;
+	ModelViewProjectionBlock	    m_MVPParam;
+    
+    vk_demo::DVKTexture*            m_ComputeTargets[3];
+    vk_demo::DVKShader*             m_ComputeShaders[3];
+    vk_demo::DVKComputeProcessor*   m_ComputeProcessors[3];
+    
+	std::vector<const char*>        m_FilterNames;
+	int32						    m_FilterIndex;
 
-	ComputeResource				m_ComputeRes;
-
-	std::vector<const char*>    m_FilterNames;
-	int32						m_FilterIndex;
-
-	ImageGUIContext*			m_GUI = nullptr;
+	ImageGUIContext*			    m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)

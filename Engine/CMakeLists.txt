@@ -15,6 +15,7 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKDefaultRes.h
 	Monkey/Demo/DVKRenderTarget.h
 	Monkey/Demo/DVKCamera.h
+	Monkey/Demo/DVKCompute.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -30,6 +31,7 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKDefaultRes.cpp
 	Monkey/Demo/DVKRenderTarget.cpp
 	Monkey/Demo/DVKCamera.cpp
+	Monkey/Demo/DVKCompute.cpp
 )
 
 set(Monkey_Configuration_HDRS
