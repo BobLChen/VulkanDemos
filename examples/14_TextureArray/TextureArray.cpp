@@ -373,10 +373,10 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo;
         pipelineInfo.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.vert.spv");
 		pipelineInfo.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/14_TextureArray/obj.frag.spv");
-		m_Pipeline = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipeline = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
 		vkDestroyShaderModule(m_Device, pipelineInfo.vertShaderModule, VULKAN_CPU_ALLOCATOR);
 		vkDestroyShaderModule(m_Device, pipelineInfo.fragShaderModule, VULKAN_CPU_ALLOCATOR);
@@ -546,7 +546,7 @@ private:
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-    vk_demo::DVKPipeline*           m_Pipeline = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline = nullptr;
 	vk_demo::DVKTexture*			m_Texture = nullptr;
 	vk_demo::DVKModel*				m_Model = nullptr;
 

@@ -248,21 +248,21 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo0;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo0;
         pipelineInfo0.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline0.vert.spv");
 		pipelineInfo0.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline0.frag.spv");
-		m_Pipelines[0] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipelines[0] = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
-		vk_demo::DVKPipelineInfo pipelineInfo1;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo1;
         pipelineInfo1.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline1.vert.spv");
 		pipelineInfo1.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline1.frag.spv");
-		m_Pipelines[1] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipelines[1] = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 	
-		vk_demo::DVKPipelineInfo pipelineInfo2;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo2;
 		pipelineInfo2.rasterizationState.polygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
         pipelineInfo2.vertShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.vert.spv");
 		pipelineInfo2.fragShaderModule = vk_demo::LoadSPIPVShader(m_Device, "assets/shaders/10_Pipelines/pipeline2.frag.spv");
-		m_Pipelines[2] = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
+		m_Pipelines[2] = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_PipelineLayout, m_RenderPass);
 		
 		vkDestroyShaderModule(m_Device, pipelineInfo0.vertShaderModule, VULKAN_CPU_ALLOCATOR);
 		vkDestroyShaderModule(m_Device, pipelineInfo0.fragShaderModule, VULKAN_CPU_ALLOCATOR);
@@ -401,7 +401,7 @@ private:
 private:
 	typedef std::vector<vk_demo::DVKBuffer*>		DVKBuffers;
 	typedef std::vector<VkDescriptorSet>			VkDescriptorSets;
-	typedef std::vector<vk_demo::DVKPipeline*>		DVKPipelines;
+	typedef std::vector<vk_demo::DVKGfxPipeline*>		DVKPipelines;
 
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;

@@ -585,10 +585,10 @@ private:
     
 	void CreatePipelines()
 	{
-		vk_demo::DVKPipelineInfo pipelineInfo0;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo0;
 		pipelineInfo0.shader = m_Shader0;
         pipelineInfo0.colorAttachmentCount = 2;
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(
+		m_Pipeline0 = vk_demo::DVKGfxPipeline::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
 			pipelineInfo0, 
@@ -600,13 +600,13 @@ private:
 			m_RenderPass
 		);
 		
-		vk_demo::DVKPipelineInfo pipelineInfo1;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo1;
 		pipelineInfo1.depthStencilState.depthTestEnable   = VK_FALSE;
 		pipelineInfo1.depthStencilState.depthWriteEnable  = VK_FALSE;
 		pipelineInfo1.depthStencilState.stencilTestEnable = VK_FALSE;
 		pipelineInfo1.shader  = m_Shader1;
 		pipelineInfo1.subpass = 1;
-		m_Pipeline1 = vk_demo::DVKPipeline::Create(
+		m_Pipeline1 = vk_demo::DVKGfxPipeline::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
 			pipelineInfo1, 
@@ -786,11 +786,11 @@ private:
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
 
-    vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
 	vk_demo::DVKShader*				m_Shader0 = nullptr;
 	vk_demo::DVKDescriptorSet*		m_DescriptorSet0 = nullptr;
 	
-	vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
+	vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
 	vk_demo::DVKShader*				m_Shader1 = nullptr;
 	DVKDescriptorSetArray			m_DescriptorSets;
 

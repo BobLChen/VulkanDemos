@@ -335,21 +335,21 @@ private:
 		VkVertexInputBindingDescription vertexInputBinding = m_Model->GetInputBinding();
 		std::vector<VkVertexInputAttributeDescription> vertexInputAttributs = m_Model->GetInputAttributes();
 		
-		vk_demo::DVKPipelineInfo pipelineInfo0;
+		vk_demo::DVKGfxPipelineInfo pipelineInfo0;
 		pipelineInfo0.shader = m_ShaderTexture;
-		m_Pipeline0 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_ShaderTexture->pipelineLayout, m_RenderPass);
+		m_Pipeline0 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo0, { vertexInputBinding }, vertexInputAttributs, m_ShaderTexture->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo1;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo1;
 		pipelineInfo1.shader = m_ShaderLut;
-        m_Pipeline1 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_ShaderLut->pipelineLayout, m_RenderPass);
+        m_Pipeline1 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo1, { vertexInputBinding }, vertexInputAttributs, m_ShaderLut->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo2;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo2;
 		pipelineInfo2.shader = m_ShaderLutDebug0;
-        m_Pipeline2 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug0->pipelineLayout, m_RenderPass);
+        m_Pipeline2 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo2, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug0->pipelineLayout, m_RenderPass);
         
-        vk_demo::DVKPipelineInfo pipelineInfo3;
+        vk_demo::DVKGfxPipelineInfo pipelineInfo3;
 		pipelineInfo3.shader = m_ShaderLutDebug1;
-        m_Pipeline3 = vk_demo::DVKPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug1->pipelineLayout, m_RenderPass);
+        m_Pipeline3 = vk_demo::DVKGfxPipeline::Create(m_VulkanDevice, m_PipelineCache, pipelineInfo3, { vertexInputBinding }, vertexInputAttributs, m_ShaderLutDebug1->pipelineLayout, m_RenderPass);
 	}
     
 	void DestroyPipelines()
@@ -444,10 +444,10 @@ private:
 	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
 	vk_demo::DVKTexture*			m_Tex3DLut  = nullptr;
 	
-    vk_demo::DVKPipeline*           m_Pipeline0 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline1 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline2 = nullptr;
-    vk_demo::DVKPipeline*           m_Pipeline3 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline2 = nullptr;
+    vk_demo::DVKGfxPipeline*           m_Pipeline3 = nullptr;
     
 	vk_demo::DVKShader*				m_ShaderTexture = nullptr;
 	vk_demo::DVKShader*				m_ShaderLut = nullptr;

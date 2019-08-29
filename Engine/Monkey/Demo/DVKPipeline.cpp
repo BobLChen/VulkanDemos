@@ -3,17 +3,17 @@
 namespace vk_demo
 {
 
-	DVKPipeline* DVKPipeline::Create(
+	DVKGfxPipeline* DVKGfxPipeline::Create(
 		std::shared_ptr<VulkanDevice> vulkanDevice,
 		VkPipelineCache pipelineCache,
-		DVKPipelineInfo& pipelineInfo, 
+		DVKGfxPipelineInfo& pipelineInfo, 
 		const std::vector<VkVertexInputBindingDescription>& inputBindings, 
 		const std::vector<VkVertexInputAttributeDescription>& vertexInputAttributs,
 		VkPipelineLayout pipelineLayout,
 		VkRenderPass renderPass
 	)
 	{
-		DVKPipeline* pipeline    = new DVKPipeline();
+		DVKGfxPipeline* pipeline    = new DVKGfxPipeline();
 		pipeline->vulkanDevice   = vulkanDevice;
 		pipeline->pipelineLayout = pipelineLayout;
 

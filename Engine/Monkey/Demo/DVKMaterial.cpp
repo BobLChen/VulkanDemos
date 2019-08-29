@@ -165,7 +165,7 @@ namespace vk_demo
         
 		// pipeline
         pipelineInfo.shader = shader;
-        pipeline = DVKPipeline::Create(
+        pipeline = DVKGfxPipeline::Create(
             vulkanDevice,
             pipelineCache,
             pipelineInfo,
