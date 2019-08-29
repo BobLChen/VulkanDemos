@@ -77,8 +77,6 @@ private:
 	struct ComputeResource
 	{
 		VkCommandPool					commandPool;
-		VkCommandBuffer					commandBuffer;
-		VkFence							fence;
 
 		VkDescriptorPool				descriptorPool;
 		VkDescriptorSetLayout			descriptorSetLayout;
@@ -90,12 +88,10 @@ private:
 		
 		void Destroy(VkDevice device)
 		{
-			vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
 			vkDestroyCommandPool(device, commandPool, VULKAN_CPU_ALLOCATOR);
 			
-			vkDestroyFence(device, fence, VULKAN_CPU_ALLOCATOR);
-			
 			vkDestroyDescriptorPool(device, descriptorPool, VULKAN_CPU_ALLOCATOR);
+			vkDestroyDescriptorSetLayout(device, descriptorSetLayout, VULKAN_CPU_ALLOCATOR);
 			vkDestroyPipelineLayout(device, pipelineLayout, VULKAN_CPU_ALLOCATOR);
 
 			for (int32 i = 0; i < 3; ++i)
@@ -131,6 +127,17 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeShaderDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			if (ImGui::Combo("Filter", &m_FilterIndex, m_FilterNames.data(), m_FilterNames.size()))
+			{
+				if (m_FilterIndex == 0) {
+					m_Material->SetTexture("diffuseMap", m_Texture);
+				}
+				else
+				{
+					m_Material->SetTexture("diffuseMap", m_ComputeRes.targets[m_FilterIndex - 1]);
+				}
+			}
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -145,9 +152,19 @@ private:
 
 	void ProcessImage()
 	{
+		// command pool
+		{
+			VkCommandPoolCreateInfo poolCreateInfo;
+			ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+			poolCreateInfo.queueFamilyIndex = m_VulkanDevice->GetComputeQueue()->GetFamilyIndex();
+			poolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			VERIFYVULKANRESULT(vkCreateCommandPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandPool));
+		}
+
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeRes.commandPool);
+		
 		// create target image
 		{
-            vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 			for (int32 i = 0; i < 3; ++i)
 			{
 				m_ComputeRes.targets[i] = vk_demo::DVKTexture::Create2D(
@@ -161,7 +178,6 @@ private:
                     ImageLayoutBarrier::ComputeGeneralRW
 				);
 			}
-            delete cmdBuffer;
 		}
         
 		// DescriptorSetLayout
@@ -246,8 +262,8 @@ private:
 			computeCreateInfo.layout = m_ComputeRes.pipelineLayout;
 			
 			const char* shaderNames[3] = {
-				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
 				"assets/shaders/41_ComputeShader/Emboss.comp.spv",
+				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
 				"assets/shaders/41_ComputeShader/Sharpen.comp.spv",
 			};
 
@@ -268,34 +284,30 @@ private:
 				// compute info
 				computeCreateInfo.stage = stageInfo;
 				VERIFYVULKANRESULT(vkCreateComputePipelines(m_Device, m_PipelineCache, 1, &computeCreateInfo, VULKAN_CPU_ALLOCATOR, &(m_ComputeRes.pipelines[i])));
+
+				delete shaderModules[i];
 			}
 		}
 
-		// command pool
-		{
-			VkCommandPoolCreateInfo poolCreateInfo;
-			ZeroVulkanStruct(poolCreateInfo, VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-			poolCreateInfo.queueFamilyIndex = m_VulkanDevice->GetComputeQueue()->GetFamilyIndex();
-			poolCreateInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			VERIFYVULKANRESULT(vkCreateCommandPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandPool));
+		// compute command
+		cmdBuffer->Begin();
 
-			VkCommandBufferAllocateInfo allocInfo;
-			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-			allocInfo.commandPool        = m_ComputeRes.commandPool;
-			allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			allocInfo.commandBufferCount = 1;
-			VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandBuffer));
+		for (int32 i = 0; i < 3; ++i)
+		{
+			vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeRes.pipelines[i]);
+			vkCmdBindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeRes.pipelineLayout, 0, 1, &(m_ComputeRes.descriptorSets[i]), 0, 0);
+			vkCmdDispatch(cmdBuffer->cmdBuffer, m_ComputeRes.targets[i]->width / 16, m_ComputeRes.targets[i]->height / 16, 1);
 		}
 
-		// fence
-		{
-			VkFenceCreateInfo fenceCreateInfo;
-			ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-			fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-			VERIFYVULKANRESULT(vkCreateFence(m_Device, &fenceCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.fence));
-		}
+		cmdBuffer->End();
+		cmdBuffer->Submit();
 
-		MLOG("");
+		m_FilterIndex = 0;
+		m_FilterNames.resize(4);
+		m_FilterNames[0] = "Original";
+		m_FilterNames[1] = "Emboss";
+		m_FilterNames[2] = "Edgedetect";
+		m_FilterNames[3] = "Sharpen";
 	}
 
 	void LoadAssets()
@@ -317,7 +329,8 @@ private:
 			"assets/textures/game0.jpg", 
 			m_VulkanDevice, 
 			cmdBuffer,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			ImageLayoutBarrier::ComputeGeneralRW
 		);
 
 		m_Shader = vk_demo::DVKShader::Create(
@@ -342,6 +355,8 @@ private:
 
 	void DestroyAssets()
 	{
+		m_ComputeRes.Destroy(m_Device);
+
 		delete m_ModelPlane;
 		delete m_Texture;
 
@@ -445,6 +460,9 @@ private:
 	ModelViewProjectionBlock	m_MVPParam;
 
 	ComputeResource				m_ComputeRes;
+
+	std::vector<const char*>    m_FilterNames;
+	int32						m_FilterIndex;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
