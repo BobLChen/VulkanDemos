@@ -153,6 +153,7 @@ private:
 	void ProcessImage()
 	{
 		// https://docs.microsoft.com/zh-cn/windows/win32/direct3dhlsl/sv-dispatchthreadid
+		// https://www.khronos.org/opengl/wiki/Compute_Shader
 		// command pool
 		{
 			VkCommandPoolCreateInfo poolCreateInfo;
