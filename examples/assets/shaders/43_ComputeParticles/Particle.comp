@@ -1,0 +1,25 @@
+#version 450
+
+struct Particle
+{
+	vec3 position;
+	vec2 velocity;
+};
+
+// Binding 0 : Position storage buffer
+layout(std140, binding = 0) buffer Vertex 
+{
+    Particle particles[ ];
+} inVertex;
+
+layout (binding = 1) uniform ParticleParam 
+{
+	vec4 params;
+} param;
+
+layout (local_size_x = 256) in;
+
+void main() 
+{
+    
+}

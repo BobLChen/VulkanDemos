@@ -161,9 +161,7 @@ private:
 
 		for (int32 i = 0; i < 3; ++i)
 		{
-			vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputeProcessors[i]->GetPipeline());
-            m_ComputeProcessors[i]->BindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
-			vkCmdDispatch(cmdBuffer->cmdBuffer, m_ComputeTargets[i]->width / 16, m_ComputeTargets[i]->height / 16, 1);
+			m_ComputeProcessors[i]->BindDispatch(cmdBuffer->cmdBuffer, m_ComputeTargets[i]->width / 16, m_ComputeTargets[i]->height / 16, 1);
 		}
 
 		cmdBuffer->End();

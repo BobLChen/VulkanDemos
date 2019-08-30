@@ -91,13 +91,21 @@ namespace vk_demo
             
             setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
             
-            // 保存Texture变量信息
-            TexInfo texInfo = {};
-            texInfo.set            = set;
-            texInfo.binding        = binding;
-            texInfo.stageFlags     = stageFlags;
-            texInfo.descriptorType = setLayoutBinding.descriptorType;
-            texParams.insert(std::make_pair(varName, texInfo));
+			auto it = imageParams.find(varName);
+			if (it == imageParams.end())
+			{
+				ImageInfo imageInfo = {};
+				imageInfo.set            = set;
+				imageInfo.binding        = binding;
+				imageInfo.stageFlags     = stageFlags;
+				imageInfo.descriptorType = setLayoutBinding.descriptorType;
+				imageParams.insert(std::make_pair(varName, imageInfo));
+			}
+			else
+			{
+				it->second.stageFlags |= stageFlags;
+			}
+
         }
     }
     
@@ -127,20 +135,20 @@ namespace vk_demo
             setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
             
             // 保存UBO变量信息
-            auto it = uboParams.find(varName);
-            if (it == uboParams.end())
+            auto it = bufferParams.find(varName);
+            if (it == bufferParams.end())
             {
-                UBOInfo uboInfo = {};
-                uboInfo.set            = set;
-                uboInfo.binding        = binding;
-                uboInfo.bufferSize     = uniformBufferStructSize;
-                uboInfo.stageFlags     = stageFlags;
-                uboInfo.descriptorType = setLayoutBinding.descriptorType;
-                uboParams.insert(std::make_pair(varName, uboInfo));
+                BufferInfo bufferInfo = {};
+				bufferInfo.set            = set;
+				bufferInfo.binding        = binding;
+				bufferInfo.bufferSize     = uniformBufferStructSize;
+				bufferInfo.stageFlags     = stageFlags;
+				bufferInfo.descriptorType = setLayoutBinding.descriptorType;
+				bufferParams.insert(std::make_pair(varName, bufferInfo));
             }
             else
             {
-                it->second.stageFlags = it->second.stageFlags | setLayoutBinding.stageFlags;
+                it->second.stageFlags |= setLayoutBinding.stageFlags;
             }
         }
     }
@@ -167,13 +175,20 @@ namespace vk_demo
             
             setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
             
-            // 保存Texture变量信息
-            TexInfo texInfo = {};
-            texInfo.set            = set;
-            texInfo.binding        = binding;
-            texInfo.stageFlags     = stageFlags;
-            texInfo.descriptorType = setLayoutBinding.descriptorType;
-            texParams.insert(std::make_pair(varName, texInfo));
+			auto it = imageParams.find(varName);
+			if (it == imageParams.end())
+			{
+				ImageInfo imageInfo = {};
+				imageInfo.set            = set;
+				imageInfo.binding        = binding;
+				imageInfo.stageFlags     = stageFlags;
+				imageInfo.descriptorType = setLayoutBinding.descriptorType;
+				imageParams.insert(std::make_pair(varName, imageInfo));
+			}
+			else
+			{
+				it->second.stageFlags |= stageFlags;
+			}
         }
     }
     
@@ -182,6 +197,7 @@ namespace vk_demo
         if (stageFlags != VK_SHADER_STAGE_VERTEX_BIT) {
             return;
         }
+
         // 获取input信息
         for (int32 i = 0; i < resources.stage_inputs.size(); ++i)
         {
@@ -208,8 +224,8 @@ namespace vk_demo
                 MLOG("Not found attribute : %s, treat as instance attribute : %d.", varName.c_str(), int32(attribute));
             }
             
+			// location必须连续
             int32 location = compiler.get_decoration(res.id, spv::DecorationLocation);
-            // location必须连续
             DVKAttribute dvkAttribute = {};
             dvkAttribute.location  = location;
             dvkAttribute.attribute = attribute;
@@ -217,7 +233,48 @@ namespace vk_demo
         }
     }
     
-    void DVKShader::ProcessstorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags)
+	void DVKShader::ProcessStorageBuffers(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags)
+	{
+		for (int32 i = 0; i < resources.storage_buffers.size(); ++i)
+		{
+			spirv_cross::Resource& res      = resources.storage_buffers[i];
+			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
+			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
+			const std::string &varName      = compiler.get_name(res.id);
+			const std::string &typeName     = compiler.get_name(res.base_type_id);
+
+			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+
+			VkDescriptorSetLayoutBinding setLayoutBinding = {};
+			setLayoutBinding.binding            = binding;
+			setLayoutBinding.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			setLayoutBinding.descriptorCount    = 1;
+			setLayoutBinding.stageFlags         = stageFlags;
+			setLayoutBinding.pImmutableSamplers = nullptr;
+
+			setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
+
+			// 保存UBO变量信息
+			auto it = bufferParams.find(varName);
+			if (it == bufferParams.end())
+			{
+				BufferInfo bufferInfo = {};
+				bufferInfo.set            = set;
+				bufferInfo.binding        = binding;
+				bufferInfo.bufferSize     = 0;
+				bufferInfo.stageFlags     = stageFlags;
+				bufferInfo.descriptorType = setLayoutBinding.descriptorType;
+				bufferParams.insert(std::make_pair(varName, bufferInfo));
+			}
+			else
+			{
+				it->second.stageFlags = it->second.stageFlags | setLayoutBinding.stageFlags;
+			}
+		}
+	}
+
+    void DVKShader::ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags)
     {
         for (int32 i = 0; i < resources.storage_images.size(); ++i)
         {
@@ -238,13 +295,21 @@ namespace vk_demo
             
             setLayoutsInfo.AddDescriptorSetLayoutBinding(varName, set, setLayoutBinding);
             
-            // 保存Texture变量信息
-            TexInfo texInfo = {};
-            texInfo.set            = set;
-            texInfo.binding        = binding;
-            texInfo.stageFlags     = stageFlags;
-            texInfo.descriptorType = setLayoutBinding.descriptorType;
-            texParams.insert(std::make_pair(varName, texInfo));
+			auto it = imageParams.find(varName);
+			if (it == imageParams.end())
+			{
+				ImageInfo imageInfo = {};
+				imageInfo.set            = set;
+				imageInfo.binding        = binding;
+				imageInfo.stageFlags     = stageFlags;
+				imageInfo.descriptorType = setLayoutBinding.descriptorType;
+				imageParams.insert(std::make_pair(varName, imageInfo));
+			}
+			else
+			{
+				it->second.stageFlags |= stageFlags;
+			}
+            
         }
     }
     
@@ -269,9 +334,10 @@ namespace vk_demo
         ProcessAttachments(compiler, resources, shaderModule->stage);
         ProcessUniformBuffers(compiler, resources, shaderModule->stage);
         ProcessTextures(compiler, resources, shaderModule->stage);
-        ProcessstorageImages(compiler, resources, shaderModule->stage);
+        ProcessStorageImages(compiler, resources, shaderModule->stage);
         ProcessInput(compiler, resources, shaderModule->stage);
-		
+		ProcessStorageBuffers(compiler, resources, shaderModule->stage);
+
 	}
 
 	void DVKShader::Compile()
@@ -297,12 +363,10 @@ namespace vk_demo
         for (int32 i = 0; i < m_InputAttributes.size(); ++i)
         {
             VertexAttribute attribute = m_InputAttributes[i].attribute;
-            if (attribute == VA_InstanceFloat1 || attribute == VA_InstanceFloat2 || attribute == VA_InstanceFloat3 || attribute == VA_InstanceFloat4)
-            {
+            if (attribute == VA_InstanceFloat1 || attribute == VA_InstanceFloat2 || attribute == VA_InstanceFloat3 || attribute == VA_InstanceFloat4) {
                 instancesAttributes.push_back(attribute);
             }
-            else
-            {
+            else {
                 perVertexAttributes.push_back(attribute);
             }
         }

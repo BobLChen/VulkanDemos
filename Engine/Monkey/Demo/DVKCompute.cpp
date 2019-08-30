@@ -1,4 +1,4 @@
-#include "DVKCompute.h"
+﻿#include "DVKCompute.h"
 
 namespace vk_demo
 {
@@ -74,10 +74,10 @@ namespace vk_demo
         // 创建descriptorSet
         descriptorSet = shader->AllocateDescriptorSet();
         
-        // 从Shader获取UniformBuffer信息
-        for (auto it = shader->uboParams.begin(); it != shader->uboParams.end(); ++it)
+        // 从Shader获取Buffer信息
+        for (auto it = shader->bufferParams.begin(); it != shader->bufferParams.end(); ++it)
         {
-            DVKSimulateUniformBuffer uboBuffer = {};
+            DVKSimulateBuffer uboBuffer = {};
             uboBuffer.binding        = it->second.binding;
             uboBuffer.descriptorType = it->second.descriptorType;
             uboBuffer.set            = it->second.set;
@@ -87,9 +87,18 @@ namespace vk_demo
             uboBuffer.bufferInfo.buffer = ringBuffer->realBuffer->buffer;
             uboBuffer.bufferInfo.offset = 0;
             uboBuffer.bufferInfo.range  = uboBuffer.dataSize;
-            uniformBuffers.insert(std::make_pair(it->first, uboBuffer));
-            // WriteBuffer，从今以后所有的UniformBuffer改为Dynamic的方式
-            descriptorSet->WriteBuffer(it->first, &(uboBuffer.bufferInfo));
+
+			if (it->second.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+				it->second.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+			{
+				uniformBuffers.insert(std::make_pair(it->first, uboBuffer));
+				descriptorSet->WriteBuffer(it->first, &(uboBuffer.bufferInfo));
+			}
+			else if (it->second.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+				it->second.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+			{
+				storageBuffers.insert(std::make_pair(it->first, uboBuffer));
+			}
         }
         
         // 设置Offset的索引,DynamicOffset的顺序跟set和binding顺序相关
@@ -118,7 +127,7 @@ namespace vk_demo
         dynamicOffsets.resize(dynamicOffsetCount);
         
         // 从Shader中获取Texture信息，包含attachment信息
-        for (auto it = shader->texParams.begin(); it != shader->texParams.end(); ++it)
+        for (auto it = shader->imageParams.begin(); it != shader->imageParams.end(); ++it)
         {
             DVKSimulateTexture texture = {};
             texture.texture         = nullptr;
@@ -145,6 +154,13 @@ namespace vk_demo
         computeCreateInfo.stage  = shader->shaderStageCreateInfos[0];
         VERIFYVULKANRESULT(vkCreateComputePipelines(device, pipelineCache, 1, &computeCreateInfo, VULKAN_CPU_ALLOCATOR, &pipeline));
     }
+
+	void DVKComputeProcessor::BindDispatch(VkCommandBuffer commandBuffer, int groupX, int groupY, int groupZ)
+	{
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+		BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
+		vkCmdDispatch(commandBuffer, groupX, groupY, groupZ);
+	}
     
     void DVKComputeProcessor::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint)
     {
@@ -158,6 +174,29 @@ namespace vk_demo
             dynamicOffsetCount, dynOffsets
         );
     }
+
+	void DVKComputeProcessor::SetStorageBuffer(const std::string& name, DVKBuffer* buffer)
+	{
+		auto it = storageBuffers.find(name);
+		if (it == storageBuffers.end()) {
+			MLOGE("StorageBuffer %s not found.", name.c_str());
+			return;
+		}
+
+		if (buffer == nullptr) {
+			MLOGE("StorageBuffer %s can't be null.", name.c_str());
+			return;
+		}
+
+		if (it->second.bufferInfo.buffer != buffer->buffer) 
+		{
+			it->second.dataSize          = buffer->size;
+			it->second.bufferInfo.buffer = buffer->buffer;
+			it->second.bufferInfo.offset = 0;
+			it->second.bufferInfo.range  = buffer->size;
+			descriptorSet->WriteBuffer(name, buffer);
+		}
+	}
     
     void DVKComputeProcessor::SetUniform(const std::string& name, void* dataPtr, uint32 size)
     {
@@ -186,21 +225,7 @@ namespace vk_demo
     
     void DVKComputeProcessor::SetStorageTexture(const std::string& name, DVKTexture* texture)
     {
-        auto it = textures.find(name);
-        if (it == textures.end()) {
-            MLOGE("Texture %s not found.", name.c_str());
-            return;
-        }
-        
-        if (texture == nullptr) {
-            MLOGE("Texture %s can't be null.", name.c_str());
-            return;
-        }
-        
-        if (it->second.texture != texture) {
-            it->second.texture = texture;
-            descriptorSet->WriteStorageImage(name, texture);
-        }
+        SetTexture(name, texture);
     }
     
     void DVKComputeProcessor::SetTexture(const std::string& name, DVKTexture* texture)

@@ -684,7 +684,7 @@ SETUP_SAMPLE_START(41_ComputeShader)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(41_ComputeShader)
 
-SETUP_SAMPLE_START(41_ComputeShader)
+SETUP_SAMPLE_START(42_OptimizeComputeShader)
 	SET(SOURCE_FILES
 		${MainLaunch}
 		${CMAKE_CURRENT_SOURCE_DIR}/42_OptimizeComputeShader/OptimizeComputeShaderDemo.cpp
@@ -698,3 +698,18 @@ SETUP_SAMPLE_START(41_ComputeShader)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(42_OptimizeComputeShader)
+
+SETUP_SAMPLE_START(43_ComputeParticles)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/43_ComputeParticles/ComputeParticlesDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/43_ComputeParticles/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(43_ComputeParticles)
