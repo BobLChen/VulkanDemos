@@ -20,7 +20,7 @@
 namespace vk_demo
 {
 
-	struct DVKSimulateUniformBuffer
+	struct DVKSimulateBuffer
 	{
 		std::vector<uint8>		dataContent;
 		bool                    global = false;
@@ -37,7 +37,7 @@ namespace vk_demo
     {
         uint32              set = 0;
         uint32              binding = 0;
-        VkDescriptorType    descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        VkDescriptorType    descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
         VkShaderStageFlags  stageFlags = 0;
         DVKTexture*         texture = nullptr;
     };
@@ -87,9 +87,9 @@ namespace vk_demo
 	{
 	private:
 
-		typedef std::unordered_map<std::string, DVKSimulateUniformBuffer>	UniformBuffersMap;
-		typedef std::unordered_map<std::string, DVKSimulateTexture>			TexturesMap;
-		typedef std::shared_ptr<VulkanDevice>								VulkanDeviceRef;
+		typedef std::unordered_map<std::string, DVKSimulateBuffer>		BuffersMap;
+		typedef std::unordered_map<std::string, DVKSimulateTexture>		TexturesMap;
+		typedef std::shared_ptr<VulkanDevice>							VulkanDeviceRef;
 
 		DVKMaterial()
 		{
@@ -120,6 +120,8 @@ namespace vk_demo
         void SetTexture(const std::string& name, DVKTexture* texture);
 
 		void SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size);
+
+		void SetStorageBuffer(const std::string& name, DVKBuffer* buffer);
 
 		void SetInputAttachment(const std::string& name, DVKTexture* texture);
 
@@ -158,8 +160,8 @@ namespace vk_demo
         VkRenderPass            renderPass = VK_NULL_HANDLE;
         VkPipelineCache         pipelineCache = VK_NULL_HANDLE;
         
-        DVKGfxPipelineInfo         pipelineInfo;
-        DVKGfxPipeline*            pipeline = nullptr;
+        DVKGfxPipelineInfo      pipelineInfo;
+        DVKGfxPipeline*         pipeline = nullptr;
         DVKDescriptorSet*		descriptorSet = nullptr;
 
 		uint32					dynamicOffsetCount;
@@ -167,9 +169,9 @@ namespace vk_demo
         std::vector<uint32>     dynamicOffsets;
 		std::vector<uint32>		perObjectIndexes;
         
-		UniformBuffersMap		uniformBuffers;
+		BuffersMap				uniformBuffers;
+		BuffersMap				storageBuffers;
 		TexturesMap				textures;
-		TexturesMap				inputAttachments;
 
 		bool                    actived = false;
 	};

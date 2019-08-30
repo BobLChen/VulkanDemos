@@ -22,9 +22,9 @@ namespace vk_demo
     {
     private:
         
-        typedef std::unordered_map<std::string, DVKSimulateUniformBuffer>    UniformBuffersMap;
-        typedef std::unordered_map<std::string, DVKSimulateTexture>          TexturesMap;
-        typedef std::shared_ptr<VulkanDevice>                                VulkanDeviceRef;
+        typedef std::unordered_map<std::string, DVKSimulateBuffer>    BuffersMap;
+        typedef std::unordered_map<std::string, DVKSimulateTexture>   TexturesMap;
+        typedef std::shared_ptr<VulkanDevice>                         VulkanDeviceRef;
         
         DVKComputeProcessor()
         {
@@ -37,12 +37,16 @@ namespace vk_demo
         static DVKComputeProcessor* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkPipelineCache pipelineCache, DVKShader* shader);
         
         void BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint);
+
+		void BindDispatch(VkCommandBuffer commandBuffer, int groupX, int groupY, int groupZ);
         
         void SetUniform(const std::string& name, void* dataPtr, uint32 size);
         
         void SetTexture(const std::string& name, DVKTexture* texture);
         
         void SetStorageTexture(const std::string& name, DVKTexture* texture);
+
+		void SetStorageBuffer(const std::string& name, DVKBuffer* buffer);
         
         inline VkPipeline GetPipeline() const
         {
@@ -85,7 +89,8 @@ namespace vk_demo
         uint32                      dynamicOffsetCount;
         std::vector<uint32>         dynamicOffsets;
         
-        UniformBuffersMap           uniformBuffers;
+		BuffersMap					uniformBuffers;
+		BuffersMap					storageBuffers;
         TexturesMap                 textures;
     };
     

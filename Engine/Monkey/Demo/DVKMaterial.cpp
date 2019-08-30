@@ -1,4 +1,4 @@
-#include "DVKMaterial.h"
+﻿#include "DVKMaterial.h"
 #include "DVKDefaultRes.h"
 
 namespace vk_demo
@@ -100,22 +100,32 @@ namespace vk_demo
         // 创建descriptorSet
         descriptorSet = shader->AllocateDescriptorSet();
         
-		// 从Shader获取UniformBuffer信息
-        for (auto it = shader->uboParams.begin(); it != shader->uboParams.end(); ++it)
+		// 从Shader获取buffer信息
+        for (auto it = shader->bufferParams.begin(); it != shader->bufferParams.end(); ++it)
         {
-            DVKSimulateUniformBuffer uboBuffer = {};
-            uboBuffer.binding        = it->second.binding;
-            uboBuffer.descriptorType = it->second.descriptorType;
-            uboBuffer.set            = it->second.set;
-            uboBuffer.stageFlags     = it->second.stageFlags;
+			DVKSimulateBuffer uboBuffer = {};
+			uboBuffer.binding        = it->second.binding;
+			uboBuffer.descriptorType = it->second.descriptorType;
+			uboBuffer.set            = it->second.set;
+			uboBuffer.stageFlags     = it->second.stageFlags;
 			uboBuffer.dataSize       = it->second.bufferSize;
 			uboBuffer.bufferInfo     = {};
 			uboBuffer.bufferInfo.buffer = ringBuffer->realBuffer->buffer;
 			uboBuffer.bufferInfo.offset = 0;
 			uboBuffer.bufferInfo.range  = uboBuffer.dataSize;
-            uniformBuffers.insert(std::make_pair(it->first, uboBuffer));
-            // WriteBuffer，从今以后所有的UniformBuffer改为Dynamic的方式
-            descriptorSet->WriteBuffer(it->first, &(uboBuffer.bufferInfo));
+
+			if (it->second.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+				it->second.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+			{
+				// WriteBuffer，从今以后所有的UniformBuffer改为Dynamic的方式
+				uniformBuffers.insert(std::make_pair(it->first, uboBuffer));
+				descriptorSet->WriteBuffer(it->first, &(uboBuffer.bufferInfo));
+			}
+			else if (it->second.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+					 it->second.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
+			{
+				storageBuffers.insert(std::make_pair(it->first, uboBuffer));
+			}
         }
         
         // 设置Offset的索引,DynamicOffset的顺序跟set和binding顺序相关
@@ -144,7 +154,7 @@ namespace vk_demo
 		globalOffsets.resize(dynamicOffsetCount);
         
 		// 从Shader中获取Texture信息，包含attachment信息
-        for (auto it = shader->texParams.begin(); it != shader->texParams.end(); ++it)
+        for (auto it = shader->imageParams.begin(); it != shader->imageParams.end(); ++it)
         {
             DVKSimulateTexture texture = {};
             texture.texture         = nullptr;
@@ -342,15 +352,29 @@ namespace vk_demo
     
 	void DVKMaterial::SetInputAttachment(const std::string& name, DVKTexture* texture)
 	{
-		auto it = textures.find(name);
-		if (it == textures.end()) {
-			MLOGE("Texture %s not found.", name.c_str());
+		SetTexture(name, texture);
+	}
+
+	void DVKMaterial::SetStorageBuffer(const std::string& name, DVKBuffer* buffer)
+	{
+		auto it = storageBuffers.find(name);
+		if (it == storageBuffers.end()) {
+			MLOGE("StorageBuffer %s not found.", name.c_str());
 			return;
 		}
 
-		if (it->second.texture != texture) {
-			it->second.texture = texture;
-			descriptorSet->WriteInputAttachment(name, texture);
+		if (buffer == nullptr) {
+			MLOGE("StorageBuffer %s can't be null.", name.c_str());
+			return;
+		}
+
+		if (it->second.bufferInfo.buffer != buffer->buffer) 
+		{
+			it->second.dataSize          = buffer->size;
+			it->second.bufferInfo.buffer = buffer->buffer;
+			it->second.bufferInfo.offset = 0;
+			it->second.bufferInfo.range  = buffer->size;
+			descriptorSet->WriteBuffer(name, buffer);
 		}
 	}
 

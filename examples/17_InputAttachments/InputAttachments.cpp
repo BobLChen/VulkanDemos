@@ -523,9 +523,9 @@ private:
 		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
 		{
 			m_DescriptorSets[i] = m_Shader1->AllocateDescriptorSet();
-			m_DescriptorSets[i]->WriteInputAttachment("inputColor", m_AttachsColor[i]);
-            m_DescriptorSets[i]->WriteInputAttachment("inputNormal", m_AttachsNormal[i]);
-			m_DescriptorSets[i]->WriteInputAttachment("inputDepth", m_AttachsDepth[i]);
+			m_DescriptorSets[i]->WriteImage("inputColor", m_AttachsColor[i]);
+            m_DescriptorSets[i]->WriteImage("inputNormal", m_AttachsNormal[i]);
+			m_DescriptorSets[i]->WriteImage("inputDepth", m_AttachsDepth[i]);
 			m_DescriptorSets[i]->WriteBuffer("param", m_DebugBuffer);
 		}
 	}

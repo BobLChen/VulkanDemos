@@ -96,7 +96,6 @@ namespace vk_demo
 				setLayout = &(setLayouts[setLayouts.size() - 1]);
 			}
 
-			// 公用一个UniformBuffer
 			for (int32 i = 0; i < setLayout->bindings.size(); ++i)
 			{
 				VkDescriptorSetLayoutBinding& setBinding = setLayout->bindings[i];
@@ -142,27 +141,6 @@ namespace vk_demo
 			
 		}
         
-        void WriteStorageImage(const std::string& name, DVKTexture* texture)
-        {
-            auto it = setLayoutsInfo.paramsMap.find(name);
-            if (it == setLayoutsInfo.paramsMap.end()) {
-                MLOGE("Failed write buffer, %s not found!", name.c_str());
-                return;
-            }
-            
-            auto bindInfo = it->second;
-            
-            VkWriteDescriptorSet writeDescriptorSet;
-            ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-            writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
-            writeDescriptorSet.descriptorCount = 1;
-            writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-            writeDescriptorSet.pBufferInfo     = nullptr;
-            writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
-            writeDescriptorSet.dstBinding      = bindInfo.binding;
-            vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-        }
-        
 		void WriteImage(const std::string& name, DVKTexture* texture)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
@@ -177,28 +155,7 @@ namespace vk_demo
 			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
 			writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
 			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			writeDescriptorSet.pBufferInfo     = nullptr;
-			writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
-			writeDescriptorSet.dstBinding      = bindInfo.binding;
-			vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
-		}
-
-		void WriteInputAttachment(const std::string& name, DVKTexture* texture)
-		{
-			auto it = setLayoutsInfo.paramsMap.find(name);
-			if (it == setLayoutsInfo.paramsMap.end()) {
-				MLOGE("Failed write buffer, %s not found!", name.c_str());
-				return;
-			}
-
-			auto bindInfo = it->second;
-
-			VkWriteDescriptorSet writeDescriptorSet;
-			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-			writeDescriptorSet.dstSet          = descriptorSets[bindInfo.set];
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+			writeDescriptorSet.descriptorType  = setLayoutsInfo.GetDescriptorType(bindInfo.set, bindInfo.binding);
 			writeDescriptorSet.pBufferInfo     = nullptr;
 			writeDescriptorSet.pImageInfo      = &(texture->descriptorInfo);
 			writeDescriptorSet.dstBinding      = bindInfo.binding;
@@ -360,7 +317,7 @@ namespace vk_demo
 
 	class DVKShader
 	{
-		struct UBOInfo
+		struct BufferInfo
 		{
 			uint32				set = 0;
 			uint32				binding = 0;
@@ -369,7 +326,7 @@ namespace vk_demo
 			VkShaderStageFlags	stageFlags = 0;
 		};
 
-		struct TexInfo
+		struct ImageInfo
 		{
 			uint32				set = 0;
 			uint32				binding = 0;
@@ -478,14 +435,16 @@ namespace vk_demo
 		void GenerateLayout();
         
         void GenerateInputInfo();
+
+		void ProcessStorageBuffers(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
         
-        void ProcessstorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        void ProcessStorageImages(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
         
         void ProcessInput(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
         
         void ProcessTextures(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
 
-        void ProcessAttachments(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
+        void ProcessAttachments(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkPipelineStageFlags stageFlags);
         
         void ProcessUniformBuffers(spirv_cross::Compiler& compiler, spirv_cross::ShaderResources& resources, VkShaderStageFlags stageFlags);
         
@@ -520,8 +479,8 @@ namespace vk_demo
 		VkPipelineLayout 				pipelineLayout = VK_NULL_HANDLE;
 		DVKDescriptorSetPools			descriptorSetPools;
 
-		std::unordered_map<std::string, UBOInfo>	uboParams;
-		std::unordered_map<std::string, TexInfo>	texParams;
+		std::unordered_map<std::string, BufferInfo>	bufferParams;
+		std::unordered_map<std::string, ImageInfo>	imageParams;
 	};
 
 }

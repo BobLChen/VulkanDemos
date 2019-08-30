@@ -1,0 +1,67 @@
+#version 450
+
+struct Particle
+{
+	vec4 position;
+	vec4 velocity;
+};
+
+// Binding 0 : Position storage buffer
+layout(std140, binding = 0) buffer Vertex 
+{
+    Particle particles[ ];
+} inVertex;
+
+layout (binding = 1) uniform ParticleParam 
+{
+	vec4 data0;
+	vec4 data1;
+} param;
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+vec2 Repulsion(vec2 pos, vec2 dst)
+{
+	vec2 delta = dst - pos;
+	float dist = sqrt(dot(delta, delta));
+	return delta * (1.0 / (dist * dist * dist)) * -0.000035;
+}
+
+vec2 Attraction(vec2 pos, vec2 dst) 
+{
+    vec2 delta = dst - pos;
+	const float damp = 0.5;
+    float dampedDot  = dot(delta, delta) + damp;
+    float invDist    = 1.0 / sqrt(dampedDot);
+    float invDist3   = invDist * invDist * invDist;
+    return delta * invDist3 * 0.0035;
+}
+
+void main() 
+{
+    uint index = gl_GlobalInvocationID.x;
+	if (index >= param.data0.w) {
+		return;
+	}
+
+	vec2 vPos = inVertex.particles[index].position.xy;
+	vec2 vVel = inVertex.particles[index].velocity.xy;
+	vec2 vDst = param.data0.xy;
+
+	vVel += Repulsion(vPos, vDst) * param.data1.z;
+	vPos += vVel * param.data0.z;
+
+	if (vPos.x < -1.0 || vPos.x > 1.0 || vPos.y < -1.0 || vPos.y > 1.0) {
+		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * param.data1.w;
+	}
+	else {
+		inVertex.particles[index].position.xy = vPos;
+	}
+
+	inVertex.particles[index].position.z += 0.01 * param.data0.z;
+	if (inVertex.particles[index].position.z > 1.0) {
+		inVertex.particles[index].position.z = 0.0;
+	}
+
+	inVertex.particles[index].velocity.xy = vVel;
+}
