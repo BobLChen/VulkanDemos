@@ -16,7 +16,7 @@
 #include <vector>
 #include <fstream>
 
-#define PARTICLE_COUNT (512 * 512)
+#define PARTICLE_COUNT (1024 * 1024)
 
 class ComputeParticlesDemo : public DemoBase
 {
@@ -70,13 +70,14 @@ private:
 
 	struct ParticleVertex
 	{
-		Vector3 position;
-		Vector2 velocity;
+		Vector4 position;
+		Vector4 velocity;
 	};
 
 	struct ParticleParam
 	{
-		Vector4 params;
+		Vector4 data0;
+		Vector4 data1;
 	};
     
 	void Draw(float time, float delta)
@@ -102,13 +103,33 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeParticlesDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			const Vector2& mouse = InputManager::GetMousePosition();
-			float dx = (mouse.x - GetWidth()  / 2.0f) / (GetWidth()  / 2.0f);
-			float dy = (mouse.y - GetHeight() / 2.0f) / (GetHeight() / 2.0f);
-			m_ParticleParams.params.x = dx;
-			m_ParticleParams.params.y = dy;
-			m_ParticleParams.params.z = delta * 2.5f;
-			m_ParticleParams.params.w = PARTICLE_COUNT;
+			ImGui::SliderInt("Count", &m_PointCount, PARTICLE_COUNT / 10, PARTICLE_COUNT);
+
+			ImGui::SliderFloat("PointSize", &m_ParticleParams.data1.x, 1.0f, 15.0f);
+			ImGui::SliderFloat("Intensity", &m_ParticleParams.data1.y, 0.1f, 1.0f);
+			ImGui::SliderFloat("Speed0",    &m_ParticleParams.data1.z, 0.0f, 2.0f);
+			ImGui::SliderFloat("Speed1",    &m_ParticleParams.data1.w, 0.0f, 50.0f);
+
+			ImGui::Checkbox("Mouse", &m_Animation);
+
+			if (m_Animation)
+			{
+				const Vector2& mousePos = InputManager::GetMousePosition();
+				float dx = mousePos.x / GetWidth();
+				float dy = mousePos.y / GetHeight();
+				dx = (dx - 0.5f) * 2.0f;
+				dy = -(dy - 0.5f) * 2.0f;
+				m_ParticleParams.data0.x = dx;
+				m_ParticleParams.data0.y = dy;
+			}
+			else
+			{
+				m_ParticleParams.data0.x = MMath::Sin(time);
+				m_ParticleParams.data0.y = MMath::Cos(time) * 0.1f;
+			}
+
+			m_ParticleParams.data0.z = delta;
+			m_ParticleParams.data0.w = PARTICLE_COUNT;
 
 			m_ComputeProcessor->SetUniform("param", &m_ParticleParams, sizeof(ParticleParam));
 
@@ -136,10 +157,13 @@ private:
 			{
 				vertices[i].position.x = MMath::FRandRange(-1.0f, 1.0f);
 				vertices[i].position.y = MMath::FRandRange(-1.0f, 1.0f);
-				vertices[i].position.z = i * 1.0f / PARTICLE_COUNT;
+				vertices[i].position.z = (vertices[i].position.x + 1.0f) / 2.0f;
+				vertices[i].position.w = 0.0f;
 
-				vertices[i].velocity.x = 0;
-				vertices[i].velocity.y = 0;
+				vertices[i].velocity.x = 0.0f;
+				vertices[i].velocity.y = 0.0f;
+				vertices[i].velocity.z = 0.0f;
+				vertices[i].velocity.w = 0.0f;
 			}
 
 			vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(
@@ -335,9 +359,16 @@ private:
 
 		VkDeviceSize offsets[1] = { 0 };
 
+		m_ParticleMaterial->BeginFrame();
+		m_ParticleMaterial->BeginObject();
+		m_ParticleMaterial->SetLocalUniform("param", &m_ParticleParams, sizeof(ParticleParam));
+		m_ParticleMaterial->EndObject();
+
 		m_ParticleMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(m_ParticleBuffer->buffer), offsets);
-		vkCmdDraw(commandBuffer, PARTICLE_COUNT, 1, 0, 0);
+		vkCmdDraw(commandBuffer, m_PointCount, 1, 0, 0);
+
+		m_ParticleMaterial->EndFrame();
 
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 		vkCmdEndRenderPass(commandBuffer);
@@ -346,10 +377,17 @@ private:
 
 	void InitParmas()
 	{
-		m_ParticleParams.params.x = 0.0f;
-		m_ParticleParams.params.y = 0.0f;
-		m_ParticleParams.params.z = 0.0f;
-		m_ParticleParams.params.w = PARTICLE_COUNT;
+		m_ParticleParams.data0.x = 0.0f;
+		m_ParticleParams.data0.y = 0.0f;
+		m_ParticleParams.data0.z = 0.0f;
+		m_ParticleParams.data0.w = PARTICLE_COUNT;
+
+		m_ParticleParams.data1.x = 8.0f;
+		m_ParticleParams.data1.y = 0.5f;
+		m_ParticleParams.data1.z = 0.5f;
+		m_ParticleParams.data1.w = 50.0f;
+
+		m_PointCount = PARTICLE_COUNT / 2;
 	}
 
 	void CreateGUI()
@@ -380,6 +418,8 @@ private:
 	vk_demo::DVKCommandBuffer*		m_ComputeCommand = nullptr;
 
 	ParticleParam					m_ParticleParams;
+	int32							m_PointCount = 0;
+	bool							m_Animation = false;
     
 	ImageGUIContext*			    m_GUI = nullptr;
 };

@@ -2,8 +2,8 @@
 
 struct Particle
 {
-	vec3 position;
-	vec2 velocity;
+	vec4 position;
+	vec4 velocity;
 };
 
 // Binding 0 : Position storage buffer
@@ -14,7 +14,8 @@ layout(std140, binding = 0) buffer Vertex
 
 layout (binding = 1) uniform ParticleParam 
 {
-	vec4 params;
+	vec4 data0;
+	vec4 data1;
 } param;
 
 layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
@@ -38,25 +39,28 @@ vec2 Attraction(vec2 pos, vec2 dst)
 
 void main() 
 {
-	vec4 params = param.params;
-
     uint index = gl_GlobalInvocationID.x;
-	if (index >= params.w) {
+	if (index >= param.data0.w) {
 		return;
 	}
 
 	vec2 vPos = inVertex.particles[index].position.xy;
 	vec2 vVel = inVertex.particles[index].velocity.xy;
-	vec2 vDst = params.xy;
+	vec2 vDst = param.data0.xy;
 
-	vVel += Repulsion(vPos, vDst) * 0.05;
-	vPos += vVel * params.z;
+	vVel += Repulsion(vPos, vDst) * param.data1.z;
+	vPos += vVel * param.data0.z;
 
 	if (vPos.x < -1.0 || vPos.x > 1.0 || vPos.y < -1.0 || vPos.y > 1.0) {
-		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * 12;
+		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * param.data1.w;
 	}
 	else {
 		inVertex.particles[index].position.xy = vPos;
+	}
+
+	inVertex.particles[index].position.z += 0.01 * param.data0.z;
+	if (inVertex.particles[index].position.z > 1.0) {
+		inVertex.particles[index].position.z = 0.0;
 	}
 
 	inVertex.particles[index].velocity.xy = vVel;

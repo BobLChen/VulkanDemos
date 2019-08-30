@@ -1,9 +1,15 @@
 #version 450
 
-layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec2 inUV0;
+layout (location = 0) in vec4 inCustom0;
+layout (location = 1) in vec4 inCustom1;
 
 layout (location = 0) out float outGradient;
+
+layout (binding = 0) uniform ParticleParam 
+{
+	vec4 data0;
+    vec4 data1;
+} param;
 
 out gl_PerVertex 
 {
@@ -13,7 +19,7 @@ out gl_PerVertex
 
 void main() 
 {
-    gl_PointSize = 8.0;
-    outGradient  = inPosition.z;
-	gl_Position  = vec4(inPosition.xy, 1.0, 1.0);
+    gl_PointSize = param.data1.x;
+    outGradient  = inCustom0.z;
+	gl_Position  = vec4(inCustom0.xy, 1.0, 1.0);
 }
