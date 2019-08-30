@@ -17,9 +17,47 @@ layout (binding = 1) uniform ParticleParam
 	vec4 params;
 } param;
 
-layout (local_size_x = 256) in;
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+vec2 Repulsion(vec2 pos, vec2 dst)
+{
+	vec2 delta = dst - pos;
+	float dist = sqrt(dot(delta, delta));
+	return delta * (1.0 / (dist * dist * dist)) * -0.000035;
+}
+
+vec2 Attraction(vec2 pos, vec2 dst) 
+{
+    vec2 delta = dst - pos;
+	const float damp = 0.5;
+    float dampedDot  = dot(delta, delta) + damp;
+    float invDist    = 1.0 / sqrt(dampedDot);
+    float invDist3   = invDist * invDist * invDist;
+    return delta * invDist3 * 0.0035;
+}
 
 void main() 
 {
-    
+	vec4 params = param.params;
+
+    uint index = gl_GlobalInvocationID.x;
+	if (index >= params.w) {
+		return;
+	}
+
+	vec2 vPos = inVertex.particles[index].position.xy;
+	vec2 vVel = inVertex.particles[index].velocity.xy;
+	vec2 vDst = params.xy;
+
+	vVel += Repulsion(vPos, vDst) * 0.05;
+	vPos += vVel * params.z;
+
+	if (vPos.x < -1.0 || vPos.x > 1.0 || vPos.y < -1.0 || vPos.y > 1.0) {
+		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * 12;
+	}
+	else {
+		inVertex.particles[index].position.xy = vPos;
+	}
+
+	inVertex.particles[index].velocity.xy = vVel;
 }

@@ -102,7 +102,14 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeParticlesDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			m_ParticleParams.params.x = delta;
+			const Vector2& mouse = InputManager::GetMousePosition();
+			float dx = (mouse.x - GetWidth()  / 2.0f) / (GetWidth()  / 2.0f);
+			float dy = (mouse.y - GetHeight() / 2.0f) / (GetHeight() / 2.0f);
+			m_ParticleParams.params.x = dx;
+			m_ParticleParams.params.y = dy;
+			m_ParticleParams.params.z = delta * 2.5f;
+			m_ParticleParams.params.w = PARTICLE_COUNT;
+
 			m_ComputeProcessor->SetUniform("param", &m_ParticleParams, sizeof(ParticleParam));
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -339,7 +346,10 @@ private:
 
 	void InitParmas()
 	{
-
+		m_ParticleParams.params.x = 0.0f;
+		m_ParticleParams.params.y = 0.0f;
+		m_ParticleParams.params.z = 0.0f;
+		m_ParticleParams.params.w = PARTICLE_COUNT;
 	}
 
 	void CreateGUI()
