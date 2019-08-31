@@ -294,7 +294,7 @@ private:
 			0, nullptr
 		);
 
-		m_ComputeProcessor->BindDispatch(m_ComputeCommand->cmdBuffer, PARTICLE_COUNT / 256, 1, 1);
+		m_ComputeProcessor->BindDispatch(m_ComputeCommand->cmdBuffer, 32, 32, 1);
 
 		bufferBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;						
 		bufferBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;																											
