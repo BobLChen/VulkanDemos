@@ -18,7 +18,7 @@ layout (binding = 1) uniform ParticleParam
 	vec4 data1;
 } param;
 
-layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 vec2 Repulsion(vec2 pos, vec2 dst)
 {
@@ -39,13 +39,16 @@ vec2 Attraction(vec2 pos, vec2 dst)
 
 void main() 
 {
-    uint index = gl_GlobalInvocationID.x;
-	if (index >= param.data0.w) {
+    uint globalIndex = gl_WorkGroupID.z * gl_NumWorkGroups.x * gl_NumWorkGroups.y + gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+	globalIndex = globalIndex * gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
+	globalIndex = globalIndex + gl_LocalInvocationIndex;
+
+	if (globalIndex >= param.data0.w) {
 		return;
 	}
 
-	vec2 vPos = inVertex.particles[index].position.xy;
-	vec2 vVel = inVertex.particles[index].velocity.xy;
+	vec2 vPos = inVertex.particles[globalIndex].position.xy;
+	vec2 vVel = inVertex.particles[globalIndex].velocity.xy;
 	vec2 vDst = param.data0.xy;
 
 	vVel += Repulsion(vPos, vDst) * param.data1.z;
@@ -55,13 +58,13 @@ void main()
 		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * param.data1.w;
 	}
 	else {
-		inVertex.particles[index].position.xy = vPos;
+		inVertex.particles[globalIndex].position.xy = vPos;
 	}
 
-	inVertex.particles[index].position.z += 0.01 * param.data0.z;
-	if (inVertex.particles[index].position.z > 1.0) {
-		inVertex.particles[index].position.z = 0.0;
+	inVertex.particles[globalIndex].position.z += 0.01 * param.data0.z;
+	if (inVertex.particles[globalIndex].position.z > 1.0) {
+		inVertex.particles[globalIndex].position.z = 0.0;
 	}
 
-	inVertex.particles[index].velocity.xy = vVel;
+	inVertex.particles[globalIndex].velocity.xy = vVel;
 }
