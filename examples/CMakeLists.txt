@@ -713,3 +713,18 @@ SETUP_SAMPLE_START(43_ComputeParticles)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(43_ComputeParticles)
+
+SETUP_SAMPLE_START(44_ComputeRaytracing)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/44_ComputeRaytracing/ComputeRaytracingDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/44_ComputeRaytracing/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(44_ComputeRaytracing)
