@@ -43,7 +43,7 @@ public:
 		CreateGUI();
 		InitParmas();
 		LoadAssets();
-		ProcessImage();
+		ProcessRaytracing();
 
 		m_Ready = true;
 
@@ -68,13 +68,40 @@ public:
 
 private:
 
-	struct ModelViewProjectionBlock
+	struct Sphere
 	{
-		Matrix4x4 model;
-		Matrix4x4 view;
-		Matrix4x4 proj;
+		Vector3 position;
+		float	radius;
+		Vector3	diffuse;
+		float	specular;
+		uint32	id;
+		Vector3	padding;
 	};
-    
+
+	struct Plane
+	{
+		Vector3 normal;
+		float   distance;
+		Vector3 diffuse;
+		float   specular;
+		uint32  id;
+		Vector3 padding;
+	};
+
+	struct RaytracingParamBlock
+	{
+		Sphere	spheres[3];
+		Plane	planes[6];
+
+		Vector3 lightPos;
+		float   padding;
+
+		Vector4 fogColor;
+
+		Vector3 cameraPos;
+		float   aspect;
+	};
+	
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -82,11 +109,7 @@ private:
 		UpdateFPS(time, delta);
 		bool hovered = UpdateUI(time, delta);
 
-		if (!hovered) {
-			m_ViewCamera.Update(time, delta);
-		}
-
-		SetupCommandBuffers(bufferIndex);
+		SetupGfxCommand(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
 	}
@@ -100,8 +123,6 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeRaytracingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
             
-            
-            
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -114,7 +135,31 @@ private:
 		return hovered;
 	}
 
-	void ProcessImage()
+	uint32 m_ID = 0;
+
+	Sphere NewSphere(const Vector3& position, float radius, const Vector3& diffuse, float specular)
+	{
+		Sphere sphere;
+		sphere.id       = m_ID++;
+		sphere.position = position;
+		sphere.radius   = radius;
+		sphere.diffuse  = diffuse;
+		sphere.specular = specular;
+		return sphere;
+	}
+
+	Plane NewPlane(const Vector3& normal, float distance, const Vector3& diffuse, float specular)
+	{
+		Plane plane;
+		plane.id       = m_ID++;
+		plane.normal   = normal;
+		plane.distance = distance;
+		plane.diffuse  = diffuse;
+		plane.specular = specular;
+		return plane;
+	}
+
+	void ProcessRaytracing()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
 
@@ -124,7 +169,7 @@ private:
             cmdBuffer,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_ASPECT_COLOR_BIT,
-            m_Texture->width, m_Texture->height,
+            2048, 2048,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_SAMPLE_COUNT_1_BIT,
             ImageLayoutBarrier::ComputeGeneralRW
@@ -135,12 +180,12 @@ private:
             "assets/shaders/44_ComputeRaytracing/Raytracing.comp.spv"
         );
         m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
-        m_ComputeProcessor->SetStorageTexture("inputImage", m_Texture);
         m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
         
 		// compute command
 		cmdBuffer->Begin();
 
+		m_ComputeProcessor->SetUniform("uboParam", &m_RaytracingParam, sizeof(RaytracingParamBlock));
         m_ComputeProcessor->BindDispatch(cmdBuffer->cmdBuffer, m_ComputeTarget->width / 16, m_ComputeTarget->height / 16, 1);
 		
 		cmdBuffer->End();
@@ -155,24 +200,7 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		m_ModelPlane = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/plane_z.obj",
-			m_VulkanDevice,
-			cmdBuffer,
-			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_UV0
-			}
-		);
-		m_ModelPlane->rootNode->localMatrix.AppendScale(Vector3(2, 1, 1));
-
-		m_Texture = vk_demo::DVKTexture::Create2D(
-			"assets/textures/game0.jpg", 
-			m_VulkanDevice, 
-			cmdBuffer,
-			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-			ImageLayoutBarrier::ComputeGeneralRW
-		);
+		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
 
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -189,7 +217,6 @@ private:
 		);
 		m_Material->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
 		m_Material->PreparePipeline();
-		m_Material->SetTexture("diffuseMap", m_Texture);
 
 		delete cmdBuffer;
 	}
@@ -200,14 +227,11 @@ private:
         delete m_ComputeTarget;
         delete m_ComputeProcessor;
         
-		delete m_ModelPlane;
-		delete m_Texture;
-
 		delete m_Material;
 		delete m_Shader;
 	}
 
-	void SetupCommandBuffers(int32 backBufferIndex)
+	void SetupGfxCommand(int32 backBufferIndex)
 	{
 		VkViewport viewport = {};
 		viewport.x        = 0;
@@ -251,19 +275,8 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 
 		m_Material->BeginFrame();
-		for (int32 i = 0; i < m_ModelPlane->meshes.size(); ++i)
-		{
-			m_MVPParam.model = m_ModelPlane->meshes[i]->linkNode->GetGlobalMatrix();
-			m_MVPParam.view  = m_ViewCamera.GetView();
-			m_MVPParam.proj  = m_ViewCamera.GetProjection();
-
-			m_Material->BeginObject();
-			m_Material->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			m_Material->EndObject();
-
-			m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, i);
-			m_ModelPlane->meshes[i]->BindDrawCmd(commandBuffer);
-		}
+		m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 		m_Material->EndFrame();
 
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -273,9 +286,30 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 0, -50.0f);
-		m_ViewCamera.LookAt(0, 0, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
+		m_RaytracingParam.lightPos.x = 0.0f;
+		m_RaytracingParam.lightPos.y = 0.0f;
+		m_RaytracingParam.lightPos.z = -2.0f;
+
+		m_RaytracingParam.fogColor.x = 0.0f;
+		m_RaytracingParam.fogColor.y = 0.0f;
+		m_RaytracingParam.fogColor.z = 0.0f;
+
+		m_RaytracingParam.cameraPos.x = 0.0f;
+		m_RaytracingParam.cameraPos.y = 0.0f;
+		m_RaytracingParam.cameraPos.z = -4.0f;
+
+		m_RaytracingParam.aspect      = GetWidth() * 1.0f / GetHeight();
+		
+		m_RaytracingParam.spheres[0] = NewSphere(Vector3( 1.75f, -0.5f,   0.0f), 1.0f, Vector3(0.00f, 1.00f, 0.00f), 32.0f);
+		m_RaytracingParam.spheres[1] = NewSphere(Vector3( 0.0f,   1.0f,   0.5f), 1.0f, Vector3(0.65f, 0.77f, 0.97f), 32.0f);
+		m_RaytracingParam.spheres[2] = NewSphere(Vector3(-1.75f, -0.75f,  0.5f), 1.0f, Vector3(0.90f, 0.76f, 0.46f), 32.0f);
+
+		m_RaytracingParam.planes[0]  = NewPlane(Vector3( 0.0f,  1.0f,  0.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
+		m_RaytracingParam.planes[1]  = NewPlane(Vector3( 0.0f, -1.0f,  0.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
+		m_RaytracingParam.planes[2]  = NewPlane(Vector3( 0.0f,  0.0f,  1.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
+		m_RaytracingParam.planes[3]  = NewPlane(Vector3( 0.0f,  0.0f, -1.0f), 4.0f, Vector3(0.0f, 0.0f, 0.0f), 32.0f);
+		m_RaytracingParam.planes[4]  = NewPlane(Vector3(-1.0f,  0.0f,  0.0f), 4.0f, Vector3(1.0f, 0.0f, 0.0f), 32.0f);
+		m_RaytracingParam.planes[5]  = NewPlane(Vector3( 1.0f,  0.0f,  0.0f), 4.0f, Vector3(0.0f, 1.0f, 0.0f), 32.0f);
 	}
 
 	void CreateGUI()
@@ -294,17 +328,15 @@ private:
 
 	bool 						    m_Ready = false;
 
-	vk_demo::DVKModel*			    m_ModelPlane = nullptr;
+	vk_demo::DVKModel*				m_Quad = nullptr;
 	vk_demo::DVKMaterial*		    m_Material = nullptr;
 	vk_demo::DVKShader*			    m_Shader = nullptr;
-	vk_demo::DVKTexture*		    m_Texture = nullptr;
 
-	vk_demo::DVKCamera		        m_ViewCamera;
-	ModelViewProjectionBlock	    m_MVPParam;
-    
     vk_demo::DVKTexture*            m_ComputeTarget = nullptr;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
     vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+
+	RaytracingParamBlock			m_RaytracingParam;
     
 	ImageGUIContext*			    m_GUI = nullptr;
 };
