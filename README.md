@@ -219,3 +219,6 @@ Reduce 5 float per vertex
 
 ### [43_ComputeParticles](https://github.com/BobLChen/VulkanDemos/tree/master/examples/43_ComputeParticles)
 ![43_ComputeParticles](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/43_ComputeParticles.jpg)
+
+### [44_ComputeRaytracing](https://github.com/BobLChen/VulkanDemos/tree/master/examples/44_ComputeRaytracing)
+![44_ComputeRaytracing](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/44_ComputeRaytracing.jpg)
