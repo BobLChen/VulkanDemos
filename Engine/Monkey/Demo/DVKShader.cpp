@@ -241,7 +241,6 @@ namespace vk_demo
 			spirv_cross::SPIRType type      = compiler.get_type(res.type_id);
 			spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
 			const std::string &varName      = compiler.get_name(res.id);
-			const std::string &typeName     = compiler.get_name(res.base_type_id);
 
 			int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);

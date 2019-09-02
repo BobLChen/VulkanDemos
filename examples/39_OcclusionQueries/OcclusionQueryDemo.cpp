@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -199,26 +199,7 @@ private:
 			m_SimpleShader
 		);
 		m_SimpleMaterial->PreparePipeline();
-
-		m_LineShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/39_OcclusionQueries/Line.vert.spv",
-			"assets/shaders/39_OcclusionQueries/Line.frag.spv"
-		);
-
-		m_LineMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_LineShader
-		);
-		m_LineMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		m_LineMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
-		m_LineMaterial->pipelineInfo.rasterizationState.lineWidth   = 1.0f;
-		m_LineMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-		m_LineMaterial->PreparePipeline();
-
+        
 		delete cmdBuffer;
 	}
 
@@ -226,10 +207,7 @@ private:
 	{
 		delete m_ModelGround;
 		delete m_ModelSphere;
-
-		delete m_LineShader;
-		delete m_LineMaterial;
-
+        
 		delete m_SimpleMaterial;
 		delete m_SimpleShader;
 		
@@ -463,8 +441,6 @@ private:
 	vk_demo::DVKShader*			m_Shader = nullptr;
 	vk_demo::DVKMaterial*		m_SimpleMaterial = nullptr;
 	vk_demo::DVKShader*			m_SimpleShader = nullptr;
-	vk_demo::DVKShader*			m_LineShader = nullptr;
-	vk_demo::DVKMaterial*		m_LineMaterial = nullptr;
 
 	Matrix4x4					m_ObjModels[OBJECT_COUNT];
 	uint64						m_QuerySamples[OBJECT_COUNT];

@@ -1,9 +1,10 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
 #include "Demo/DVKTexture.h"
 #include "Demo/DVKRenderTarget.h"
+#include "Demo/DVKCompute.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -73,7 +74,13 @@ private:
 		Matrix4x4 view;
 		Matrix4x4 proj;
 	};
-
+    
+    struct FrustumParamBlock
+    {
+        Vector4 count;
+        Vector4 frustumPlanes[6];
+    };
+    
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -88,6 +95,7 @@ private:
 
 		m_DrawCall = 0;
 
+        SetupComputeCommand();
 		SetupGfxCommand(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -144,10 +152,10 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/39_OcclusionQueries/Solid.vert.spv",
-			"assets/shaders/39_OcclusionQueries/Solid.frag.spv"
+			"assets/shaders/45_ComputeFrustum/Solid.vert.spv",
+			"assets/shaders/45_ComputeFrustum/Solid.frag.spv"
 		);
-
+        
 		m_Material = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
@@ -155,48 +163,54 @@ private:
 			m_Shader
 		);
 		m_Material->PreparePipeline();
-
-		m_LineShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/39_OcclusionQueries/Line.vert.spv",
-			"assets/shaders/39_OcclusionQueries/Line.frag.spv"
+        
+        m_MatrixBuffer = vk_demo::DVKBuffer::CreateBuffer(
+            m_VulkanDevice,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            OBJECT_COUNT * sizeof(Matrix4x4)
+        );
+        
+        m_ComputeShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice, 
+			"assets/shaders/45_ComputeFrustum/Frustum.comp.spv"
 		);
 
-		m_LineMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RenderPass,
-			m_PipelineCache,
-			m_LineShader
+		m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(
+			m_VulkanDevice, 
+			m_PipelineCache, 
+			m_ComputeShader
 		);
-		m_LineMaterial->pipelineInfo.inputAssemblyState.topology    = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-		m_LineMaterial->pipelineInfo.rasterizationState.cullMode    = VK_CULL_MODE_NONE;
-		m_LineMaterial->pipelineInfo.rasterizationState.lineWidth   = 1.0f;
-		m_LineMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_LINE;
-		m_LineMaterial->PreparePipeline();
-
+		m_ComputeProcessor->SetStorageBuffer("inMatrix", m_MatrixBuffer);
+        
+        m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
+        
+        m_FrustumParam.count.x = OBJECT_COUNT;
+        m_FrustumParam.count.y = m_Radius;
+        
 		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
 	{
 		delete m_ModelSphere;
-
-		delete m_LineShader;
-		delete m_LineMaterial;
-
+        delete m_MatrixBuffer;
+        
 		delete m_Material;
 		delete m_Shader;
+        
+        delete m_ComputeShader;
+        delete m_ComputeProcessor;
+        delete m_ComputeCommand;
 	}
-
+    
 	bool IsInFrustum(const Matrix4x4& model)
 	{
 		Vector3 pos  = model.GetOrigin();
-		
+        
 		for (int32 i = 0; i < 6; ++i) 
 		{
-			Vector4& plane = m_FrustumPlanes[i];
-			Vector3 center = model.GetOrigin();
+			Vector4& plane = m_FrustumParam.frustumPlanes[i];
 			float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + m_Radius;
 			if (projDist <= 0) {
 				return false;
@@ -237,6 +251,16 @@ private:
 		m_Material->EndFrame();
 	}
 
+    void SetupComputeCommand()
+    {
+        m_ComputeCommand->Begin();
+        
+        m_ComputeProcessor->SetUniform("param", &m_FrustumParam, sizeof(FrustumParamBlock));
+		m_ComputeProcessor->BindDispatch(m_ComputeCommand->cmdBuffer, 32, 32, 1);
+        
+		m_ComputeCommand->Submit();
+    }
+    
 	void SetupGfxCommand(int32 backBufferIndex)
 	{
 		VkViewport viewport = {};
@@ -305,50 +329,52 @@ private:
 	void UpdateFrustumPlanes()
 	{
 		Matrix4x4 matrix = m_ViewCamera.GetViewProjection();
-
+        
+        Vector4* frustumPlanes = &(m_FrustumParam.frustumPlanes[0]);
+        
 		// left
-		m_FrustumPlanes[0].x = matrix.m[0][3] + matrix.m[0][0];
-		m_FrustumPlanes[0].y = matrix.m[1][3] + matrix.m[1][0];
-		m_FrustumPlanes[0].z = matrix.m[2][3] + matrix.m[2][0];
-		m_FrustumPlanes[0].w = matrix.m[3][3] + matrix.m[3][0];
+		frustumPlanes[0].x = matrix.m[0][3] + matrix.m[0][0];
+		frustumPlanes[0].y = matrix.m[1][3] + matrix.m[1][0];
+		frustumPlanes[0].z = matrix.m[2][3] + matrix.m[2][0];
+		frustumPlanes[0].w = matrix.m[3][3] + matrix.m[3][0];
 
 		// right
-		m_FrustumPlanes[1].x = matrix.m[0][3] - matrix.m[0][0];
-		m_FrustumPlanes[1].y = matrix.m[1][3] - matrix.m[1][0];
-		m_FrustumPlanes[1].z = matrix.m[2][3] - matrix.m[2][0];
-		m_FrustumPlanes[1].w = matrix.m[3][3] - matrix.m[3][0];
+		frustumPlanes[1].x = matrix.m[0][3] - matrix.m[0][0];
+		frustumPlanes[1].y = matrix.m[1][3] - matrix.m[1][0];
+		frustumPlanes[1].z = matrix.m[2][3] - matrix.m[2][0];
+		frustumPlanes[1].w = matrix.m[3][3] - matrix.m[3][0];
 
 		// top
-		m_FrustumPlanes[2].x = matrix.m[0][3] + matrix.m[0][1];
-		m_FrustumPlanes[2].y = matrix.m[1][3] + matrix.m[1][1];
-		m_FrustumPlanes[2].z = matrix.m[2][3] + matrix.m[2][1];
-		m_FrustumPlanes[2].w = matrix.m[3][3] + matrix.m[3][1];
+		frustumPlanes[2].x = matrix.m[0][3] + matrix.m[0][1];
+		frustumPlanes[2].y = matrix.m[1][3] + matrix.m[1][1];
+		frustumPlanes[2].z = matrix.m[2][3] + matrix.m[2][1];
+		frustumPlanes[2].w = matrix.m[3][3] + matrix.m[3][1];
 
 		// bottom
-		m_FrustumPlanes[3].x = matrix.m[0][3] - matrix.m[0][1];
-		m_FrustumPlanes[3].y = matrix.m[1][3] - matrix.m[1][1];
-		m_FrustumPlanes[3].z = matrix.m[2][3] - matrix.m[2][1];
-		m_FrustumPlanes[3].w = matrix.m[3][3] - matrix.m[3][1];
+		frustumPlanes[3].x = matrix.m[0][3] - matrix.m[0][1];
+		frustumPlanes[3].y = matrix.m[1][3] - matrix.m[1][1];
+		frustumPlanes[3].z = matrix.m[2][3] - matrix.m[2][1];
+		frustumPlanes[3].w = matrix.m[3][3] - matrix.m[3][1];
 
 		// near
-		m_FrustumPlanes[4].x = matrix.m[0][2];
-		m_FrustumPlanes[4].y = matrix.m[1][2];
-		m_FrustumPlanes[4].z = matrix.m[2][2];
-		m_FrustumPlanes[4].w = matrix.m[3][2];
+		frustumPlanes[4].x = matrix.m[0][2];
+		frustumPlanes[4].y = matrix.m[1][2];
+		frustumPlanes[4].z = matrix.m[2][2];
+		frustumPlanes[4].w = matrix.m[3][2];
 
 		// far
-		m_FrustumPlanes[5].x = matrix.m[0][3] - matrix.m[0][2];
-		m_FrustumPlanes[5].y = matrix.m[1][3] - matrix.m[1][2];
-		m_FrustumPlanes[5].z = matrix.m[2][3] - matrix.m[2][2];
-		m_FrustumPlanes[5].w = matrix.m[3][3] - matrix.m[3][2];
+		frustumPlanes[5].x = matrix.m[0][3] - matrix.m[0][2];
+		frustumPlanes[5].y = matrix.m[1][3] - matrix.m[1][2];
+		frustumPlanes[5].z = matrix.m[2][3] - matrix.m[2][2];
+		frustumPlanes[5].w = matrix.m[3][3] - matrix.m[3][2];
 
 		for (auto i = 0; i < 6; i++)
 		{
-			float length = MMath::Sqrt(m_FrustumPlanes[i].x * m_FrustumPlanes[i].x + m_FrustumPlanes[i].y * m_FrustumPlanes[i].y + m_FrustumPlanes[i].z * m_FrustumPlanes[i].z);
-			m_FrustumPlanes[i].x /= length;
-			m_FrustumPlanes[i].y /= length;
-			m_FrustumPlanes[i].z /= length;
-			m_FrustumPlanes[i].w /= length;
+			float length = MMath::Sqrt(frustumPlanes[i].x * frustumPlanes[i].x + frustumPlanes[i].y * frustumPlanes[i].y + frustumPlanes[i].z * frustumPlanes[i].z);
+			frustumPlanes[i].x /= length;
+			frustumPlanes[i].y /= length;
+			frustumPlanes[i].z /= length;
+			frustumPlanes[i].w /= length;
 		}
 	}
 
@@ -381,25 +407,28 @@ private:
 	typedef std::vector<vk_demo::DVKMaterial*>			MaterialArray;
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
-	bool 						m_Ready = false;
+	bool 						    m_Ready = false;
 
-	vk_demo::DVKModel*			m_ModelSphere = nullptr;
+	vk_demo::DVKModel*			    m_ModelSphere = nullptr;
 
-	vk_demo::DVKMaterial*		m_Material = nullptr;
-	vk_demo::DVKShader*			m_Shader = nullptr;
+	vk_demo::DVKMaterial*		    m_Material = nullptr;
+	vk_demo::DVKShader*			    m_Shader = nullptr;
+    
+    vk_demo::DVKBuffer*             m_MatrixBuffer = nullptr;
 
-	vk_demo::DVKShader*			m_LineShader = nullptr;
-	vk_demo::DVKMaterial*		m_LineMaterial = nullptr;
+	Matrix4x4					    m_ObjModels[OBJECT_COUNT];
 
-	Matrix4x4					m_ObjModels[OBJECT_COUNT];
-
-	vk_demo::DVKCamera		    m_ViewCamera;
-	vk_demo::DVKCamera			m_TopCamera;
-
-	ModelViewProjectionBlock	m_MVPParam;
-	Vector4						m_FrustumPlanes[6];
-	float						m_Radius;
-	int32						m_DrawCall = 0;
+	vk_demo::DVKCamera		        m_ViewCamera;
+	vk_demo::DVKCamera			    m_TopCamera;
+    
+    FrustumParamBlock               m_FrustumParam;
+    vk_demo::DVKShader*             m_ComputeShader = nullptr;
+    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCommandBuffer*      m_ComputeCommand = nullptr;
+    
+	ModelViewProjectionBlock	    m_MVPParam;
+	float						    m_Radius;
+	int32						    m_DrawCall = 0;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
