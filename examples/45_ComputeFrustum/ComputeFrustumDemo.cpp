@@ -15,7 +15,7 @@
 #include <vector>
 #include <fstream>
 
-#define OBJECT_COUNT 1024
+#define OBJECT_COUNT 2048
 
 class ComputeFrustumDemo : public DemoBase
 {
@@ -86,6 +86,8 @@ private:
 			UpdateFrustumPlanes();
 		}
 
+		m_DrawCall = 0;
+
 		SetupGfxCommand(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -99,6 +101,8 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeFrustumDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+			ImGui::Text("DrawCall:%d", m_DrawCall);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -132,7 +136,7 @@ private:
 		{
 			m_ObjModels[i].AppendTranslation(Vector3(
 				MMath::FRandRange(-450.0f, 450.0f),
-				19.73f,
+				MMath::FRandRange(-50.0f,  50.0f),
 				MMath::FRandRange(-450.0f, 450.0f)
 			));
 		}
@@ -226,6 +230,7 @@ private:
 				m_ModelSphere->meshes[0]->DrawOnly(commandBuffer);
 
 				count++;
+				m_DrawCall += 1;
 			}
 		}
 
@@ -349,8 +354,7 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.freeze.x = 1;
-		m_ViewCamera.SetPosition(0, 19.73f, -800.0f);
+		m_ViewCamera.SetPosition(0, 19.73f, -200.0f);
 		m_ViewCamera.LookAt(0, 19.73f, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight() * 0.5f, 1.0f, 1500.0f);
 
@@ -395,6 +399,7 @@ private:
 	ModelViewProjectionBlock	m_MVPParam;
 	Vector4						m_FrustumPlanes[6];
 	float						m_Radius;
+	int32						m_DrawCall = 0;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
