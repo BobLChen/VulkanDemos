@@ -63,18 +63,18 @@ Vulkan Examples
 
 ### Command line
 
-- git clone --recursive https://github.com/BobLChen/VulkanTutorials.git
-- cd VulkanTutorials
+- git clone https://github.com/BobLChen/VulkanDemos.git
+- cd VulkanDemos
 - mkdir build
 - cd build
 - cmake ..
 
 ### CMake-GUI
 
-- git clone --recursive https://github.com/BobLChen/VulkanTutorials.git
+- git clone https://github.com/BobLChen/VulkanDemos.git
 - Open CMake-GUI
-- Where is the source code : VulkanTutorials
-- Where to build the binaries : VulkanTutorials/build
+- Where is the source code : VulkanDemos
+- Where to build the binaries : VulkanDemos/build
 - Click Configure button
 - Choose your generator
 - Click Generate button
