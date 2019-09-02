@@ -68,38 +68,6 @@ public:
 
 private:
 
-	struct SimpleLine
-	{
-		std::vector<float>& vertices;
-		Vector3 lastVert;
-
-		SimpleLine(std::vector<float>& outVertices)
-			: vertices(outVertices)
-		{
-
-		}
-
-		void MoveTo(float x, float y, float z)
-		{
-			lastVert.x = x;
-			lastVert.y = y;
-			lastVert.z = z;
-		}
-
-		void LineTo(float x, float y, float z)
-		{
-			vertices.push_back(lastVert.x);
-			vertices.push_back(lastVert.y);
-			vertices.push_back(lastVert.z);
-
-			vertices.push_back(x);
-			vertices.push_back(y);
-			vertices.push_back(z);
-
-			MoveTo(x, y, z);
-		}
-	};
-
 	struct ModelViewProjectionBlock
 	{
 		Matrix4x4 model;
@@ -153,43 +121,6 @@ private:
 		return hovered;
 	}
 
-	void CreateLineCamera(std::vector<float>& outVertices)
-	{
-		float zNear  = m_ViewCamera.GetNear();
-		float zFar   = m_ViewCamera.GetFar();
-		float aspect = m_ViewCamera.GetAspect();
-		float zoom   = MMath::Tan(m_ViewCamera.GetFov() / 2.0f);
-
-		float sizeX = zoom * zNear;
-		float sizeY = zoom * zNear / aspect;
-
-		SimpleLine line(outVertices);
-
-		line.MoveTo(-sizeX,  sizeY, zNear);
-		line.LineTo( sizeX,  sizeY, zNear);
-		line.LineTo( sizeX, -sizeY, zNear);
-		line.LineTo(-sizeX, -sizeY, zNear);
-		line.LineTo(-sizeX,  sizeY, zNear);
-
-		float size2X = zoom * zFar;
-		float size2Y = zoom * zFar / aspect;
-
-		line.MoveTo(-size2X,  size2Y, zFar);
-		line.LineTo( size2X,  size2Y, zFar);
-		line.LineTo( size2X, -size2Y, zFar);
-		line.LineTo(-size2X, -size2Y, zFar);
-		line.LineTo(-size2X,  size2Y, zFar);
-
-		line.MoveTo( sizeX,  sizeY,  zNear);
-		line.LineTo( size2X, size2Y, zFar);
-		line.MoveTo( sizeX, -sizeY,  zNear);
-		line.LineTo( size2X,-size2Y, zFar);
-		line.MoveTo(-sizeX, -sizeY,  zNear);
-		line.LineTo(-size2X,-size2Y, zFar);
-		line.MoveTo(-sizeX,  sizeY,  zNear);
-		line.LineTo(-size2X, size2Y, zFar);
-	}
-
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
@@ -239,16 +170,6 @@ private:
 				MMath::FRandRange(-250.0f, 250.0f)
 			));
 		}
-
-		std::vector<float> vertices;
-		CreateLineCamera(vertices);
-		m_DebugCamera = vk_demo::DVKModel::Create(
-			m_VulkanDevice,
-			cmdBuffer,
-			vertices,
-			{},
-			{ VertexAttribute::VA_Position }
-		);
 
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -305,7 +226,6 @@ private:
 	{
 		delete m_ModelGround;
 		delete m_ModelSphere;
-		delete m_DebugCamera;
 
 		delete m_LineShader;
 		delete m_LineMaterial;
@@ -317,28 +237,6 @@ private:
 		delete m_Shader;
 
 		vkDestroyQueryPool(m_Device, m_QueryPool, VULKAN_CPU_ALLOCATOR);
-	}
-
-	void RenderDebugCamera(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
-	{
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_LineMaterial->GetPipeline());
-		m_LineMaterial->BeginFrame();
-
-		for (int32 j = 0; j < m_DebugCamera->meshes.size(); ++j) 
-		{
-			m_MVPParam.model = m_ViewCamera.GetTransform();
-			m_MVPParam.view  = camera.GetView();
-			m_MVPParam.proj  = camera.GetProjection();
-
-			m_LineMaterial->BeginObject();
-			m_LineMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			m_LineMaterial->EndObject();
-
-			m_LineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-			m_DebugCamera->meshes[j]->BindDrawCmd(commandBuffer);
-		}
-
-		m_LineMaterial->EndFrame();
 	}
 
 	void RenderOcclusions(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
@@ -514,7 +412,6 @@ private:
 
 			RenderSpheres(commandBuffer, m_TopCamera);
 			RenderGround(commandBuffer, m_TopCamera);
-			RenderDebugCamera(commandBuffer, m_TopCamera);
 		}
 		
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -562,7 +459,6 @@ private:
 
 	vk_demo::DVKModel*			m_ModelSphere = nullptr;
 	vk_demo::DVKModel*			m_ModelGround = nullptr;
-	vk_demo::DVKModel*			m_DebugCamera = nullptr;
 	vk_demo::DVKMaterial*		m_Material = nullptr;
 	vk_demo::DVKShader*			m_Shader = nullptr;
 	vk_demo::DVKMaterial*		m_SimpleMaterial = nullptr;

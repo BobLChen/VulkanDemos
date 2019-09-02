@@ -67,48 +67,6 @@ public:
 
 private:
 
-	struct SimpleLine
-	{
-		std::vector<float>& vertices;
-		Vector3 lastVert;
-
-		SimpleLine(std::vector<float>& outVertices)
-			: vertices(outVertices)
-		{
-
-		}
-
-		void MoveTo(const Vector3& v)
-		{
-			MoveTo(v.x, v.y, v.z);
-		}
-
-		void MoveTo(float x, float y, float z)
-		{
-			lastVert.x = x;
-			lastVert.y = y;
-			lastVert.z = z;
-		}
-
-		void LineTo(const Vector3& v)
-		{
-			LineTo(v.x, v.y, v.z);
-		}
-
-		void LineTo(float x, float y, float z)
-		{
-			vertices.push_back(lastVert.x);
-			vertices.push_back(lastVert.y);
-			vertices.push_back(lastVert.z);
-
-			vertices.push_back(x);
-			vertices.push_back(y);
-			vertices.push_back(z);
-
-			MoveTo(x, y, z);
-		}
-	};
-
 	struct ModelViewProjectionBlock
 	{
 		Matrix4x4 model;
@@ -154,43 +112,6 @@ private:
 		return hovered;
 	}
 
-	void CreateLineCamera(std::vector<float>& outVertices)
-	{
-		float zNear  = m_ViewCamera.GetNear();
-		float zFar   = m_ViewCamera.GetFar();
-		float aspect = m_ViewCamera.GetAspect();
-		float zoom   = MMath::Tan(m_ViewCamera.GetFov() / 2.0f);
-
-		float sizeX = zoom * zNear;
-		float sizeY = zoom * zNear / aspect;
-
-		SimpleLine line(outVertices);
-
-		line.MoveTo(-sizeX,  sizeY, zNear);
-		line.LineTo( sizeX,  sizeY, zNear);
-		line.LineTo( sizeX, -sizeY, zNear);
-		line.LineTo(-sizeX, -sizeY, zNear);
-		line.LineTo(-sizeX,  sizeY, zNear);
-
-		float size2X = zoom * zFar;
-		float size2Y = zoom * zFar / aspect;
-
-		line.MoveTo(-size2X,  size2Y, zFar);
-		line.LineTo( size2X,  size2Y, zFar);
-		line.LineTo( size2X, -size2Y, zFar);
-		line.LineTo(-size2X, -size2Y, zFar);
-		line.LineTo(-size2X,  size2Y, zFar);
-
-		line.MoveTo( sizeX,  sizeY,  zNear);
-		line.LineTo( size2X, size2Y, zFar);
-		line.MoveTo( sizeX, -sizeY,  zNear);
-		line.LineTo( size2X,-size2Y, zFar);
-		line.MoveTo(-sizeX, -sizeY,  zNear);
-		line.LineTo(-size2X,-size2Y, zFar);
-		line.MoveTo(-sizeX,  sizeY,  zNear);
-		line.LineTo(-size2X, size2Y, zFar);
-	}
-
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
@@ -215,16 +136,6 @@ private:
 				MMath::FRandRange(-450.0f, 450.0f)
 			));
 		}
-
-		std::vector<float> vertices;
-		CreateLineCamera(vertices);
-		m_DebugCamera = vk_demo::DVKModel::Create(
-			m_VulkanDevice,
-			cmdBuffer,
-			vertices,
-			{},
-			{ VertexAttribute::VA_Position }
-		);
 
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -266,35 +177,12 @@ private:
 	void DestroyAssets()
 	{
 		delete m_ModelSphere;
-		delete m_DebugCamera;
 
 		delete m_LineShader;
 		delete m_LineMaterial;
 
 		delete m_Material;
 		delete m_Shader;
-	}
-
-	void RenderDebugCamera(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
-	{
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_LineMaterial->GetPipeline());
-		m_LineMaterial->BeginFrame();
-
-		for (int32 j = 0; j < m_DebugCamera->meshes.size(); ++j) 
-		{
-			m_MVPParam.model = m_ViewCamera.GetTransform();
-			m_MVPParam.view  = camera.GetView();
-			m_MVPParam.proj  = camera.GetProjection();
-
-			m_LineMaterial->BeginObject();
-			m_LineMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			m_LineMaterial->EndObject();
-
-			m_LineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-			m_DebugCamera->meshes[j]->BindDrawCmd(commandBuffer);
-		}
-
-		m_LineMaterial->EndFrame();
 	}
 
 	bool IsInFrustum(const Matrix4x4& model)
@@ -400,7 +288,6 @@ private:
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
 			RenderSpheres(commandBuffer, m_TopCamera);
-			RenderDebugCamera(commandBuffer, m_TopCamera);
 		}
 		
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -439,10 +326,10 @@ private:
 		m_FrustumPlanes[3].w = matrix.m[3][3] - matrix.m[3][1];
 
 		// near
-		m_FrustumPlanes[4].x = matrix.m[0][3] + matrix.m[0][2];
-		m_FrustumPlanes[4].y = matrix.m[1][3] + matrix.m[1][2];
-		m_FrustumPlanes[4].z = matrix.m[2][3] + matrix.m[2][2];
-		m_FrustumPlanes[4].w = matrix.m[3][3] + matrix.m[3][2];
+		m_FrustumPlanes[4].x = matrix.m[0][2];
+		m_FrustumPlanes[4].y = matrix.m[1][2];
+		m_FrustumPlanes[4].z = matrix.m[2][2];
+		m_FrustumPlanes[4].w = matrix.m[3][2];
 
 		// far
 		m_FrustumPlanes[5].x = matrix.m[0][3] - matrix.m[0][2];
@@ -466,7 +353,6 @@ private:
 		m_ViewCamera.SetPosition(0, 19.73f, -800.0f);
 		m_ViewCamera.LookAt(0, 19.73f, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight() * 0.5f, 1.0f, 1500.0f);
-		UpdateFrustumPlanes();
 
 		m_TopCamera.SetPosition(-500, 1500, 0);
 		m_TopCamera.LookAt(0, 0, 0);
@@ -494,7 +380,6 @@ private:
 	bool 						m_Ready = false;
 
 	vk_demo::DVKModel*			m_ModelSphere = nullptr;
-	vk_demo::DVKModel*			m_DebugCamera = nullptr;
 
 	vk_demo::DVKMaterial*		m_Material = nullptr;
 	vk_demo::DVKShader*			m_Shader = nullptr;
