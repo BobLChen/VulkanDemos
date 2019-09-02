@@ -514,6 +514,7 @@ namespace vk_demo
         
 		mesh->bounding.min = mmin;
 		mesh->bounding.max = mmax;
+		mesh->bounding.UpdateCorners();
 
 		return mesh;
 	}
