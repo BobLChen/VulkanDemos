@@ -147,7 +147,12 @@ private:
 
 	void LoadAssets()
 	{
-		m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
+		m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice, 
+			m_ComputeCommandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
 
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 

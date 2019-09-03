@@ -18,6 +18,7 @@ namespace vk_demo
 			fence = VK_NULL_HANDLE;
 		}
 
+		queue = nullptr;
 		vulkanDevice = nullptr;
 	}
 
@@ -45,7 +46,7 @@ namespace vk_demo
 		}
 
 		vkResetFences(vulkanDevice->GetInstanceHandle(), 1, &fence);
-		vkQueueSubmit(vulkanDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, fence);
+		vkQueueSubmit(queue->GetHandle(), 1, &submitInfo, fence);
 		vkWaitForFences(vulkanDevice->GetInstanceHandle(), 1, &fence, true, MAX_uint64);
 	}
 
@@ -73,7 +74,7 @@ namespace vk_demo
 		vkEndCommandBuffer(cmdBuffer);
 	}
 
-	DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level)
+	DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level, std::shared_ptr<VulkanQueue> inQueue)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
@@ -81,6 +82,13 @@ namespace vk_demo
 		cmdBuffer->vulkanDevice = vulkanDevice;
 		cmdBuffer->commandPool  = commandPool;
 		cmdBuffer->isBegun      = false;
+
+		if (inQueue) {
+			cmdBuffer->queue = inQueue;
+		}
+		else {
+			cmdBuffer->queue = vulkanDevice->GetGraphicsQueue();
+		}
 
 		VkCommandBufferAllocateInfo cmdBufferAllocateInfo;
 		ZeroVulkanStruct(cmdBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);

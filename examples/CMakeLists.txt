@@ -728,3 +728,18 @@ SETUP_SAMPLE_START(44_ComputeRaytracing)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(44_ComputeRaytracing)
+
+SETUP_SAMPLE_START(45_ComputeFrustum)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/45_ComputeFrustum/ComputeFrustumDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/45_ComputeFrustum/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(45_ComputeFrustum) 

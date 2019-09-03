@@ -1,0 +1,54 @@
+#version 450
+
+layout(std140, binding = 0) readonly buffer MatrixBuffer 
+{
+    mat4 models[ ];
+} inMatrix;
+
+layout(std140, binding = 1) writeonly buffer CullingBuffer 
+{
+    vec4 inView[ ];
+} outCulling;
+
+layout (binding = 2) uniform ParticleParam 
+{
+	vec4 count;
+	vec4 frustumPlanes[6];
+} param;
+
+layout (local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
+
+bool IsInFrustum(uint index)
+{
+	mat4 model = inMatrix.models[index];
+	vec3 pos = model[3].xyz;
+	
+	for (int i = 0; i < 6; ++i) 
+	{
+		vec4 plane = param.frustumPlanes[i];
+		float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + param.count.y;
+		if (projDist <= 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void main() 
+{
+    uint globalIndex = gl_WorkGroupID.z * gl_NumWorkGroups.x * gl_NumWorkGroups.y + gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x;
+	globalIndex = globalIndex * gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
+	globalIndex = globalIndex + gl_LocalInvocationIndex;
+
+	if (globalIndex >= param.count.x) {
+		return;
+	}
+
+	if (IsInFrustum(globalIndex)) {
+		outCulling.inView[globalIndex].xyzw = vec4(1.0);
+	} 
+	else {
+		outCulling.inView[globalIndex].xyzw = vec4(0.0);
+	}
+}
