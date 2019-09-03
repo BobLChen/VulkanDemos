@@ -222,3 +222,6 @@ Reduce 5 float per vertex
 
 ### [44_ComputeRaytracing](https://github.com/BobLChen/VulkanDemos/tree/master/examples/44_ComputeRaytracing)
 ![44_ComputeRaytracing](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/44_ComputeRaytracing.jpg)
+
+### [45_ComputeFrustum](https://github.com/BobLChen/VulkanDemos/tree/master/examples/45_ComputeFrustum)
+![45_ComputeFrustum](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/45_ComputeFrustum.jpg)
