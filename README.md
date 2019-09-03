@@ -225,3 +225,6 @@ Reduce 5 float per vertex
 
 ### [45_ComputeFrustum](https://github.com/BobLChen/VulkanDemos/tree/master/examples/45_ComputeFrustum)
 ![45_ComputeFrustum](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/45_ComputeFrustum.jpg)
+
+### [46_GeometryHouse](https://github.com/BobLChen/VulkanDemos/tree/master/examples/46_GeometryHouse)
+![46_GeometryHouse](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/46_GeometryHouse.jpg)
