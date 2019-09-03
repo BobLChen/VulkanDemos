@@ -161,7 +161,12 @@ private:
 
 	void ProcessRaytracing()
 	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice, 
+			m_ComputeCommandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
 
 		// create target image
         m_ComputeTarget = vk_demo::DVKTexture::Create2D(

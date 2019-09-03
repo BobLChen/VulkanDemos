@@ -125,7 +125,12 @@ private:
 
 	void ProcessImage()
 	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice, 
+			m_ComputeCommandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
 
 		// create target image
         for (int32 i = 0; i < 3; ++i)

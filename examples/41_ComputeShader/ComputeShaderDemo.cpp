@@ -163,7 +163,12 @@ private:
 			VERIFYVULKANRESULT(vkCreateCommandPool(m_Device, &poolCreateInfo, VULKAN_CPU_ALLOCATOR, &m_ComputeRes.commandPool));
 		}
 
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeRes.commandPool);
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice,
+			m_ComputeRes.commandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
 		
 		// create target image
 		{

@@ -16,7 +16,8 @@
 #include <vector>
 #include <fstream>
 
-#define OBJECT_COUNT 2048
+// 1024 * 1024
+#define OBJECT_COUNT 1024 * 256
 
 class ComputeFrustumDemo : public DemoBase
 {
@@ -95,7 +96,10 @@ private:
 
 		m_DrawCall = 0;
 
-        SetupComputeCommand();
+		if (m_UseGPU) {
+			SetupComputeCommand();
+		}
+        
 		SetupGfxCommand(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
@@ -110,6 +114,7 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("ComputeFrustumDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			ImGui::Checkbox("Compute", &m_UseGPU);
 			ImGui::Text("DrawCall:%d", m_DrawCall);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -140,12 +145,20 @@ private:
 		auto bounds = m_ModelSphere->rootNode->GetBounds();
 		m_Radius = bounds.max.x - bounds.min.x;
 
-		for (int32 i = 0; i < OBJECT_COUNT; ++i)
+		for (int32 i = 0; i < 1024; ++i)
 		{
 			m_ObjModels[i].AppendTranslation(Vector3(
 				MMath::FRandRange(-450.0f, 450.0f),
-				MMath::FRandRange(-50.0f,  50.0f),
+				MMath::FRandRange(-100.0f, 100.0f),
 				MMath::FRandRange(-450.0f, 450.0f)
+			));
+		}
+		for (int32 i = 1024; i < OBJECT_COUNT; ++i)
+		{
+			m_ObjModels[i].AppendTranslation(Vector3(
+				MMath::FRandRange(-100000.0f, 100000.0f),
+				MMath::FRandRange(-100000.0f, 100000.0f),
+				MMath::FRandRange(-100000.0f, 100000.0f)
 			));
 		}
 
@@ -164,12 +177,41 @@ private:
 		);
 		m_Material->PreparePipeline();
         
-        m_MatrixBuffer = vk_demo::DVKBuffer::CreateBuffer(
-            m_VulkanDevice,
-            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            OBJECT_COUNT * sizeof(Matrix4x4)
-        );
+		{
+			m_CullingBuffer = vk_demo::DVKBuffer::CreateBuffer(
+				m_VulkanDevice, 
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+				OBJECT_COUNT * sizeof(Vector4)
+			);
+			m_CullingBuffer->Map();
+
+			vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(
+				m_VulkanDevice, 
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+				OBJECT_COUNT * sizeof(Matrix4x4),
+				m_ObjModels
+			);
+			
+			m_MatrixBuffer = vk_demo::DVKBuffer::CreateBuffer(
+				m_VulkanDevice, 
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+				OBJECT_COUNT * sizeof(Matrix4x4)
+			);
+
+			cmdBuffer->Begin();
+
+			VkBufferCopy copyRegion = {};
+			copyRegion.size = OBJECT_COUNT * sizeof(Matrix4x4);
+			vkCmdCopyBuffer(cmdBuffer->cmdBuffer, stagingBuffer->buffer, m_MatrixBuffer->buffer, 1, &copyRegion);
+
+			cmdBuffer->End();
+			cmdBuffer->Submit();
+
+			delete stagingBuffer;
+		}
         
         m_ComputeShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice, 
@@ -181,9 +223,15 @@ private:
 			m_PipelineCache, 
 			m_ComputeShader
 		);
-		m_ComputeProcessor->SetStorageBuffer("inMatrix", m_MatrixBuffer);
+		m_ComputeProcessor->SetStorageBuffer("inMatrix",   m_MatrixBuffer);
+		m_ComputeProcessor->SetStorageBuffer("outCulling", m_CullingBuffer);
         
-        m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_ComputeCommandPool);
+        m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice, 
+			m_ComputeCommandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
         
         m_FrustumParam.count.x = OBJECT_COUNT;
         m_FrustumParam.count.y = m_Radius;
@@ -194,7 +242,9 @@ private:
 	void DestroyAssets()
 	{
 		delete m_ModelSphere;
+
         delete m_MatrixBuffer;
+		delete m_CullingBuffer;
         
 		delete m_Material;
 		delete m_Shader;
@@ -204,20 +254,28 @@ private:
         delete m_ComputeCommand;
 	}
     
-	bool IsInFrustum(const Matrix4x4& model)
+	bool IsInFrustum(int32 index)
 	{
-		Vector3 pos  = model.GetOrigin();
-        
-		for (int32 i = 0; i < 6; ++i) 
+		if (m_UseGPU)
 		{
-			Vector4& plane = m_FrustumParam.frustumPlanes[i];
-			float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + m_Radius;
-			if (projDist <= 0) {
-				return false;
-			}
+			Vector4* cullData = (Vector4*)m_CullingBuffer->mapped;
+			return cullData[index].x > 0.0f;
 		}
+		else
+		{
+			Vector3 pos = m_ObjModels[index].GetOrigin();
 
-		return true;
+			for (int32 i = 0; i < 6; ++i) 
+			{
+				Vector4& plane = m_FrustumParam.frustumPlanes[i];
+				float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + m_Radius;
+				if (projDist <= 0) {
+					return false;
+				}
+			}
+
+			return true;
+		}
 	}
 
 	void RenderSpheres(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
@@ -230,7 +288,7 @@ private:
 		int32 count = 0;
 		for (int32 i = 0; i < OBJECT_COUNT; ++i)
 		{
-			if (IsInFrustum(m_ObjModels[i])) 
+			if (IsInFrustum(i)) 
 			{
 				m_MVPParam.model = m_ObjModels[i];
 				m_MVPParam.view  = camera.GetView();
@@ -415,6 +473,7 @@ private:
 	vk_demo::DVKShader*			    m_Shader = nullptr;
     
     vk_demo::DVKBuffer*             m_MatrixBuffer = nullptr;
+	vk_demo::DVKBuffer*				m_CullingBuffer = nullptr;
 
 	Matrix4x4					    m_ObjModels[OBJECT_COUNT];
 
@@ -429,6 +488,7 @@ private:
 	ModelViewProjectionBlock	    m_MVPParam;
 	float						    m_Radius;
 	int32						    m_DrawCall = 0;
+	bool							m_UseGPU = true;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };

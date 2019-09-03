@@ -1,17 +1,22 @@
 #version 450
 
-layout(std140, binding = 0) buffer MatrixBuffer 
+layout(std140, binding = 0) readonly buffer MatrixBuffer 
 {
     mat4 models[ ];
 } inMatrix;
 
-layout (binding = 1) uniform ParticleParam 
+layout(std140, binding = 1) writeonly buffer CullingBuffer 
+{
+    vec4 inView[ ];
+} outCulling;
+
+layout (binding = 2) uniform ParticleParam 
 {
 	vec4 count;
 	vec4 frustumPlanes[6];
 } param;
 
-layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+layout (local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
 bool IsInFrustum(uint index)
 {
@@ -41,6 +46,9 @@ void main()
 	}
 
 	if (IsInFrustum(globalIndex)) {
-
+		outCulling.inView[globalIndex].xyzw = vec4(1.0);
+	} 
+	else {
+		outCulling.inView[globalIndex].xyzw = vec4(0.0);
 	}
 }
