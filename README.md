@@ -228,3 +228,6 @@ Reduce 5 float per vertex
 
 ### [46_GeometryHouse](https://github.com/BobLChen/VulkanDemos/tree/master/examples/46_GeometryHouse)
 ![46_GeometryHouse](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/46_GeometryHouse.jpg)
+
+### [47_DebugNormal](https://github.com/BobLChen/VulkanDemos/tree/master/examples/47_DebugNormal)
+![47_DebugNormal](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/47_DebugNormal.jpg)
