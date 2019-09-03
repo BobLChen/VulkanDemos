@@ -758,3 +758,18 @@ SETUP_SAMPLE_START(46_GeometryHouse)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(46_GeometryHouse) 
+
+SETUP_SAMPLE_START(47_DebugNormal)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/47_DebugNormal/DebugNormalDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/47_DebugNormal/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(47_DebugNormal) 
