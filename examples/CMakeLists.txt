@@ -743,3 +743,18 @@ SETUP_SAMPLE_START(45_ComputeFrustum)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(45_ComputeFrustum) 
+
+SETUP_SAMPLE_START(46_GeometryHouse)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/46_GeometryHouse/GeometryHouseDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/46_GeometryHouse/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(46_GeometryHouse) 
