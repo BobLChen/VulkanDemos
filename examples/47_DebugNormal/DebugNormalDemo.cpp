@@ -16,16 +16,16 @@
 #include <vector>
 #include <fstream>
 
-class GeometryHouseDemo : public DemoBase
+class DebugNormalDemo : public DemoBase
 {
 public:
-	GeometryHouseDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	DebugNormalDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 
 	}
 
-	virtual ~GeometryHouseDemo()
+	virtual ~DebugNormalDemo()
 	{
 
 	}
@@ -97,7 +97,7 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-			ImGui::Begin("GeometryHouseDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Begin("DebugNormalDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -115,35 +115,22 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		
-		Vector3 points[4] = {
-			Vector3(-10,  10,  0.0f),
-			Vector3( 10,  10,  0.0f),
-			Vector3( 10, -10,  0.0f),
-			Vector3(-10, -10,  0.0f)
-		};
-
-		std::vector<float> vertices;
-		for (int32 i = 0; i < 4; ++i) 
-		{
-			vertices.push_back(points[i].x);
-			vertices.push_back(points[i].y);
-			vertices.push_back(points[i].z);
-		}
-
-		m_Model = vk_demo::DVKModel::Create(
+		m_Model = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/suzanne.obj",
 			m_VulkanDevice,
 			cmdBuffer,
-			vertices,
-			{},
-			{ VertexAttribute::VA_Position }
+			{ 
+				VertexAttribute::VA_Position,
+				VertexAttribute::VA_Normal
+			}
 		);
 
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/46_GeometryHouse/Point.vert.spv",
-			"assets/shaders/46_GeometryHouse/Point.frag.spv",
-			"assets/shaders/46_GeometryHouse/Point.geom.spv"
+			"assets/shaders/47_DebugNormal/Normal.vert.spv",
+			"assets/shaders/47_DebugNormal/Normal.frag.spv",
+			nullptr
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(
@@ -152,15 +139,23 @@ private:
 			m_PipelineCache,
 			m_Shader
 		);
-		m_Material->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		m_Material->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		m_Material->pipelineInfo.inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-		m_Material->pipelineInfo.inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthTestEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthWriteEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
 		m_Material->PreparePipeline();
+
+		m_LineShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/47_DebugNormal/Line.vert.spv",
+			"assets/shaders/47_DebugNormal/Line.frag.spv",
+			"assets/shaders/47_DebugNormal/Line.geom.spv"
+		);
+
+		m_LineMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_LineShader
+		);
+		m_LineMaterial->PreparePipeline();
 
 		delete cmdBuffer;
 	}
@@ -168,8 +163,12 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
+
 		delete m_Material;
 		delete m_Shader;
+
+		delete m_LineMaterial;
+		delete m_LineShader;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -214,7 +213,6 @@ private:
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
-
 		m_Material->BeginFrame();
 		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
@@ -231,6 +229,23 @@ private:
 		}
 		m_Material->EndFrame();
 
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_LineMaterial->GetPipeline());
+		m_LineMaterial->BeginFrame();
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
+		{
+			m_MVPParam.model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
+			m_MVPParam.view  = m_ViewCamera.GetView();
+			m_MVPParam.proj  = m_ViewCamera.GetProjection();
+
+			m_LineMaterial->BeginObject();
+			m_LineMaterial->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
+			m_LineMaterial->EndObject();
+
+			m_LineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, i);
+			m_Model->meshes[i]->BindDrawCmd(commandBuffer);
+		}
+		m_LineMaterial->EndFrame();
+
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 		vkCmdEndRenderPass(commandBuffer);
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
@@ -240,7 +255,7 @@ private:
 	{
 		m_ViewCamera.SetPosition(0, 0, -50.0f);
 		m_ViewCamera.LookAt(0, 0, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
 	}
 
 	void CreateGUI()
@@ -263,6 +278,9 @@ private:
 	vk_demo::DVKMaterial*		    m_Material = nullptr;
 	vk_demo::DVKShader*			    m_Shader = nullptr;
 
+	vk_demo::DVKMaterial*		    m_LineMaterial = nullptr;
+	vk_demo::DVKShader*			    m_LineShader = nullptr;
+
 	vk_demo::DVKCamera		        m_ViewCamera;
 	ModelViewProjectionBlock	    m_MVPParam;
     
@@ -271,5 +289,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<GeometryHouseDemo>(1400, 900, "GeometryHouseDemo", cmdLine);
+	return std::make_shared<DebugNormalDemo>(1400, 900, "DebugNormalDemo", cmdLine);
 }
