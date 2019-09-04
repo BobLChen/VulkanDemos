@@ -231,3 +231,6 @@ Reduce 5 float per vertex
 
 ### [47_DebugNormal](https://github.com/BobLChen/VulkanDemos/tree/master/examples/47_DebugNormal)
 ![47_DebugNormal](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/47_DebugNormal.jpg)
+
+### [48_GeometryOmniShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/48_GeometryOmniShadow)
+![48_GeometryOmniShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/36_OmniShadow.jpg)
