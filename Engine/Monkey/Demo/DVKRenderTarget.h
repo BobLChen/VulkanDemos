@@ -34,6 +34,7 @@ namespace vk_demo
         ColorEntry              colorRenderTargets[MaxSimultaneousRenderTargets];
         DepthStencilEntry       depthStencilRenderTarget;
         int32                   numColorRenderTargets;
+		bool					multiview = false;
         
         // Color, no depth
         explicit DVKRenderPassInfo(DVKTexture* colorRT, VkAttachmentLoadOp colorLoadAction, VkAttachmentStoreOp colorStoreAction, DVKTexture* resolveRT)
@@ -170,6 +171,7 @@ namespace vk_demo
         uint8                   numUsedClearValues = 0;
 
         VkExtent3D	            extent3D;
+		bool					multiview = false;
     };
 
     class DVKRenderPass
@@ -280,7 +282,7 @@ namespace vk_demo
         
         DVKRenderTargetLayout       rtLayout;
         DVKRenderPassInfo           renderPassInfo;
-        
+		
         DVKRenderPass*              renderPass = nullptr;
         DVKFrameBuffer*             frameBuffer = nullptr;
         

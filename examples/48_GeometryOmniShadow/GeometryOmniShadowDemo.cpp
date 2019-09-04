@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -15,17 +15,16 @@
 #include <vector>
 #include <fstream>
 
-class OmniShadowDemo : public DemoBase
+class GeometryOmniShadowDemo : public DemoBase
 {
 public:
-	OmniShadowDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	GeometryOmniShadowDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
-		deviceExtensions.push_back(VK_KHR_MULTIVIEW_EXTENSION_NAME);
-		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
 	}
 
-	virtual ~OmniShadowDemo()
+	virtual ~GeometryOmniShadowDemo()
 	{
 
 	}
@@ -173,7 +172,7 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-			ImGui::Begin("OmniShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Begin("GeometryOmniShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 			ImGui::Checkbox("Auto Spin", &m_AnimLight);
 			ImGui::Combo("Shadow", &m_Selected, m_ShadowNames.data(), m_ShadowNames.size());
@@ -203,7 +202,7 @@ private:
 			512, 512,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-        
+
 		m_RTDepth = vk_demo::DVKTexture::CreateCubeRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
@@ -216,7 +215,7 @@ private:
 			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
 			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
 		);
-		passInfo.multiview = true;
+		passInfo.multiview = false;
 		m_ShadowRTT = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, passInfo);
 	}
 
@@ -247,8 +246,9 @@ private:
 		m_DepthShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/36_OmniShadow/Depth.vert.spv",
-			"assets/shaders/36_OmniShadow/Depth.frag.spv"
+			"assets/shaders/48_GeometryOmniShadow/Depth.vert.spv",
+			"assets/shaders/48_GeometryOmniShadow/Depth.frag.spv",
+			"assets/shaders/48_GeometryOmniShadow/Depth.geom.spv"
 		);
 
 		m_DepthMaterial = vk_demo::DVKMaterial::Create(
@@ -263,8 +263,8 @@ private:
 		m_SimpleShadowShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/36_OmniShadow/SimpleShadow.vert.spv",
-			"assets/shaders/36_OmniShadow/SimpleShadow.frag.spv"
+			"assets/shaders/48_GeometryOmniShadow/SimpleShadow.vert.spv",
+			"assets/shaders/48_GeometryOmniShadow/SimpleShadow.frag.spv"
 		);
 
 		m_SimpleShadowMaterial = vk_demo::DVKMaterial::Create(
@@ -280,8 +280,8 @@ private:
 		m_PCFShadowShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/36_OmniShadow/PCFShadow.vert.spv",
-			"assets/shaders/36_OmniShadow/PCFShadow.frag.spv"
+			"assets/shaders/48_GeometryOmniShadow/PCFShadow.vert.spv",
+			"assets/shaders/48_GeometryOmniShadow/PCFShadow.frag.spv"
 		);
 
 		m_PCFShadowMaterial = vk_demo::DVKMaterial::Create(
@@ -472,5 +472,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<OmniShadowDemo>(1400, 900, "OmniShadowDemo", cmdLine);
+	return std::make_shared<GeometryOmniShadowDemo>(1400, 900, "GeometryOmniShadowDemo", cmdLine);
 }

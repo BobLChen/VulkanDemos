@@ -79,6 +79,7 @@ namespace vk_demo
             hasDepthStencil            = true;
         }
 
+		multiview = renderPassInfo.multiview;
         numUsedClearValues = numAttachmentDescriptions;
     }
     
@@ -115,8 +116,8 @@ namespace vk_demo
         renderPassCreateInfo.pSubpasses      = subpassDesc;
         renderPassCreateInfo.dependencyCount = numDependencies;
         renderPassCreateInfo.pDependencies   = subpassDep;
-
-		if (rtLayout.extent3D.depth > 1)
+        
+		if (rtLayout.extent3D.depth > 1 && rtLayout.multiview)
 		{
 			const uint32 viewMask        = (1 << rtLayout.extent3D.depth) - 1;
 			const uint32 correlationMask = (1 << rtLayout.extent3D.depth) - 1;
