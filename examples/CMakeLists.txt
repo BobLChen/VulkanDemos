@@ -772,4 +772,19 @@ SETUP_SAMPLE_START(47_DebugNormal)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(47_DebugNormal) 
+SETUP_SAMPLE_END(47_DebugNormal)
+
+SETUP_SAMPLE_START(48_GeometryOmniShadow)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/48_GeometryOmniShadow/GeometryOmniShadowDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/48_GeometryOmniShadow/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(48_GeometryOmniShadow) 

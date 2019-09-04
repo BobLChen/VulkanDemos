@@ -250,19 +250,27 @@ private:
         writeDescriptorSet.dstBinding      = 0;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 
-		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-        writeDescriptorSet.dstSet          = m_DescriptorSet;
-        writeDescriptorSet.descriptorCount = 1;
-        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptorSet.pBufferInfo     = &(m_ModelBuffer->descriptor);
-        writeDescriptorSet.dstBinding      = 1;
-        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+		VkDescriptorBufferInfo bufferInfo;
+		bufferInfo.buffer = m_ModelBuffer->buffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range  = sizeof(ModelBlock);
 
 		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
         writeDescriptorSet.dstSet          = m_DescriptorSet;
         writeDescriptorSet.descriptorCount = 1;
         writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptorSet.pBufferInfo     = &(m_ColorBuffer->descriptor);
+        writeDescriptorSet.pBufferInfo     = &bufferInfo;
+        writeDescriptorSet.dstBinding      = 1;
+        vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+
+		bufferInfo.buffer = m_ColorBuffer->buffer;
+		bufferInfo.offset = 0;
+		bufferInfo.range  = sizeof(ColorBlock);
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+        writeDescriptorSet.dstSet          = m_DescriptorSet;
+        writeDescriptorSet.descriptorCount = 1;
+        writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        writeDescriptorSet.pBufferInfo     = &bufferInfo;
         writeDescriptorSet.dstBinding      = 2;
         vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
