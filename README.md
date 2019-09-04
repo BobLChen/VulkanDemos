@@ -197,7 +197,7 @@ Reduce 5 float per vertex
 ### [35_PCFShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/35_PCFShadow)
 ![35_PCFShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/35_PCFShadow.jpg)
 
-### [36_OmniShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/36_OmniShadow)
+### [36_OmniShadow(Multiview)](https://github.com/BobLChen/VulkanDemos/tree/master/examples/36_OmniShadow)
 ![36_OmniShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/36_OmniShadow.jpg)
 
 ### [37_CascadedShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/37_CascadedShadow)
