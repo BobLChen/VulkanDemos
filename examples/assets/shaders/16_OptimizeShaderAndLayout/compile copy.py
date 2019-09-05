@@ -31,7 +31,7 @@ for parentDir, _, fileNames in os.walk(os.getcwd()):
 		files.append(filepath)
 pass
 
-shaders = [".vert", ".frag", ".comp", ".tess", ".tesc"]
+shaders = [".vert", ".frag", ".comp", ".tese", ".tesc"]
 shaderFiles = []
 
 for file in files:

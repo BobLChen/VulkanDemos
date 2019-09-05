@@ -24,6 +24,7 @@ namespace vk_demo
 		VkPipelineColorBlendAttachmentState			blendAttachmentStates[8];
 		VkPipelineDepthStencilStateCreateInfo		depthStencilState;
 		VkPipelineMultisampleStateCreateInfo		multisampleState;
+		VkPipelineTessellationStateCreateInfo		tessellationState;
         
 		VkShaderModule	vertShaderModule = VK_NULL_HANDLE;
 		VkShaderModule	fragShaderModule = VK_NULL_HANDLE;
@@ -82,6 +83,9 @@ namespace vk_demo
 			ZeroVulkanStruct(multisampleState, VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
 			multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 			multisampleState.pSampleMask 		  = nullptr;
+
+			ZeroVulkanStruct(tessellationState, VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO);
+			tessellationState.patchControlPoints = 0;
 		}
 
 		void FillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages)

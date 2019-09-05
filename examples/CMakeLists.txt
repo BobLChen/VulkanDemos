@@ -787,4 +787,19 @@ SETUP_SAMPLE_START(48_GeometryOmniShadow)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(48_GeometryOmniShadow) 
+SETUP_SAMPLE_END(48_GeometryOmniShadow)
+
+SETUP_SAMPLE_START(49_SimpleTessellation)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/49_SimpleTessellation/SimpleTessellationDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/49_SimpleTessellation/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(49_SimpleTessellation)
