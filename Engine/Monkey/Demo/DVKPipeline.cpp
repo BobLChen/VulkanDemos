@@ -68,6 +68,11 @@ namespace vk_demo
 		pipelineCreateInfo.pViewportState 		= &viewportState;
 		pipelineCreateInfo.pDepthStencilState 	= &(pipelineInfo.depthStencilState);
 		pipelineCreateInfo.pDynamicState 		= &dynamicState;
+
+		if (pipelineInfo.tessellationState.patchControlPoints != 0) {
+			pipelineCreateInfo.pTessellationState = &(pipelineInfo.tessellationState);
+		}
+
 		VERIFYVULKANRESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &(pipeline->pipeline)));
 		
 		return pipeline;
