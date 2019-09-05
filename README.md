@@ -237,3 +237,6 @@ Reduce 5 float per vertex
 
 ### [49_SimpleTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/49_SimpleTessellation)
 ![49_SimpleTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/49_SimpleTessellation.jpg)
+
+### [50_PNTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/50_PNTessellation)
+![50_PNTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/50_PNTessellation.gif)
