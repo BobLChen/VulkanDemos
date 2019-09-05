@@ -803,3 +803,18 @@ SETUP_SAMPLE_START(49_SimpleTessellation)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(49_SimpleTessellation)
+
+SETUP_SAMPLE_START(50_PNTessellation)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/50_PNTessellation/PNTessellationDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/50_PNTessellation/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(50_PNTessellation)
