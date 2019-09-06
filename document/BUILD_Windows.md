@@ -12,7 +12,7 @@
 
 ![0](thumb/windows/0.png)
 
-2、在那个黑框中输入（PS:没有--rescursive）
+2、在那个黑框中输入
 
 ```git clone https://github.com/BobLChen/VulkanDemos.git```
 
