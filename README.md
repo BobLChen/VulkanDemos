@@ -218,9 +218,11 @@ Reduce 5 float per vertex
 ### [42_OptimizeComputeShader](https://github.com/BobLChen/VulkanDemos/tree/master/examples/42_OptimizeComputeShader)
 
 ### [43_ComputeParticles](https://github.com/BobLChen/VulkanDemos/tree/master/examples/43_ComputeParticles)
+- copied from [computeparticles](https://github.com/SaschaWillems/Vulkan/tree/master/examples/computeparticles)
 ![43_ComputeParticles](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/43_ComputeParticles.jpg)
 
 ### [44_ComputeRaytracing](https://github.com/BobLChen/VulkanDemos/tree/master/examples/44_ComputeRaytracing)
+- copied from [computeraytracing](https://github.com/SaschaWillems/Vulkan/tree/master/examples/computeraytracing)
 ![44_ComputeRaytracing](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/44_ComputeRaytracing.jpg)
 
 ### [45_ComputeFrustum](https://github.com/BobLChen/VulkanDemos/tree/master/examples/45_ComputeFrustum)
@@ -239,4 +241,5 @@ Reduce 5 float per vertex
 ![49_SimpleTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/49_SimpleTessellation.jpg)
 
 ### [50_PNTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/50_PNTessellation)
+- copied from [tessellation](https://github.com/SaschaWillems/Vulkan/tree/master/examples/tessellation)
 ![50_PNTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/50_PNTessellation.gif)
