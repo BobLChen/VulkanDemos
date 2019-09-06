@@ -1,4 +1,15 @@
-﻿#include "Common/Common.h"
+﻿/*
+* Vulkan Example - Tessellation shader PN triangles
+*
+* Based on http://alex.vlachos.com/graphics/CurvedPNTriangles.pdf
+* Shaders based on http://onrendering.blogspot.de/2011/12/tessellation-on-gpu-curved-pn-triangles.html
+*
+* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+*
+* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+*/
+
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
