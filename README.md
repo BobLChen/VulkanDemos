@@ -22,7 +22,7 @@ Vulkan Samples
 ### Linux
 
 - CMake 3.13.0：下载安装最新版本即可。
-- Ubuntu 18.04：目前我使用的是Ubuntu 18.04系统，其它版本的没有尝试，用到了GLFW库，因此需要安装GLFW的一些依赖。详情参考GLFW:https://www.glfw.org/docs/latest/vulkan_guide.html
+- Ubuntu 18.04：目前我使用的是Ubuntu 18.04系统，其它版本的没有尝试。
 - VSCode：Ubuntu下我使用了VSCode作为开发环境，VSCode下Configure(Task)，Build(Task)，Debug我都配置好了，但是需要安装VSCode C++插件，插件名称：C/C++。
 
 ## Window环境搭建
@@ -197,7 +197,7 @@ Reduce 5 float per vertex
 ### [35_PCFShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/35_PCFShadow)
 ![35_PCFShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/35_PCFShadow.jpg)
 
-### [36_OmniShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/36_OmniShadow)
+### [36_OmniShadow(Multiview)](https://github.com/BobLChen/VulkanDemos/tree/master/examples/36_OmniShadow)
 ![36_OmniShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/36_OmniShadow.jpg)
 
 ### [37_CascadedShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/37_CascadedShadow)
@@ -231,3 +231,12 @@ Reduce 5 float per vertex
 
 ### [47_DebugNormal](https://github.com/BobLChen/VulkanDemos/tree/master/examples/47_DebugNormal)
 ![47_DebugNormal](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/47_DebugNormal.jpg)
+
+### [48_GeometryOmniShadow](https://github.com/BobLChen/VulkanDemos/tree/master/examples/48_GeometryOmniShadow)
+![48_GeometryOmniShadow](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/36_OmniShadow.jpg)
+
+### [49_SimpleTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/49_SimpleTessellation)
+![49_SimpleTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/49_SimpleTessellation.jpg)
+
+### [50_PNTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/50_PNTessellation)
+![50_PNTessellation](https://raw.githubusercontent.com/BobLChen/VulkanTutorials/master/preview/50_PNTessellation.gif)

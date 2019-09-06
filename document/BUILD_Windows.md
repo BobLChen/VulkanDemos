@@ -12,7 +12,7 @@
 
 ![0](thumb/windows/0.png)
 
-2、在那个黑框中输入（PS:没有--rescursive）
+2、在那个黑框中输入
 
 ```git clone https://github.com/BobLChen/VulkanDemos.git```
 
@@ -22,7 +22,7 @@
 
 ![2](thumb/windows/2.png)
 
-3、下载好了代码工程之后，打开CMake，填入工程地址。
+3、下载好了代码之后，打开CMake，填入项目路径。
 
 
 
