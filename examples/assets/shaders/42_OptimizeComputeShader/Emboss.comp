@@ -1,5 +1,13 @@
 #version 450
 
+/*
+* Vulkan Example - Compute shader image processing
+*
+* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
+*
+* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+*/
+
 layout (local_size_x = 16, local_size_y = 16) in;
 layout (binding = 0, rgba8) uniform readonly image2D inputImage;
 layout (binding = 1, rgba8) uniform image2D outputImage;
