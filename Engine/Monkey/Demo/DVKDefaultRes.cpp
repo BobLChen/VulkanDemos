@@ -1,4 +1,4 @@
-#include "DVKDefaultRes.h"
+﻿#include "DVKDefaultRes.h"
 
 namespace vk_demo
 {

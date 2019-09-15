@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine.h"
 #include "DVKCommand.h"
@@ -23,22 +23,26 @@ namespace vk_demo
         
         ~DVKTexture()
         {
-            if (imageView != VK_NULL_HANDLE) {
+            if (imageView != VK_NULL_HANDLE) 
+			{
                 vkDestroyImageView(device, imageView, VULKAN_CPU_ALLOCATOR);
                 imageView = VK_NULL_HANDLE;
             }
             
-            if (image != VK_NULL_HANDLE) {
+            if (image != VK_NULL_HANDLE) 
+			{
                 vkDestroyImage(device, image, VULKAN_CPU_ALLOCATOR);
                 image = VK_NULL_HANDLE;
             }
             
-            if (imageSampler != VK_NULL_HANDLE) {
+            if (imageSampler != VK_NULL_HANDLE) 
+			{
                 vkDestroySampler(device, imageSampler, VULKAN_CPU_ALLOCATOR);
                 imageSampler = VK_NULL_HANDLE;
             }
             
-            if (imageMemory != VK_NULL_HANDLE) {
+            if (imageMemory != VK_NULL_HANDLE) 
+			{
                 vkFreeMemory(device, imageMemory, VULKAN_CPU_ALLOCATOR);
                 imageMemory = VK_NULL_HANDLE;
             }

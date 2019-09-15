@@ -1,4 +1,4 @@
-#include "Configuration/Platform.h"
+﻿#include "Configuration/Platform.h"
 #include "GenericPlatform/GenericPlatformTime.h"
 
 #include "Engine.h"
@@ -11,9 +11,9 @@
 enum LaunchErrorType
 {
 	OK = 0,
-	FailedCreateAppModule	= -1,
-	FailedPreInitAppModule	= -2,
-	FailedInitAppModule		= -3,
+	FailedCreateAppModule  = 1,
+	FailedPreInitAppModule = 2,
+	FailedInitAppModule	   = 3,
 };
 
 std::shared_ptr<Engine> g_GameEngine;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Vulkan/VulkanRHI.h"
@@ -8,7 +8,7 @@
 
 class GenericWindow;
 class GenericApplication;
-class SlateApplication;
+class Application;
 
 class Engine
 {
@@ -33,7 +33,7 @@ public:
 
 	std::shared_ptr<VulkanRHI> GetVulkanRHI();
 
-	std::shared_ptr<SlateApplication> GetApplication();
+	std::shared_ptr<Application> GetApplication();
 
 	std::shared_ptr<GenericApplication> GetPlatformApplication();
 
@@ -81,7 +81,7 @@ protected:
 	static Engine*						g_Instance;
 
 	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
-	std::shared_ptr<SlateApplication>	m_SlateApplication;
+	std::shared_ptr<Application>	m_SlateApplication;
     
     std::string                         m_AppTitle;
 	std::string							m_AssetsPath;

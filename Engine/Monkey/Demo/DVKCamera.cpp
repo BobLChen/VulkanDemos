@@ -33,8 +33,7 @@ namespace vk_demo
 			}
 		}
 
-		if (InputManager::GetMouseDelta() != 0.0f)
-		{
+		if (InputManager::GetMouseDelta() != 0.0f) {
 			m_SpinZ = (m_World.GetOrigin().Size() + 0.1f) * speedFactor * InputManager::GetMouseDelta() / 20.0f;
 		}
 

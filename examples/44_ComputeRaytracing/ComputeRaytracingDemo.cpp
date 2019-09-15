@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Vulkan Example - Compute shader ray tracing
 *
 * Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
@@ -192,7 +192,7 @@ private:
             m_VulkanDevice,
             "assets/shaders/44_ComputeRaytracing/Raytracing.comp.spv"
         );
-        m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
+        m_ComputeProcessor = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
         m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
         
 		// compute command
@@ -347,7 +347,7 @@ private:
 
     vk_demo::DVKTexture*            m_ComputeTarget = nullptr;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
 
 	RaytracingParamBlock			m_RaytracingParam;
     

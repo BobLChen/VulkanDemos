@@ -1,10 +1,9 @@
-#include "DVKTexture.h"
+﻿#include "DVKTexture.h"
 #include "DVKBuffer.h"
 #include "DVKUtils.h"
+#include "FileManager.h"
 
 #include "Math/Math.h"
-#include "File/FileManager.h"
-
 #include "Loader/ImageLoader.h"
 
 namespace vk_demo
@@ -195,7 +194,8 @@ namespace vk_demo
     {
         uint32 dataSize = 0;
         uint8* dataPtr  = nullptr;
-        if (!FileManager::ReadFile(filename, dataPtr, dataSize)) {
+        if (!FileManager::ReadFile(filename, dataPtr, dataSize)) 
+		{
             MLOGE("Failed load image : %s", filename.c_str());
             return nullptr;
         }
@@ -208,7 +208,8 @@ namespace vk_demo
 		delete[] dataPtr;
 		dataPtr = nullptr;
 
-        if (rgbaData == nullptr) {
+        if (rgbaData == nullptr) 
+		{
             MLOGE("Failed load image : %s", filename.c_str());
             return nullptr;
         }

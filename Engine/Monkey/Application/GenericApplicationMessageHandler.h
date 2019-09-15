@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Math/Vector2.h"
@@ -10,32 +10,31 @@ struct WindowSizeLimits
 {
 public:
 
-	WindowSizeLimits& SetMinWidth(float value)
+	inline WindowSizeLimits& SetMinWidth(float value)
 	{ 
 		minWidth = value;
 		return *this;
 	}
 
-	WindowSizeLimits& SetMinHeight(float value)
+	inline WindowSizeLimits& SetMinHeight(float value)
 	{ 
 		minHeight = value;
 		return *this;
 	}
 
-	WindowSizeLimits& SetMaxWidth(float value)
+	inline WindowSizeLimits& SetMaxWidth(float value)
 	{ 
 		maxWidth = value;
 		return *this;
 	}
 
-	WindowSizeLimits& SetMaxHeight(float value)
+	inline WindowSizeLimits& SetMaxHeight(float value)
 	{ 
 		maxHeight = value;
 		return *this;
 	}
 
 public:
-
 	float minWidth;
 	float minHeight;
 	float maxWidth;

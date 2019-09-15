@@ -1,4 +1,4 @@
-#include "Crc.h"
+﻿#include "Crc.h"
 #include "Alignment.h"
 
 enum 

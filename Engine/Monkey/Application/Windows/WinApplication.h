@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Application/GenericWindow.h"
 #include "Application/GenericApplication.h"

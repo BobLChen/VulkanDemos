@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include "Engine.h"
@@ -19,6 +19,7 @@
 #include <cstring>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 struct aiMesh;
 struct aiScene;
@@ -85,12 +86,15 @@ namespace vk_demo
 			if (indexBuffer) {
 				delete indexBuffer;
 			}
+
 			if (vertexBuffer) {
 				delete vertexBuffer;
 			}
+
             if (instanceBuffer) {
                 delete instanceBuffer;
             }
+
 			indexBuffer  = nullptr;
 			vertexBuffer = nullptr;
 		}
@@ -180,14 +184,16 @@ namespace vk_demo
 				return;
 			}
 
-			if (key <= keys.front()) {
+			if (key <= keys.front()) 
+			{
 				outPrevValue = values.front();
 				outNextValue = values.front();
 				outAlpha     = 0.0f;
 				return;
 			}
 
-			if (key >= keys.back()) {
+			if (key >= keys.back()) 
+			{
 				outPrevValue = values.back();
 				outNextValue = values.back();
 				outAlpha     = 0.0f;
@@ -196,7 +202,8 @@ namespace vk_demo
 
 			int32 frameIndex = 0;
 			for (int32 i = 0; i < keys.size() - 1; ++i) {
-				if (key <= keys[i + 1]) {
+				if (key <= keys[i + 1]) 
+				{
 					frameIndex = i;
 					break;
 				}
@@ -315,6 +322,7 @@ namespace vk_demo
             if (parent) {
                 globalMatrix.Append(parent->GetGlobalMatrix());
             }
+
             return globalMatrix;
         }
 
@@ -334,8 +342,7 @@ namespace vk_demo
 				}
 			}
 
-			for (int32 i = 0; i < children.size(); ++i) 
-			{
+			for (int32 i = 0; i < children.size(); ++i) {
 				children[i]->CalcBounds(outBounds);
 			}
 		}

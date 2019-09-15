@@ -3,10 +3,10 @@
 namespace vk_demo
 {
     
-    DVKRingBuffer*   DVKComputeProcessor::ringBuffer = nullptr;
-    int32            DVKComputeProcessor::ringBufferRefCount = 0;
+    DVKRingBuffer*   DVKCompute::ringBuffer = nullptr;
+    int32            DVKCompute::ringBufferRefCount = 0;
     
-    void DVKComputeProcessor::InitRingBuffer(std::shared_ptr<VulkanDevice> vulkanDevice)
+    void DVKCompute::InitRingBuffer(std::shared_ptr<VulkanDevice> vulkanDevice)
     {
         ringBuffer = new DVKRingBuffer();
         ringBuffer->device       = vulkanDevice->GetInstanceHandle();
@@ -23,14 +23,14 @@ namespace vk_demo
         ringBufferRefCount = 0;
     }
     
-    void DVKComputeProcessor::DestroyRingBuffer()
+    void DVKCompute::DestroyRingBuffer()
     {
         delete ringBuffer;
         ringBuffer = nullptr;
         ringBufferRefCount = 0;
     }
     
-    DVKComputeProcessor::~DVKComputeProcessor()
+    DVKCompute::~DVKCompute()
     {
         delete descriptorSet;
         descriptorSet = nullptr;
@@ -50,7 +50,7 @@ namespace vk_demo
         vulkanDevice = nullptr;
     }
     
-    DVKComputeProcessor* DVKComputeProcessor::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkPipelineCache pipelineCache, DVKShader* shader)
+    DVKCompute* DVKCompute::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkPipelineCache pipelineCache, DVKShader* shader)
     {
         // 初始化全局RingBuffer
         if (ringBufferRefCount == 0) {
@@ -59,7 +59,7 @@ namespace vk_demo
         ringBufferRefCount += 1;
         
         // 创建材质
-        DVKComputeProcessor* processor = new DVKComputeProcessor();
+        DVKCompute* processor = new DVKCompute();
         processor->vulkanDevice  = vulkanDevice;
         processor->shader        = shader;
         processor->pipelineCache = pipelineCache;
@@ -69,7 +69,7 @@ namespace vk_demo
         return processor;
     }
     
-    void DVKComputeProcessor::Prepare()
+    void DVKCompute::Prepare()
     {
         // 创建descriptorSet
         descriptorSet = shader->AllocateDescriptorSet();
@@ -139,7 +139,7 @@ namespace vk_demo
         }
     }
     
-    void DVKComputeProcessor::PreparePipeline()
+    void DVKCompute::PreparePipeline()
     {
         VkDevice device = vulkanDevice->GetInstanceHandle();
         if (pipeline != VK_NULL_HANDLE)
@@ -155,14 +155,14 @@ namespace vk_demo
         VERIFYVULKANRESULT(vkCreateComputePipelines(device, pipelineCache, 1, &computeCreateInfo, VULKAN_CPU_ALLOCATOR, &pipeline));
     }
 
-	void DVKComputeProcessor::BindDispatch(VkCommandBuffer commandBuffer, int groupX, int groupY, int groupZ)
+	void DVKCompute::BindDispatch(VkCommandBuffer commandBuffer, int groupX, int groupY, int groupZ)
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 		BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE);
 		vkCmdDispatch(commandBuffer, groupX, groupY, groupZ);
 	}
     
-    void DVKComputeProcessor::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint)
+    void DVKCompute::BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint)
     {
         uint32* dynOffsets = dynamicOffsets.data();
         
@@ -175,15 +175,17 @@ namespace vk_demo
         );
     }
 
-	void DVKComputeProcessor::SetStorageBuffer(const std::string& name, DVKBuffer* buffer)
+	void DVKCompute::SetStorageBuffer(const std::string& name, DVKBuffer* buffer)
 	{
 		auto it = storageBuffers.find(name);
-		if (it == storageBuffers.end()) {
+		if (it == storageBuffers.end()) 
+		{
 			MLOGE("StorageBuffer %s not found.", name.c_str());
 			return;
 		}
 
-		if (buffer == nullptr) {
+		if (buffer == nullptr) 
+		{
 			MLOGE("StorageBuffer %s can't be null.", name.c_str());
 			return;
 		}
@@ -198,15 +200,17 @@ namespace vk_demo
 		}
 	}
     
-    void DVKComputeProcessor::SetUniform(const std::string& name, void* dataPtr, uint32 size)
+    void DVKCompute::SetUniform(const std::string& name, void* dataPtr, uint32 size)
     {
         auto it = uniformBuffers.find(name);
-        if (it == uniformBuffers.end()) {
+        if (it == uniformBuffers.end()) 
+		{
             MLOGE("Uniform %s not found.", name.c_str());
             return;
         }
         
-        if (it->second.dataSize != size) {
+        if (it->second.dataSize != size) 
+		{
             MLOGE("Uniform %s size not match, dst=%ud src=%ud", name.c_str(), it->second.dataSize, size);
             return;
         }
@@ -223,25 +227,28 @@ namespace vk_demo
         dynamicOffsets[it->second.dynamicIndex] = ringOffset;
     }
     
-    void DVKComputeProcessor::SetStorageTexture(const std::string& name, DVKTexture* texture)
+    void DVKCompute::SetStorageTexture(const std::string& name, DVKTexture* texture)
     {
         SetTexture(name, texture);
     }
     
-    void DVKComputeProcessor::SetTexture(const std::string& name, DVKTexture* texture)
+    void DVKCompute::SetTexture(const std::string& name, DVKTexture* texture)
     {
         auto it = textures.find(name);
-        if (it == textures.end()) {
+        if (it == textures.end()) 
+		{
             MLOGE("Texture %s not found.", name.c_str());
             return;
         }
         
-        if (texture == nullptr) {
+        if (texture == nullptr) 
+		{
             MLOGE("Texture %s can't be null.", name.c_str());
             return;
         }
         
-        if (it->second.texture != texture) {
+        if (it->second.texture != texture) 
+		{
             it->second.texture = texture;
             descriptorSet->WriteImage(name, texture);
         }

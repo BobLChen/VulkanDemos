@@ -1,4 +1,4 @@
-#include "IOSApplication.h"
+﻿#include "IOSApplication.h"
 #include "Common/Log.h"
 #include "Engine.h"
 

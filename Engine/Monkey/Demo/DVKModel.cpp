@@ -1,6 +1,6 @@
-#include "DVKModel.h"
+﻿#include "DVKModel.h"
 
-#include "File/FileManager.h"
+#include "FileManager.h"
 #include "Math/Matrix4x4.h"
 
 #include <assimp/Importer.hpp> 
@@ -25,21 +25,24 @@ namespace vk_demo
 
 	void FillMaterialTextures(aiMaterial* aiMaterial, DVKMaterialInfo& material)
 	{
-		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE)) {
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_DIFFUSE)) 
+		{
 			aiString texturePath;
 			aiMaterial->GetTexture(aiTextureType::aiTextureType_DIFFUSE, 0, &texturePath);
 			material.diffuse = texturePath.C_Str();
 			SimplifyTexturePath(material.diffuse);
 		}
 		
-		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_NORMALS)) {
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_NORMALS)) 
+		{
 			aiString texturePath;
 			aiMaterial->GetTexture(aiTextureType::aiTextureType_NORMALS, 0, &texturePath);
 			material.normalmap = texturePath.C_Str();
 			SimplifyTexturePath(material.normalmap);
 		}
 
-		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_SPECULAR)) {
+		if (aiMaterial->GetTextureCount(aiTextureType::aiTextureType_SPECULAR)) 
+		{
 			aiString texturePath;
 			aiMaterial->GetTexture(aiTextureType::aiTextureType_SPECULAR, 0, &texturePath);
 			material.specular = texturePath.C_Str();
@@ -419,7 +422,8 @@ namespace vk_demo
             
             for (int32 i = 0; i < indices.size(); ++i) {
                 uint32 idx = indices[i];
-                if (primitive == nullptr) {
+                if (primitive == nullptr) 
+				{
                     primitive = new DVKPrimitive();
                     indicesMap.clear();
                     mesh->primitives.push_back(primitive);

@@ -1,4 +1,4 @@
-#include "Application/GenericWindow.h"
+﻿#include "Application/GenericWindow.h"
 #include "Common/Log.h"
 
 GenericWindow::GenericWindow(int32 width, int32 height)

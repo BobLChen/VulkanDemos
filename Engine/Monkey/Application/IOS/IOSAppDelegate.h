@@ -1,4 +1,4 @@
-#import <UIKit/UIKit.h>
+﻿#import <UIKit/UIKit.h>
 
 @interface IOSAppDelegate : UIResponder <UIApplicationDelegate>
 

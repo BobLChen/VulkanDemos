@@ -261,7 +261,7 @@ private:
 			"assets/shaders/43_ComputeParticles/Particle.comp.spv"
 		);
 
-		m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(
+		m_ComputeProcessor = vk_demo::DVKCompute::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
 			m_ComputeShader
@@ -429,7 +429,7 @@ private:
 	vk_demo::DVKTexture*			m_DiffuseTexture = nullptr;
 
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
 	vk_demo::DVKCommandBuffer*		m_ComputeCommand = nullptr;
 
 	ParticleParam					m_ParticleParams;

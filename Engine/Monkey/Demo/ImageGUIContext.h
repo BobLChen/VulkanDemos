@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Math/Vector2.h"
@@ -38,7 +38,8 @@ protected:
 
 		void Unmap()
 		{
-			if (mapped) {
+			if (mapped) 
+			{
 				vkUnmapMemory(device, memory);
 				mapped = nullptr;
 			}
@@ -66,14 +67,18 @@ protected:
 
 		void Destroy()
 		{
-			if (buffer) {
+			if (buffer) 
+			{
 				vkDestroyBuffer(device, buffer, VULKAN_CPU_ALLOCATOR);
 				buffer = VK_NULL_HANDLE;
 			}
-			if (memory) {
+
+			if (memory) 
+			{
 				vkFreeMemory(device, memory, VULKAN_CPU_ALLOCATOR);
 				memory = VK_NULL_HANDLE;
 			}
+
 			device = VK_NULL_HANDLE;
 		}
     };

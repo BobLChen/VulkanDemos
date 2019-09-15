@@ -1,4 +1,4 @@
-#include "VulkanPlatform.h"
+﻿#include "VulkanPlatform.h"
 #include "VulkanRHI.h"
 #include "VulkanDevice.h"
 #include "Utils/StringUtils.h"

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine.h"
 #include "DVKTexture.h"
@@ -9,6 +9,7 @@
 #include "Vulkan/VulkanCommon.h"
 
 #include <vector>
+#include <unordered_map>
 
 namespace vk_demo
 {
@@ -250,12 +251,14 @@ namespace vk_demo
     public:
         ~DVKRenderTarget()
         {
-            if (renderPass) {
+            if (renderPass) 
+			{
                 delete renderPass;
                 renderPass = nullptr;
             }
             
-            if (frameBuffer) {
+            if (frameBuffer) 
+			{
                 delete frameBuffer;
                 frameBuffer = nullptr;
             }

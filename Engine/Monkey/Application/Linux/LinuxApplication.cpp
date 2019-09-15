@@ -1,4 +1,4 @@
-#include "LinuxApplication.h"
+﻿#include "LinuxApplication.h"
 #include "Common/Log.h"
 #include "Engine.h"
 

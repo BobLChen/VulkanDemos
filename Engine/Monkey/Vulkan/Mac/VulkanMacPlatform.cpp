@@ -1,8 +1,8 @@
-#include "Configuration/Platform.h"
+﻿#include "Configuration/Platform.h"
 #include "Vulkan/Mac/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
-#include "Application/SlateApplication.h"
+#include "Application/Application.h"
 #include "Engine.h"
 
 static PFN_vkGetInstanceProcAddr G_GetInstanceProcAddr = nullptr;

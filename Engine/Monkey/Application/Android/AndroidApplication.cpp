@@ -1,4 +1,4 @@
-#include "AndroidApplication.h"
+﻿#include "AndroidApplication.h"
 #include "AndroidWindow.h"
 #include "Common/Log.h"
 #include "Engine.h"

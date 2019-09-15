@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -19,10 +19,10 @@ struct LinearColor
 {
 
 public:
-	float	r;
-	float	g;
-	float	b;
-	float	a;
+	float r;
+	float g;
+	float b;
+	float a;
 
 	static const LinearColor White;
 	static const LinearColor Gray;
@@ -98,6 +98,7 @@ public:
 		g += rhs.g;
 		b += rhs.b;
 		a += rhs.a;
+
 		return *this;
 	}
 
@@ -117,6 +118,7 @@ public:
 		g -= rhs.g;
 		b -= rhs.b;
 		a -= rhs.a;
+
 		return *this;
 	}
 
@@ -136,6 +138,7 @@ public:
 		g *= rhs.g;
 		b *= rhs.b;
 		a *= rhs.a;
+
 		return *this;
 	}
 
@@ -155,6 +158,7 @@ public:
 		g *= scalar;
 		b *= scalar;
 		a *= scalar;
+
 		return *this;
 	}
 
@@ -174,12 +178,14 @@ public:
 		g /= rhs.g;
 		b /= rhs.b;
 		a /= rhs.a;
+
 		return *this;
 	}
 
 	FORCEINLINE LinearColor operator/(float scalar) const
 	{
 		const float	invScalar = 1.0f / scalar;
+
 		return LinearColor(
 			this->r * invScalar,
 			this->g * invScalar,
@@ -191,10 +197,12 @@ public:
 	FORCEINLINE LinearColor& operator/=(float scalar)
 	{
 		const float	invScalar = 1.0f / scalar;
+
 		r *= invScalar;
 		g *= invScalar;
 		b *= invScalar;
 		a *= invScalar;
+
 		return *this;
 	}
 

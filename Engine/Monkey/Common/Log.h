@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Configuration/Platform.h"
 #include <stdio.h>

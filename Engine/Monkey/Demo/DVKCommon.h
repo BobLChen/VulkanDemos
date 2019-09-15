@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "DemoBase.h"
 #include "DVKBuffer.h"
@@ -14,3 +14,6 @@
 #include "DVKMaterial.h"
 #include "DVKCamera.h"
 #include "DVKRenderTarget.h"
+#include "DVKCompute.h"
+#include "FileManager.h"
+#include "ImageGUIContext.h"

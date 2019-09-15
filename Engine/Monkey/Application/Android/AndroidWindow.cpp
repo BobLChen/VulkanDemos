@@ -1,4 +1,4 @@
-#include "Common/Log.h"
+﻿#include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
 
 #include "AndroidWindow.h"

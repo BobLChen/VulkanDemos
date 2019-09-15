@@ -10,7 +10,6 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
 #include "UI/ImageGUIContext.h"
 
 #include <vector>

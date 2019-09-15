@@ -16,6 +16,8 @@ set(Monkey_Demo_HDRS
 	Monkey/Demo/DVKRenderTarget.h
 	Monkey/Demo/DVKCamera.h
 	Monkey/Demo/DVKCompute.h
+	Monkey/Demo/FileManager.h
+	Monkey/Demo/ImageGUIContext.h
 )
 set(Monkey_Demo_SRCS
 	Monkey/Demo/DemoBase.cpp
@@ -32,6 +34,8 @@ set(Monkey_Demo_SRCS
 	Monkey/Demo/DVKRenderTarget.cpp
 	Monkey/Demo/DVKCamera.cpp
 	Monkey/Demo/DVKCompute.cpp
+	Monkey/Demo/FileManager.cpp
+	Monkey/Demo/ImageGUIContext.cpp
 )
 
 set(Monkey_Configuration_HDRS
@@ -51,10 +55,10 @@ set(Monkey_Common_SRCS
 )
 
 set(Monkey_UI_HDRS
-	Monkey/UI/ImageGUIContext.h
+	
 )
 set(Monkey_UI_SRCS
-	Monkey/UI/ImageGUIContext.cpp
+
 )
 
 set(Monkey_App_HDRS
@@ -75,13 +79,13 @@ set(Monkey_Application_HDRS
 	Monkey/Application/GenericWindow.h
 	Monkey/Application/GenericApplication.h
 	Monkey/Application/GenericApplicationMessageHandler.h
-	Monkey/Application/SlateApplication.h
+	Monkey/Application/Application.h
 	Monkey/Application/AppModuleBase.h
 )
 set(Monkey_Application_SRCS
 	Monkey/Application/GenericWindow.cpp
 	Monkey/Application/GenericApplication.cpp
-	Monkey/Application/SlateApplication.cpp
+	Monkey/Application/Application.cpp
 )
 
 set(Monkey_Math_HDRS
@@ -118,20 +122,15 @@ set(Monkey_Utils_HDRS
 )
 
 set(Monkey_File_SRCS
-	Monkey/File/FileManager.cpp
-	
 )
 set(Monkey_File_HDRS
-	Monkey/File/FileManager.h
 )
 
 set(Monkey_Core_HDRS
 	Monkey/Core/PixelFormat.h
-	Monkey/Core/MObject.h
 )
 set(Monkey_Core_SRCS
 	Monkey/Core/PixelFormat.cpp
-	Monkey/Core/MObject.cpp
 )
 
 set(Monkey_Vulkan_SRCS
@@ -142,13 +141,7 @@ set(Monkey_Vulkan_SRCS
 	Monkey/Vulkan/VulkanDebug.cpp
 	Monkey/Vulkan/VulkanSwapChain.cpp
 	Monkey/Vulkan/VulkanMemory.cpp
-	Monkey/Vulkan/VulkanDescriptorInfo.cpp
-	Monkey/Vulkan/VulkanPipeline.cpp
-	Monkey/Vulkan/VulkanResources.cpp
-	Monkey/Vulkan/VulkanUniformBuffer.cpp
 	Monkey/Vulkan/VulkanFence.cpp
-	Monkey/Vulkan/VulkanContext.cpp
-	Monkey/Vulkan/VulkanCommandBuffer.cpp
 )
 set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanGenericPlatform.h
@@ -161,73 +154,16 @@ set(Monkey_Vulkan_HDRS
 	Monkey/Vulkan/VulkanDevice.h
 	Monkey/Vulkan/VulkanSwapChain.h
 	Monkey/Vulkan/VulkanMemory.h
-	Monkey/Vulkan/VulkanDescriptorInfo.h
-	Monkey/Vulkan/VulkanPipeline.h
-	Monkey/Vulkan/VulkanResources.h
 	Monkey/Vulkan/VulkanFence.h
-	Monkey/Vulkan/VulkanContext.h
-	Monkey/Vulkan/VulkanCommandBuffer.h
-)
-
-set(Monkey_Graphics_Data_HDRS
-	Monkey/Graphics/Data/IndexBuffer.h
-	Monkey/Graphics/Data/VertexBuffer.h
-	Monkey/Graphics/Data/VulkanBuffer.h
-)
-set(Monkey_Graphics_Data_SRCS
-	Monkey/Graphics/Data/IndexBuffer.cpp
-	Monkey/Graphics/Data/VertexBuffer.cpp
-	Monkey/Graphics/Data/VulkanBuffer.cpp
-)
-
-set(Monkey_Graphics_Shader_HDRS
-	Monkey/Graphics/Shader/Shader.h
-)
-set(Monkey_Graphics_Shader_SRCS
-	Monkey/Graphics/Shader/Shader.cpp
-)
-
-set(Monkey_Graphics_Material_HDRS
-	Monkey/Graphics/Material/Material.h
-)
-set(Monkey_Graphics_Material_SRCS
-	Monkey/Graphics/Material/Material.cpp
-)
-
-set(Monkey_Graphics_Renderer_HDRS
-	Monkey/Graphics/Renderer/Renderable.h
-)
-set(Monkey_Graphics_Renderer_SRCS
-	Monkey/Graphics/Renderer/Renderable.cpp
-)
-
-set(Monkey_Graphics_Texture_HDRS
-	Monkey/Graphics/Texture/TextureBase.h
-	Monkey/Graphics/Texture/Texture2D.h
-	Monkey/Graphics/Texture/Texture3D.h
-)
-set(Monkey_Graphics_Texture_SRCS
-	Monkey/Graphics/Texture/TextureBase.cpp
-	Monkey/Graphics/Texture/Texture2D.cpp
-	Monkey/Graphics/Texture/Texture3D.cpp
-)
-
-set(Monkey_Graphics_Command_HDRS
-	Monkey/Graphics/Command/DrawCommand.h
-)
-set(Monkey_Graphics_Command_SRCS
-	Monkey/Graphics/Command/DrawCommand.cpp
 )
 
 set(Monkey_Loader_HDRS
-	Monkey/Loader/MeshLoader.h
 	Monkey/Loader/stb_image.h
 	Monkey/Loader/stb_image_resize.h
 	Monkey/Loader/stb_image_write.h
 	Monkey/Loader/ImageLoader.h
 )
 set(Monkey_Loader_SRCS
-	Monkey/Loader/MeshLoader.cpp
 	Monkey/Loader/ImageLoader.cpp
 )
 
@@ -579,19 +515,6 @@ add_library(Monkey STATIC
 
 	${Monkey_UI_HDRS}
 	${Monkey_UI_SRCS}
-
-	${Monkey_Graphics_Data_HDRS}
-	${Monkey_Graphics_Data_SRCS}
-	${Monkey_Graphics_Texture_HDRS}
-	${Monkey_Graphics_Texture_SRCS}
-	${Monkey_Graphics_Shader_HDRS}
-	${Monkey_Graphics_Shader_SRCS}
-	${Monkey_Graphics_Material_SRCS}
-	${Monkey_Graphics_Material_HDRS}
-	${Monkey_Graphics_Renderer_HDRS}
-	${Monkey_Graphics_Renderer_SRCS}
-	${Monkey_Graphics_Command_HDRS}
-	${Monkey_Graphics_Command_SRCS}
 )
 
 # demo

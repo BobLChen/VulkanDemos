@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define VK_USE_PLATFORM_IOS_MVK                   1
 

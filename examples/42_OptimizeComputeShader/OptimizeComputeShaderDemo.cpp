@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -156,7 +156,7 @@ private:
         for (int32 i = 0; i < 3; ++i)
         {
             m_ComputeShaders[i]    = vk_demo::DVKShader::Create(m_VulkanDevice, shaderNames[i]);
-            m_ComputeProcessors[i] = vk_demo::DVKComputeProcessor::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShaders[i]);
+            m_ComputeProcessors[i] = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShaders[i]);
             m_ComputeProcessors[i]->SetStorageTexture("inputImage", m_Texture);
             m_ComputeProcessors[i]->SetStorageTexture("outputImage", m_ComputeTargets[i]);
         }
@@ -338,7 +338,7 @@ private:
     
     vk_demo::DVKTexture*            m_ComputeTargets[3];
     vk_demo::DVKShader*             m_ComputeShaders[3];
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessors[3];
+    vk_demo::DVKCompute*   m_ComputeProcessors[3];
     
 	std::vector<const char*>        m_FilterNames;
 	int32						    m_FilterIndex;

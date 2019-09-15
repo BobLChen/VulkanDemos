@@ -1,4 +1,4 @@
-#include "DVKCommand.h"
+﻿#include "DVKCommand.h"
 
 #include "Vulkan/VulkanCommon.h"
 
@@ -8,12 +8,14 @@ namespace vk_demo
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
-		if (cmdBuffer != VK_NULL_HANDLE) {
+		if (cmdBuffer != VK_NULL_HANDLE) 
+		{
 			vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
 			cmdBuffer = VK_NULL_HANDLE;
 		}
 
-		if (fence != VK_NULL_HANDLE) {
+		if (fence != VK_NULL_HANDLE) 
+		{
 			vkDestroyFence(device, fence, nullptr);
 			fence = VK_NULL_HANDLE;
 		}

@@ -1,1 +1,1 @@
-#include "VulkanGenericPlatform.h"
+﻿#include "VulkanGenericPlatform.h"

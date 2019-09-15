@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Application/AppModuleBase.h"
-#include "Application/SlateApplication.h"
+#include "Application/Application.h"
 
 #include <string>
 #include <vector>

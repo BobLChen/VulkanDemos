@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <cstring>
@@ -14,7 +14,7 @@
 #include "DVKRenderTarget.h"
 
 #include "Math/Math.h"
-#include "File/FileManager.h"
+#include "Utils/Alignment.h"
 #include "Vulkan/VulkanCommon.h"
 
 namespace vk_demo
@@ -66,7 +66,8 @@ namespace vk_demo
 		{
 			uint64 allocationOffset = Align<uint64>(bufferOffset, minAlignment);
             
-			if (allocationOffset + size <= bufferSize) {
+			if (allocationOffset + size <= bufferSize) 
+			{
 				bufferOffset = allocationOffset + size;
 				return allocationOffset;
 			}

@@ -1,4 +1,4 @@
-#include "GenericApplication.h"
+﻿#include "GenericApplication.h"
 
 GenericApplication::GenericApplication()
 	: m_MessageHandler(nullptr)

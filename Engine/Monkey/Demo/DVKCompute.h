@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <cstring>
@@ -13,12 +13,11 @@
 #include "DVKMaterial.h"
 
 #include "Math/Math.h"
-#include "File/FileManager.h"
 #include "Vulkan/VulkanCommon.h"
 
 namespace vk_demo
 {
-    class DVKComputeProcessor
+    class DVKCompute
     {
     private:
         
@@ -26,15 +25,15 @@ namespace vk_demo
         typedef std::unordered_map<std::string, DVKSimulateTexture>   TexturesMap;
         typedef std::shared_ptr<VulkanDevice>                         VulkanDeviceRef;
         
-        DVKComputeProcessor()
+        DVKCompute()
         {
             
         }
         
     public:
-        virtual ~DVKComputeProcessor();
+        virtual ~DVKCompute();
         
-        static DVKComputeProcessor* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkPipelineCache pipelineCache, DVKShader* shader);
+        static DVKCompute* Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkPipelineCache pipelineCache, DVKShader* shader);
         
         void BindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint bindPoint);
 
@@ -71,6 +70,7 @@ namespace vk_demo
         void Prepare();
         
         void PreparePipeline();
+
     private:
         
         static DVKRingBuffer*   ringBuffer;

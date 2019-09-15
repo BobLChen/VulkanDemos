@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Math/Vector2.h"
@@ -9,13 +9,13 @@
 
 class Engine;
 
-class SlateApplication : public GenericApplicationMessageHandler
+class Application : public GenericApplicationMessageHandler
 {
 public:
 
-	SlateApplication();
+	Application();
 
-	virtual ~SlateApplication();
+	virtual ~Application();
 
 	void Tick(float time, float delta);
 

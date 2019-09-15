@@ -1,4 +1,4 @@
-#include "DemoBase.h"
+﻿#include "DemoBase.h"
 #include "DVKDefaultRes.h"
 #include "DVKCommand.h"
 

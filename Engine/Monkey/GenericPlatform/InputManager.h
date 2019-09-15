@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Math/Vector2.h"
@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-class SlateApplication;
+class Application;
 
 class InputManager
 {
@@ -96,7 +96,7 @@ public:
     
 protected:
     
-    friend class SlateApplication;
+    friend class Application;
     
     void static OnKeyDown(KeyboardType key);
     
