@@ -1,17 +1,11 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class PushConstantsModule : public DemoBase
 {
@@ -303,7 +297,7 @@ private:
 		m_ViewProjData.view.SetInverse();
 
 		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 100.0f, 1500.0f);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -325,7 +319,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -342,7 +336,7 @@ private:
 	ViewProjectionBlock 			m_ViewProjData;
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 
-    vk_demo::DVKGfxPipeline*           m_Pipeline = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline = nullptr;
 
 	vk_demo::DVKModel*				m_Model = nullptr;
 

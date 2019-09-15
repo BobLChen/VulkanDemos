@@ -2,7 +2,6 @@
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
 #include "VulkanFence.h"
-#include "VulkanPipeline.h"
 #include "Application/Application.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)

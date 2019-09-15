@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+ï»¿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
@@ -7,7 +7,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
+#include "Demo/FileManager.h"
 
 #include <vector>
 #include <fstream>
@@ -435,7 +435,7 @@ private:
 		);
 
 		VkCommandBuffer xferCmdBuffer;
-		// gfx queue×Ô´øtransfer¹¦ÄÜ£¬ÎªÁËÓÅ»¯ĞèÒªÊ¹ÓÃ×¨ÓĞµÄxfer queue¡£ÕâÀïÎªÁË¼òµ¥£¬ÏÈ½«¾ÍÓÃ¡£
+		// gfx queueè‡ªå¸¦transferåŠŸèƒ½ï¼Œä¸ºäº†ä¼˜åŒ–éœ€è¦ä½¿ç”¨ä¸“æœ‰çš„xfer queueã€‚è¿™é‡Œä¸ºäº†ç®€å•ï¼Œå…ˆå°†å°±ç”¨ã€‚
 		VkCommandBufferAllocateInfo xferCmdBufferInfo;
 		ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
         xferCmdBufferInfo.commandPool        = m_CommandPool;
@@ -443,7 +443,7 @@ private:
 		xferCmdBufferInfo.commandBufferCount = 1;
 		VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, &xferCmdBufferInfo, &xferCmdBuffer));
         
-		// ¿ªÊ¼Â¼ÖÆÃüÁî
+		// å¼€å§‹å½•åˆ¶å‘½ä»¤
 		VkCommandBufferBeginInfo cmdBufferBeginInfo;
 		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(xferCmdBuffer, &cmdBufferBeginInfo));
@@ -455,10 +455,10 @@ private:
 		copyRegion.size = indices.size() * sizeof(uint16);
 		vkCmdCopyBuffer(xferCmdBuffer, idexStaging->buffer, m_IndexBuffer->buffer, 1, &copyRegion);
         
-		// ½áÊøÂ¼ÖÆ
+		// ç»“æŸå½•åˆ¶
 		VERIFYVULKANRESULT(vkEndCommandBuffer(xferCmdBuffer));
 		
-		// Ìá½»ÃüÁî£¬²¢ÇÒµÈ´ıÃüÁîÖ´ĞĞÍê±Ï¡£
+		// æäº¤å‘½ä»¤ï¼Œå¹¶ä¸”ç­‰å¾…å‘½ä»¤æ‰§è¡Œå®Œæ¯•ã€‚
 		VkSubmitInfo submitInfo;
 		ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
 		submitInfo.commandBufferCount = 1;

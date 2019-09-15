@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
@@ -9,7 +9,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
+#include "Demo/FileManager.h"
 
 #include <vector>
 #include <fstream>

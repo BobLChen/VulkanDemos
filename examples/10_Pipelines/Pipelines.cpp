@@ -6,10 +6,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class PipelinesModule : public DemoBase
 {
@@ -83,9 +80,11 @@ private:
     
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
     
@@ -100,7 +99,7 @@ private:
 			
 			ImGui::Checkbox("AutoRotate", &m_AutoRotate);
 			
-			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 10.0f);
+			ImGui::SliderFloat("Intensity", &(m_ParamData.intensity), 0.0f, 1.0f);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
@@ -117,7 +116,7 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Vela_Template.fbx",
+			"assets/models/suzanne.obj",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }
@@ -180,7 +179,7 @@ private:
 				vkCmdSetScissor(m_CommandBuffers[i], 0, 1, &scissor);
 
 				vkCmdBindPipeline(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[j]->pipeline);
-                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[j]->pipelineLayout, 0, 1, &m_DescriptorSets[i], 0, nullptr);
+                vkCmdBindDescriptorSets(m_CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipelines[j]->pipelineLayout, 0, 1, &m_DescriptorSet, 0, nullptr);
                 
 				for (int32 meshIndex = 0; meshIndex < m_Model->meshes.size(); ++meshIndex) {
 					m_Model->meshes[meshIndex]->BindDrawCmd(m_CommandBuffers[i]);
@@ -207,37 +206,29 @@ private:
 		descriptorPoolInfo.maxSets       = m_Model->meshes.size();
 		VERIFYVULKANRESULT(vkCreateDescriptorPool(m_Device, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &m_DescriptorPool));
 
-		m_DescriptorSets.resize(m_Model->meshes.size());
-		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
-		{
-			VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+		VkDescriptorSetAllocateInfo allocInfo;
+		ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
+		allocInfo.descriptorPool     = m_DescriptorPool;
+		allocInfo.descriptorSetCount = 1;
+		allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
+		VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &m_DescriptorSet));
 
-			VkDescriptorSetAllocateInfo allocInfo;
-			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
-			allocInfo.descriptorPool     = m_DescriptorPool;
-			allocInfo.descriptorSetCount = 1;
-			allocInfo.pSetLayouts        = &m_DescriptorSetLayout;
-			VERIFYVULKANRESULT(vkAllocateDescriptorSets(m_Device, &allocInfo, &descriptorSet));
-        
-			VkWriteDescriptorSet writeDescriptorSet;
-			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-			writeDescriptorSet.dstSet          = descriptorSet;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSet.pBufferInfo     = &(m_MVPBuffers[i]->descriptor);
-			writeDescriptorSet.dstBinding      = 0;
-			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
+		VkWriteDescriptorSet writeDescriptorSet;
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		writeDescriptorSet.dstSet          = m_DescriptorSet;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSet.pBufferInfo     = &(m_MVPBuffer->descriptor);
+		writeDescriptorSet.dstBinding      = 0;
+		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 
-			ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-			writeDescriptorSet.dstSet          = descriptorSet;
-			writeDescriptorSet.descriptorCount = 1;
-			writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
-			writeDescriptorSet.dstBinding      = 1;
-			vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
-
-			m_DescriptorSets[i] = descriptorSet;
-		}
+		ZeroVulkanStruct(writeDescriptorSet, VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
+		writeDescriptorSet.dstSet          = m_DescriptorSet;
+		writeDescriptorSet.descriptorCount = 1;
+		writeDescriptorSet.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		writeDescriptorSet.pBufferInfo     = &(m_ParamBuffer->descriptor);
+		writeDescriptorSet.dstBinding      = 1;
+		vkUpdateDescriptorSets(m_Device, 1, &writeDescriptorSet, 0, nullptr);
 	}
     
 	void CreatePipelines()
@@ -317,10 +308,8 @@ private:
 	void UpdateUniformBuffers(float time, float delta)
 	{
 		if (m_AutoRotate) {
-			for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
-				m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
-				m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(MVPBlock));
-			}
+			m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
+			m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 		}
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
@@ -332,32 +321,26 @@ private:
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 		boundCenter.z -= boundSize.Size();
 
-		m_MVPDatas.resize(m_Model->meshes.size());
-		m_MVPBuffers.resize(m_Model->meshes.size());
+		m_MVPData.model.SetIdentity();
+		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
 
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-		{
-			m_MVPDatas[i].model.SetIdentity();
-			m_MVPDatas[i].model.SetOrigin(Vector3(0, 0, 0));
-        
-			m_MVPDatas[i].view.SetIdentity();
-			m_MVPDatas[i].view.SetOrigin(boundCenter);
-			m_MVPDatas[i].view.SetInverse();
+		m_MVPData.view.SetIdentity();
+		m_MVPData.view.SetOrigin(boundCenter);
+		m_MVPData.view.SetInverse();
 
-			m_MVPDatas[i].projection.SetIdentity();
-			m_MVPDatas[i].projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 3.0f, (float)GetHeight(), 0.01f, 3000.0f);
-		
-			m_MVPBuffers[i] = vk_demo::DVKBuffer::CreateBuffer(
-				m_VulkanDevice, 
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				sizeof(MVPBlock),
-				&(m_MVPDatas[i])
-			);
-			m_MVPBuffers[i]->Map();
-		}
+		m_MVPData.projection.SetIdentity();
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 3.0f, (float)GetHeight(), 0.01f, 3000.0f);
 
-		m_ParamData.intensity = 5.0f;
+		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(MVPBlock),
+			&(m_MVPData)
+		);
+		m_MVPBuffer->Map();
+
+		m_ParamData.intensity = 0.125f;
 		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -370,15 +353,8 @@ private:
 	
 	void DestroyUniformBuffers()
 	{
-		m_MVPDatas.clear();
-
-		for (int32 i = 0; i < m_MVPBuffers.size(); ++i) {
-			vk_demo::DVKBuffer* buffer = m_MVPBuffers[i];
-			buffer->UnMap();
-			delete buffer;
-		}
-
-		m_MVPBuffers.clear();
+		m_MVPBuffer->UnMap();
+		delete m_MVPBuffer;
 
 		m_ParamBuffer->UnMap();
 		delete m_ParamBuffer;
@@ -388,7 +364,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -398,15 +374,13 @@ private:
 	}
 
 private:
-	typedef std::vector<vk_demo::DVKBuffer*>		DVKBuffers;
-	typedef std::vector<VkDescriptorSet>			VkDescriptorSets;
-	typedef std::vector<vk_demo::DVKGfxPipeline*>		DVKPipelines;
+	typedef std::vector<vk_demo::DVKGfxPipeline*>	DVKPipelines;
 
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
-	std::vector<MVPBlock> 			m_MVPDatas;
-	DVKBuffers						m_MVPBuffers;
+	MVPBlock 						m_MVPData;
+	vk_demo::DVKBuffer*				m_MVPBuffer;
 
 	ParamBlock						m_ParamData;
 	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
@@ -418,7 +392,7 @@ private:
     VkDescriptorSetLayout 			m_DescriptorSetLayout = VK_NULL_HANDLE;
 	VkPipelineLayout 				m_PipelineLayout = VK_NULL_HANDLE;
 	VkDescriptorPool                m_DescriptorPool = VK_NULL_HANDLE;
-	VkDescriptorSets 				m_DescriptorSets;
+	VkDescriptorSet 				m_DescriptorSet = VK_NULL_HANDLE;
     
 	ImageGUIContext*				m_GUI = nullptr;
 };

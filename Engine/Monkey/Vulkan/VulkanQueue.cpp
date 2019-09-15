@@ -1,7 +1,6 @@
 ﻿#include "VulkanQueue.h"
 #include "VulkanDevice.h"
 #include "VulkanFence.h"
-#include "VulkanCommandBuffer.h"
 
 VulkanQueue::VulkanQueue(VulkanDevice* device, uint32 familyIndex)
     : m_Queue(VK_NULL_HANDLE)
