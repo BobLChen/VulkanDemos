@@ -10,11 +10,8 @@
 #include "Math/Quat.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 enum FXAATypes
 {

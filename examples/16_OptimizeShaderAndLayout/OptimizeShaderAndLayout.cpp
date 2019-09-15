@@ -7,11 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class OptimizeShaderAndLayoutModuleDemo : public DemoBase
 {
@@ -375,7 +372,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z = -10.0f;
+		boundCenter.z = -0.5f;
 
 		// mvp数据
 		m_MVPData.model.SetIdentity();

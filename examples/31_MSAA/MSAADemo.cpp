@@ -2,19 +2,14 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Quat.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class MSAADemo : public DemoBase
 {

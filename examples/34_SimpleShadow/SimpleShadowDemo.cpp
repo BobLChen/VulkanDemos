@@ -2,18 +2,13 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class SimpleShadowDemo : public DemoBase
 {
@@ -103,8 +98,6 @@ private:
 		UpdateUI(time, delta);
         UpdateLight(time, delta);
         
-		// m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
-
 		// depth
 		m_DepthMaterial->BeginFrame();
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
@@ -178,15 +171,15 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplescene.dae",
+			"assets/models/baba_yagas_hut/scene.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_UV0, 
+				VertexAttribute::VA_Position,
 				VertexAttribute::VA_Normal
 			}
 		);
+		m_ModelScene->rootNode->localMatrix.AppendScale(Vector3(100, 100, 100));
 
 		// depth
 		m_DepthShader = vk_demo::DVKShader::Create(
@@ -358,21 +351,21 @@ private:
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0.0f, 50.0f, -50.0f));
-		m_MVPData.view.LookAt(boundCenter);
+		m_MVPData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - 15.0f));
+		m_MVPData.view.LookAt(Vector3(0, 0, 0));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
 
 		m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
+        m_LightCamera.view.SetOrigin(Vector3(0.5f, 12.0f, -11.5f));
 		m_LightCamera.view.LookAt(boundCenter);
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
         
 		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
 	}
 
 	void CreateGUI()

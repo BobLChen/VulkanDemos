@@ -7,8 +7,7 @@ layout (input_attachment_index = 3, set = 0, binding = 3) uniform subpassInput i
 
 struct PointLight {
 	vec4 position;
-	vec3 color;
-	float radius;
+	vec4 colorAndRadius;
 };
 
 #define NUM_LIGHTS 64
@@ -42,9 +41,9 @@ void main()
 	{
 		vec3 lightDir = lightDatas.lights[i].position.xyz - position.xyz;
 		float dist    = length(lightDir);
-		float atten   = DoAttenuation(lightDatas.lights[i].radius, dist);
+		float atten   = DoAttenuation(lightDatas.lights[i].colorAndRadius.w, dist);
 		float ndotl   = max(0.0, dot(normal.xyz, normalize(lightDir)));
-		vec3 diffuse  = lightDatas.lights[i].color * albedo.xyz * ndotl * atten;
+		vec3 diffuse  = lightDatas.lights[i].colorAndRadius.xyz * albedo.xyz * ndotl * atten;
 
 		outFragColor.xyz += diffuse;
 	}

@@ -85,7 +85,7 @@ void main()
 		outFragColor = albedo;
 	} 
 	else if (cameraParam.attachmentIndex == 2) {
-		outFragColor  = position / 30.0;
+		outFragColor  = position / 1500.0;
 	} 
 	else if (cameraParam.attachmentIndex == 3) {
 		outFragColor = normal;

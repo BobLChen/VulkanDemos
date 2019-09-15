@@ -7,11 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 #define NUM_LIGHTS 64
 
@@ -339,6 +336,7 @@ private:
 	struct LightSpawnBlock
 	{
 		Vector3 position[NUM_LIGHTS];
+		Vector3 direction[NUM_LIGHTS];
 		float speed[NUM_LIGHTS];
 	};
 
@@ -363,6 +361,7 @@ private:
 			m_Material0->EndObject();
 		}
 		m_Material0->EndFrame();
+
 		// 设置postprocess的参数
 		m_Material1->BeginFrame();
 		m_Material1->BeginObject();
@@ -386,16 +385,12 @@ private:
 		// 投影矩阵
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 		// 灯光参数
-		auto bounds  = m_Model->rootNode->GetBounds();
-		Vector3 bMin = bounds.min;
-		Vector3 bMax = bounds.max;
-		float radius = Vector2(bMax.x - bMin.x, bMax.z - bMin.z).Size();
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
 		{
-			float sinBias = MMath::Sin(time * m_LightInfos.speed[i]) / 15.0f;
-			float cosBias = MMath::Cos(time * m_LightInfos.speed[i]) / 15.0f;
-			m_LightDatas.lights[i].position.x = m_LightInfos.position[i].x + sinBias * radius;
-			m_LightDatas.lights[i].position.z = m_LightInfos.position[i].z + cosBias * radius;
+			float bias = MMath::Sin(time * m_LightInfos.speed[i]) / 5.0f;
+			m_LightDatas.lights[i].position.x = m_LightInfos.position[i].x + bias * m_LightInfos.direction[i].x * 500.0f;
+			m_LightDatas.lights[i].position.y = m_LightInfos.position[i].y + bias * m_LightInfos.direction[i].y * 500.0f;
+			m_LightDatas.lights[i].position.z = m_LightInfos.position[i].z + bias * m_LightInfos.direction[i].z * 500.0f;
 		}
 	}
     
@@ -412,20 +407,26 @@ private:
 
 			if (ImGui::Button("Random"))
 			{
+				vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+				Vector3 boundSize   = bounds.max - bounds.min;
+				Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+
 				for (int32 i = 0; i < NUM_LIGHTS; ++i)
 				{
-					m_LightDatas.lights[i].position.x = MMath::RandRange(-15.0f, 15.0f);
-					m_LightDatas.lights[i].position.y = MMath::RandRange(-15.0f, 15.0f);
-					m_LightDatas.lights[i].position.z = MMath::RandRange(-15.0f, 15.0f);
+					m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);
+					m_LightDatas.lights[i].position.y = MMath::RandRange(bounds.min.y, bounds.max.y);
+					m_LightDatas.lights[i].position.z = MMath::RandRange(bounds.min.z, bounds.max.z);
 
 					m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
 					m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
 					m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
 
-					m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, 15.0f);
+					m_LightDatas.lights[i].radius = MMath::RandRange(50.0f, 200.0f);
 
-					m_LightInfos.position[i] = m_LightDatas.lights[i].position;
-					m_LightInfos.speed[i]    = 1.0f + MMath::RandRange(0.0f, 2.50f);
+					m_LightInfos.position[i]  = m_LightDatas.lights[i].position;
+					m_LightInfos.direction[i] = m_LightInfos.position[i];
+					m_LightInfos.direction[i].Normalize();
+					m_LightInfos.speed[i] = 1.0f + MMath::RandRange(0.0f, 5.0f);
 				}
 			}
 			
@@ -450,12 +451,11 @@ private:
 		// 加载Model
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplebuilding.dae",
+			"assets/models/Room/miniHouse_FBX.FBX",
 			m_VulkanDevice,
 			cmdBuffer,
 			m_Shader0->perVertexAttributes
 		);
-		m_Model->rootNode->localMatrix.AppendRotation(180.0f, Vector3::UpVector);
 		delete cmdBuffer;
 
 		// 设置gbuffer material
@@ -572,42 +572,46 @@ private:
     
 	void InitParmas()
 	{
-		// debug params
-		m_VertFragParam.attachmentIndex = 0;
-		m_VertFragParam.zNear   = 1.0f;
-		m_VertFragParam.zFar    = 100.0f;
-		m_VertFragParam.one     = 1.0f;
-		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
-		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(Vector3(0.0, 1.0f, -15.9f));
-        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
+		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
-		
 		// light datas
-		auto bounds  = m_Model->rootNode->GetBounds();
-		Vector3 bMin = bounds.min;
-		Vector3 bMax = bounds.max;
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
 		{
-			m_LightDatas.lights[i].position.x = MMath::RandRange(bMin.x, bMax.x);
-			m_LightDatas.lights[i].position.y = MMath::RandRange(bMin.y, bMax.y);
-			m_LightDatas.lights[i].position.z = MMath::RandRange(bMin.z, bMax.z);
+			m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);
+			m_LightDatas.lights[i].position.y = MMath::RandRange(bounds.min.y, bounds.max.y);
+			m_LightDatas.lights[i].position.z = MMath::RandRange(bounds.min.z, bounds.max.z);
 
 			m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.z = MMath::RandRange(0.0f, 1.0f);
 
-			m_LightDatas.lights[i].radius = MMath::RandRange(1.0f, bMax.y - bMin.y);
+			m_LightDatas.lights[i].radius = MMath::RandRange(50.0f, 200.0f);
 
-			m_LightInfos.position[i] = m_LightDatas.lights[i].position;
-			m_LightInfos.speed[i]    = 1.0f + MMath::RandRange(0.0f, 5.0f);
+			m_LightInfos.position[i]  = m_LightDatas.lights[i].position;
+			m_LightInfos.direction[i] = m_LightInfos.position[i];
+			m_LightInfos.direction[i].Normalize();
+			m_LightInfos.speed[i] = 1.0f + MMath::RandRange(0.0f, 5.0f);
 		}
+
+		// debug params
+		m_VertFragParam.attachmentIndex = 0;
+		m_VertFragParam.zNear   = 300.0f;
+		m_VertFragParam.zFar    = 1500.0f;
+		m_VertFragParam.one     = 1.0f;
+		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
+		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
+		
+		boundCenter.z -= boundSize.Size();
+		// view projection buffer
+		m_ViewProjData.view.SetIdentity();
+		m_ViewProjData.view.SetOrigin(boundCenter);
+        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetInverse();
+
+		m_ViewProjData.projection.SetIdentity();
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 	}
 	
 	void CreateGUI()

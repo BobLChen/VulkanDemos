@@ -9,11 +9,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 #define INSTANCE_COUNT 20480
 

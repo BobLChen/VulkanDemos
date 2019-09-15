@@ -11,7 +11,6 @@
 #include "Vulkan/VulkanCommon.h"
 
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public AppModuleBase
 {
