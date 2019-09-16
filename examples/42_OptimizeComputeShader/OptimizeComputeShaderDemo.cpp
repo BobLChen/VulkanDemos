@@ -140,9 +140,9 @@ private:
         }
         
         const char* shaderNames[3] = {
-            "assets/shaders/42_OptimizeComputeShader/Emboss.comp.spv",
-            "assets/shaders/42_OptimizeComputeShader/Edgedetect.comp.spv",
-            "assets/shaders/42_OptimizeComputeShader/Sharpen.comp.spv",
+            "assets/shaders/42_OptimizeComputeShader/Contrast.comp.spv",
+            "assets/shaders/42_OptimizeComputeShader/Gamma.comp.spv",
+            "assets/shaders/42_OptimizeComputeShader/ColorInvert.comp.spv",
         };
         
         for (int32 i = 0; i < 3; ++i)
@@ -167,9 +167,9 @@ private:
 		m_FilterIndex = 0;
 		m_FilterNames.resize(4);
 		m_FilterNames[0] = "Original";
-		m_FilterNames[1] = "Emboss";
-		m_FilterNames[2] = "Edgedetect";
-		m_FilterNames[3] = "Sharpen";
+		m_FilterNames[1] = "Contrast";
+		m_FilterNames[2] = "Gamma";
+		m_FilterNames[3] = "ColorInvert";
         
         delete cmdBuffer;
 	}

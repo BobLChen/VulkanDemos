@@ -262,9 +262,9 @@ private:
 			computeCreateInfo.layout = m_ComputeRes.pipelineLayout;
 			
 			const char* shaderNames[3] = {
-				"assets/shaders/41_ComputeShader/Emboss.comp.spv",
-				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
-				"assets/shaders/41_ComputeShader/Sharpen.comp.spv",
+				"assets/shaders/41_ComputeShader/Contrast.comp.spv",
+				"assets/shaders/41_ComputeShader/Gamma.comp.spv",
+				"assets/shaders/41_ComputeShader/ColorInvert.comp.spv",
 			};
 
 			vk_demo::DVKShaderModule* shaderModules[3];
@@ -305,9 +305,9 @@ private:
 		m_FilterIndex = 0;
 		m_FilterNames.resize(4);
 		m_FilterNames[0] = "Original";
-		m_FilterNames[1] = "Emboss";
-		m_FilterNames[2] = "Edgedetect";
-		m_FilterNames[3] = "Sharpen";
+		m_FilterNames[1] = "Contrast";
+		m_FilterNames[2] = "Gamma";
+		m_FilterNames[3] = "ColorInvert";
 	}
 
 	void LoadAssets()

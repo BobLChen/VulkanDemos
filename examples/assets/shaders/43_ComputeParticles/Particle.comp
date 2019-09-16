@@ -1,13 +1,3 @@
-/*
-* Vulkan Example - Attraction based compute shader particle system
-*
-* Updated compute shader by Lukas Bergdoll (https://github.com/Voultapher)
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
 #version 450
 
 struct Particle
@@ -16,10 +6,9 @@ struct Particle
 	vec4 velocity;
 };
 
-// Binding 0 : Position storage buffer
 layout(std140, binding = 0) buffer Vertex 
 {
-    Particle particles[ ];
+	Particle particles[ ];
 } inVertex;
 
 layout (binding = 1) uniform ParticleParam 
@@ -29,23 +18,6 @@ layout (binding = 1) uniform ParticleParam
 } param;
 
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
-
-vec2 Repulsion(vec2 pos, vec2 dst)
-{
-	vec2 delta = dst - pos;
-	float dist = sqrt(dot(delta, delta));
-	return delta * (1.0 / (dist * dist * dist)) * -0.000035;
-}
-
-vec2 Attraction(vec2 pos, vec2 dst) 
-{
-    vec2 delta = dst - pos;
-	const float damp = 0.5;
-    float dampedDot  = dot(delta, delta) + damp;
-    float invDist    = 1.0 / sqrt(dampedDot);
-    float invDist3   = invDist * invDist * invDist;
-    return delta * invDist3 * 0.0035;
-}
 
 void main() 
 {
@@ -59,13 +31,12 @@ void main()
 
 	vec2 vPos = inVertex.particles[globalIndex].position.xy;
 	vec2 vVel = inVertex.particles[globalIndex].velocity.xy;
-	vec2 vDst = param.data0.xy;
-
-	vVel += Repulsion(vPos, vDst) * param.data1.z;
-	vPos += vVel * param.data0.z;
+	vec2 vDst = param.data0.xy - vPos;
+	vVel  = vDst;
+	vPos += vVel;
 
 	if (vPos.x < -1.0 || vPos.x > 1.0 || vPos.y < -1.0 || vPos.y > 1.0) {
-		vVel = (-vVel * 0.1) + Attraction(vPos, vDst) * param.data1.w;
+		vVel = -vVel;
 	}
 	else {
 		inVertex.particles[globalIndex].position.xy = vPos;
