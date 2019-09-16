@@ -81,8 +81,9 @@ private:
         if (!m_AnimLight) {
             return;
         }
+
         m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
+        m_LightCamera.view.SetOrigin(Vector3(200 * MMath::Sin(time), 700, -500 * MMath::Cos(time)));
         m_LightCamera.view.LookAt(Vector3(0, 0, 0));
         m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
         m_LightCamera.view.SetInverse();
@@ -169,7 +170,7 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/baba_yagas_hut/scene.fbx",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -177,7 +178,6 @@ private:
 				VertexAttribute::VA_Normal
 			}
 		);
-		m_ModelScene->rootNode->localMatrix.AppendScale(Vector3(100, 100, 100));
 
 		// depth
 		m_DepthShader = vk_demo::DVKShader::Create(
@@ -342,28 +342,26 @@ private:
 
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		auto bounds = m_ModelScene->rootNode->GetBounds();
 
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - 15.0f));
+		m_MVPData.view.SetOrigin(Vector3(-300, 650, 0));
 		m_MVPData.view.LookAt(Vector3(0, 0, 0));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 1000.0f);
 
 		m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(0.5f, 12.0f, -11.5f));
-		m_LightCamera.view.LookAt(boundCenter);
+        m_LightCamera.view.SetOrigin(Vector3(200, 700, -500));
+		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
         
 		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
+		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 100.0f, 1500.0f);
 	}
 
 	void CreateGUI()

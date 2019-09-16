@@ -1,7 +1,7 @@
 #version 450
 
 layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec2 inUV0;
+layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec3 inNormal;
 layout (location = 3) in vec4 inInstanceDualQuat0;
 layout (location = 4) in vec4 inInstanceDualQuat1;
@@ -14,7 +14,7 @@ layout (binding = 0) uniform ViewProjBlock
 	mat4 projectionMatrix;
 } uboMVP;
 
-layout (location = 0) out vec2 outUV0;
+layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec3 outNormal;
 layout (location = 2) out float outLayer;
 
@@ -48,7 +48,7 @@ void main()
 	vec4 position = vec4(DualQuatTransformPosition(dualQuat, inPosition.xyz * inInstanceScaleIndex.x), 1.0);
 	vec3 normal   = DualQuatTransformVector(dualQuat, inNormal);
     
-	outUV0    = inUV0;
+	outColor  = inColor;
 	outNormal = normal;
     outLayer  = inInstanceScaleIndex.y;
 

@@ -642,7 +642,7 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplescene.dae",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -947,13 +947,13 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 50.0f, -100.0f);
+		m_ViewCamera.SetPosition(-300, 650, 0);
 		m_ViewCamera.LookAt(0, 0, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 
-		m_LightCamera.SetPosition(-250.0f, 150.0f, -50.0f);
+		m_LightCamera.SetPosition(200, 700, -500);
 		m_LightCamera.LookAt(0, 0, 0);
-		m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1.0f, 1000.0f);
+		m_LightCamera.Perspective(PI / 4, SHADOW_TEX_SIZE, SHADOW_TEX_SIZE, 1.0f, 1500.0f);
 
 		m_CascadeParam.bias.x = 0.01f;
 		m_CascadeParam.bias.y = 1.0f;
@@ -970,10 +970,10 @@ private:
 		m_CascadeParam.offset[2].Set(0.0f, 0.5f, 0.0f, 0.0f);
 		m_CascadeParam.offset[3].Set(0.5f, 0.5f, 0.0f, 0.0f);
 
-		m_CascadePartitions[0] = 6.5f;
-		m_CascadePartitions[1] = 7.5f;
-		m_CascadePartitions[2] = 8.5f;
-		m_CascadePartitions[3] = 15.0f;
+		m_CascadePartitions[0] = 15.0f;
+		m_CascadePartitions[1] = 20.0f;
+		m_CascadePartitions[2] = 25.0f;
+		m_CascadePartitions[3] = 40.0f;
 	}
 
 	void CreateGUI()

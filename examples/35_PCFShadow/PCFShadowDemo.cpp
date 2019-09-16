@@ -87,7 +87,7 @@ private:
 			return;
 		}
 		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
+		m_LightCamera.view.SetOrigin(Vector3(200 * MMath::Sin(time), 700, -500 * MMath::Cos(time)));
 		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
@@ -185,12 +185,11 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/baba_yagas_hut/scene.fbx",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_UV0, 
+				VertexAttribute::VA_Position,
 				VertexAttribute::VA_Normal
 			}
 		);
@@ -385,29 +384,25 @@ private:
 
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0.0f, 50.0f, -50.0f));
-		m_MVPData.view.LookAt(boundCenter);
+		m_MVPData.view.SetOrigin(Vector3(-300, 650, 0));
+		m_MVPData.view.LookAt(Vector3(0, 0, 0));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 1000.0f);
 
 		m_LightCamera.view.SetIdentity();
-		m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
-		m_LightCamera.view.LookAt(boundCenter);
+		m_LightCamera.view.SetOrigin(Vector3(200, 700, -500));
+		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
 
 		m_LightCamera.projection.SetIdentity();
 		// 正交投影区域能够包裹住场景即可，注意比例要与ShadowMap保持一致。
-		m_LightCamera.projection.Orthographic(-60, 60, -60, 60, 1.0f, 500.0f);
+		m_LightCamera.projection.Orthographic(-600, 600, -600, 600, 100.0f, 1500.0f);
 
 		m_ShadowParam.bias.x = 0.005f;
 		m_ShadowParam.bias.y = 5.0f;

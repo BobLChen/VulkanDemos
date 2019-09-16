@@ -1,7 +1,7 @@
 #version 450
 
 layout (location = 0) in vec3 inNormal;
-layout (location = 1) in vec2 inUV;
+layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec4 inLightViewPos;
 
 layout (binding = 1) uniform LightsMVPBlock 
@@ -17,7 +17,6 @@ layout (binding = 1) uniform LightsMVPBlock
 } lightMVP;
 
 layout (binding = 2) uniform sampler2D shadowMap;
-layout (binding = 3) uniform sampler2D diffuseMap;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -85,7 +84,7 @@ void main()
     
     vec3 shadowCoord = vec3(lightProjPos.xy * lightMVP.bias.zw + lightMVP.offset[cascadeIndex].xy, lightProjPos.z);
 
-    vec4 diffuse  = texture(diffuseMap, inUV * 20);
+    vec4 diffuse  = vec4(inColor, 1.0);
     vec3 lightDir = normalize(lightMVP.direction.xyz);
     
     diffuse.xyz   = dot(lightDir, inNormal) * diffuse.xyz; 
