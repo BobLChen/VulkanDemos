@@ -1,4 +1,4 @@
-#include "GenericPlatformMath.h"
+﻿#include "GenericPlatformMath.h"
 #include "PlatformMath.h"
 #include "Math.h"
 
@@ -17,6 +17,7 @@ int32 GenericPlatformMath::GetRandSeed()
 float GenericPlatformMath::SRand()
 {
 	G_SRandSeed = (G_SRandSeed * 196314165) + 907633515;
+
 	union 
 	{ 
 		float f; 
@@ -30,7 +31,7 @@ float GenericPlatformMath::SRand()
 	} temp;
 
 	const float randTemp = 1.0f;
-	temp.f = randTemp;
+	temp.f   = randTemp;
 	result.i = (temp.i & 0xff800000) | (G_SRandSeed & 0x007fffff);
 
 	return PlatformMath::Fractional(result.f);

@@ -1,4 +1,4 @@
-
+﻿
 #include "MacPlatformTime.h"
 
 double MacPlatformTime::s_SecondsPerCycle = 0.0;

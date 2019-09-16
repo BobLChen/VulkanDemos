@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 
@@ -6,7 +6,6 @@
 #include "VulkanQueue.h"
 #include "VulkanMemory.h"
 #include "VulkanRHI.h"
-#include "VulkanContext.h"
 
 #include <vector>
 #include <memory>
@@ -14,9 +13,6 @@
 
 class VulkanFenceManager;
 class VulkanDeviceMemoryManager;
-class VulkanResourceHeapManager;
-class VulkanPipelineStateManager;
-class VulkanDescriptorPoolsManager;
 
 class VulkanDevice
 {
@@ -99,27 +95,7 @@ public:
         return *m_MemoryManager;
     }
     
-    inline VulkanResourceHeapManager& GetResourceHeapManager()
-    {
-        return *m_ResourceHeapManager;
-    }
-
-	inline VulkanPipelineStateManager& GetPipelineStateManager()
-	{
-		return *m_PipelineStateManager;
-	}
-    
-    inline VulkanDescriptorPoolsManager& GetDescriptorPoolsManager()
-    {
-        return *m_DescriptorPoolsManager;
-    }
-
-	inline VulkanCommandListContextImmediate& GetImmediateContext()
-	{
-		return *m_ImmediateContext;
-	}
-
-	void AddAppDeviceExtensions(const char* name)
+	inline void AddAppDeviceExtensions(const char* name)
 	{
 		m_AppDeviceExtensions.push_back(name);
 	}
@@ -157,12 +133,6 @@ private:
 
     VulkanFenceManager*                     m_FenceManager;
     VulkanDeviceMemoryManager*              m_MemoryManager;
-    VulkanResourceHeapManager*              m_ResourceHeapManager;
-	VulkanPipelineStateManager*             m_PipelineStateManager;
-    VulkanDescriptorPoolsManager*           m_DescriptorPoolsManager;
-    
-    VulkanCommandListContextImmediate*      m_ImmediateContext;
-    std::vector<VulkanCommandListContext*>  m_CommandContexts;
 
 	std::vector<const char*>				m_AppDeviceExtensions;
 };

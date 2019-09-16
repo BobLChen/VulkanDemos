@@ -1,4 +1,4 @@
-#include "SecureHash.h"
+﻿#include "SecureHash.h"
 
 enum { S11 = 7 };
 enum { S12 = 12 };

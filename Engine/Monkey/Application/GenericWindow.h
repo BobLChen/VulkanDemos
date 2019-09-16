@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Vulkan/VulkanPlatform.h"
@@ -20,16 +20,22 @@ namespace WindowMode
 		Type mode = Windowed;
 		switch (windowMode)
 		{
-		case 0:
-			mode = Fullscreen;
-			break;
-		case 1:
-			mode = WindowedFullscreen;
-			break;
-		case 2:
-		default:
-			mode = Windowed;
-			break;
+			case 0:
+			{
+				mode = Fullscreen;
+				break;
+			}
+			case 1:
+			{
+				mode = WindowedFullscreen;
+				break;
+			}
+			case 2:
+			default:
+			{
+				mode = Windowed;
+				break;
+			}
 		}
 		return mode;
 	}

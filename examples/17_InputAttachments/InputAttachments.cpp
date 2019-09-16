@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -7,11 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class InputAttachmentsDemo : public DemoBase
 {
@@ -339,9 +336,11 @@ private:
     
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniform();
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
 
@@ -660,7 +659,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -689,11 +688,11 @@ private:
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
 
-    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline0 = nullptr;
 	vk_demo::DVKShader*				m_Shader0 = nullptr;
 	vk_demo::DVKDescriptorSet*		m_DescriptorSet0 = nullptr;
 	
-	vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
+	vk_demo::DVKGfxPipeline*        m_Pipeline1 = nullptr;
 	vk_demo::DVKShader*				m_Shader1 = nullptr;
 	DVKDescriptorSetArray			m_DescriptorSets;
 

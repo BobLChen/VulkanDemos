@@ -2,17 +2,13 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class Texture3DDemo : public DemoBase
 {
@@ -97,9 +93,11 @@ private:
 
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
     
@@ -458,7 +456,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z = -10.0f;
+		boundCenter.z = -0.5f;
 
 		m_MVPData.model.SetIdentity();
 		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
@@ -504,7 +502,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -526,10 +524,10 @@ private:
 	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
 	vk_demo::DVKTexture*			m_Tex3DLut  = nullptr;
 	
-    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline2 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline3 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline1 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline2 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline3 = nullptr;
     
 	vk_demo::DVKModel*				m_Model = nullptr;
 

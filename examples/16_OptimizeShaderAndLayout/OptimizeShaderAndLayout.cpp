@@ -7,11 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class OptimizeShaderAndLayoutModuleDemo : public DemoBase
 {
@@ -94,9 +91,11 @@ private:
 
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
     
@@ -375,7 +374,7 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z = -10.0f;
+		boundCenter.z = -0.5f;
 
 		// mvp数据
 		m_MVPData.model.SetIdentity();
@@ -422,7 +421,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

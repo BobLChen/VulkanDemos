@@ -1,4 +1,4 @@
-#include "Common/Log.h"
+﻿#include "Common/Log.h"
 #include "Math/Math.h"
 #include "Utils/Alignment.h"
 #include "VulkanDevice.h"
@@ -356,7 +356,6 @@ void VulkanResourceAllocation::BindBuffer(VulkanDevice* device, VkBuffer buffer)
     if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)
     {
         device->GetMemoryManager().DumpMemory();
-        device->GetResourceHeapManager().DumpMemory();
     }
     VERIFYVULKANRESULT(result);
 #endif
@@ -369,7 +368,6 @@ void VulkanResourceAllocation::BindImage(VulkanDevice* device, VkImage image)
     if (result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_HOST_MEMORY)
     {
         device->GetMemoryManager().DumpMemory();
-        device->GetResourceHeapManager().DumpMemory();
     }
 #endif
     VERIFYVULKANRESULT(result);
@@ -519,7 +517,6 @@ VulkanResourceHeap::~VulkanResourceHeap()
     {
 #if MONKEY_DEBUG
         m_Owner->GetVulkanDevice()->GetMemoryManager().DumpMemory();
-        m_Owner->GetVulkanDevice()->GetResourceHeapManager().DumpMemory();
 #endif
     }
 }

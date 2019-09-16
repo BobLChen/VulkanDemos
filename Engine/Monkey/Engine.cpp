@@ -1,6 +1,6 @@
-#include "Engine.h"
+﻿#include "Engine.h"
 
-#include "Application/SlateApplication.h"
+#include "Application/Application.h"
 #include "GenericPlatform/GenericPlatformTime.h"
 
 #include "Vulkan/VulkanDevice.h"
@@ -34,7 +34,7 @@ VkDevice Engine::GetDeviceHandle()
 	return m_VulkanRHI->GetDevice()->GetInstanceHandle();
 }
 
-std::shared_ptr<SlateApplication> Engine::GetApplication()
+std::shared_ptr<Application> Engine::GetApplication()
 {
 	return m_SlateApplication;
 }
@@ -53,7 +53,7 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 {
     m_AppTitle = title;
     
-	m_SlateApplication = std::make_shared<SlateApplication>();
+	m_SlateApplication = std::make_shared<Application>();
 	m_SlateApplication->Init(this);
 	m_SlateApplication->MakeWindow(width, height, title);
 

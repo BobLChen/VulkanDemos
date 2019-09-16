@@ -1,22 +1,13 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
-#include "Demo/DVKCompute.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
-// 1024 * 1024
 #define OBJECT_COUNT 1024 * 256
 
 class ComputeFrustumDemo : public DemoBase
@@ -218,7 +209,7 @@ private:
 			"assets/shaders/45_ComputeFrustum/Frustum.comp.spv"
 		);
 
-		m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(
+		m_ComputeProcessor = vk_demo::DVKCompute::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
 			m_ComputeShader
@@ -450,7 +441,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -482,7 +473,7 @@ private:
     
     FrustumParamBlock               m_FrustumParam;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
     vk_demo::DVKCommandBuffer*      m_ComputeCommand = nullptr;
     
 	ModelViewProjectionBlock	    m_MVPParam;

@@ -1,4 +1,4 @@
-# pragma once
+﻿# pragma once
 
 #if defined( _WIN64 )
 #define PLATFORM_64BITS					1

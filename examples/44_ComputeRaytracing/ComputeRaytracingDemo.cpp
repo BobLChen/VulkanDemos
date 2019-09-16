@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Vulkan Example - Compute shader ray tracing
 *
 * Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
@@ -10,19 +10,13 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
-#include "Demo/DVKCompute.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class ComputeRaytracingDemo : public DemoBase
 {
@@ -192,7 +186,7 @@ private:
             m_VulkanDevice,
             "assets/shaders/44_ComputeRaytracing/Raytracing.comp.spv"
         );
-        m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
+        m_ComputeProcessor = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
         m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
         
 		// compute command
@@ -328,7 +322,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -347,7 +341,7 @@ private:
 
     vk_demo::DVKTexture*            m_ComputeTarget = nullptr;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
 
 	RaytracingParamBlock			m_RaytracingParam;
     

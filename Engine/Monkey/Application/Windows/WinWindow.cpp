@@ -1,4 +1,4 @@
-#include "Common/Log.h"
+﻿#include "Common/Log.h"
 #include "Vulkan/VulkanPlatform.h"
 
 #include "WinWindow.h"
@@ -42,14 +42,14 @@ WinWindow::~WinWindow()
 
 float WinWindow::GetDPIScaleFactorAtPoint(float X, float Y)
 {
-	float Scale = 1.0f;
+	float dpiScale = 1.0f;
 
 	HDC Context = GetDC(nullptr);
-	int32 DPI = GetDeviceCaps(Context, LOGPIXELSX);
-	Scale = (float)DPI / 96.0f;
+	int32 DPI   = GetDeviceCaps(Context, LOGPIXELSX);
+	dpiScale    = (float)DPI / 96.0f;
 	ReleaseDC(nullptr, Context);
 
-	return Scale;
+	return dpiScale;
 }
 
 void WinWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
@@ -57,7 +57,7 @@ void WinWindow::CreateVKSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 	VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;
 	ZeroVulkanStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR);
 	surfaceCreateInfo.hinstance = GetModuleHandle(nullptr);
-	surfaceCreateInfo.hwnd = (HWND)m_Window;
+	surfaceCreateInfo.hwnd      = (HWND)m_Window;
 	VERIFYVULKANRESULT(vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, VULKAN_CPU_ALLOCATOR, outSurface));
 }
 
@@ -103,7 +103,7 @@ void WinWindow::Initialize(WinApplication* const application)
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
-		windowRect.right - windowRect.left,
+		windowRect.right  - windowRect.left,
 		windowRect.bottom - windowRect.top,
 		nullptr,        
 		nullptr,        
@@ -220,10 +220,7 @@ void WinWindow::Enable(bool enable)
 
 bool WinWindow::IsPointInWindow(int32 x, int32 y) const
 {
-	if ((x > m_X && x < m_X + m_Width) && (y > m_Y && y < m_Y + m_Height)) {
-		return true;
-	}
-	return false;
+	return (x > m_X && x < m_X + m_Width) && (y > m_Y && y < m_Y + m_Height);
 }
 
 int32 WinWindow::GetWindowBorderSize() const

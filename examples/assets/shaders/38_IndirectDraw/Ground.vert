@@ -1,7 +1,7 @@
 #version 450
 
 layout (location = 0) in vec3 inPosition;
-layout (location = 1) in vec2 inUV0;
+layout (location = 1) in vec3 inColor;
 layout (location = 2) in vec3 inNormal;
 
 layout (binding = 0) uniform MVPBlock 
@@ -24,7 +24,7 @@ layout (binding = 1) uniform LightsMVPBlock
 } lightMVP;
 
 layout (location = 0) out vec3 outNormal;
-layout (location = 1) out vec2 outUV;
+layout (location = 1) out vec3 outColor;
 layout (location = 2) out vec4 outLightViewPos;
 
 out gl_PerVertex 
@@ -38,7 +38,7 @@ void main()
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
 	vec3 normal = normalize(normalMatrix * inNormal.xyz);
 	outNormal = normal;
-	outUV = inUV0;
+	outColor  = inColor;
 	outLightViewPos = lightMVP.viewMatrix * worldPos;
 
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * worldPos;

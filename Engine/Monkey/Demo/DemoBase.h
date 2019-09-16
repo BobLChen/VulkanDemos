@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine.h"
 
@@ -10,7 +10,7 @@
 #include "Application/AppModuleBase.h"
 #include "Application/GenericWindow.h"
 #include "Application/GenericApplication.h"
-
+ 
 #include <string>
 
 class DemoBase : public AppModuleBase
@@ -70,7 +70,8 @@ public:
     {
         m_FrameCounter  += 1;
         m_LastFrameTime += delta;
-        if (m_LastFrameTime >= 1.0f) {
+        if (m_LastFrameTime >= 1.0f) 
+		{
             m_LastFPS = m_FrameCounter;
             m_FrameCounter  = 0;
             m_LastFrameTime = 0.0f;

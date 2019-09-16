@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -7,11 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class StencilDemo : public DemoBase
 {
@@ -416,7 +413,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

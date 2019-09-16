@@ -69,21 +69,6 @@ elseif (UNIX)
 	)
 endif ()
 
-# SETUP_SAMPLE_START(0_SuperDemo)
-# 	SET(SOURCE_FILES
-# 		${MainLaunch}
-# 		${CMAKE_CURRENT_SOURCE_DIR}/0_SuperDemo/SuperDemo.cpp
-# 	)
-# 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/0_SuperDemo/*.*")
-# 	foreach(file ${files})
-# 		SET(ASSETS
-# 			${ASSETS}
-# 			${file}
-# 		)
-# 	endforeach()
-# 	SET(RESOURCE_FILES ${ASSETS})
-# SETUP_SAMPLE_END(0_SuperDemo)
-
 SETUP_SAMPLE_START(2_Triangle)
 	SET(SOURCE_FILES
 		${MainLaunch}

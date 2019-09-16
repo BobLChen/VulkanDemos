@@ -1,19 +1,12 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class SimpleShadowDemo : public DemoBase
 {
@@ -88,8 +81,9 @@ private:
         if (!m_AnimLight) {
             return;
         }
+
         m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(50.0f * MMath::Sin(time), 80.0f, 50.0f * MMath::Cos(time)));
+        m_LightCamera.view.SetOrigin(Vector3(200 * MMath::Sin(time), 700, -500 * MMath::Cos(time)));
         m_LightCamera.view.LookAt(Vector3(0, 0, 0));
         m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
         m_LightCamera.view.SetInverse();
@@ -103,8 +97,6 @@ private:
 		UpdateUI(time, delta);
         UpdateLight(time, delta);
         
-		// m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
-
 		// depth
 		m_DepthMaterial->BeginFrame();
 		for (int32 j = 0; j < m_ModelScene->meshes.size(); ++j) {
@@ -178,12 +170,11 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplescene.dae",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_UV0, 
+				VertexAttribute::VA_Position,
 				VertexAttribute::VA_Normal
 			}
 		);
@@ -351,34 +342,32 @@ private:
 
 	void InitParmas()
 	{
-		vk_demo::DVKBoundingBox bounds = m_ModelScene->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		auto bounds = m_ModelScene->rootNode->GetBounds();
 
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0.0f, 50.0f, -50.0f));
-		m_MVPData.view.LookAt(boundCenter);
+		m_MVPData.view.SetOrigin(Vector3(-300, 650, 0));
+		m_MVPData.view.LookAt(Vector3(0, 0, 0));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 1000.0f);
 
 		m_LightCamera.view.SetIdentity();
-        m_LightCamera.view.SetOrigin(Vector3(-50.0f, 80.0f, 0.0f));
-		m_LightCamera.view.LookAt(boundCenter);
+        m_LightCamera.view.SetOrigin(Vector3(200, 700, -500));
+		m_LightCamera.view.LookAt(Vector3(0, 0, 0));
 		m_LightCamera.direction = -m_LightCamera.view.GetForward().GetSafeNormal();
 		m_LightCamera.view.SetInverse();
         
 		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_LightCamera.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 100.0f, 1500.0f);
 	}
 
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

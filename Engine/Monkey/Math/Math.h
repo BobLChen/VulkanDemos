@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Math/PlatformMath.h"
 #include "Common/Common.h"

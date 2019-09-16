@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <cstring>
@@ -11,7 +11,7 @@
 
 #include "spirv_cross.hpp"
 
-#include "File/FileManager.h"
+#include "FileManager.h"
 #include "Vulkan/VulkanCommon.h"
 
 namespace vk_demo
@@ -144,7 +144,8 @@ namespace vk_demo
 		void WriteImage(const std::string& name, DVKTexture* texture)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
-			if (it == setLayoutsInfo.paramsMap.end()) {
+			if (it == setLayoutsInfo.paramsMap.end()) 
+			{
 				MLOGE("Failed write buffer, %s not found!", name.c_str());
 				return;
 			}
@@ -165,7 +166,8 @@ namespace vk_demo
 		void WriteBuffer(const std::string& name, const VkDescriptorBufferInfo* bufferInfo)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
-			if (it == setLayoutsInfo.paramsMap.end()) {
+			if (it == setLayoutsInfo.paramsMap.end()) 
+			{
 				MLOGE("Failed write buffer, %s not found!", name.c_str());
 				return;
 			}
@@ -185,7 +187,8 @@ namespace vk_demo
 		void WriteBuffer(const std::string& name, DVKBuffer* buffer)
 		{
 			auto it = setLayoutsInfo.paramsMap.find(name);
-			if (it == setLayoutsInfo.paramsMap.end()) {
+			if (it == setLayoutsInfo.paramsMap.end()) 
+			{
 				MLOGE("Failed write buffer, %s not found!", name.c_str());
 				return;
 			}
@@ -293,12 +296,14 @@ namespace vk_demo
 		
 		~DVKShaderModule()
 		{
-			if (handle != VK_NULL_HANDLE) {
+			if (handle != VK_NULL_HANDLE) 
+			{
 				vkDestroyShaderModule(device, handle, VULKAN_CPU_ALLOCATOR);
 				handle = VK_NULL_HANDLE;
 			}
 			
-			if (data) {
+			if (data) 
+			{
 				delete[] data;
 				data = nullptr;
 			}

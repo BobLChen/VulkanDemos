@@ -20,6 +20,6 @@ out gl_PerVertex
 void main() 
 {
     gl_PointSize = param.data1.x;
-    outGradient  = inCustom0.z;
+    outGradient  = inCustom1.w;
 	gl_Position  = vec4(inCustom0.xy, 1.0, 1.0);
 }

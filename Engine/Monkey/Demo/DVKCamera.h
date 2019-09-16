@@ -225,9 +225,11 @@ namespace vk_demo
 
 		float		m_Near = 1.0f;
 		float		m_Far = 3000.0f;
+
 		// Perspective
 		float		m_Fov = PI / 4.0f;
 		float		m_Aspect = 1.0f;
+
 		// Orthographic
 		float		m_Left = -1.0f;
 		float		m_Right = 1.0f;

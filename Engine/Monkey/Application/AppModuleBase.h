@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 #include "Common/Log.h"
@@ -102,7 +102,8 @@ protected:
 		const std::vector<VkImageView>& backbufferViews = GetVulkanRHI()->GetBackbufferViews();
 
 		m_FrameBuffers.resize(backbufferViews.size());
-		for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) {
+		for (uint32 i = 0; i < m_FrameBuffers.size(); ++i) 
+		{
 			attachments[0] = backbufferViews[i];
 			VERIFYVULKANRESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &m_FrameBuffers[i]));
 		}
@@ -241,7 +242,8 @@ protected:
 	virtual void DestoryRenderPass()
 	{
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
-		if (m_RenderPass != VK_NULL_HANDLE) {
+		if (m_RenderPass != VK_NULL_HANDLE) 
+		{
 			vkDestroyRenderPass(device, m_RenderPass, VULKAN_CPU_ALLOCATOR);
 			m_RenderPass = VK_NULL_HANDLE;
 		}
@@ -251,17 +253,20 @@ protected:
 	{
 		VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
 
-		if (m_DepthStencilMemory != VK_NULL_HANDLE) {
+		if (m_DepthStencilMemory != VK_NULL_HANDLE) 
+		{
 			vkFreeMemory(device, m_DepthStencilMemory, VULKAN_CPU_ALLOCATOR);
 			m_DepthStencilMemory = VK_NULL_HANDLE;
 		}
 
-		if (m_DepthStencilView != VK_NULL_HANDLE) {
+		if (m_DepthStencilView != VK_NULL_HANDLE) 
+		{
 			vkDestroyImageView(device, m_DepthStencilView, VULKAN_CPU_ALLOCATOR);
 			m_DepthStencilView = VK_NULL_HANDLE;
 		}
 
-		if (m_DepthStencilImage != VK_NULL_HANDLE) {
+		if (m_DepthStencilImage != VK_NULL_HANDLE) 
+		{
 			vkDestroyImage(device, m_DepthStencilImage, VULKAN_CPU_ALLOCATOR);
 			m_DepthStencilImage = VK_NULL_HANDLE;
 		}

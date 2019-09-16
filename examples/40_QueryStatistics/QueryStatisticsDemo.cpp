@@ -2,18 +2,11 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 #define QUERY_STATS_COUNT 8
 
@@ -154,7 +147,7 @@ private:
 		m_StatNames[7] = "Tessellation evaluation shader invocations";
 
 		m_ModelSphere = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/samplescene.dae",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
@@ -261,8 +254,8 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 19.73f, -100.0f);
-		m_ViewCamera.LookAt(0, 19.73f, 0);
+		m_ViewCamera.SetPosition(0, 500, -700.0f);
+		m_ViewCamera.LookAt(0, 250, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 
 		memset(m_QueryStats, 65535, sizeof(uint64) * QUERY_STATS_COUNT);
@@ -271,7 +264,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

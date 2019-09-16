@@ -1,8 +1,7 @@
 #version 450
 
-layout (location = 0) in vec2 inUV;
-layout (location = 1) in vec3 inNormal;
-layout (location = 2) in vec3 inLightDir;
+layout (location = 0) in vec3 inNormal;
+layout (location = 1) in vec3 inLightDir;
 
 layout (binding = 1) uniform LightMVPBlock 
 {
@@ -49,6 +48,5 @@ void main()
     
     diffuse.xyz *= shadow;
 
-    // diffuse.xyz  = vec3(dist / 25.0f);
     outFragColor = diffuse;
 }

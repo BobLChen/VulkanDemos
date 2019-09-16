@@ -1,30 +1,12 @@
-﻿/*
-* Vulkan Example - Attraction based compute shader particle system
-*
-* Updated compute shader by Lukas Bergdoll (https://github.com/Voultapher)
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
 #include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
-#include "Demo/DVKCompute.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 #define PARTICLE_COUNT (1024 * 1024)
 
@@ -117,8 +99,9 @@ private:
 
 			ImGui::SliderFloat("PointSize", &m_ParticleParams.data1.x, 1.0f, 15.0f);
 			ImGui::SliderFloat("Intensity", &m_ParticleParams.data1.y, 0.1f, 1.0f);
-			ImGui::SliderFloat("Speed0",    &m_ParticleParams.data1.z, 0.0f, 2.0f);
-			ImGui::SliderFloat("Speed1",    &m_ParticleParams.data1.w, 0.0f, 50.0f);
+            ImGui::SliderFloat("Range",     &m_ParticleParams.data0.z, 0.0001f, 0.01f, "%5f");
+			ImGui::SliderFloat("Drag",      &m_ParticleParams.data1.z, 0.0f, 1.0f);
+			ImGui::SliderFloat("Ease",      &m_ParticleParams.data1.w, 0.0f, 1.0f);
 
 			ImGui::Checkbox("Mouse", &m_Animation);
 
@@ -134,11 +117,10 @@ private:
 			}
 			else
 			{
-				m_ParticleParams.data0.x = MMath::Sin(time);
-				m_ParticleParams.data0.y = MMath::Cos(time) * 0.1f;
+                m_ParticleParams.data0.x = MMath::Sin(time * time * 0.01);
+                m_ParticleParams.data0.y = MMath::Cos(time);
 			}
-
-			m_ParticleParams.data0.z = delta;
+            
 			m_ParticleParams.data0.w = PARTICLE_COUNT;
 
 			m_ComputeProcessor->SetUniform("param", &m_ParticleParams, sizeof(ParticleParam));
@@ -172,13 +154,13 @@ private:
 			{
 				vertices[i].position.x = MMath::FRandRange(-1.0f, 1.0f);
 				vertices[i].position.y = MMath::FRandRange(-1.0f, 1.0f);
-				vertices[i].position.z = (vertices[i].position.x + 1.0f) / 2.0f;
-				vertices[i].position.w = 0.0f;
+				vertices[i].position.z = vertices[i].position.x;
+				vertices[i].position.w = vertices[i].position.y;
 
 				vertices[i].velocity.x = 0.0f;
 				vertices[i].velocity.y = 0.0f;
 				vertices[i].velocity.z = 0.0f;
-				vertices[i].velocity.w = 0.0f;
+				vertices[i].velocity.w = (vertices[i].position.x + 1.0f) / 2.0f;
 			}
 
 			vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(
@@ -217,7 +199,7 @@ private:
 		);
 
 		m_DiffuseTexture = vk_demo::DVKTexture::Create2D(
-			"assets/textures/particle01.png", 
+			"assets/textures/particle.png", 
 			m_VulkanDevice, 
 			cmdBuffer,
 			VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -261,7 +243,7 @@ private:
 			"assets/shaders/43_ComputeParticles/Particle.comp.spv"
 		);
 
-		m_ComputeProcessor = vk_demo::DVKComputeProcessor::Create(
+		m_ComputeProcessor = vk_demo::DVKCompute::Create(
 			m_VulkanDevice, 
 			m_PipelineCache, 
 			m_ComputeShader
@@ -394,13 +376,13 @@ private:
 	{
 		m_ParticleParams.data0.x = 0.0f;
 		m_ParticleParams.data0.y = 0.0f;
-		m_ParticleParams.data0.z = 0.0f;
+		m_ParticleParams.data0.z = 0.0001f;
 		m_ParticleParams.data0.w = PARTICLE_COUNT;
-
+        
 		m_ParticleParams.data1.x = 8.0f;
 		m_ParticleParams.data1.y = 0.5f;
-		m_ParticleParams.data1.z = 0.5f;
-		m_ParticleParams.data1.w = 50.0f;
+		m_ParticleParams.data1.z = 0.95f;
+		m_ParticleParams.data1.w = 0.25f;
 
 		m_PointCount = PARTICLE_COUNT / 2;
 	}
@@ -408,7 +390,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -429,7 +411,7 @@ private:
 	vk_demo::DVKTexture*			m_DiffuseTexture = nullptr;
 
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKComputeProcessor*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
 	vk_demo::DVKCommandBuffer*		m_ComputeCommand = nullptr;
 
 	ParticleParam					m_ParticleParams;

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #define VK_USE_PLATFORM_ANDROID_KHR          1
 #define VK_NO_PROTOTYPES

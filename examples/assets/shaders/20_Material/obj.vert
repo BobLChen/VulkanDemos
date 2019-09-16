@@ -10,7 +10,7 @@ layout (binding = 0) uniform ViewProjBlock
 	mat4 projectionMatrix;
 } uboViewProj;
 
-layout (binding = 1) uniform ModelBlock
+layout (binding = 1) uniform ModelDynamicBlock
 {
 	mat4 modelMatrix;
 } uboModel;

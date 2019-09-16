@@ -502,7 +502,7 @@ static FORCEINLINE void ZeroVulkanStruct(T& vkStruct, VkStructureType vkType)
 ```c++
 	VkApplicationInfo appInfo;
 	ZeroVulkanStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
-	appInfo.pApplicationName   = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetTitle();
+	appInfo.pApplicationName   = Application::Get().GetPlatformApplication()->GetWindow()->GetTitle();
 	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
 	appInfo.pEngineName        = ENGINE_NAME;
 	appInfo.engineVersion      = VK_MAKE_VERSION(0, 0, 0);
@@ -622,14 +622,14 @@ void VulkanRHI::SelectAndInitDevice()
     if (result == VK_ERROR_INITIALIZATION_FAILED)
     {
         MLOG("%s\n", "Cannot find a compatible Vulkan device or driver. Try updating your video driver to a more recent version and make sure your video card supports Vulkan.");
-        SlateApplication::Get().OnRequestingExit();
+        Application::Get().OnRequestingExit();
         return;
     }
     
     if (gpuCount == 0)
     {
         MLOG("%s\n", "Couldn't enumerate physical devices! Make sure your drivers are up to date and that you are not pending a reboot.");
-        SlateApplication::Get().OnRequestingExit();
+        Application::Get().OnRequestingExit();
         return;
     }
 
@@ -690,7 +690,7 @@ void VulkanRHI::SelectAndInitDevice()
     {
         MLOG("%s", "No devices found!");
         deviceIndex = -1;
-        SlateApplication::Get().OnRequestingExit();
+        Application::Get().OnRequestingExit();
         return;
     }
 	

@@ -1,8 +1,8 @@
-#include "Configuration/Platform.h"
+﻿#include "Configuration/Platform.h"
 #include "Vulkan/IOS/VulkanPlatformDefines.h"
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
-#include "Application/SlateApplication.h"
+#include "Application/Application.h"
 
 static PFN_vkGetInstanceProcAddr G_GetInstanceProcAddr = nullptr;
 
@@ -25,7 +25,7 @@ void VulkanIOSPlatform::FreeVulkanLibrary()
 void VulkanIOSPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
     uint32_t count;
-    const char** extensions = SlateApplication::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    const char** extensions = Application::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
     for (int32 i = 0; i < count; ++i)
     {
         outExtensions.push_back(extensions[i]);
@@ -39,7 +39,7 @@ void VulkanIOSPlatform::GetDeviceExtensions(std::vector<const char*>& outExtensi
 
 void VulkanIOSPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-    SlateApplication::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
+    Application::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
 
 bool VulkanIOSPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()

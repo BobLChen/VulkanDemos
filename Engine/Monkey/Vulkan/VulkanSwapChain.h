@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "VulkanPlatform.h"
 #include "Common/Common.h"

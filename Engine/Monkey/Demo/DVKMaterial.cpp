@@ -44,7 +44,8 @@ namespace vk_demo
 
 		vulkanDevice = nullptr;
         
-        if (pipeline) {
+        if (pipeline) 
+		{
             delete pipeline;
             pipeline = nullptr;
         }
@@ -168,7 +169,8 @@ namespace vk_demo
     
     void DVKMaterial::PreparePipeline()
     {
-        if (pipeline) {
+        if (pipeline) 
+		{
             delete pipeline;
             pipeline = nullptr;
         }
@@ -269,7 +271,8 @@ namespace vk_demo
 		{
 			dynOffsets  = dynamicOffsets.data() + perObjectIndexes[objIndex] * dynamicOffsetCount;;;
 		}
-		else if (globalOffsets.size() > 0) {
+		else if (globalOffsets.size() > 0) 
+		{
 			dynOffsets  = globalOffsets.data();
 		}
 		
@@ -285,12 +288,14 @@ namespace vk_demo
     void DVKMaterial::SetLocalUniform(const std::string& name, void* dataPtr, uint32 size)
     {
         auto it = uniformBuffers.find(name);
-        if (it == uniformBuffers.end()) {
+        if (it == uniformBuffers.end()) 
+		{
             MLOGE("Uniform %s not found.", name.c_str());
             return;
         }
         
-        if (it->second.dataSize != size) {
+        if (it->second.dataSize != size) 
+		{
             MLOGE("Uniform %s size not match, dst=%ud src=%ud", name.c_str(), it->second.dataSize, size);
             return;
         }
@@ -314,12 +319,14 @@ namespace vk_demo
 	void DVKMaterial::SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size)
 	{
 		auto it = uniformBuffers.find(name);
-		if (it == uniformBuffers.end()) {
+		if (it == uniformBuffers.end()) 
+		{
 			MLOGE("Uniform %s not found.", name.c_str());
 			return;
 		}
 
-		if (it->second.dataSize != size) {
+		if (it->second.dataSize != size) 
+		{
 			MLOGE("Uniform %s size not match, dst=%ud src=%ud", name.c_str(), it->second.dataSize, size);
 			return;
 		}
@@ -327,6 +334,7 @@ namespace vk_demo
 		if (it->second.dataContent.size() != size) {
 			it->second.dataContent.resize(size);
 		}
+
 		it->second.global = true;
 		memcpy(it->second.dataContent.data(), dataPtr, size);
 	}
@@ -334,17 +342,20 @@ namespace vk_demo
     void DVKMaterial::SetTexture(const std::string& name, DVKTexture* texture)
     {
         auto it = textures.find(name);
-        if (it == textures.end()) {
+        if (it == textures.end()) 
+		{
             MLOGE("Texture %s not found.", name.c_str());
             return;
         }
         
-		if (texture == nullptr) {
+		if (texture == nullptr) 
+		{
 			MLOGE("Texture %s can't be null.", name.c_str());
 			return;
 		}
 
-        if (it->second.texture != texture) {
+        if (it->second.texture != texture) 
+		{
             it->second.texture = texture;
             descriptorSet->WriteImage(name, texture);
         }
@@ -358,12 +369,14 @@ namespace vk_demo
 	void DVKMaterial::SetStorageBuffer(const std::string& name, DVKBuffer* buffer)
 	{
 		auto it = storageBuffers.find(name);
-		if (it == storageBuffers.end()) {
+		if (it == storageBuffers.end()) 
+		{
 			MLOGE("StorageBuffer %s not found.", name.c_str());
 			return;
 		}
 
-		if (buffer == nullptr) {
+		if (buffer == nullptr) 
+		{
 			MLOGE("StorageBuffer %s can't be null.", name.c_str());
 			return;
 		}

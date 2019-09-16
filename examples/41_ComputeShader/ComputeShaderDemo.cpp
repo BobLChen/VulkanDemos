@@ -1,19 +1,12 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class ComputeShaderDemo : public DemoBase
 {
@@ -269,9 +262,9 @@ private:
 			computeCreateInfo.layout = m_ComputeRes.pipelineLayout;
 			
 			const char* shaderNames[3] = {
-				"assets/shaders/41_ComputeShader/Emboss.comp.spv",
-				"assets/shaders/41_ComputeShader/Edgedetect.comp.spv",
-				"assets/shaders/41_ComputeShader/Sharpen.comp.spv",
+				"assets/shaders/41_ComputeShader/Contrast.comp.spv",
+				"assets/shaders/41_ComputeShader/Gamma.comp.spv",
+				"assets/shaders/41_ComputeShader/ColorInvert.comp.spv",
 			};
 
 			vk_demo::DVKShaderModule* shaderModules[3];
@@ -312,9 +305,9 @@ private:
 		m_FilterIndex = 0;
 		m_FilterNames.resize(4);
 		m_FilterNames[0] = "Original";
-		m_FilterNames[1] = "Emboss";
-		m_FilterNames[2] = "Edgedetect";
-		m_FilterNames[3] = "Sharpen";
+		m_FilterNames[1] = "Contrast";
+		m_FilterNames[2] = "Gamma";
+		m_FilterNames[3] = "ColorInvert";
 	}
 
 	void LoadAssets()
@@ -437,7 +430,7 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 0, -50.0f);
+		m_ViewCamera.SetPosition(0, 0, -2.5f);
 		m_ViewCamera.LookAt(0, 0, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}
@@ -445,7 +438,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
@@ -11,11 +11,10 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
+#include "Demo/FileManager.h"
+#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public DemoBase
 {
@@ -386,7 +385,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()

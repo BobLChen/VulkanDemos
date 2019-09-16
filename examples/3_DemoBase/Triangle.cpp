@@ -1,15 +1,13 @@
-#include "Common/Common.h"
+ï»¿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
+#include "Demo/FileManager.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
-
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public DemoBase
 {
@@ -422,25 +420,25 @@ private:
 
 	void CreateMeshBuffers()
 	{
-		// ¶¥µãÊı¾İ
+		// é¡¶ç‚¹æ•°æ®
 		std::vector<Vertex> vertices = {
 			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
 			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
 			{ {  0.0f, -1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } }
 		};
         
-		// Ë÷ÒıÊı¾İ
+		// ç´¢å¼•æ•°æ®
 		std::vector<uint16> indices = { 0, 1, 2 };
 		m_IndicesCount = (uint32)indices.size();
         
-		// ¶¥µãÊı¾İÒÔ¼°Ë÷ÒıÊı¾İÔÚÕû¸öÉúÃüÖÜÆÚÖĞ¼¸ºõ²»»á·¢Éú¸Ä±ä£¬Òò´Ë×î¼ÑµÄ·½Ê½ÊÇ½«ÕâĞ©Êı¾İ´æ´¢µ½GPUµÄÄÚ´æÖĞ¡£
-		// ´æ´¢µ½GPUÄÚ´æÒ²ÄÜ¼Ó¿ìGPUµÄ·ÃÎÊ¡£ÎªÁË´æ´¢µ½GPUÄÚ´æÖĞ£¬ĞèÒªÈçÏÂ¼¸¸ö²½Öè¡£
-		// 1¡¢ÔÚÖ÷»ú¶Ë(Host)´´½¨Ò»¸öBuffer
-		// 2¡¢½«Êı¾İ¿½±´ÖÁ¸ÃBuffer
-		// 3¡¢ÔÚGPU¶Ë(Local Device)´´½¨Ò»¸öBuffer
-		// 4¡¢Í¨¹ıTransfer´Ø½«Êı¾İ´ÓÖ÷»ú¶Ë¿½±´ÖÁGPU¶Ë
-		// 5¡¢É¾³ıÖ÷»ù¶Ë(Host)µÄBuffer
-		// 6¡¢Ê¹ÓÃGPU¶Ë(Local Device)µÄBuffer½øĞĞäÖÈ¾
+		// é¡¶ç‚¹æ•°æ®ä»¥åŠç´¢å¼•æ•°æ®åœ¨æ•´ä¸ªç”Ÿå‘½å‘¨æœŸä¸­å‡ ä¹ä¸ä¼šå‘ç”Ÿæ”¹å˜ï¼Œå› æ­¤æœ€ä½³çš„æ–¹å¼æ˜¯å°†è¿™äº›æ•°æ®å­˜å‚¨åˆ°GPUçš„å†…å­˜ä¸­ã€‚
+		// å­˜å‚¨åˆ°GPUå†…å­˜ä¹Ÿèƒ½åŠ å¿«GPUçš„è®¿é—®ã€‚ä¸ºäº†å­˜å‚¨åˆ°GPUå†…å­˜ä¸­ï¼Œéœ€è¦å¦‚ä¸‹å‡ ä¸ªæ­¥éª¤ã€‚
+		// 1ã€åœ¨ä¸»æœºç«¯(Host)åˆ›å»ºä¸€ä¸ªBuffer
+		// 2ã€å°†æ•°æ®æ‹·è´è‡³è¯¥Buffer
+		// 3ã€åœ¨GPUç«¯(Local Device)åˆ›å»ºä¸€ä¸ªBuffer
+		// 4ã€é€šè¿‡Transferç°‡å°†æ•°æ®ä»ä¸»æœºç«¯æ‹·è´è‡³GPUç«¯
+		// 5ã€åˆ é™¤ä¸»åŸºç«¯(Host)çš„Buffer
+		// 6ã€ä½¿ç”¨GPUç«¯(Local Device)çš„Bufferè¿›è¡Œæ¸²æŸ“
 		VertexBuffer tempVertexBuffer;
 		IndexBuffer  tempIndexBuffer;
         
@@ -503,7 +501,7 @@ private:
 		VERIFYVULKANRESULT(vkBindBufferMemory(m_Device, m_IndexBuffer.buffer, m_IndexBuffer.memory, 0));
         
 		VkCommandBuffer xferCmdBuffer;
-		// gfx queue×Ô´øtransfer¹¦ÄÜ£¬ÎªÁËÓÅ»¯ĞèÒªÊ¹ÓÃ×¨ÓĞµÄxfer queue¡£ÕâÀïÎªÁË¼òµ¥£¬ÏÈ½«¾ÍÓÃ¡£
+		// gfx queueè‡ªå¸¦transferåŠŸèƒ½ï¼Œä¸ºäº†ä¼˜åŒ–éœ€è¦ä½¿ç”¨ä¸“æœ‰çš„xfer queueã€‚è¿™é‡Œä¸ºäº†ç®€å•ï¼Œå…ˆå°†å°±ç”¨ã€‚
 		VkCommandBufferAllocateInfo xferCmdBufferInfo;
 		ZeroVulkanStruct(xferCmdBufferInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
         xferCmdBufferInfo.commandPool        = m_CommandPool;
@@ -511,7 +509,7 @@ private:
 		xferCmdBufferInfo.commandBufferCount = 1;
 		VERIFYVULKANRESULT(vkAllocateCommandBuffers(m_Device, &xferCmdBufferInfo, &xferCmdBuffer));
         
-		// ¿ªÊ¼Â¼ÖÆÃüÁî
+		// å¼€å§‹å½•åˆ¶å‘½ä»¤
 		VkCommandBufferBeginInfo cmdBufferBeginInfo;
 		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(xferCmdBuffer, &cmdBufferBeginInfo));
@@ -523,10 +521,10 @@ private:
 		copyRegion.size = indices.size() * sizeof(uint16);
 		vkCmdCopyBuffer(xferCmdBuffer, tempIndexBuffer.buffer, m_IndexBuffer.buffer, 1, &copyRegion);
         
-		// ½áÊøÂ¼ÖÆ
+		// ç»“æŸå½•åˆ¶
 		VERIFYVULKANRESULT(vkEndCommandBuffer(xferCmdBuffer));
 		
-		// Ìá½»ÃüÁî£¬²¢ÇÒµÈ´ıÃüÁîÖ´ĞĞÍê±Ï¡£
+		// æäº¤å‘½ä»¤ï¼Œå¹¶ä¸”ç­‰å¾…å‘½ä»¤æ‰§è¡Œå®Œæ¯•ã€‚
 		VkSubmitInfo submitInfo;
 		ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
 		submitInfo.commandBufferCount = 1;

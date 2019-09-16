@@ -1,9 +1,8 @@
-#include "VulkanDevice.h"
+﻿#include "VulkanDevice.h"
 #include "VulkanPlatform.h"
 #include "VulkanGlobals.h"
 #include "VulkanFence.h"
-#include "VulkanPipeline.h"
-#include "Application/SlateApplication.h"
+#include "Application/Application.h"
 
 VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     : m_Device(VK_NULL_HANDLE)
@@ -14,10 +13,6 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_PresentQueue(nullptr)
     , m_FenceManager(nullptr)
     , m_MemoryManager(nullptr)
-    , m_ResourceHeapManager(nullptr)
-    , m_PipelineStateManager(nullptr)
-    , m_DescriptorPoolsManager(nullptr)
-    , m_ImmediateContext(nullptr)
 {
     
 }
@@ -412,36 +407,14 @@ void VulkanDevice::InitGPU(int32 deviceIndex)
     m_MemoryManager = new VulkanDeviceMemoryManager();
     m_MemoryManager->Init(this);
     
-    m_ResourceHeapManager = new VulkanResourceHeapManager(this);
-    m_ResourceHeapManager->Init();
-    
     m_FenceManager = new VulkanFenceManager();
 	m_FenceManager->Init(this);
-    
-    m_PipelineStateManager = new VulkanPipelineStateManager();
-	m_PipelineStateManager->Init(this);
-    
-    m_DescriptorPoolsManager = new VulkanDescriptorPoolsManager();
-    m_DescriptorPoolsManager->Init(this);
-    
-    m_ImmediateContext = new VulkanCommandListContextImmediate(this, m_GfxQueue);
 }
 
 void VulkanDevice::Destroy()
 {
-	m_DescriptorPoolsManager->Destroy();
-    delete m_DescriptorPoolsManager;
-
-	m_PipelineStateManager->Destory();
-	delete m_PipelineStateManager;
-
-    delete m_ImmediateContext;
-
 	m_FenceManager->Destory();
 	delete m_FenceManager;
-
-	m_ResourceHeapManager->Destory();
-	delete m_ResourceHeapManager;
 
 	m_MemoryManager->Destory();
 	delete m_MemoryManager;

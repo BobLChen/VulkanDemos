@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Engine.h"
 
@@ -90,7 +90,8 @@ namespace vk_demo
 
 		void FillShaderStages(std::vector<VkPipelineShaderStageCreateInfo>& shaderStages)
 		{
-			if (vertShaderModule != VK_NULL_HANDLE) {
+			if (vertShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_VERTEX_BIT;
@@ -99,7 +100,8 @@ namespace vk_demo
 				shaderStages.push_back(shaderStageCreateInfo);
 			}
 
-			if (fragShaderModule != VK_NULL_HANDLE) {
+			if (fragShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -108,7 +110,8 @@ namespace vk_demo
 				shaderStages.push_back(shaderStageCreateInfo);
 			}
 
-			if (compShaderModule != VK_NULL_HANDLE) {
+			if (compShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -117,7 +120,8 @@ namespace vk_demo
 				shaderStages.push_back(shaderStageCreateInfo);
 			}
 
-			if (geomShaderModule != VK_NULL_HANDLE) {
+			if (geomShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_GEOMETRY_BIT;
@@ -126,7 +130,8 @@ namespace vk_demo
 				shaderStages.push_back(shaderStageCreateInfo);
 			}
 
-			if (tescShaderModule != VK_NULL_HANDLE) {
+			if (tescShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
@@ -135,7 +140,8 @@ namespace vk_demo
 				shaderStages.push_back(shaderStageCreateInfo);
 			}
 
-			if (teseShaderModule != VK_NULL_HANDLE) {
+			if (teseShaderModule != VK_NULL_HANDLE) 
+			{
 				VkPipelineShaderStageCreateInfo shaderStageCreateInfo;
 				ZeroVulkanStruct(shaderStageCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
 				shaderStageCreateInfo.stage  = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;

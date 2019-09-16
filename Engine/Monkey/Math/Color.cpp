@@ -1,4 +1,4 @@
-#include "Color.h"
+﻿#include "Color.h"
 #include "Vector4.h"
 
 const LinearColor LinearColor::White(1.f, 1.f, 1.f);

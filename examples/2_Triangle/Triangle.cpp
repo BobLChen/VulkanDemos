@@ -1,4 +1,4 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Application/AppModuleBase.h"
@@ -6,12 +6,11 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "File/FileManager.h"
+#include "Demo/FileManager.h"
 
 #include "Vulkan/VulkanCommon.h"
 
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public AppModuleBase
 {

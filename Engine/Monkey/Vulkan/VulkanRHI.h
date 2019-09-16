@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 
@@ -269,25 +269,6 @@ static inline uint32 ElementTypeToSize(VertexElementType type)
 	};
 }
 
-static inline VkPrimitiveTopology UEToVulkanType(PrimitiveType primitiveType)
-{
-	switch (primitiveType)
-	{
-	case PT_PointList:			
-		return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-	case PT_LineList:			
-		return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-	case PT_TriangleList:		
-		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	case PT_TriangleStrip:		
-		return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-	default:
-		break;
-	}
-	return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-}
-
-
 static inline uint32 IndexTypeToSize(VkIndexType type)
 {
 	switch (type)
@@ -302,29 +283,4 @@ static inline uint32 IndexTypeToSize(VkIndexType type)
         return 0;
         break;
     }
-}
-
-static inline uint32 PrimitiveTypeToSize(PrimitiveType type)
-{
-	switch (type)
-	{
-	case PT_TriangleList:
-		return 3;
-		break;
-	case PT_TriangleStrip:
-		return 2;
-		break;
-	case PT_LineList:
-		return 2;
-		break;
-	case PT_QuadList:
-		return 4;
-		break;
-	case PT_PointList:
-		return 1;
-		break;
-	default:
-		return 0;
-		break;
-	}
 }

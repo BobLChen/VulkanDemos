@@ -1,4 +1,4 @@
-#include "GenericPlatform/InputManager.h"
+﻿#include "GenericPlatform/InputManager.h"
 
 void InputManager::Init()
 {

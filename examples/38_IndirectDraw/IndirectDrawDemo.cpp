@@ -1,19 +1,12 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 #define SHADOW_TEX_SIZE 2048
 #define INSTANCE_COUNT  512
@@ -682,18 +675,13 @@ private:
 			cmdBuffer,
 			{ 
 				VertexAttribute::VA_Position,
-				VertexAttribute::VA_UV0,
+				VertexAttribute::VA_Color,
 				VertexAttribute::VA_Normal
 			}
 		);
 		m_GroundModel->rootNode->localMatrix.AppendScale(Vector3(GROUND_RADIUS, GROUND_RADIUS, GROUND_RADIUS));
 		m_GroundModel->rootNode->localMatrix.AppendRotation(90.0f, Vector3::RightVector);
-
-		m_GroundDiffuseMap = vk_demo::DVKTexture::Create2D(
-			"assets/textures/ground.png",
-			m_VulkanDevice,
-			cmdBuffer
-		);
+		m_GroundModel->rootNode->localMatrix.AppendTranslation(Vector3(0, -0.0f, 0));
 
 		m_GroundShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -709,38 +697,18 @@ private:
 			m_GroundShader
 		);
 		m_GroundMaterial->PreparePipeline();
-		m_GroundMaterial->SetTexture("diffuseMap", m_GroundDiffuseMap);
         m_GroundMaterial->SetTexture("shadowMap", m_ShadowMap);
         
 		// plants model
 		m_PlantsModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/plants/plants.fbx",
+			"assets/models/low_poly_tree.fbx",
 			m_VulkanDevice,
 			nullptr,
 			{ 
 				VertexAttribute::VA_Position,
-				VertexAttribute::VA_UV0,
+				VertexAttribute::VA_Color,
 				VertexAttribute::VA_Normal
 			}
-		);
-
-		m_PlantsDiffuseMap = vk_demo::DVKTexture::Create2DArray(
-			{ 
-				"assets/models/plants/0.png",
-				"assets/models/plants/1.png",
-				"assets/models/plants/2.png",
-				"assets/models/plants/3.png",
-				"assets/models/plants/4.png",
-				"assets/models/plants/5.png",
-				"assets/models/plants/6.png",
-				"assets/models/plants/7.png",
-				"assets/models/plants/8.png",
-				"assets/models/plants/9.png",
-				"assets/models/plants/10.png",
-				"assets/models/plants/11.png"
-			},
-			m_VulkanDevice,
-			cmdBuffer
 		);
 
 		m_PlantsShader = vk_demo::DVKShader::Create(
@@ -756,8 +724,8 @@ private:
 			m_PipelineCache,
 			m_PlantsShader
 		);
+		m_PlantsMaterial->pipelineInfo.rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		m_PlantsMaterial->PreparePipeline();
-		m_PlantsMaterial->SetTexture("diffuseMap", m_PlantsDiffuseMap);
 
 		// indirect
 		std::vector<float> vertices;
@@ -767,9 +735,32 @@ private:
 		int32 triFirst = 0;
 		m_IndirectCommands.clear();
 
-		m_SceneBounds.min.Set( MAX_int32,  MAX_int32,  MAX_int32);
-		m_SceneBounds.max.Set(-MAX_int32, -MAX_int32, -MAX_int32);
-        
+		std::vector<Vector4> instancePositions(INSTANCE_COUNT);
+		std::vector<Quat> instanceRotations(INSTANCE_COUNT);
+		std::vector<float> instanceScales(INSTANCE_COUNT);
+		for (int32 i = 0; i < INSTANCE_COUNT; ++i)
+		{
+			float radius = MMath::FRandRange(0.0f, GROUND_RADIUS);
+			float angle  = MMath::FRandRange(-PI, PI);
+
+			Matrix4x4 matrix;
+			matrix.AppendRotation(MMath::RandRange(0.0f, 360.0f), Vector3::UpVector);
+			matrix.AppendTranslation(Vector3(MMath::Sin(angle) * radius, 0.0f, MMath::Cos(angle) * radius));
+
+			Quat quat   = matrix.ToQuat();
+			Vector3 pos = matrix.GetOrigin();
+			float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+			float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+			float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+			float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+
+			float scale = 10.0f + MMath::FRandRange(0.0f, 5.0f);
+
+			instancePositions[i] = Vector4(dx, dy, dz, dw);
+			instanceRotations[i] = quat;
+			instanceScales[i]    = scale;
+		}
+
 		// 准备Buffer
 		for (int32 i = 0; i < m_PlantsModel->meshes.size(); ++i)
 		{
@@ -790,36 +781,20 @@ private:
 				// instance
 				for (int32 n = 0; n < INSTANCE_COUNT; ++n)
 				{
-					float radius = MMath::FRandRange(0.0f, GROUND_RADIUS);
-					float angle  = MMath::FRandRange(-PI, PI);
-
-					Vector3 translate;
-					translate.x = MMath::Sin(angle) * radius;
-					translate.y = 0.0f;
-					translate.z = MMath::Cos(angle) * radius;
-
-					Matrix4x4 matrix;
-					matrix.AppendRotation(MMath::RandRange(0.0f, 360.0f), Vector3::UpVector);
-					matrix.AppendTranslation(translate);
-
-					Quat quat   = matrix.ToQuat();
-					Vector3 pos = matrix.GetOrigin();
-					float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
-					float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
-					float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
-					float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+					Quat quat   = instanceRotations[n];
+					Vector4 pos = instancePositions[n];
 
 					instanceDatas.push_back(quat.x);
 					instanceDatas.push_back(quat.y);
 					instanceDatas.push_back(quat.z);
 					instanceDatas.push_back(quat.w);
 
-					instanceDatas.push_back(dx);
-					instanceDatas.push_back(dy);
-					instanceDatas.push_back(dz);
-					instanceDatas.push_back(dw);
+					instanceDatas.push_back(pos.x);
+					instanceDatas.push_back(pos.y);
+					instanceDatas.push_back(pos.z);
+					instanceDatas.push_back(pos.w);
 
-					instanceDatas.push_back(1.0f + MMath::FRandRange(0.0f, 2.0f));
+					instanceDatas.push_back(instanceScales[n]);
 					instanceDatas.push_back(i);
 				}
 
@@ -937,7 +912,6 @@ private:
         delete m_PCFShadowMaterial;
         
 		delete m_PlantsModel;
-		delete m_PlantsDiffuseMap;
 		delete m_PlantsShader;
 		delete m_PlantsMaterial;
 
@@ -947,7 +921,6 @@ private:
 		delete m_IndirectIndexBuffer;
 
 		delete m_GroundModel;
-		delete m_GroundDiffuseMap;
 		delete m_GroundShader;
 		delete m_GroundMaterial;
 	}
@@ -1221,7 +1194,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -1259,14 +1232,12 @@ private:
 	float						m_CascadePartitionsFrustum[4];
 	vk_demo::DVKCamera			m_CascadeCamera[4];
 	float						m_CascadePartitions[4];
-	vk_demo::DVKBoundingBox		m_SceneBounds;
 
 	// light camera
 	vk_demo::DVKCamera		    m_LightCamera;
 
 	// plants
 	vk_demo::DVKModel*			m_PlantsModel = nullptr;
-	vk_demo::DVKTexture*		m_PlantsDiffuseMap = nullptr;
 	vk_demo::DVKShader*			m_PlantsShader = nullptr;
 	vk_demo::DVKMaterial*		m_PlantsMaterial = nullptr;
 
@@ -1278,7 +1249,6 @@ private:
 
 	// ground
 	vk_demo::DVKModel*			m_GroundModel = nullptr;
-	vk_demo::DVKTexture*		m_GroundDiffuseMap = nullptr;
 	vk_demo::DVKShader*			m_GroundShader = nullptr;
 	vk_demo::DVKMaterial*		m_GroundMaterial = nullptr;
 

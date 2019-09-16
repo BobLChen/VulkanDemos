@@ -1,19 +1,12 @@
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "File/FileManager.h"
-#include "UI/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class OmniShadowDemo : public DemoBase
 {
@@ -90,23 +83,15 @@ private:
 		Vector4 bias;
 	};
 
-	void UpdateLight(float time, float delta)
-	{
-		if (!m_AnimLight) {
-			return;
-		}
-
-		m_LightCamera.position = m_LightPosition;
-		m_ShadowParam.position = m_LightPosition;
-	}
-
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
 		UpdateUI(time, delta);
-		UpdateLight(time, delta);
+
+		m_LightCamera.position = m_LightPosition;
+		m_ShadowParam.position = m_LightPosition;
 
 		// depth
 		// POSITIVE_X
@@ -175,7 +160,6 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("OmniShadowDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::Checkbox("Auto Spin", &m_AnimLight);
 			ImGui::Combo("Shadow", &m_Selected, m_ShadowNames.data(), m_ShadowNames.size());
 
 			ImGui::SliderFloat("Bias", &m_ShadowParam.bias.x, 0.0f, 20.0f, "%.4f");
@@ -183,7 +167,7 @@ private:
 				ImGui::SliderFloat("Step", &m_ShadowParam.bias.y, 0.0f, 1.0f);
 			}
 
-			ImGui::SliderFloat("Light Range", &m_LightPosition.w, 25.0f, 75.0f);
+			ImGui::SliderFloat("Light Range", &m_LightPosition.w, 100.0f, 500.0f);
 			
 			ImGui::Text("ShadowMap:%dx%d", m_RTColor->width, m_RTColor->height);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -233,12 +217,11 @@ private:
 
 		// room model
 		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/shadowscene_fire.dae",
+			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_UV0, 
+				VertexAttribute::VA_Position,
 				VertexAttribute::VA_Normal
 			}
 		);
@@ -396,22 +379,22 @@ private:
 		Vector3 boundSize   = bounds.max - bounds.min;
 		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
-		m_LightPosition.Set(0.0f, 12.5f, 0.0f, 45.0f);
+		m_LightPosition.Set(boundCenter.x, boundCenter.y + 50.0f, boundCenter.z, 325.0f);
 
 		m_MVPData.model.SetIdentity();
 
 		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0.0f, 50.0f, -50.0f));
-		m_MVPData.view.LookAt(boundCenter);
+		m_MVPData.view.SetOrigin(Vector3(-300, 650, 0));
+		m_MVPData.view.LookAt(Vector3(0, 0, 0));
 		m_MVPData.view.SetInverse();
 
 		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 1000.0f);
 
 		m_LightCamera.model.SetIdentity();
 
 		m_LightCamera.projection.SetIdentity();
-		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 500.0f);
+		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 1500.0f);
 
 		m_ShadowParam.bias.Set(1.5f, 0.005f, 0.0f, 0.0f);
 	}
@@ -419,7 +402,7 @@ private:
 	void CreateGUI()
 	{
 		m_GUI = new ImageGUIContext();
-		m_GUI->Init("assets/fonts/Roboto-Medium.ttf");
+		m_GUI->Init("assets/fonts/Ubuntu-Regular.ttf");
 	}
 
 	void DestroyGUI()
@@ -462,7 +445,6 @@ private:
 
 	Vector4						m_LightPosition;
 
-	bool                        m_AnimLight = true;
 	int32						m_Selected = 1;
 	std::vector<const char*>	m_ShadowNames;
 	MaterialArray				m_ShadowList;

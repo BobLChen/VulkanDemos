@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Common/Common.h"
 
@@ -219,23 +219,77 @@ struct GenericPlatformMath
 	static FORCEINLINE uint32 FloorLog2(uint32 value)
 	{
 		uint32 pos = 0;
-		if (value >= 1 << 16) { value >>= 16; pos += 16; }
-		if (value >= 1 << 8) { value >>= 8; pos += 8; }
-		if (value >= 1 << 4) { value >>= 4; pos += 4; }
-		if (value >= 1 << 2) { value >>= 2; pos += 2; }
-		if (value >= 1 << 1) { pos += 1; }
+
+		if (value >= 1 << 16) 
+		{ 
+			value >>= 16; 
+			pos += 16;
+		}
+
+		if (value >= 1 << 8) 
+		{ 
+			value >>= 8; 
+			pos += 8;
+		}
+
+		if (value >= 1 << 4) 
+		{ 
+			value >>= 4; 
+			pos += 4;
+		}
+
+		if (value >= 1 << 2) 
+		{ 
+			value >>= 2; 
+			pos += 2;
+		}
+
+		if (value >= 1 << 1) 
+		{ 
+			pos += 1;
+		}
+
 		return (value == 0) ? 0 : pos;
 	}
 
 	static FORCEINLINE uint64 FloorLog2_64(uint64 value)
 	{
 		uint64 pos = 0;
-		if (value >= 1ull << 32) { value >>= 32; pos += 32; }
-		if (value >= 1ull << 16) { value >>= 16; pos += 16; }
-		if (value >= 1ull << 8) { value >>= 8; pos += 8; }
-		if (value >= 1ull << 4) { value >>= 4; pos += 4; }
-		if (value >= 1ull << 2) { value >>= 2; pos += 2; }
-		if (value >= 1ull << 1) { pos += 1; }
+		if (value >= 1ull << 32) 
+		{ 
+			value >>= 32; 
+			pos += 32;
+		}
+
+		if (value >= 1ull << 16) 
+		{ 
+			value >>= 16; 
+			pos += 16;
+		}
+
+		if (value >= 1ull << 8) 
+		{ 
+			value >>= 8; 
+			pos += 8;
+		}
+
+		if (value >= 1ull << 4) 
+		{ 
+			value >>= 4;
+			pos += 4;
+		}
+
+		if (value >= 1ull << 2) 
+		{ 
+			value >>= 2; 
+			pos += 2;
+		}
+
+		if (value >= 1ull << 1) 
+		{ 
+			pos += 1;
+		}
+
 		return (value == 0) ? 0 : pos;
 	}
 
@@ -263,10 +317,12 @@ struct GenericPlatformMath
 
 		uint32 result = 0;
 
-		while ((value & 1) == 0) {
+		while ((value & 1) == 0) 
+		{
 			value >>= 1;
 			++result;
 		}
+
 		return result;
 	}
 
@@ -275,11 +331,14 @@ struct GenericPlatformMath
 		if (value == 0) {
 			return 64;
 		}
+
 		uint64 result = 0;
-		while ((value & 1) == 0) {
+		while ((value & 1) == 0) 
+		{
 			value >>= 1;
 			++result;
 		}
+
 		return result;
 	}
 
@@ -403,7 +462,8 @@ struct GenericPlatformMath
 		for (int32 v = 1; v < values.size(); ++v)
 		{
 			const T value = values[v];
-			if (value < curMin) {
+			if (value < curMin) 
+			{
 				curMin = value;
 				curMinIndex = v;
 			}
@@ -412,6 +472,7 @@ struct GenericPlatformMath
 		if (minIndex) {
 			*minIndex = curMinIndex;
 		}
+
 		return curMin;
 	}
 
@@ -431,7 +492,8 @@ struct GenericPlatformMath
 		for (int32 v = 1; v < values.size(); ++v)
 		{
 			const T value = values[v];
-			if (curMax < value) {
+			if (curMax < value) 
+			{
 				curMax = value;
 				curMaxIndex = v;
 			}
@@ -440,6 +502,7 @@ struct GenericPlatformMath
 		if (maxIndex) {
 			*maxIndex = curMaxIndex;
 		}
+
 		return curMax;
 	}
 
