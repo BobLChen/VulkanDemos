@@ -442,7 +442,6 @@ private:
 		}
         
 		m_GUI->EndFrame();
-        
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}

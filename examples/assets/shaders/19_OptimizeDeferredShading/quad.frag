@@ -8,13 +8,13 @@ layout (binding = 3) uniform ParamBlock
 {
 	vec4 param0;	// (attachmentIndex, zNear, zFar, one)
 	vec4 param1;	// (xMaxFar, yMaxFar, padding, padding)
+	mat4 invView;
 } param;
 
 #define NUM_LIGHTS 64
 struct PointLight {
 	vec4 position;
-	vec3 color;
-	float radius;
+	vec4 colorAndRadius;
 };
 
 layout (binding = 5) uniform LightDataBlock
@@ -60,6 +60,7 @@ void main()
 	float depth   = subpassLoad(inputDepth).r;
 	float realZ01 = Linear01Depth(depth);
 	vec4 position = vec4(inRay.xyz * realZ01, 1.0);
+	position = param.invView * position;
 
 	// normal [0, 1] -> [-1, 1]
 	vec4 normal  = subpassLoad(inputNormal);
@@ -75,9 +76,9 @@ void main()
 		{
 			vec3 lightDir = lightDatas.lights[i].position.xyz - position.xyz;
 			float dist    = length(lightDir);
-			float atten   = DoAttenuation(lightDatas.lights[i].radius, dist);
+			float atten   = DoAttenuation(lightDatas.lights[i].colorAndRadius.w, dist);
 			float ndotl   = max(0.0, dot(normal.xyz, normalize(lightDir)));
-			vec3 diffuse  = lightDatas.lights[i].color * albedo.xyz * ndotl * atten;
+			vec3 diffuse  = lightDatas.lights[i].colorAndRadius.xyz * albedo.xyz * ndotl * atten;
 
 			outFragColor.xyz += diffuse;
 		}
@@ -86,7 +87,7 @@ void main()
 		outFragColor = albedo;
 	} 
 	else if (attachmentIndex == 2) {
-		outFragColor = position / 1500.0;
+		outFragColor = position / 1500;
 	}
 	else if (attachmentIndex == 3) {
 		outFragColor = normal;

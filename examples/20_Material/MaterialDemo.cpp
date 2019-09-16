@@ -317,13 +317,14 @@ private:
 
 	struct AttachmentParamBlock
 	{
-		int			attachmentIndex;
+		float		attachmentIndex;
 		float		zNear;
 		float		zFar;
 		float		one;
 		float		xMaxFar;
 		float		yMaxFar;
 		Vector2		padding;
+		Matrix4x4	invView;
 	};
 
 	struct PointLight
@@ -365,7 +366,7 @@ private:
 		// 设置postprocess的参数
 		m_Material1->BeginFrame();
 		m_Material1->BeginObject();
-		m_Material1->SetLocalUniform("cameraParam", &m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_Material1->SetLocalUniform("param", &m_VertFragParam, sizeof(AttachmentParamBlock));
 		m_Material1->SetLocalUniform("lightDatas",  &m_LightDatas,    sizeof(LightDataBlock));
 		m_Material1->SetInputAttachment("inputColor",  m_AttachsColor[bufferIndex]);
 		m_Material1->SetInputAttachment("inputNormal", m_AttachsNormal[bufferIndex]);
@@ -403,7 +404,9 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("MaterialDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			
-			ImGui::SliderInt("Index", &m_VertFragParam.attachmentIndex, 0, 3);
+			int32 index = m_VertFragParam.attachmentIndex;
+			ImGui::SliderInt("Index", &index, 0, 3);
+			m_VertFragParam.attachmentIndex = index;
 
 			if (ImGui::Button("Random"))
 			{
@@ -582,6 +585,7 @@ private:
 			m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);
 			m_LightDatas.lights[i].position.y = MMath::RandRange(bounds.min.y, bounds.max.y);
 			m_LightDatas.lights[i].position.z = MMath::RandRange(bounds.min.z, bounds.max.z);
+			m_LightDatas.lights[i].position.w = 1.0f;
 
 			m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
@@ -595,7 +599,7 @@ private:
 			m_LightInfos.speed[i] = 1.0f + MMath::RandRange(0.0f, 5.0f);
 		}
 
-		// debug params
+		// param
 		m_VertFragParam.attachmentIndex = 0;
 		m_VertFragParam.zNear   = 300.0f;
 		m_VertFragParam.zFar    = 1500.0f;
@@ -603,13 +607,15 @@ private:
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
 		
-		boundCenter.z -= boundSize.Size();
 		// view projection buffer
 		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size()));
+		m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
 		m_ViewProjData.view.SetInverse();
 
+		m_VertFragParam.invView = m_ViewProjData.view;
+		m_VertFragParam.invView.SetInverse();
+		
 		m_ViewProjData.projection.SetIdentity();
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 	}

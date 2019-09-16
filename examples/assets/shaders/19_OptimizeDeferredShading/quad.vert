@@ -10,6 +10,7 @@ layout (binding = 3) uniform ParamBlock
 {
 	vec4 param0;	// (attachmentIndex, zNear, zFar, one)
 	vec4 param1;	// (xMaxFar, yMaxFar, padding, padding)
+	mat4 invView;
 } param;
 
 out gl_PerVertex {

@@ -330,13 +330,14 @@ private:
 
 	struct AttachmentParamBlock
 	{
-		int			attachmentIndex;
+		float		attachmentIndex;
 		float		zNear;
 		float		zFar;
 		float		one;
 		float		xMaxFar;
 		float		yMaxFar;
 		Vector2		padding;
+		Matrix4x4	invView;
 	};
 
 	struct PointLight
@@ -396,7 +397,9 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
             ImGui::Begin("OptimizeDeferredShading", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 			
-			ImGui::SliderInt("Index", &m_VertFragParam.attachmentIndex, 0, 3);
+			int32 index = m_VertFragParam.attachmentIndex;
+			ImGui::SliderInt("Index", &index, 0, 3);
+			m_VertFragParam.attachmentIndex = index;
 
 			if (ImGui::Button("Random"))
 			{
@@ -639,6 +642,35 @@ private:
 		Vector3 boundSize   = bounds.max - bounds.min;
 		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
+		// param
+		m_VertFragParam.attachmentIndex = 0;
+		m_VertFragParam.zNear   = 300.0f;
+		m_VertFragParam.zFar    = 1500.0f;
+		m_VertFragParam.one     = 1.0f;
+		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
+		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
+
+		// view projection buffer
+		m_ViewProjData.view.SetIdentity();
+		m_ViewProjData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size()));
+		m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
+		m_ViewProjData.view.SetInverse();
+
+		m_VertFragParam.invView = m_ViewProjData.view;
+		m_VertFragParam.invView.SetInverse();
+
+		m_ViewProjData.projection.SetIdentity();
+		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
+
+		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			sizeof(ViewProjectionBlock),
+			&(m_ViewProjData)
+		);
+		m_ViewProjBuffer->Map();
+
 		// dynamic
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
@@ -658,14 +690,7 @@ private:
 		);
 		m_ModelBuffer->Map();
         
-		// debug params
-		m_VertFragParam.attachmentIndex = 0;
-		m_VertFragParam.zNear   = 300.0f;
-		m_VertFragParam.zFar    = 1500.0f;
-		m_VertFragParam.one     = 1.0f;
-		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
-		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-
+		// param buffer
 		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -681,6 +706,7 @@ private:
 			m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);
 			m_LightDatas.lights[i].position.y = MMath::RandRange(bounds.min.y, bounds.max.y);
 			m_LightDatas.lights[i].position.z = MMath::RandRange(bounds.min.z, bounds.max.z);
+			m_LightDatas.lights[i].position.w = 1.0f;
 
 			m_LightDatas.lights[i].color.x = MMath::RandRange(0.0f, 1.0f);
 			m_LightDatas.lights[i].color.y = MMath::RandRange(0.0f, 1.0f);
@@ -702,25 +728,36 @@ private:
 		);
 		m_LightParamBuffer->Map();
 
-		boundCenter.z -= boundSize.Size();
+		{
+			// fast reconstruct position from eye linear depth
+			Matrix4x4 modelViewProj;
+			modelViewProj.Append(m_ViewProjData.view);
+			modelViewProj.Append(m_ViewProjData.projection);
 
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-		m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
+			// real world position
+			Vector4 realPos(10, 20, 30, 1.0f);
+			// view space position
+			Vector4 posView = m_ViewProjData.view.TransformPosition(realPos);
+			// projection space position
+			Vector4 posProj = modelViewProj.TransformVector4(realPos);
+			// none linear depth
+			float depth = posProj.z / posProj.w;
+			// linear depth
+			float zc0 = 1.0 - m_VertFragParam.zFar / m_VertFragParam.zNear;
+			float zc1 = m_VertFragParam.zFar / m_VertFragParam.zNear; 
+			float depth01 = 1.0 / (zc0 * depth + zc1);
+			MLOG("LinearDepth:%f,%f", posProj.w / m_VertFragParam.zFar, depth01);
+			// ndc space
+			float u = posProj.x / posProj.w;
+			float v = posProj.y / posProj.w;
+			// view space ray
+			Vector3 viewRay = Vector3(m_VertFragParam.xMaxFar * u, m_VertFragParam.yMaxFar * v, m_VertFragParam.zFar);
+			Vector3 viewPos = viewRay * depth01;
 
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
-
-		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-			sizeof(ViewProjectionBlock),
-			&(m_ViewProjData)
-		);
-		m_ViewProjBuffer->Map();
+			MLOG("posView:(%f,%f,%f) - (%f,%f,%f)", posView.x, posView.y, posView.z, viewPos.x, viewPos.y, viewPos.z);
+			MLOG("");
+		}
+		
 	}
 	
 	void DestroyUniformBuffers()
