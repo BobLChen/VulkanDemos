@@ -336,8 +336,6 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		// m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-		// m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
     

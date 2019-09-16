@@ -372,8 +372,7 @@ private:
 	{
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		m_FragParamBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
-		m_VertBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_ParamBuffer->CopyFrom(&m_VertFragParam, sizeof(AttachmentParamBlock));
 
 		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
@@ -579,8 +578,7 @@ private:
 			m_DescriptorSets[i]->WriteImage("inputColor", m_AttachsColor[i]);
             m_DescriptorSets[i]->WriteImage("inputNormal", m_AttachsNormal[i]);
 			m_DescriptorSets[i]->WriteImage("inputDepth", m_AttachsDepth[i]);
-			m_DescriptorSets[i]->WriteBuffer("fragParam", m_FragParamBuffer);
-			m_DescriptorSets[i]->WriteBuffer("vertParam", m_VertBuffer);
+			m_DescriptorSets[i]->WriteBuffer("param", m_ParamBuffer);
 			m_DescriptorSets[i]->WriteBuffer("lightDatas", m_LightParamBuffer);
 		}
 	}
@@ -667,23 +665,15 @@ private:
 		m_VertFragParam.one     = 1.0f;
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		m_FragParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(AttachmentParamBlock),
-			&(m_VertFragParam)
-		);
-		m_FragParamBuffer->Map();
 
-		m_VertBuffer = vk_demo::DVKBuffer::CreateBuffer(
+		m_ParamBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			sizeof(AttachmentParamBlock),
 			&(m_VertFragParam)
 		);
-		m_VertBuffer->Map();
+		m_ParamBuffer->Map();
 
 		// light datas
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
@@ -743,13 +733,9 @@ private:
 		delete m_ModelBuffer;
 		m_ModelBuffer = nullptr;
 
-		m_FragParamBuffer->UnMap();
-		delete m_FragParamBuffer;
-		m_FragParamBuffer = nullptr;
-
-		m_VertBuffer->UnMap();
-		delete m_VertBuffer;
-		m_VertBuffer = nullptr;
+		m_ParamBuffer->UnMap();
+		delete m_ParamBuffer;
+		m_ParamBuffer = nullptr;
 
 		m_LightParamBuffer->UnMap();
 		delete m_LightParamBuffer;
@@ -781,10 +767,9 @@ private:
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-	vk_demo::DVKBuffer*				m_FragParamBuffer = nullptr;
 	AttachmentParamBlock			m_VertFragParam;
-	vk_demo::DVKBuffer*				m_VertBuffer = nullptr;
-
+	vk_demo::DVKBuffer*				m_ParamBuffer = nullptr;
+	
 	vk_demo::DVKBuffer*				m_LightParamBuffer = nullptr;
 	LightDataBlock					m_LightDatas;
 	LightSpawnBlock					m_LightInfos;

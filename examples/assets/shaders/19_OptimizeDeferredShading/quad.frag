@@ -6,14 +6,9 @@ layout (input_attachment_index = 2, set = 0, binding = 2) uniform subpassInput i
 
 layout (binding = 3) uniform ParamBlock
 {
-	int			attachmentIndex;
-	float		zNear;
-	float		zFar;
-	float		one;
-	float		xMaxFar;
-	float		yMaxFar;
-	vec2		padding;
-} fragParam;
+	vec4 param0;	// (attachmentIndex, zNear, zFar, one)
+	vec4 param1;	// (xMaxFar, yMaxFar, padding, padding)
+} param;
 
 #define NUM_LIGHTS 64
 struct PointLight {
@@ -51,9 +46,15 @@ float DoAttenuation(float range, float d)
 
 void main() 
 {
-	float zc0 = 1.0 - fragParam.zFar / fragParam.zNear;
-	float zc1 = fragParam.zFar / fragParam.zNear;
-	zBufferParams = vec4(zc0, zc1, zc0 / fragParam.zFar, zc1 / fragParam.zFar);
+	int attachmentIndex = int(param.param0.x);
+	float zNear = param.param0.y;
+	float zFar  = param.param0.z;
+	float xMaxFar = param.param1.x;
+	float yMaxFar = param.param1.y;
+
+	float zc0 = 1.0 - zFar / zNear;
+	float zc1 = zFar / zNear;
+	zBufferParams = vec4(zc0, zc1, zc0 / zFar, zc1 / zFar);
 
 	// world position
 	float depth   = subpassLoad(inputDepth).r;
@@ -67,7 +68,7 @@ void main()
 	// albedo color
 	vec4 albedo  = subpassLoad(inputColor);
 
-	if (fragParam.attachmentIndex == 0) {
+	if (attachmentIndex == 0) {
 		vec4 ambient  = vec4(0.20);
 		outFragColor  = vec4(0.0) + ambient;
 		for (int i = 0; i < NUM_LIGHTS; ++i)
@@ -81,16 +82,17 @@ void main()
 			outFragColor.xyz += diffuse;
 		}
 	}
-	else if (fragParam.attachmentIndex == 1) {
+	else if (attachmentIndex == 1) {
 		outFragColor = albedo;
 	} 
-	else if (fragParam.attachmentIndex == 2) {
+	else if (attachmentIndex == 2) {
 		outFragColor = position / 1500.0;
 	}
-	else if (fragParam.attachmentIndex == 3) {
+	else if (attachmentIndex == 3) {
 		outFragColor = normal;
 	}
 	else {
 		// undefined
+		outFragColor = vec4(1, 0, 0, 1.0);
 	}
 }

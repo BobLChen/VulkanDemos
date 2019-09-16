@@ -91,9 +91,11 @@ private:
 
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
     

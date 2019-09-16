@@ -2,17 +2,13 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
 #include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class Texture3DDemo : public DemoBase
 {
@@ -97,9 +93,11 @@ private:
 
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniformBuffers(time, delta);
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
     

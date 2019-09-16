@@ -336,9 +336,11 @@ private:
     
 	void Draw(float time, float delta)
 	{
+		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
         UpdateUI(time, delta);
 		UpdateUniform();
-		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+		
 		DemoBase::Present(bufferIndex);
 	}
 
@@ -686,11 +688,11 @@ private:
 	vk_demo::DVKModel*				m_Model = nullptr;
     vk_demo::DVKModel*              m_Quad = nullptr;
 
-    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline0 = nullptr;
 	vk_demo::DVKShader*				m_Shader0 = nullptr;
 	vk_demo::DVKDescriptorSet*		m_DescriptorSet0 = nullptr;
 	
-	vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
+	vk_demo::DVKGfxPipeline*        m_Pipeline1 = nullptr;
 	vk_demo::DVKShader*				m_Shader1 = nullptr;
 	DVKDescriptorSetArray			m_DescriptorSets;
 

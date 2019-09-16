@@ -6,16 +6,11 @@ layout (location = 1) in vec2 inUV0;
 layout (location = 0) out vec2 outUV0;
 layout (location = 1) out vec4 outRay;
 
-layout (binding = 4) uniform ParamBlock
+layout (binding = 3) uniform ParamBlock
 {
-	int			attachmentIndex;
-	float		zNear;
-	float		zFar;
-	float		one;
-	float		xMaxFar;
-	float		yMaxFar;
-	vec2		padding;
-} vertParam;
+	vec4 param0;	// (attachmentIndex, zNear, zFar, one)
+	vec4 param1;	// (xMaxFar, yMaxFar, padding, padding)
+} param;
 
 out gl_PerVertex {
 	vec4 gl_Position;
@@ -25,12 +20,14 @@ void main()
 {
 	gl_Position = vec4(inPosition, 1.0f);
 
-	vec4 param  = vec4(vertParam.xMaxFar, vertParam.yMaxFar, vertParam.zFar, 1.0);
+	float xMaxFar = param.param1.x;
+	float yMaxFar = param.param1.y;
+	float zFar    = param.param0.z;
 	
-	outRay.x = inPosition.x * param.x;
-	outRay.y = inPosition.y * param.y;
-	outRay.z = param.z;
-	outRay.w = param.w;
+	outRay.x = inPosition.x * xMaxFar;
+	outRay.y = inPosition.y * yMaxFar;
+	outRay.z = zFar;
+	outRay.w = 1.0;
 	
 	outUV0   = inUV0;
 }
