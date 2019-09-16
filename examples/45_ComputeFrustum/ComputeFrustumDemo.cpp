@@ -3,14 +3,10 @@
 
 #include "Demo/DVKCommon.h"
 
-
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-
 #include <vector>
-#include <fstream>
 
 #define OBJECT_COUNT 1024 * 256
 

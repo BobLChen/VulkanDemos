@@ -2,18 +2,11 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
-#include "Demo/DVKTexture.h"
-#include "Demo/DVKRenderTarget.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Loader/ImageLoader.h"
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class ComputeShaderDemo : public DemoBase
 {
@@ -437,7 +430,7 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 0, -50.0f);
+		m_ViewCamera.SetPosition(0, 0, -2.5f);
 		m_ViewCamera.LookAt(0, 0, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}

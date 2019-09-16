@@ -2,11 +2,10 @@
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
+#include "Demo/FileManager.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
-
-#include "Demo/FileManager.h"
 
 #include <vector>
 

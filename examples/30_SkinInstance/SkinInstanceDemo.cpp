@@ -7,8 +7,6 @@
 #include "Math/Matrix4x4.h"
 #include "Math/Quat.h"
 
-#include "Loader/ImageLoader.h"
-
 #include <vector>
 
 #define INSTANCE_COUNT 8000

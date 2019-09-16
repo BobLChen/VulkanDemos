@@ -13,7 +13,6 @@
 #include "Demo/ImageGUIContext.h"
 
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public DemoBase
 {

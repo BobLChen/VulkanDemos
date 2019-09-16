@@ -10,7 +10,6 @@
 #include "Demo/FileManager.h"
 
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public DemoBase
 {

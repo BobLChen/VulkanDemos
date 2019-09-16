@@ -9,10 +9,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Demo/FileManager.h"
-
 #include <vector>
-#include <fstream>
 
 class TriangleModule : public DemoBase
 {

@@ -6,11 +6,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
-#include "Demo/FileManager.h"
-#include "Demo/ImageGUIContext.h"
-
 #include <vector>
-#include <fstream>
 
 class LoadMeshModule : public DemoBase
 {
@@ -123,7 +119,7 @@ private:
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		m_Model = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Vela_Template.fbx",
+			"assets/models/suzanne.obj",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_Normal }
