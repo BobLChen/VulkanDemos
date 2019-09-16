@@ -154,13 +154,13 @@ private:
 			{
 				vertices[i].position.x = MMath::FRandRange(-1.0f, 1.0f);
 				vertices[i].position.y = MMath::FRandRange(-1.0f, 1.0f);
-				vertices[i].position.z = (vertices[i].position.x + 1.0f) / 2.0f;
-				vertices[i].position.w = 0.0f;
+				vertices[i].position.z = vertices[i].position.x;
+				vertices[i].position.w = vertices[i].position.y;
 
 				vertices[i].velocity.x = 0.0f;
 				vertices[i].velocity.y = 0.0f;
 				vertices[i].velocity.z = 0.0f;
-				vertices[i].velocity.w = 0.0f;
+				vertices[i].velocity.w = (vertices[i].position.x + 1.0f) / 2.0f;
 			}
 
 			vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(

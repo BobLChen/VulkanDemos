@@ -29,23 +29,28 @@ void main()
 		return;
 	}
 
-	vec2 vPos = inVertex.particles[globalIndex].position.xy;
-	vec2 vVel = inVertex.particles[globalIndex].velocity.xy;
-	vec2 vDst = param.data0.xy - vPos;
-	vVel  = vDst;
-	vPos += vVel;
+	float THICKNESS = param.data1.y;
+	float DRAG = 0.95;
+  	float EASE = 0.25;
 
-	if (vPos.x < -1.0 || vPos.x > 1.0 || vPos.y < -1.0 || vPos.y > 1.0) {
-		vVel = -vVel;
-	}
-	else {
-		inVertex.particles[globalIndex].position.xy = vPos;
-	}
+	vec4 vPos = inVertex.particles[globalIndex].position;
+	vec4 vVel = inVertex.particles[globalIndex].velocity;
 
-	inVertex.particles[globalIndex].position.z += 0.01 * param.data0.z;
-	if (inVertex.particles[globalIndex].position.z > 1.0) {
-		inVertex.particles[globalIndex].position.z = 0.0;
-	}
+	float dx = param.data0.x - vPos.x;
+	float dy = param.data0.y - vPos.y;
+    float dist = sqrt(dx * dx + dy * dy);
+    dist = THICKNESS * THICKNESS * THICKNESS * dist;
+	
+    float t = atan(dy, dx);
+	vVel.x += dist * cos(t);
+	vVel.y += dist * sin(t);
 
-	inVertex.particles[globalIndex].velocity.xy = vVel;
+	vVel.x *= DRAG;
+	vVel.y *= DRAG;
+
+    vPos.x += vVel.x + (vPos.z - vPos.x) * EASE;
+    vPos.y += vVel.y + (vPos.w - vPos.y) * EASE;
+
+	inVertex.particles[globalIndex].position = vPos;
+	inVertex.particles[globalIndex].velocity = vVel;
 }
