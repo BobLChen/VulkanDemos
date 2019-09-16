@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -99,8 +99,9 @@ private:
 
 			ImGui::SliderFloat("PointSize", &m_ParticleParams.data1.x, 1.0f, 15.0f);
 			ImGui::SliderFloat("Intensity", &m_ParticleParams.data1.y, 0.1f, 1.0f);
-			ImGui::SliderFloat("Speed0",    &m_ParticleParams.data1.z, 0.0f, 2.0f);
-			ImGui::SliderFloat("Speed1",    &m_ParticleParams.data1.w, 0.0f, 50.0f);
+            ImGui::SliderFloat("Range",     &m_ParticleParams.data0.z, 0.0001f, 0.01f, "%5f");
+			ImGui::SliderFloat("Drag",      &m_ParticleParams.data1.z, 0.0f, 1.0f);
+			ImGui::SliderFloat("Ease",      &m_ParticleParams.data1.w, 0.0f, 1.0f);
 
 			ImGui::Checkbox("Mouse", &m_Animation);
 
@@ -116,11 +117,10 @@ private:
 			}
 			else
 			{
-				m_ParticleParams.data0.x = MMath::Sin(time);
-				m_ParticleParams.data0.y = MMath::Cos(time) * 0.1f;
+                m_ParticleParams.data0.x = MMath::Sin(time * time * 0.01);
+                m_ParticleParams.data0.y = MMath::Cos(time);
 			}
-
-			m_ParticleParams.data0.z = delta;
+            
 			m_ParticleParams.data0.w = PARTICLE_COUNT;
 
 			m_ComputeProcessor->SetUniform("param", &m_ParticleParams, sizeof(ParticleParam));
@@ -199,7 +199,7 @@ private:
 		);
 
 		m_DiffuseTexture = vk_demo::DVKTexture::Create2D(
-			"assets/textures/particle01.png", 
+			"assets/textures/particle.png", 
 			m_VulkanDevice, 
 			cmdBuffer,
 			VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -376,13 +376,13 @@ private:
 	{
 		m_ParticleParams.data0.x = 0.0f;
 		m_ParticleParams.data0.y = 0.0f;
-		m_ParticleParams.data0.z = 0.0f;
+		m_ParticleParams.data0.z = 0.0001f;
 		m_ParticleParams.data0.w = PARTICLE_COUNT;
-
+        
 		m_ParticleParams.data1.x = 8.0f;
 		m_ParticleParams.data1.y = 0.5f;
-		m_ParticleParams.data1.z = 0.5f;
-		m_ParticleParams.data1.w = 50.0f;
+		m_ParticleParams.data1.z = 0.95f;
+		m_ParticleParams.data1.w = 0.25f;
 
 		m_PointCount = PARTICLE_COUNT / 2;
 	}

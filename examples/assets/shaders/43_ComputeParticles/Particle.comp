@@ -29,28 +29,27 @@ void main()
 		return;
 	}
 
-	float THICKNESS = param.data1.y;
-	float DRAG = 0.95;
-  	float EASE = 0.25;
+	float drag = param.data1.z;
+  	float ease = param.data1.w;
+	float thickness = param.data0.z;
 
 	vec4 vPos = inVertex.particles[globalIndex].position;
 	vec4 vVel = inVertex.particles[globalIndex].velocity;
 
 	float dx = param.data0.x - vPos.x;
 	float dy = param.data0.y - vPos.y;
-    float dist = sqrt(dx * dx + dy * dy);
-    dist = THICKNESS * THICKNESS * THICKNESS * dist;
+    float dist = -thickness / (dx * dx + dy * dy);
 	
     float t = atan(dy, dx);
 	vVel.x += dist * cos(t);
 	vVel.y += dist * sin(t);
 
-	vVel.x *= DRAG;
-	vVel.y *= DRAG;
+	vVel.x *= drag;
+	vVel.y *= drag;
 
-    vPos.x += vVel.x + (vPos.z - vPos.x) * EASE;
-    vPos.y += vVel.y + (vPos.w - vPos.y) * EASE;
-
+    vPos.x += (vVel.x + (vPos.z - vPos.x) * ease);
+    vPos.y += (vVel.y + (vPos.w - vPos.y) * ease);
+	
 	inVertex.particles[globalIndex].position = vPos;
 	inVertex.particles[globalIndex].velocity = vVel;
 }
