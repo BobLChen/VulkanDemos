@@ -1195,6 +1195,202 @@
                     "ignoreFailures": true
                 }
             ],
+        },
+        {
+            "name": "Debug 44_ComputeRaytracing",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/44_ComputeRaytracing",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 45_ComputeFrustum",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/45_ComputeFrustum",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 46_GeometryHouse",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/46_GeometryHouse",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 47_DebugNormal",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/47_DebugNormal",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 48_GeometryOmniShadow",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/48_GeometryOmniShadow",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 49_SimpleTessellation",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/49_SimpleTessellation",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 50_PNTessellation",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/50_PNTessellation",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
+                },
+                {
+                    "name": "VK_LAYER_PATH",
+                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                }
+            ],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
         }
     ]
 }
