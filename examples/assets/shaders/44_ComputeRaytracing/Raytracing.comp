@@ -274,26 +274,26 @@ bool IntersectTriangle(vec3 orig, vec3 dir, vec3 v0, vec3 v1, vec3 v2, inout Hit
 }
 
 // --------------------------------------------------------------
-int HitScene(in vec3 pos, in vec3 ray, inout float t, inout vec3 hitNormal)
+int HitScene(in vec3 pos, in vec3 ray, inout float dist, inout vec3 hitNormal)
 {
-	int id = -1;
-
-	vec3 v0;
-	vec3 v1;
-	vec3 v2;
+	int id  = -1;
+	vec3 v0 = vec3(0, 0, 0);
+	vec3 v1 = vec3(0, 0, 0);
+	vec3 v2 = vec3(0, 0, 0);
 
 	HitInfo hitInfo;
 
 	float count = inSceneData.datas[0];
-	int index = 1;
+	// first element store object size
+	int index  = 1;
 	for (int i = 0; i < count; ++i)
 	{
 		int meshID = int(inSceneData.datas[index + 0]);
 		int geomID = int(inSceneData.datas[index + 1]);
 		int verNum = int(inSceneData.datas[index + 2]);
 		int idxNum = int(inSceneData.datas[index + 3]);
+		// offset to mesh data
 		index += 4;
-
 		// indices
 		for (int j = 0; j < idxNum; j += 3)
 		{
@@ -316,17 +316,17 @@ int HitScene(in vec3 pos, in vec3 ray, inout float t, inout vec3 hitNormal)
 			// hit test
 			if (IntersectTriangle(pos, ray, v0, v1, v2, hitInfo))
 			{
-				if (hitInfo.t < t)
+				if (hitInfo.t < dist)
 				{
 					id = meshID;
-					t  = hitInfo.t;
+					dist = hitInfo.t;
+					hitNormal = hitInfo.normal;
 				}
 			}
 		}
-	}
-
-	if (id != -1) {
-		hitNormal = hitInfo.normal;
+		// offset to next object
+		index += idxNum;
+		index += verNum;
 	}
 
 	return id;
@@ -334,27 +334,25 @@ int HitScene(in vec3 pos, in vec3 ray, inout float t, inout vec3 hitNormal)
 
 vec4 RenderScene(inout vec3 pos, inout vec3 ray, inout int id)
 {
+	float dist  = MAXLEN;
 	vec4 color  = vec4(0, 0, 0, 0);
-	float t     = MAXLEN;
 	vec3 normal = vec3(0, 0, 0);
 
-	int objectID = HitScene(pos, ray, t, normal);
+	int objectID = HitScene(pos, ray, dist, normal);
 	if (objectID == -1) {
 		return color;
 	}
 	
-	vec3 position  = pos + t * ray;
+	vec3 position  = pos + dist * ray;
 	vec3 lightVec  = normalize(uboParam.lightPos.xyz - position);				
 	float diffuse  = LightDiffuse(normal, lightVec);
-	float specular = LightSpecular(normal, lightVec, 32);
-	color = diffuse * vec4(1, 1, 1, 1) + specular;	
+	color = diffuse * vec4(1, 1, 1, 1);
 
 	if (id == -1) {
 		return color;
 	}
 
-	id = objectID;
-	
+	id  = objectID;
 	ray = ReflectRay(ray, normal);
 	pos = position;	
 	
@@ -369,7 +367,7 @@ void main()
 	vec3 pos = uboParam.cameraPos.xyz;
 	vec3 ray = vec3(uv.x * 2.0 - 1.0, -(uv.y * 2.0 - 1.0), 1.0);
 	
-	ray = (uboParam.invProjection * vec4(ray, 1.0)).xyz;
+	ray   = (uboParam.invProjection * vec4(ray, 1.0)).xyz;
 	ray.x = ray.x * ray.z;
 	ray.y = ray.y * ray.z;
 
@@ -377,7 +375,7 @@ void main()
 	ray.xyz = normalize(ray.xyz);
 	
 	// Basic color path
-	int id = 0;
+	int id = -1;
 	vec4 finalColor = RenderScene(pos, ray, id);
 	
 	// Reflection

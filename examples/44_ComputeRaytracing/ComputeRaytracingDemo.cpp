@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -104,13 +104,13 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
-		bool hovered = UpdateUI(time, delta);
+		UpdateUI(time, delta);
 
 		SetupGfxCommand(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
 	}
-
+    
 	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
@@ -171,7 +171,7 @@ private:
             cmdBuffer,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_ASPECT_COLOR_BIT,
-            2048, 2048,
+            512, 512,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_SAMPLE_COUNT_1_BIT,
             ImageLayoutBarrier::ComputeGeneralRW
@@ -227,11 +227,10 @@ private:
 			m_VulkanDevice,
 			nullptr,
 			{ 
-				VertexAttribute::VA_Position, 
-				VertexAttribute::VA_Normal
+				VertexAttribute::VA_Position
 			}
 		);
-
+        
 		// copy scene data to storage buffer
 		int32 count = 0;
 		std::vector<float> bufferDatas;
@@ -358,28 +357,26 @@ private:
 	void InitParmas()
 	{
 		vk_demo::DVKCamera camera;
-		camera.SetPosition(0, 2.5f, -7.5f);
+		camera.SetPosition(0, 2.5f, -10.0f);
 		camera.LookAt(0, 2.5f, 0);
-		camera.Perspective(PI / 4, GetWidth(), GetHeight(), 1.0f, 1500.0f);
-
+		camera.Perspective(PI / 4, 1.0f, 1.0f, 1.0f, 1500.0f);
+        
 		m_RaytracingParam.invView = camera.GetView();
 		m_RaytracingParam.invView.SetInverse();
 		m_RaytracingParam.invProjection = camera.GetProjection();
 		m_RaytracingParam.invProjection.SetInverse();
 
 		m_RaytracingParam.lightPos.x = 0.0f;
-		m_RaytracingParam.lightPos.y = 0.0f;
-		m_RaytracingParam.lightPos.z = -2.0f;
-
+		m_RaytracingParam.lightPos.y = 5.0f;
+		m_RaytracingParam.lightPos.z = 0.0f;
+        
 		m_RaytracingParam.fogColor.x = 0.0f;
 		m_RaytracingParam.fogColor.y = 0.0f;
 		m_RaytracingParam.fogColor.z = 0.0f;
 
-		m_RaytracingParam.cameraPos.x = 0.0f;
-		m_RaytracingParam.cameraPos.y = 2.5f;
-		m_RaytracingParam.cameraPos.z = -7.5f;
+        m_RaytracingParam.cameraPos = camera.GetTransform().GetOrigin();
 
-		m_RaytracingParam.aspect      = GetWidth() * 1.0f / GetHeight();
+		m_RaytracingParam.aspect    = GetWidth() * 1.0f / GetHeight();
 		
 		m_RaytracingParam.spheres[0] = NewSphere(Vector3( 1.75f, -0.5f,   0.0f), 1.0f, Vector3(0.00f, 1.00f, 0.00f), 32.0f);
 		m_RaytracingParam.spheres[1] = NewSphere(Vector3( 0.0f,   1.0f,   0.5f), 1.0f, Vector3(0.65f, 0.77f, 0.97f), 32.0f);
@@ -418,7 +415,7 @@ private:
 
     vk_demo::DVKTexture*            m_ComputeTarget = nullptr;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*            m_ComputeProcessor = nullptr;
 
 	RaytracingParamBlock			m_RaytracingParam;
     
