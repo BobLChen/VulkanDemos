@@ -240,3 +240,6 @@ Reduce 5 float per vertex
 
 ### [50_PNTessellation](https://github.com/BobLChen/VulkanDemos/tree/master/examples/50_PNTessellation)
 ![50_PNTessellation](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/50_PNTessellation.gif)
+
+### [51_Pick](https://github.com/BobLChen/VulkanDemos/tree/master/examples/51_Pick)
+![51_Pick](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/51_Pick.gif)
