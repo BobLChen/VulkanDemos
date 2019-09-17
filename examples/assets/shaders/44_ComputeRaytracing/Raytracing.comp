@@ -379,15 +379,15 @@ void main()
 	vec4 finalColor = RenderScene(pos, ray, id);
 	
 	// Reflection
-#if REFLECTIONS
-	float reflectionStrength = REFLECTIONSTRENGTH;
-	for (int i = 0; i < RAYBOUNCES; ++i)
-	{
-		vec4 reflectionColor = RenderScene(pos, ray, id);
-		finalColor = (1.0 - reflectionStrength) * finalColor + reflectionStrength * mix(reflectionColor, finalColor, 1.0 - reflectionStrength);			
-		reflectionStrength *= REFLECTIONFALLOFF;
-	}
-#endif
+// #if REFLECTIONS
+// 	float reflectionStrength = REFLECTIONSTRENGTH;
+// 	for (int i = 0; i < RAYBOUNCES; ++i)
+// 	{
+// 		vec4 reflectionColor = RenderScene(pos, ray, id);
+// 		finalColor = (1.0 - reflectionStrength) * finalColor + reflectionStrength * mix(reflectionColor, finalColor, 1.0 - reflectionStrength);			
+// 		reflectionStrength *= REFLECTIONFALLOFF;
+// 	}
+// #endif
 	
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), finalColor);
 }
