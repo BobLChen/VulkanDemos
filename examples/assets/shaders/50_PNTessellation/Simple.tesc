@@ -1,14 +1,7 @@
 #version 450
 
 /*
-* Vulkan Example - Tessellation shader PN triangles
-*
-* Based on http://alex.vlachos.com/graphics/CurvedPNTriangles.pdf
-* Shaders based on http://onrendering.blogspot.de/2011/12/tessellation-on-gpu-curved-pn-triangles.html
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
+* Shaders based on https://github.com/jdupuy/tessComp01/blob/master/pnTriangles.glsl
 */
 
 struct PnPatch
