@@ -1,12 +1,4 @@
-﻿/*
-* Vulkan Example - Compute shader ray tracing
-*
-* Copyright (C) 2016 by Sascha Willems - www.saschawillems.de
-*
-* This code is licensed under the MIT license (MIT) (http://opensource.org/licenses/MIT)
-*/
-
-#include "Common/Common.h"
+﻿#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -92,16 +84,19 @@ private:
 
 	struct RaytracingParamBlock
 	{
-		Sphere	spheres[3];
-		Plane	planes[6];
+		Sphere		spheres[3];
+		Plane		planes[6];
 
-		Vector3 lightPos;
-		float   padding;
+		Vector3		lightPos;
+		float		padding;
 
-		Vector4 fogColor;
+		Vector4		fogColor;
 
-		Vector3 cameraPos;
-		float   aspect;
+		Vector3		cameraPos;
+		float		aspect;
+
+		Matrix4x4	invProjection;
+		Matrix4x4	invView;
 	};
 	
 	void Draw(float time, float delta)
@@ -188,11 +183,12 @@ private:
         );
         m_ComputeProcessor = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
         m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
-        
+		m_ComputeProcessor->SetStorageBuffer("inSceneData", m_SceneBuffer);
+		m_ComputeProcessor->SetUniform("uboParam", &m_RaytracingParam, sizeof(RaytracingParamBlock));
+
 		// compute command
 		cmdBuffer->Begin();
 
-		m_ComputeProcessor->SetUniform("uboParam", &m_RaytracingParam, sizeof(RaytracingParamBlock));
         m_ComputeProcessor->BindDispatch(cmdBuffer->cmdBuffer, m_ComputeTarget->width / 16, m_ComputeTarget->height / 16, 1);
 		
 		cmdBuffer->End();
@@ -225,6 +221,71 @@ private:
 		m_Material->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
 		m_Material->PreparePipeline();
 
+		// prepare scene data
+		m_SceneModel = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/simplescene.obj",
+			m_VulkanDevice,
+			nullptr,
+			{ 
+				VertexAttribute::VA_Position, 
+				VertexAttribute::VA_Normal
+			}
+		);
+
+		// copy scene data to storage buffer
+		int32 count = 0;
+		std::vector<float> bufferDatas;
+		bufferDatas.push_back(0);
+		for (int32 meshID = 0; meshID < m_SceneModel->meshes.size(); ++meshID)
+		{
+			auto mesh = m_SceneModel->meshes[meshID];
+			for (int32 primitiveID = 0; primitiveID < mesh->primitives.size(); ++primitiveID)
+			{
+				count += 1;
+
+				auto primitive = mesh->primitives[primitiveID];
+
+				bufferDatas.push_back(meshID);
+				bufferDatas.push_back(primitiveID);
+				bufferDatas.push_back(primitive->vertices.size());
+				bufferDatas.push_back(primitive->indices.size());
+
+				for (int32 i = 0; i < primitive->indices.size(); ++i) {
+					bufferDatas.push_back(primitive->indices[i]);
+				}
+				for (int32 i = 0; i < primitive->vertices.size(); ++i) {
+					bufferDatas.push_back(primitive->vertices[i]);
+				}
+			}
+		}
+		bufferDatas[0] = count;
+
+		vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			bufferDatas.size() * sizeof(float), 
+			bufferDatas.data()
+		);
+
+		m_SceneBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			bufferDatas.size() * sizeof(float)
+		);
+
+		cmdBuffer->Begin();
+
+		VkBufferCopy copyRegion = {};
+		copyRegion.size = bufferDatas.size() * sizeof(float);
+		vkCmdCopyBuffer(cmdBuffer->cmdBuffer, stagingBuffer->buffer, m_SceneBuffer->buffer, 1, &copyRegion);
+
+		cmdBuffer->End();
+		cmdBuffer->Submit();
+
+		delete stagingBuffer;
+
 		delete cmdBuffer;
 	}
 
@@ -236,6 +297,9 @@ private:
         
 		delete m_Material;
 		delete m_Shader;
+
+		delete m_SceneModel;
+		delete m_SceneBuffer;
 	}
 
 	void SetupGfxCommand(int32 backBufferIndex)
@@ -293,6 +357,16 @@ private:
 
 	void InitParmas()
 	{
+		vk_demo::DVKCamera camera;
+		camera.SetPosition(0, 2.5f, -7.5f);
+		camera.LookAt(0, 2.5f, 0);
+		camera.Perspective(PI / 4, GetWidth(), GetHeight(), 1.0f, 1500.0f);
+
+		m_RaytracingParam.invView = camera.GetView();
+		m_RaytracingParam.invView.SetInverse();
+		m_RaytracingParam.invProjection = camera.GetProjection();
+		m_RaytracingParam.invProjection.SetInverse();
+
 		m_RaytracingParam.lightPos.x = 0.0f;
 		m_RaytracingParam.lightPos.y = 0.0f;
 		m_RaytracingParam.lightPos.z = -2.0f;
@@ -302,8 +376,8 @@ private:
 		m_RaytracingParam.fogColor.z = 0.0f;
 
 		m_RaytracingParam.cameraPos.x = 0.0f;
-		m_RaytracingParam.cameraPos.y = 0.0f;
-		m_RaytracingParam.cameraPos.z = -4.0f;
+		m_RaytracingParam.cameraPos.y = 2.5f;
+		m_RaytracingParam.cameraPos.z = -7.5f;
 
 		m_RaytracingParam.aspect      = GetWidth() * 1.0f / GetHeight();
 		
@@ -334,6 +408,9 @@ private:
 private:
 
 	bool 						    m_Ready = false;
+
+	vk_demo::DVKBuffer*				m_SceneBuffer = nullptr;
+	vk_demo::DVKModel*				m_SceneModel = nullptr;
 
 	vk_demo::DVKModel*				m_Quad = nullptr;
 	vk_demo::DVKMaterial*		    m_Material = nullptr;
