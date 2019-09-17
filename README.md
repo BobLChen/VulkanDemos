@@ -145,7 +145,7 @@ Vulkan Examples
 - Albedo: VK_FORMAT_R8G8B8A8_UNORM
 - Normal: VK_FORMAT_R8G8B8A8_UNORM
 - Position: Reconstructing world space position from depth buffer
-![19_OptimizeDeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/19_OptimizeDeferredShading.jpg)
+![19_OptimizeDeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/19_OptimizeDeferredShading_1.jpg)
 
 ### [20_Material](https://github.com/BobLChen/VulkanDemos/tree/master/examples/20_Material)
 
