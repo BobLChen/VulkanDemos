@@ -113,7 +113,7 @@ private:
             ImGui::SliderInt("Instance", &(primitive->indexBuffer->instanceCount), 1, INSTANCE_COUNT);
             
             ImGui::Text("DrawCall:1");
-			ImGui::Text("Triangle:%d", primitive->indexCount / 3 * primitive->indexBuffer->instanceCount);
+			ImGui::Text("Triangle:%d", primitive->triangleNum * primitive->indexBuffer->instanceCount);
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}

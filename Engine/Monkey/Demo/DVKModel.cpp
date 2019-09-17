@@ -480,10 +480,10 @@ namespace vk_demo
         {
             DVKPrimitive* primitive = mesh->primitives[i];
             primitive->vertexCount  = primitive->vertices.size() / stride;
-            primitive->indexCount   = primitive->indices.size() / 3;
+            primitive->triangleNum  = primitive->indices.size() / 3;
             
             mesh->vertexCount   += primitive->vertexCount;
-            mesh->triangleCount += primitive->indexCount;
+            mesh->triangleCount += primitive->triangleNum;
         }
     }
     
