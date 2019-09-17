@@ -802,7 +802,7 @@ private:
 				indirectCommand.instanceCount = INSTANCE_COUNT;
 				indirectCommand.firstInstance = INSTANCE_COUNT * objCount;
 				indirectCommand.firstIndex    = triFirst;
-				indirectCommand.indexCount    = primitive->indexCount * 3;
+				indirectCommand.indexCount    = primitive->triangleNum * 3;
 				m_IndirectCommands.push_back(indirectCommand);
 
 				objCount += 1;

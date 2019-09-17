@@ -146,7 +146,7 @@ private:
 		m_StatNames[6] = "Tessellation control shader patches";
 		m_StatNames[7] = "Tessellation evaluation shader invocations";
 
-		m_ModelSphere = vk_demo::DVKModel::LoadFromFile(
+		m_Model = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
@@ -176,7 +176,7 @@ private:
 
 	void DestroyAssets()
 	{
-		delete m_ModelSphere;
+		delete m_Model;
 		
 		delete m_Material;
 		delete m_Shader;
@@ -231,9 +231,9 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 
 		m_Material->BeginFrame();
-		for (int32 i = 0; i < m_ModelSphere->meshes.size(); ++i)
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
-			m_MVPParam.model = m_ModelSphere->meshes[i]->linkNode->GetGlobalMatrix();
+			m_MVPParam.model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
 			m_MVPParam.view  = m_ViewCamera.GetView();
 			m_MVPParam.proj  = m_ViewCamera.GetProjection();
 
@@ -242,7 +242,7 @@ private:
 			m_Material->EndObject();
 
 			m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, i);
-			m_ModelSphere->meshes[i]->BindDrawCmd(commandBuffer);
+			m_Model->meshes[i]->BindDrawCmd(commandBuffer);
 		}
 		m_Material->EndFrame();
 		vkCmdEndQuery(commandBuffer, m_QueryPool, 0);
@@ -279,7 +279,7 @@ private:
 
 	VkQueryPool					m_QueryPool;
 
-	vk_demo::DVKModel*			m_ModelSphere = nullptr;
+	vk_demo::DVKModel*			m_Model = nullptr;
 	vk_demo::DVKMaterial*		m_Material = nullptr;
 	vk_demo::DVKShader*			m_Shader = nullptr;
 

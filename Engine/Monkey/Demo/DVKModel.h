@@ -74,7 +74,7 @@ namespace vk_demo
 		std::vector<uint16>	indices;
         
         int32               vertexCount = 0;
-        int32               indexCount = 0;
+        int32               triangleNum = 0;
 
 		DVKPrimitive()
 		{
