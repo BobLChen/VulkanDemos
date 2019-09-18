@@ -35,9 +35,9 @@ public:
 		DemoBase::Prepare();
 
 		CreateGUI();
-		InitParmas();
 		LoadAssets();
-		ProcessRaytracing();
+		InitParmas();
+		SetupComputeCommand();
 
 		m_Ready = true;
 
@@ -46,10 +46,9 @@ public:
 
 	virtual void Exist() override
 	{
-		DemoBase::Release();
-
 		DestroyAssets();
 		DestroyGUI();
+		DemoBase::Release();
 	}
 
 	virtual void Loop(float time, float delta) override
@@ -114,55 +113,14 @@ private:
 		return hovered;
 	}
 
-	void ProcessRaytracing()
-	{
-		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(
-			m_VulkanDevice, 
-			m_ComputeCommandPool,
-			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-			m_VulkanDevice->GetComputeQueue()
-		);
-
-		// create target image
-        m_ComputeTarget = vk_demo::DVKTexture::Create2D(
-            m_VulkanDevice,
-            cmdBuffer,
-            VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            1024, 1024,
-            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
-            VK_SAMPLE_COUNT_1_BIT,
-            ImageLayoutBarrier::ComputeGeneralRW
-        );
-        
-        m_ComputeShader    = vk_demo::DVKShader::Create(
-            m_VulkanDevice,
-            "assets/shaders/44_ComputeRaytracing/Raytracing.comp.spv"
-        );
-        m_ComputeProcessor = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
-        m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
-		m_ComputeProcessor->SetStorageBuffer("inSceneData", m_SceneBuffer);
-		m_ComputeProcessor->SetUniform("uboParam", &m_RaytracingParam, sizeof(RaytracingParamBlock));
-
-		// compute command
-		cmdBuffer->Begin();
-
-        m_ComputeProcessor->BindDispatch(cmdBuffer->cmdBuffer, m_ComputeTarget->width / 16, m_ComputeTarget->height / 16, 1);
-		
-		cmdBuffer->End();
-		cmdBuffer->Submit();
-        
-        m_Material->SetTexture("diffuseMap", m_ComputeTarget);
-        
-        delete cmdBuffer;
-	}
-
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
+		// fullscreen
 		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
 
+		// fullscreen shader
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
@@ -178,7 +136,7 @@ private:
 		);
 		m_Material->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
 		m_Material->PreparePipeline();
-
+		
 		// prepare scene data
 		m_SceneModel = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/simplescene.obj",
@@ -198,37 +156,46 @@ private:
 		bufferDatas.push_back(0);
 		bufferDatas.push_back(0);
 
+		Vector4 diffuses[10] = {
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(1, 1, 1, 1), // diamond
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(1, 0, 1, 1), // diamond
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(0.75f, 0.75f, 0.75f, 1), // plane
+			Vector4(0, 0, 1, 1), // diamond
+			Vector4(0.2f, 1, 0.2f, 1) // trillion
+		};
+
 		for (int32 meshID = 0; meshID < m_SceneModel->meshes.size(); ++meshID)
 		{
 			auto mesh = m_SceneModel->meshes[meshID];
 			auto name = mesh->linkNode->name;
 
-			if (name.find("diamond", 0) != std::string::npos) {
-				Material& material = m_RaytracingParam.materials[meshID];
-				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
-				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
-				material.reflectedColor  = Vector4(1.0f, 1.0f, 1.0f, 0.0f);
-				material.refractedColor  = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				material.refractiveIndex = Vector4(2.407f, 2.426f, 2.451f, 0.0f);
+			Material& material = m_RaytracingParam.materials[meshID];
+			material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
+			material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
+			material.diffuseColor    = diffuses[meshID];
+			material.reflectedColor  = diffuses[meshID];
+			material.refractedColor  = diffuses[meshID];
+			material.refractiveIndex = Vector4(2.407f, 2.407f, 2.407f, 0.0f);
+
+			if (name.find("diamond", 0) != std::string::npos) 
+			{
+				material.reflectedColor.w = 0.0f;
+				material.refractedColor.w = 1.0f;
 			}
-			else if (name.find("Plane", 0) != std::string::npos) {
-				Material& material = m_RaytracingParam.materials[meshID];
-				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
-				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
-				material.reflectedColor  = Vector4(1.0f, 1.0f, 1.0f, 0.5f);
-				material.refractedColor  = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-				material.refractiveIndex = Vector4(2.407f, 2.426f, 2.451f, 0.0f);
+			else if (name.find("Plane", 0) != std::string::npos) 
+			{
+				material.reflectedColor.w = 0.5f;
+				material.refractedColor.w = 0.0f;
 			}
-			else if (name.find("Trillion", 0) != std::string::npos) {
-				Material& material = m_RaytracingParam.materials[meshID];
-				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
-				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
-				material.reflectedColor  = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-				material.refractedColor  = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
-				material.refractiveIndex = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+			else if (name.find("Trillion", 0) != std::string::npos) 
+			{
+				material.reflectedColor.w = 0.0f;
+				material.refractedColor.w = 1.0f;
 			}
 
 			for (int32 primitiveID = 0; primitiveID < mesh->primitives.size(); ++primitiveID)
@@ -258,6 +225,7 @@ private:
 		}
 		bufferDatas[0] = count;
 
+		// upload scene data to storage buffer
 		vk_demo::DVKBuffer* stagingBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
@@ -284,6 +252,38 @@ private:
 
 		delete stagingBuffer;
 
+		// compute resources
+		// create target image
+		m_ComputeTarget = vk_demo::DVKTexture::Create2D(
+			m_VulkanDevice,
+			cmdBuffer,
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			1024, 512,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+			VK_SAMPLE_COUNT_1_BIT,
+			ImageLayoutBarrier::ComputeGeneralRW
+		);
+
+		m_ComputeShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			"assets/shaders/44_ComputeRaytracing/Raytracing.comp.spv"
+		);
+		m_ComputeProcessor = vk_demo::DVKCompute::Create(m_VulkanDevice, m_PipelineCache, m_ComputeShader);
+		m_ComputeProcessor->SetStorageTexture("outputImage", m_ComputeTarget);
+		m_ComputeProcessor->SetStorageBuffer("inSceneData", m_SceneBuffer);
+
+		// bind compute output texture
+		m_Material->SetTexture("diffuseMap", m_ComputeTarget);
+
+		// compute command
+		m_ComputeCommand = vk_demo::DVKCommandBuffer::Create(
+			m_VulkanDevice, 
+			m_ComputeCommandPool,
+			VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+			m_VulkanDevice->GetComputeQueue()
+		);
+
 		delete cmdBuffer;
 	}
 
@@ -292,12 +292,23 @@ private:
         delete m_ComputeShader;
         delete m_ComputeTarget;
         delete m_ComputeProcessor;
+		delete m_ComputeCommand;
         
 		delete m_Material;
 		delete m_Shader;
 
 		delete m_SceneModel;
 		delete m_SceneBuffer;
+	}
+
+	void SetupComputeCommand()
+	{
+		m_ComputeCommand->Begin();
+
+		m_ComputeProcessor->SetUniform("uboParam", &m_RaytracingParam, sizeof(RaytracingParamBlock));
+		m_ComputeProcessor->BindDispatch(m_ComputeCommand->cmdBuffer, m_ComputeTarget->width / 16, m_ComputeTarget->height / 16, 1);
+
+		m_ComputeCommand->Submit();
 	}
 
 	void SetupGfxCommand(int32 backBufferIndex)
@@ -358,7 +369,7 @@ private:
 		vk_demo::DVKCamera camera;
 		camera.SetPosition(0, 2.5f, -10.0f);
 		camera.LookAt(0, 2.5f, 0);
-		camera.Perspective(PI / 4, 1.0f, 1.0f, 1.0f, 1500.0f);
+		camera.Perspective(PI / 4, m_ComputeTarget->width, m_ComputeTarget->height, 1.0f, 1500.0f);
         
 		m_RaytracingParam.invView = camera.GetView();
 		m_RaytracingParam.invView.SetInverse();
@@ -366,7 +377,7 @@ private:
 		m_RaytracingParam.invProjection = camera.GetProjection();
 		m_RaytracingParam.invProjection.SetInverse();
 
-		m_RaytracingParam.lightPos  = Vector4(0.0f, 1.5f, -2.5f, 10.0f);
+		m_RaytracingParam.lightPos  = Vector4(0.0f, 5.0f, 0.0f, 8.5f);
         m_RaytracingParam.cameraPos = camera.GetTransform().GetOrigin();
 	}
 
@@ -396,6 +407,7 @@ private:
     vk_demo::DVKTexture*            m_ComputeTarget = nullptr;
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
     vk_demo::DVKCompute*            m_ComputeProcessor = nullptr;
+	vk_demo::DVKCommandBuffer*		m_ComputeCommand = nullptr;
 
 	RaytracingParamBlock			m_RaytracingParam;
     
@@ -404,5 +416,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<ComputeRaytracingDemo>(1400, 900, "ComputeRaytracingDemo", cmdLine);
+	return std::make_shared<ComputeRaytracingDemo>(1024, 512, "ComputeRaytracingDemo", cmdLine);
 }

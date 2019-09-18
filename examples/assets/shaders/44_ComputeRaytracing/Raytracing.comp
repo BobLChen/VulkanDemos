@@ -1,9 +1,8 @@
 #version 450
 
-#define MAXLEN 				1000.0
+#define EPSILON 			0.001
+#define MAXLEN 				1500.0
 #define RAYBOUNCES 			10
-#define REFLECTIONSTRENGTH 	0.4
-#define REFLECTIONFALLOFF 	0.5
 
 layout (local_size_x = 16, local_size_y = 16) in;
 
@@ -46,7 +45,7 @@ float Attenuation(float range, float d)
     return 1.0 - smoothstep(range * 0.75, range, d);
 }
 
-vec4 Lighting(vec3 pos, vec3 ray, vec3 normal, HitInfo hitInfo, Material material)
+vec3 Lighting(vec3 pos, vec3 ray, HitInfo hitInfo, Material material)
 {
 	vec3 lightDir = normalize(uboParam.lightPos.xyz  - hitInfo.position);
 	vec3 eyeDir   = normalize(uboParam.cameraPos.xyz - hitInfo.position);
@@ -58,11 +57,11 @@ vec4 Lighting(vec3 pos, vec3 ray, vec3 normal, HitInfo hitInfo, Material materia
 	vec3 reflected = normalize(reflect(-lightDir, hitInfo.normal));
 	color += material.specularColor.xyz * pow(max(dot(reflected, eyeDir), 0.0), material.specularColor.w);
 	// attenuation
-	color *= Attenuation(uboParam.lightPos.w, length(hitInfo.position - pos));
+	color *= Attenuation(uboParam.lightPos.w, length(hitInfo.position.xyz - uboParam.lightPos.xyz));
 	// ambient
 	color += material.ambientColor.xyz;
 
-	return vec4(0, 0, 0, 0);
+	return color;
 }
 
 bool IntersectTriangle(vec3 orig, vec3 dir, vec3 v0, vec3 v1, vec3 v2, inout HitInfo hitInfo)
@@ -115,7 +114,7 @@ bool IntersectTriangle(vec3 orig, vec3 dir, vec3 v0, vec3 v1, vec3 v2, inout Hit
 	return true;
 }
 
-int HitScene(in vec3 pos, in vec3 ray, inout HitInfo hitInfo)
+int HitScene(in vec3 pos, in vec3 ray, bool inGeom, inout HitInfo hitInfo)
 {
 	int id  = -1;
 	float t = MAXLEN;
@@ -130,6 +129,7 @@ int HitScene(in vec3 pos, in vec3 ray, inout HitInfo hitInfo)
 	{
 		ivec4 head = ivec4(inSceneData.datas[index]);
 
+		// IDs
 		int meshID = head.x;
 		int geomID = head.y;
 		int verNum = head.z;
@@ -150,7 +150,7 @@ int HitScene(in vec3 pos, in vec3 ray, inout HitInfo hitInfo)
 			// hit test
 			if (IntersectTriangle(pos, ray, v0.xyz, v1.xyz, v2.xyz, tempInfo))
 			{
-				if (tempInfo.dist < t && !tempInfo.inside)
+				if (tempInfo.dist > EPSILON && tempInfo.dist < t && tempInfo.inside == inGeom)
 				{
 					id = meshID;
 					t  = tempInfo.dist;
@@ -171,61 +171,90 @@ int HitScene(in vec3 pos, in vec3 ray, inout HitInfo hitInfo)
 	return id;
 }
 
-vec4 RenderScene(inout vec3 pos, inout vec3 ray, inout int id)
+vec4 RenderScene(vec3 pos, vec3 ray)
 {
-	vec4 color = vec4(0, 0, 0, 0);
+	vec4 finalColor = vec4(0, 0, 0, 0);
+	vec4 colorFall  = vec4(1, 1, 1, 1);
+	bool inGeom = false;
 	HitInfo hitInfo;
 
-	int objectID = HitScene(pos, ray, hitInfo);
-	if (objectID == -1) {
-		return color;
-	}
-	
-	vec3 position  = pos + ray * hitInfo.dist;
-	vec3 lightDir  = normalize(uboParam.lightPos.xyz - position);				
-	float diffuse  = clamp(dot(hitInfo.normal, lightDir), 0.0, 1.0);
-	color = diffuse * vec4(1, 1, 1, 1);
-	
-	if (id == -1) {
-		return color;
-	}
+	for (int i = 0; i < RAYBOUNCES; ++i)
+	{
+		// hit scene test
+		int objID = HitScene(pos, ray, inGeom, hitInfo);
+		if (objID == -1) {
+			break;
+		}
 
-	id  = objectID;
-	ray = reflect(ray, hitInfo.normal);
-	pos = position;	
+		// lighting
+		Material material  = uboParam.materials[objID];
+		vec3 lightingColor = Lighting(pos, ray, hitInfo, material);
+
+		// reflected or refracted intensity
+		float falloff = 0;
+		if (material.reflectedColor.w != 0) {
+			falloff = material.reflectedColor.w;
+		}
+		else {
+			falloff = material.refractedColor.w;
+		}
+		
+		// color
+		finalColor += vec4(lightingColor, 1.0) * (1.0 - falloff) * colorFall;
+
+		// falloff color
+		if (material.reflectedColor.w != 0) {
+			colorFall *= vec4(material.reflectedColor.xyz, 1.0) * falloff;
+		}
+		else {
+			colorFall *= vec4(material.refractedColor.xyz, 1.0) * falloff;
+		}
+		
+		vec3 normal = hitInfo.normal * (hitInfo.inside ? -1 : 1);
+
+		if (material.reflectedColor.w != 0) 
+		{
+			// reflected
+			ray = reflect(ray, normal);
+		}
+		else
+		{
+			// refracted
+			vec3 refractIndex = hitInfo.inside ? material.refractiveIndex.xyz : 1.0 / material.refractiveIndex.xyz;
+			vec3 reflection   = refract(ray, normal, refractIndex.x);
+			if (dot(reflection, reflection) < EPSILON) 
+			{
+				ray = reflect(ray, normal);
+			}
+			else 
+			{
+				ray = reflection;
+				inGeom = !inGeom;
+			}
+		}
+
+		pos = hitInfo.position;
+	}
 	
-	return color;
+	return finalColor;
 }
 
 void main()
 {	
 	ivec2 dim = imageSize(outputImage);
-	vec2 uv   = vec2(gl_GlobalInvocationID.xy) / dim;
+	vec2 clip = vec2(gl_GlobalInvocationID.xy) / dim;
 
 	vec3 pos = uboParam.cameraPos.xyz;
-	vec3 ray = vec3(uv.x * 2.0 - 1.0, -(uv.y * 2.0 - 1.0), 1.0);
-	
-	ray   = (uboParam.invProjection * vec4(ray, 1.0)).xyz;
+	vec3 ray = vec3(clip.x * 2.0 - 1.0, -(clip.y * 2.0 - 1.0), 1.0);
+	// clip to view space
+	ray = (uboParam.invProjection * vec4(ray, 1.0)).xyz;
 	ray.x = ray.x * ray.z;
 	ray.y = ray.y * ray.z;
-
+	// view space to world space
 	ray.xyz = (uboParam.invView * vec4(ray, 0.0)).xyz;
 	ray.xyz = normalize(ray.xyz);
-	
-	// Basic color path
-	int id = 0;
-	vec4 finalColor = RenderScene(pos, ray, id);
-	
-	// Reflection
-#if 0
-	float reflectionStrength = REFLECTIONSTRENGTH;
-	for (int i = 0; i < RAYBOUNCES; ++i)
-	{
-		vec4 reflectionColor = RenderScene(pos, ray, id);
-		finalColor = (1.0 - reflectionStrength) * finalColor + reflectionStrength * mix(reflectionColor, finalColor, 1.0 - reflectionStrength);			
-		reflectionStrength *= REFLECTIONFALLOFF;
-	}
-#endif
+	// render scene
+	vec4 finalColor = RenderScene(pos, ray);
 	
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), finalColor);
 }
