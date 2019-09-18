@@ -62,41 +62,23 @@ public:
 
 private:
 
-	struct Sphere
+	struct Material
 	{
-		Vector3 position;
-		float	radius;
-		Vector3	diffuse;
-		float	specular;
-		uint32	id;
-		Vector3	padding;
-	};
-
-	struct Plane
-	{
-		Vector3 normal;
-		float   distance;
-		Vector3 diffuse;
-		float   specular;
-		uint32  id;
-		Vector3 padding;
+		Vector4 ambientColor;
+		Vector4 diffuseColor;
+		Vector4 specularColor;
+		Vector4 reflectedColor;
+		Vector4 refractedColor;
+		Vector4 refractiveIndex;
 	};
 
 	struct RaytracingParamBlock
 	{
-		Sphere		spheres[3];
-		Plane		planes[6];
-
-		Vector3		lightPos;
-		float		padding;
-
-		Vector4		fogColor;
-
-		Vector3		cameraPos;
-		float		aspect;
-
+		Vector4		lightPos;
+		Vector4		cameraPos;
 		Matrix4x4	invProjection;
 		Matrix4x4	invView;
+		Material	materials[10];
 	};
 	
 	void Draw(float time, float delta)
@@ -130,30 +112,6 @@ private:
 		m_GUI->Update();
 
 		return hovered;
-	}
-
-	uint32 m_ID = 0;
-
-	Sphere NewSphere(const Vector3& position, float radius, const Vector3& diffuse, float specular)
-	{
-		Sphere sphere;
-		sphere.id       = m_ID++;
-		sphere.position = position;
-		sphere.radius   = radius;
-		sphere.diffuse  = diffuse;
-		sphere.specular = specular;
-		return sphere;
-	}
-
-	Plane NewPlane(const Vector3& normal, float distance, const Vector3& diffuse, float specular)
-	{
-		Plane plane;
-		plane.id       = m_ID++;
-		plane.normal   = normal;
-		plane.distance = distance;
-		plane.diffuse  = diffuse;
-		plane.specular = specular;
-		return plane;
 	}
 
 	void ProcessRaytracing()
@@ -243,6 +201,36 @@ private:
 		for (int32 meshID = 0; meshID < m_SceneModel->meshes.size(); ++meshID)
 		{
 			auto mesh = m_SceneModel->meshes[meshID];
+			auto name = mesh->linkNode->name;
+
+			if (name.find("diamond", 0) != std::string::npos) {
+				Material& material = m_RaytracingParam.materials[meshID];
+				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
+				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
+				material.reflectedColor  = Vector4(1.0f, 1.0f, 1.0f, 0.0f);
+				material.refractedColor  = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+				material.refractiveIndex = Vector4(2.407f, 2.426f, 2.451f, 0.0f);
+			}
+			else if (name.find("Plane", 0) != std::string::npos) {
+				Material& material = m_RaytracingParam.materials[meshID];
+				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
+				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
+				material.reflectedColor  = Vector4(1.0f, 1.0f, 1.0f, 0.5f);
+				material.refractedColor  = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+				material.refractiveIndex = Vector4(2.407f, 2.426f, 2.451f, 0.0f);
+			}
+			else if (name.find("Trillion", 0) != std::string::npos) {
+				Material& material = m_RaytracingParam.materials[meshID];
+				material.ambientColor    = Vector4(0.1f, 0.1f, 0.1f, 0.1f);
+				material.diffuseColor    = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+				material.specularColor   = Vector4(1.0f, 1.0f, 1.0f, 40.0f);
+				material.reflectedColor  = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+				material.refractedColor  = Vector4(0.0f, 1.0f, 0.0f, 1.0f);
+				material.refractiveIndex = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+			}
+
 			for (int32 primitiveID = 0; primitiveID < mesh->primitives.size(); ++primitiveID)
 			{
 				count += 1;
@@ -374,31 +362,12 @@ private:
         
 		m_RaytracingParam.invView = camera.GetView();
 		m_RaytracingParam.invView.SetInverse();
+
 		m_RaytracingParam.invProjection = camera.GetProjection();
 		m_RaytracingParam.invProjection.SetInverse();
 
-		m_RaytracingParam.lightPos.x = 0.0f;
-		m_RaytracingParam.lightPos.y = 5.0f;
-		m_RaytracingParam.lightPos.z = 0.0f;
-        
-		m_RaytracingParam.fogColor.x = 0.0f;
-		m_RaytracingParam.fogColor.y = 0.0f;
-		m_RaytracingParam.fogColor.z = 0.0f;
-
+		m_RaytracingParam.lightPos  = Vector4(0.0f, 1.5f, -2.5f, 10.0f);
         m_RaytracingParam.cameraPos = camera.GetTransform().GetOrigin();
-
-		m_RaytracingParam.aspect    = GetWidth() * 1.0f / GetHeight();
-		
-		m_RaytracingParam.spheres[0] = NewSphere(Vector3( 1.75f, -0.5f,   0.0f), 1.0f, Vector3(0.00f, 1.00f, 0.00f), 32.0f);
-		m_RaytracingParam.spheres[1] = NewSphere(Vector3( 0.0f,   1.0f,   0.5f), 1.0f, Vector3(0.65f, 0.77f, 0.97f), 32.0f);
-		m_RaytracingParam.spheres[2] = NewSphere(Vector3(-1.75f, -0.75f,  0.5f), 1.0f, Vector3(0.90f, 0.76f, 0.46f), 32.0f);
-
-		m_RaytracingParam.planes[0]  = NewPlane(Vector3( 0.0f,  1.0f,  0.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
-		m_RaytracingParam.planes[1]  = NewPlane(Vector3( 0.0f, -1.0f,  0.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
-		m_RaytracingParam.planes[2]  = NewPlane(Vector3( 0.0f,  0.0f,  1.0f), 4.0f, Vector3(1.0f, 1.0f, 1.0f), 32.0f);
-		m_RaytracingParam.planes[3]  = NewPlane(Vector3( 0.0f,  0.0f, -1.0f), 4.0f, Vector3(0.0f, 0.0f, 0.0f), 32.0f);
-		m_RaytracingParam.planes[4]  = NewPlane(Vector3(-1.0f,  0.0f,  0.0f), 4.0f, Vector3(1.0f, 0.0f, 0.0f), 32.0f);
-		m_RaytracingParam.planes[5]  = NewPlane(Vector3( 1.0f,  0.0f,  0.0f), 4.0f, Vector3(0.0f, 1.0f, 0.0f), 32.0f);
 	}
 
 	void CreateGUI()
