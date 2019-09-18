@@ -4,12 +4,10 @@ layout (local_size_x = 16, local_size_y = 16) in;
 
 layout (binding = 1, rgba8) uniform writeonly image2D outputImage;
 
-
 layout(std140, binding = 2) buffer SceneBuffer 
 {
-	float datas[];
+	vec4 datas[];
 } inSceneData;
-
 
 #define EPSILON 			0.0001
 #define MAXLEN 				1000.0
@@ -48,11 +46,6 @@ layout (binding = 0) uniform RaytracingParamBlock
 
 // Lighting =========================================================
 
-float LightDiffuse(vec3 normal, vec3 lightDir) 
-{
-	return clamp(dot(normal, lightDir), 0.0, 1.0);
-}
-
 float LightSpecular(vec3 normal, vec3 lightDir, float specularFactor)
 {
 	vec3 viewVec = normalize(uboParam.cameraPos.xyz);
@@ -60,161 +53,10 @@ float LightSpecular(vec3 normal, vec3 lightDir, float specularFactor)
 	return pow(clamp(dot(normal, halfVec), 0.0, 1.0), specularFactor);
 }
 
-// Sphere ===========================================================
-
-float SphereIntersect(in vec3 rayO, in vec3 rayD, in Sphere sphere)
-{
-	vec3 oc = rayO - sphere.position.xyz;
-	float b = 2.0 * dot(oc, rayD);
-	float c = dot(oc, oc) - sphere.position.w * sphere.position.w;
-	float h = b * b - 4.0 * c;
-
-	if (h < 0.0) {
-		return -1.0;
-	}
-
-	float t = (-b - sqrt(h)) / 2.0;
-	return t;
-}
-
-vec3 SphereNormal(in vec3 pos, in Sphere sphere)
-{
-	return (pos - sphere.position.xyz) / sphere.position.w;
-}
-
-// Plane ===========================================================
-
-float PlaneIntersect(vec3 rayO, vec3 rayD, Plane plane)
-{
-	float d = dot(rayD, plane.normal.xyz);
-
-	if (d == 0.0) {
-		return 0.0;
-	}
-
-	float t = -(plane.normal.w + dot(rayO, plane.normal.xyz)) / d;
-
-	if (t < 0.0) {
-		return 0.0;
-	}
-	return t;
-}
-
-// Scene ===========================================================
-
 vec3 ReflectRay(vec3 ray, vec3 normal)
 {
 	return ray + 2.0 * -dot(normal, ray) * normal;
 }
-
-int Intersect(in vec3 rayO, in vec3 rayD, inout float resT)
-{
-	int id = -1;
-
-	for (int i = 0; i < 3; i++)
-	{
-		float dist = SphereIntersect(rayO, rayD, uboParam.spheres[i]);
-		if ((dist > EPSILON) && (dist < resT))
-		{
-			id   = uboParam.spheres[i].id.x;
-			resT = dist;
-		}
-	}
-	
-	for (int i = 0; i < 6; i++)
-	{
-		float dist = PlaneIntersect(rayO, rayD, uboParam.planes[i]);
-		if ((dist > EPSILON) && (dist < resT))
-		{
-			id   = uboParam.planes[i].id.x;
-			resT = dist;
-		}	
-	}
-	
-	return id;
-}
-
-float CalcShadow(in vec3 rayO, in vec3 rayD, in int objectId, inout float t)
-{
-	for (int i = 0; i < 3; i++)
-	{
-		if (uboParam.spheres[i].id.x == objectId) {
-			continue;
-		}
-		
-		float dist = SphereIntersect(rayO, rayD, uboParam.spheres[i]);
-		if ((dist > EPSILON) && (dist < t))
-		{
-			t = dist;
-			return SHADOW;
-		}
-	}
-
-	return 1.0;
-}
-
-vec3 CalcFog(in float t, in vec3 color)
-{
-	return mix(color, uboParam.fogColor.rgb, clamp(sqrt(t * t) / 20.0, 0.0, 1.0));
-}
-
-// vec3 RenderScene(inout vec3 rayO, inout vec3 rayD, inout int id)
-// {
-// 	vec3 color = vec3(0.0);
-// 	float t = MAXLEN;
-
-// 	// Get intersected object ID
-// 	int objectID = Intersect(rayO, rayD, t);
-// 	if (objectID == -1) {
-// 		return color;
-// 	}
-	
-// 	vec3 pos = rayO + t * rayD;
-// 	vec3 lightVec = normalize(uboParam.lightPos.xyz - pos);				
-// 	vec3 normal;
-	
-// 	// Planes
-// 	for (int i = 0; i < 6; i++)
-// 	{
-// 		if (objectID == uboParam.planes[i].id.x)
-// 		{
-// 			normal = uboParam.planes[i].normal.xyz;
-// 			float diffuse  = LightDiffuse(normal, lightVec);
-// 			float specular = LightSpecular(normal, lightVec, uboParam.planes[i].diffuse.w);
-// 			color = diffuse * uboParam.planes[i].diffuse.xyz + specular;	
-// 		}
-// 	}
-
-// 	for (int i = 0; i < 3; i++)
-// 	{
-// 		if (objectID == uboParam.spheres[i].id.x)
-// 		{
-// 			normal = SphereNormal(pos, uboParam.spheres[i]);	
-// 			float diffuse  = LightDiffuse(normal, lightVec);
-// 			float specular = LightSpecular(normal, lightVec, uboParam.spheres[i].diffuse.w);
-// 			color = diffuse * uboParam.spheres[i].diffuse.xyz + specular;	
-// 		}
-// 	}
-
-// 	if (id == -1) {
-// 		return color;
-// 	}
-
-// 	id = objectID;
-
-// 	// Shadows
-// 	t = length(uboParam.lightPos.xyz - pos);
-// 	color *= CalcShadow(pos, lightVec, id, t);
-	
-// 	// Fog
-// 	color = CalcFog(t, color);	
-	
-// 	// Reflect ray for next render pass
-// 	ReflectRay(rayD, normal);
-// 	rayO = pos;	
-	
-// 	return color;
-// }
 
 // ---------------- intersection ----------------
 struct HitInfo
@@ -277,44 +119,31 @@ bool IntersectTriangle(vec3 orig, vec3 dir, vec3 v0, vec3 v1, vec3 v2, inout Hit
 int HitScene(in vec3 pos, in vec3 ray, inout float dist, inout vec3 hitNormal)
 {
 	int id  = -1;
-	vec3 v0 = vec3(0, 0, 0);
-	vec3 v1 = vec3(0, 0, 0);
-	vec3 v2 = vec3(0, 0, 0);
 
 	HitInfo hitInfo;
 
-	float count = inSceneData.datas[0];
 	// first element store object size
+	int count  = int(inSceneData.datas[0].x);
 	int index  = 1;
 	for (int i = 0; i < count; ++i)
 	{
-		int meshID = int(inSceneData.datas[index + 0]);
-		int geomID = int(inSceneData.datas[index + 1]);
-		int verNum = int(inSceneData.datas[index + 2]);
-		int idxNum = int(inSceneData.datas[index + 3]);
+		ivec4 head = ivec4(inSceneData.datas[index]);
+		int meshID = head.x;
+		int geomID = head.y;
+		int verNum = head.z;
+		int idxNum = head.w;
 		// offset to mesh data
-		index += 4;
+		index += 1;
 		// indices
-		for (int j = 0; j < idxNum; j += 3)
+		for (int j = 0; j < idxNum; ++j)
 		{
-			int idx0 = int(inSceneData.datas[index + j + 0]);
-			int idx1 = int(inSceneData.datas[index + j + 1]);
-			int idx2 = int(inSceneData.datas[index + j + 2]);
-
-			v0.x = inSceneData.datas[index + idxNum + idx0 * 3 + 0];
-			v0.y = inSceneData.datas[index + idxNum + idx0 * 3 + 1];
-			v0.z = inSceneData.datas[index + idxNum + idx0 * 3 + 2];
-
-			v1.x = inSceneData.datas[index + idxNum + idx1 * 3 + 0];
-			v1.y = inSceneData.datas[index + idxNum + idx1 * 3 + 1];
-			v1.z = inSceneData.datas[index + idxNum + idx1 * 3 + 2];
-
-			v2.x = inSceneData.datas[index + idxNum + idx2 * 3 + 0];
-			v2.y = inSceneData.datas[index + idxNum + idx2 * 3 + 1];
-			v2.z = inSceneData.datas[index + idxNum + idx2 * 3 + 2];
+			ivec4 idx = ivec4(inSceneData.datas[index + j]);
+			vec4 v0 = inSceneData.datas[index + idxNum + idx.x];
+			vec4 v1 = inSceneData.datas[index + idxNum + idx.y];
+			vec4 v2 = inSceneData.datas[index + idxNum + idx.z];
 
 			// hit test
-			if (IntersectTriangle(pos, ray, v0, v1, v2, hitInfo))
+			if (IntersectTriangle(pos, ray, v0.xyz, v1.xyz, v2.xyz, hitInfo))
 			{
 				if (hitInfo.t < dist)
 				{
@@ -344,10 +173,10 @@ vec4 RenderScene(inout vec3 pos, inout vec3 ray, inout int id)
 	}
 	
 	vec3 position  = pos + dist * ray;
-	vec3 lightVec  = normalize(uboParam.lightPos.xyz - position);				
-	float diffuse  = LightDiffuse(normal, lightVec);
+	vec3 lightDir  = normalize(uboParam.lightPos.xyz - position);				
+	float diffuse  = clamp(dot(normal, lightDir), 0.0, 1.0);
 	color = diffuse * vec4(1, 1, 1, 1);
-
+	
 	if (id == -1) {
 		return color;
 	}
@@ -375,19 +204,19 @@ void main()
 	ray.xyz = normalize(ray.xyz);
 	
 	// Basic color path
-	int id = -1;
+	int id = 0;
 	vec4 finalColor = RenderScene(pos, ray, id);
 	
 	// Reflection
-// #if REFLECTIONS
-// 	float reflectionStrength = REFLECTIONSTRENGTH;
-// 	for (int i = 0; i < RAYBOUNCES; ++i)
-// 	{
-// 		vec4 reflectionColor = RenderScene(pos, ray, id);
-// 		finalColor = (1.0 - reflectionStrength) * finalColor + reflectionStrength * mix(reflectionColor, finalColor, 1.0 - reflectionStrength);			
-// 		reflectionStrength *= REFLECTIONFALLOFF;
-// 	}
-// #endif
+#if REFLECTIONS
+	float reflectionStrength = REFLECTIONSTRENGTH;
+	for (int i = 0; i < RAYBOUNCES; ++i)
+	{
+		vec4 reflectionColor = RenderScene(pos, ray, id);
+		finalColor = (1.0 - reflectionStrength) * finalColor + reflectionStrength * mix(reflectionColor, finalColor, 1.0 - reflectionStrength);			
+		reflectionStrength *= REFLECTIONFALLOFF;
+	}
+#endif
 	
 	imageStore(outputImage, ivec2(gl_GlobalInvocationID.xy), finalColor);
 }

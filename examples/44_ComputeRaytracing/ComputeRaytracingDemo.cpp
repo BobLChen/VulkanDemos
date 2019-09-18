@@ -171,7 +171,7 @@ private:
             cmdBuffer,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_ASPECT_COLOR_BIT,
-            512, 512,
+            1024, 1024,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
             VK_SAMPLE_COUNT_1_BIT,
             ImageLayoutBarrier::ComputeGeneralRW
@@ -234,7 +234,12 @@ private:
 		// copy scene data to storage buffer
 		int32 count = 0;
 		std::vector<float> bufferDatas;
+		// vec4 datas[0] = count
 		bufferDatas.push_back(0);
+		bufferDatas.push_back(0);
+		bufferDatas.push_back(0);
+		bufferDatas.push_back(0);
+
 		for (int32 meshID = 0; meshID < m_SceneModel->meshes.size(); ++meshID)
 		{
 			auto mesh = m_SceneModel->meshes[meshID];
@@ -243,17 +248,23 @@ private:
 				count += 1;
 
 				auto primitive = mesh->primitives[primitiveID];
-
+				
 				bufferDatas.push_back(meshID);
 				bufferDatas.push_back(primitiveID);
-				bufferDatas.push_back(primitive->vertices.size());
-				bufferDatas.push_back(primitive->indices.size());
-
-				for (int32 i = 0; i < primitive->indices.size(); ++i) {
-					bufferDatas.push_back(primitive->indices[i]);
+				bufferDatas.push_back(primitive->vertexCount);
+				bufferDatas.push_back(primitive->triangleNum);
+				
+				for (int32 i = 0; i < primitive->triangleNum; ++i) {
+					bufferDatas.push_back(primitive->indices[i * 3 + 0]);
+					bufferDatas.push_back(primitive->indices[i * 3 + 1]);
+					bufferDatas.push_back(primitive->indices[i * 3 + 2]);
+					bufferDatas.push_back(0);
 				}
-				for (int32 i = 0; i < primitive->vertices.size(); ++i) {
-					bufferDatas.push_back(primitive->vertices[i]);
+				for (int32 i = 0; i < primitive->vertexCount; ++i) {
+					bufferDatas.push_back(primitive->vertices[i * 3 + 0]);
+					bufferDatas.push_back(primitive->vertices[i * 3 + 1]);
+					bufferDatas.push_back(primitive->vertices[i * 3 + 2]);
+					bufferDatas.push_back(0);
 				}
 			}
 		}
