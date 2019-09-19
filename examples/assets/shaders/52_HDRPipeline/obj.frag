@@ -16,6 +16,5 @@ void main()
 {
     vec4 diffuse = texture(diffuseMap, inUV);
     diffuse.xyz *= param.intensity.x;
-    diffuse.x = 2.0;
     outFragColor = diffuse;
 }

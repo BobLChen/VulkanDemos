@@ -36,6 +36,8 @@ public:
 		InitParmas();
 		CreateSourceRT();
 		CreateBrightRT();
+		CreateBlurRT();
+		CreateLuminanceRT();
 		LoadAssets();
 		
 		m_Ready = true;
@@ -95,7 +97,7 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("HDRPipelineDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::SliderFloat("Intensity", &m_ParamData.intensity.x, 1.0f, 20.0f);
+			ImGui::SliderFloat("Intensity", &m_ParamData.intensity.x, 1.0f, 5.0f);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -109,11 +111,85 @@ private:
 		return hovered;
 	}
 
+	void CreateLuminanceRT()
+	{
+		/*for (int32 i = 0; i < 7; ++i)
+		{
+			delete m_TexLuminances[i];
+			delete m_RTLuminances[i];
+		}
+		delete m_LuminanceDowmSampleShader;
+		delete m_LuminanceShader;*/
+	}
+
+	void CreateBlurRT()
+	{
+		// blurH
+		m_TexBlurH = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			m_TexBright->format, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_TexBright->width, m_TexBright->height,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+		
+		vk_demo::DVKRenderPassInfo rttInfoH(
+			m_TexBlurH, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		m_RTBlurH = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfoH);
+
+		m_BlurHShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/blurH.vert.spv",
+			"assets/shaders/52_HDRPipeline/blurH.frag.spv"
+		);
+
+		m_BlurHMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RTBlurH->GetRenderPass(),
+			m_PipelineCache,
+			m_BlurHShader
+		);
+		m_BlurHMaterial->PreparePipeline();
+		m_BlurHMaterial->SetTexture("originTexture", m_TexBright);
+
+		// blurV
+		m_TexBlurV = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			m_TexBlurH->format, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_TexBlurH->width, m_TexBlurH->height,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfoV(
+			m_TexBlurV, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		m_RTBlurV = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfoV);
+
+		m_BlurVShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/blurV.vert.spv",
+			"assets/shaders/52_HDRPipeline/blurV.frag.spv"
+		);
+
+		m_BlurVMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RTBlurV->GetRenderPass(),
+			m_PipelineCache,
+			m_BlurVShader
+		);
+		m_BlurVMaterial->PreparePipeline();
+		m_BlurVMaterial->SetTexture("originTexture", m_TexBlurH);
+	}
+
 	void CreateBrightRT()
 	{
 		m_TexBright = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R16G16B16A16_UNORM, 
+			VK_FORMAT_R16G16B16A16_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth / 4.0f, m_FrameHeight / 4.0f,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -145,7 +221,7 @@ private:
 	{
 		m_TexSourceColor = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R16G16B16A16_UNORM, 
+			VK_FORMAT_R16G16B16A16_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -230,7 +306,7 @@ private:
 			m_DebugShader
 		);
 		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("originTexture", m_TexBright);
+		m_DebugMaterial->SetTexture("originTexture", m_TexBlurV);
 
 		delete cmdBuffer;
 	}
@@ -262,6 +338,34 @@ private:
 			delete m_RTBright;
 			delete m_BrightShader;
 			delete m_BrightMaterial;
+		}
+
+		// blur h
+		{
+			delete m_TexBlurH;
+			delete m_RTBlurH;
+			delete m_BlurHShader;
+			delete m_BlurHMaterial;
+		}
+
+		// blur v
+		{
+			delete m_TexBlurV;
+			delete m_RTBlurV;
+			delete m_BlurVShader;
+			delete m_BlurVMaterial;
+		}
+
+		// luminance
+		{
+			for (int32 i = 0; i < 7; ++i)
+			{
+				delete m_TexLuminances[i];
+				delete m_RTLuminances[i];
+				delete m_LuminanceMaterials[i];
+			}
+			delete m_LuminanceDowmSampleShader;
+			delete m_LuminanceShader;
 		}
 	}
 
@@ -326,6 +430,28 @@ private:
 		m_RTBright->EndRenderPass(commandBuffer);
 	}
 
+	void BlurHPass(VkCommandBuffer commandBuffer)
+	{
+		m_RTBlurH->BeginRenderPass(commandBuffer);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurHMaterial->GetPipeline());
+		m_BlurHMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+		m_RTBlurH->EndRenderPass(commandBuffer);
+	}
+
+	void BlurVPass(VkCommandBuffer commandBuffer)
+	{
+		m_RTBlurV->BeginRenderPass(commandBuffer);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurVMaterial->GetPipeline());
+		m_BlurVMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+		m_RTBlurV->EndRenderPass(commandBuffer);
+	}
+
 	void RenderFinal(VkCommandBuffer commandBuffer, int32 backBufferIndex)
 	{
 		VkViewport viewport = {};
@@ -380,6 +506,8 @@ private:
 
 		SourcePass(commandBuffer);
 		BrightPass(commandBuffer);
+		BlurHPass(commandBuffer);
+		BlurVPass(commandBuffer);
 
 		RenderFinal(commandBuffer, backBufferIndex);
 		
@@ -388,7 +516,7 @@ private:
 
 	void InitParmas()
 	{
-		m_ParamData.intensity.x = 9.0f;
+		m_ParamData.intensity.x = 2.5f;
 
 		m_ViewCamera.SetPosition(0, 5.0f, -30.0f);
 		m_ViewCamera.LookAt(0, 5.0f, 0);
@@ -431,7 +559,26 @@ private:
 	vk_demo::DVKRenderTarget*	m_RTBright = nullptr;
 	vk_demo::DVKShader*			m_BrightShader = nullptr;
 	vk_demo::DVKMaterial*		m_BrightMaterial = nullptr;
+
+	// blur h pass
+	vk_demo::DVKTexture*		m_TexBlurH = nullptr;
+	vk_demo::DVKRenderTarget*	m_RTBlurH = nullptr;
+	vk_demo::DVKShader*			m_BlurHShader = nullptr;
+	vk_demo::DVKMaterial*		m_BlurHMaterial = nullptr;
 	
+	// blur v pass
+	vk_demo::DVKTexture*		m_TexBlurV = nullptr;
+	vk_demo::DVKRenderTarget*	m_RTBlurV = nullptr;
+	vk_demo::DVKShader*			m_BlurVShader = nullptr;
+	vk_demo::DVKMaterial*		m_BlurVMaterial = nullptr;
+
+	// luminance
+	vk_demo::DVKTexture*		m_TexLuminances[7];
+	vk_demo::DVKRenderTarget*	m_RTLuminances[7];
+	vk_demo::DVKShader*			m_LuminanceDowmSampleShader = nullptr;
+	vk_demo::DVKShader*			m_LuminanceShader = nullptr;
+	vk_demo::DVKMaterial*		m_LuminanceMaterials[7];
+
 	vk_demo::DVKCamera		    m_ViewCamera;
 
 	ModelViewProjectionBlock	m_MVPParam;
