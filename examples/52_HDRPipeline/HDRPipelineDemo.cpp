@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -113,15 +113,82 @@ private:
 
 	void CreateLuminanceRT()
 	{
-		/*for (int32 i = 0; i < 7; ++i)
-		{
-			delete m_TexLuminances[i];
-			delete m_RTLuminances[i];
-		}
-		delete m_LuminanceDowmSampleShader;
-		delete m_LuminanceShader;*/
+        // down sample
+        m_TexLuminances[6] = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			VK_FORMAT_R16G16_SFLOAT,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_TexSourceColor->width / 4, m_TexSourceColor->height / 4,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+        
+        // Luminance
+        for (int32 i = 0; i < 6; ++i)
+        {
+            m_TexLuminances[i] = vk_demo::DVKTexture::CreateRenderTarget(
+                m_VulkanDevice,
+                VK_FORMAT_R16G16_SFLOAT,
+                VK_IMAGE_ASPECT_COLOR_BIT,
+                MMath::Pow(3, i), MMath::Pow(3, i),
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            );
+        }
+        
+        for (int32 i = 0; i < 6; ++i) {
+            m_TexLuminances[i]->UpdateSampler(
+                  VK_FILTER_NEAREST, VK_FILTER_NEAREST,
+                  VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                  VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+            );
+        }
+        
+        // render target pass
+        for (int32 i = 0; i < 7; ++i)
+        {
+            vk_demo::DVKRenderPassInfo rttInfo(
+            	m_TexLuminances[i], VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+            );
+            m_RTLuminances[i] = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+        }
+        
+        // down sample shader
+        m_LuminanceDowmSampleShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/luminanceDownsample.vert.spv",
+			"assets/shaders/52_HDRPipeline/luminanceDownsample.frag.spv"
+		);
+        
+        m_LuminanceMaterials[6] = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RTLuminances[6]->GetRenderPass(),
+			m_PipelineCache,
+			m_LuminanceDowmSampleShader
+		);
+		m_LuminanceMaterials[6]->PreparePipeline();
+		m_LuminanceMaterials[6]->SetTexture("originTexture", m_TexSourceColor);
+        
+        // luminance shader
+        m_LuminanceShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/luminance.vert.spv",
+			"assets/shaders/52_HDRPipeline/luminance.frag.spv"
+		);
+        
+        for (int32 i = 0; i < 6; ++i)
+        {
+            m_LuminanceMaterials[i] = vk_demo::DVKMaterial::Create(
+                m_VulkanDevice,
+                m_RTLuminances[i]->GetRenderPass(),
+                m_PipelineCache,
+                m_LuminanceShader
+            );
+            m_LuminanceMaterials[i]->PreparePipeline();
+            m_LuminanceMaterials[i]->SetTexture("originTexture", m_TexLuminances[i + 1]);
+        }
 	}
-
+    
 	void CreateBlurRT()
 	{
 		// blurH
@@ -306,11 +373,11 @@ private:
 			m_DebugShader
 		);
 		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("originTexture", m_TexBlurV);
+		m_DebugMaterial->SetTexture("originTexture", m_TexLuminances[3]);
 
 		delete cmdBuffer;
 	}
-
+    
 	void DestroyAssets()
 	{
 		delete m_SceneModel;
@@ -440,7 +507,23 @@ private:
 
 		m_RTBlurH->EndRenderPass(commandBuffer);
 	}
-
+    
+    void LuminancePass(VkCommandBuffer commandBuffer)
+    {
+        // downsample first
+        // Luminance one by one
+        for (int32 i = 6; i >= 0; --i)
+        {
+            m_RTLuminances[i]->BeginRenderPass(commandBuffer);
+            
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_LuminanceMaterials[i]->GetPipeline());
+            m_LuminanceMaterials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+            m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+            
+            m_RTLuminances[i]->EndRenderPass(commandBuffer);
+        }
+    }
+    
 	void BlurVPass(VkCommandBuffer commandBuffer)
 	{
 		m_RTBlurV->BeginRenderPass(commandBuffer);
@@ -508,6 +591,7 @@ private:
 		BrightPass(commandBuffer);
 		BlurHPass(commandBuffer);
 		BlurVPass(commandBuffer);
+        LuminancePass(commandBuffer);
 
 		RenderFinal(commandBuffer, backBufferIndex);
 		
