@@ -32,19 +32,18 @@ public:
 		DemoBase::Setup();
 		DemoBase::Prepare();
 
-		InitParmas();
-		CreateRenderTarget();
 		CreateGUI();
+		InitParmas();
+		CreateSourceRT();
+		CreateBrightRT();
 		LoadAssets();
-
+		
 		m_Ready = true;
-
 		return true;
 	}
 
 	virtual void Exist() override
 	{
-		DestroyRenderTarget();
 		DestroyAssets();
 		DestroyGUI();
 		DemoBase::Release();
@@ -64,52 +63,30 @@ private:
 	{
 		Matrix4x4 model;
 		Matrix4x4 view;
-		Matrix4x4 projection;
+		Matrix4x4 proj;
 	};
-    
-    struct FilterParamBlock
-    {
-        float width;
-        float height;
-        float step;
-        float bright;
-    };
-    
+
+	struct ParamBlock
+	{
+		Vector4 intensity;
+	};
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
-		UpdateUI(time, delta);
 
-		// 设置Room参数
-		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
-		{
-			m_SceneMaterials[i]->BeginFrame();
-			for (int32 j = 0; j < m_SceneMatMeshes[i].size(); ++j) {
-				m_MVPData.model = m_SceneMatMeshes[i][j]->linkNode->GetGlobalMatrix();
-				m_SceneMaterials[i]->BeginObject();
-				m_SceneMaterials[i]->SetLocalUniform("uboMVP", &m_MVPData, sizeof(ModelViewProjectionBlock));
-				m_SceneMaterials[i]->EndObject();
-			}
-			m_SceneMaterials[i]->EndFrame();
+		UpdateFPS(time, delta);
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
 		}
-
-		m_BrightMaterial->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
-		m_BrightMaterial->BeginFrame();
-		m_BrightMaterial->EndFrame();
-        
-		m_BlurHMaterial->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
-		m_BlurHMaterial->BeginFrame();
-		m_BlurHMaterial->EndFrame();
-		
-		m_BlurVMateria->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
-		m_BlurVMateria->BeginFrame();
-		m_BlurVMateria->EndFrame();
 
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -117,279 +94,239 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("HDRPipelineDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-            
-			ImGui::SliderFloat("BlurStep", &m_FilterParam.step, 1.0f, 2.0f);
-			ImGui::SliderFloat("Bright", &m_FilterParam.bright, 0.5f, 0.9f);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+			ImGui::SliderFloat("Intensity", &m_ParamData.intensity.x, 1.0f, 20.0f);
+
+			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
-	void CreateRenderTarget()
+	void CreateBrightRT()
 	{
-		m_RTColor = vk_demo::DVKTexture::CreateRenderTarget(
+		m_TexBright = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
+			VK_FORMAT_R16G16B16A16_UNORM, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_FrameWidth / 4.0f, m_FrameHeight / 4.0f,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfo(
+			m_TexBright, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		m_RTBright = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+
+		m_BrightShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/bright.vert.spv",
+			"assets/shaders/52_HDRPipeline/bright.frag.spv"
+		);
+
+		m_BrightMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RTBright->GetRenderPass(),
+			m_PipelineCache,
+			m_BrightShader
+		);
+		m_BrightMaterial->PreparePipeline();
+		m_BrightMaterial->SetTexture("originTexture", m_TexSourceColor);
+	}
+
+	void CreateSourceRT()
+	{
+		m_TexSourceColor = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			VK_FORMAT_R16G16B16A16_UNORM, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-        
-		m_RTColorQuater0 = vk_demo::DVKTexture::CreateRenderTarget(
-			m_VulkanDevice,
-			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_FrameWidth / 4.0f, m_FrameHeight / 4.0f,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-		);
-        
-		m_RTColorQuater1 = vk_demo::DVKTexture::CreateRenderTarget(
-			m_VulkanDevice,
-			PixelFormatToVkFormat(GetVulkanRHI()->GetPixelFormat(), false), 
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_FrameWidth / 4.0f, m_FrameHeight / 4.0f,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-		);
-        
-		m_RTDepth = vk_demo::DVKTexture::CreateRenderTarget(
+
+		m_TexSourceDepth = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
 			PixelFormatToVkFormat(m_DepthFormat, false),
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
-        
-		// 正常渲染场景
-		vk_demo::DVKRenderPassInfo rttNormalInfo(
-			m_RTColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
-			m_RTDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
+
+		vk_demo::DVKRenderPassInfo rttInfo(
+			m_TexSourceColor, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+			m_TexSourceDepth, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE
 		);
-		m_RTTNormal = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttNormalInfo);
-
-		// 1/4降级渲染
-		vk_demo::DVKRenderPassInfo rttQuater0Info(
-			m_RTColorQuater0, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
-		);
-		m_RTTQuater0 = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttQuater0Info);
-
-		// 1/4降级渲染
-		vk_demo::DVKRenderPassInfo rttQuater1Info(
-			m_RTColorQuater1, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
-		);
-		m_RTTQuater1 = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttQuater1Info);
-
-	}
-
-	void DestroyRenderTarget()
-	{
-		delete m_RTTNormal;
-		delete m_RTTQuater0;
-		delete m_RTTQuater1;
+		m_RTSource = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
 	}
 
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		// quad model
+		// fullscreen
 		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
 
-		// room model
-		m_ModelScene = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Blacksmith/tiejiang.fbx",
+		// scene model
+		m_SceneModel = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/Portal/Portal_FInal.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
-			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
+			{ 
+				VertexAttribute::VA_Position,
+				VertexAttribute::VA_UV0,
+				VertexAttribute::VA_Normal
+			}
 		);
 
-		// room shader
 		m_SceneShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/25_Bloom/obj.vert.spv",
-			"assets/shaders/25_Bloom/obj.frag.spv"
+			"assets/shaders/52_HDRPipeline/obj.vert.spv",
+			"assets/shaders/52_HDRPipeline/obj.frag.spv"
 		);
-        
-		// Room textures
-		std::vector<std::string> diffusePaths = {
-			"assets/models/Blacksmith/Anvil_Tex.jpg",
-			"assets/models/Blacksmith/BLACKSMITH_TEX.jpg",
-			"assets/models/Blacksmith/FloorTex.jpg",
-			"assets/models/Blacksmith/Spark_Diff.jpg"
+
+		const char* textures[2] = {
+			"assets/models/Portal/Portal_Main.jpg",
+			"assets/models/Portal/Portal1.png"
 		};
 
-		m_SceneDiffuses.resize(diffusePaths.size());
-		for (int32 i = 0; i < diffusePaths.size(); ++i)
+		for (int32 i = 0; i < 2; ++i)
 		{
-			m_SceneDiffuses[i] = vk_demo::DVKTexture::Create2D(
-				diffusePaths[i],
+			m_SceneTextures[i] = vk_demo::DVKTexture::Create2D(
+				textures[i],
 				m_VulkanDevice,
 				cmdBuffer
 			);
-		}
 
-		// room materials
-		m_SceneMaterials.resize(m_SceneDiffuses.size());
-		for (int32 i = 0; i < m_SceneMaterials.size(); ++i)
-		{
 			m_SceneMaterials[i] = vk_demo::DVKMaterial::Create(
 				m_VulkanDevice,
-				m_RTTNormal,
+				m_RTSource->GetRenderPass(),
 				m_PipelineCache,
 				m_SceneShader
 			);
-			// 最后一个叠加混合
-			if (i + 1 == m_SceneMaterials.size()) {
-				m_SceneMaterials[i]->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
-
-				VkPipelineColorBlendAttachmentState& blendAttachmentState = m_SceneMaterials[i]->pipelineInfo.blendAttachmentStates[0];
-				blendAttachmentState.blendEnable         = VK_TRUE;
-				blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
-				blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-				blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-			}
 			m_SceneMaterials[i]->PreparePipeline();
-			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneDiffuses[i]);
+			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneTextures[i]);
 		}
 
-		// collect meshles
-		m_SceneMatMeshes.resize(m_SceneDiffuses.size());
-		for (int32 i = 0; i < m_ModelScene->meshes.size(); ++i)
-		{
-			vk_demo::DVKMesh* mesh = m_ModelScene->meshes[i];
-			const std::string& diffuseName = mesh->material.diffuse;
-			if (diffuseName == "Anvil_Tex") {
-				m_SceneMatMeshes[0].push_back(mesh);
-			}
-			else if (diffuseName == "BLACKSMITH_TEX") {
-				m_SceneMatMeshes[1].push_back(mesh);
-			}
-			else if (diffuseName == "FloorTex") {
-				m_SceneMatMeshes[2].push_back(mesh);
-			}
-			else if (diffuseName == "Spark_Diff") {
-				mesh->linkNode->localMatrix.AppendScale(Vector3(2.5f, 2.5f, 2.5f));
-				m_SceneMatMeshes[3].push_back(mesh);
-			}
-		}
-
-		delete cmdBuffer;
-
-		// Bright
-		// 采样原始颜色，计算出非常亮的像素，并降级为做模糊准备。
-		// RTColor -> RTQuater0
-		m_BrightShader = vk_demo::DVKShader::Create(
+		// for debug
+		m_DebugShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/25_Bloom/downsample.vert.spv",
-			"assets/shaders/25_Bloom/downsample.frag.spv"
+			"assets/shaders/52_HDRPipeline/debug.vert.spv",
+			"assets/shaders/52_HDRPipeline/debug.frag.spv"
 		);
-		m_BrightMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RTTQuater0->GetRenderPass(),
-			m_PipelineCache,
-			m_BrightShader
-		);
-		m_BrightMaterial->PreparePipeline();
-		m_BrightMaterial->SetTexture("diffuseTexture", m_RTColor);
-		m_BrightMaterial->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
 
-		// blurH
-		// 使用降级后的RTQuater0进行水平模糊，然后存储到RTQuater1
-		// RTQuater0 -> RTQuater1
-		m_BlurHShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/25_Bloom/BlurH.vert.spv",
-			"assets/shaders/25_Bloom/BlurH.frag.spv"
-		);
-		m_BlurHMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RTTQuater1->GetRenderPass(),
-			m_PipelineCache,
-			m_BlurHShader
-		);
-		m_BlurHMaterial->PreparePipeline();
-		m_BlurHMaterial->SetTexture("diffuseTexture", m_RTColorQuater0);
-		m_BlurHMaterial->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
-
-		// blurV
-		// 使用水平模糊后的RTQuater1进行垂直模糊，然后存储到RTQuater0
-		// RTQuater1 -> RTQuater0
-		m_BlurVShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/25_Bloom/BlurV.vert.spv",
-			"assets/shaders/25_Bloom/BlurV.frag.spv"
-		);
-		m_BlurVMateria = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RTTQuater0->GetRenderPass(),
-			m_PipelineCache,
-			m_BlurVShader
-		);
-		m_BlurVMateria->PreparePipeline();
-		m_BlurVMateria->SetTexture("diffuseTexture", m_RTColorQuater1);
-		m_BlurVMateria->SetGlobalUniform("param", &m_FilterParam, sizeof(FilterParamBlock));
-
-		// combine
-		// 将模糊后的RTQuater0与RTColor进行合并
-		m_CombineShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/25_Bloom/combine.vert.spv",
-			"assets/shaders/25_Bloom/combine.frag.spv"
-		);
-		m_CombineMaterial = vk_demo::DVKMaterial::Create(
+		m_DebugMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
-			m_CombineShader
+			m_DebugShader
 		);
-		m_CombineMaterial->PreparePipeline();
-		m_CombineMaterial->SetTexture("originTexture", m_RTColor);
-		m_CombineMaterial->SetTexture("filterTexture", m_RTColorQuater0);
+		m_DebugMaterial->PreparePipeline();
+		m_DebugMaterial->SetTexture("originTexture", m_TexBright);
+
+		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
 	{
+		delete m_SceneModel;
 		delete m_SceneShader;
 
-		delete m_ModelScene;
+		delete m_DebugShader;
+		delete m_DebugMaterial;
 
-		for (int32 i = 0; i < m_SceneDiffuses.size(); ++i) {
-			delete m_SceneDiffuses[i];
-		}
-		m_SceneDiffuses.clear();
-
-		for (int32 i = 0; i < m_SceneMaterials.size(); ++i) {
+		for (int32 i = 0; i < 2; ++i)
+		{
+			delete m_SceneTextures[i];
 			delete m_SceneMaterials[i];
 		}
-		m_SceneMaterials.clear();
 
-		delete m_CombineMaterial;
-		delete m_CombineShader;
+		// source
+		{
+			delete m_TexSourceColor;
+			delete m_TexSourceDepth;
+			delete m_RTSource;
+		}
 
-		delete m_BrightMaterial;
-		delete m_BrightShader;
-
-		delete m_BlurHMaterial;
-		delete m_BlurHShader;
-		delete m_BlurVMateria;
-		delete m_BlurVShader;
-
-		delete m_RTColor;
-		delete m_RTDepth;
-
-		delete m_RTColorQuater0;
-		delete m_RTColorQuater1;
+		// bright
+		{
+			delete m_TexBright;
+			delete m_RTBright;
+			delete m_BrightShader;
+			delete m_BrightMaterial;
+		}
 	}
 
-	void SetupCommandBuffers(int32 backBufferIndex)
+	void RenderScene(VkCommandBuffer commandBuffer)
+	{
+		vk_demo::DVKMaterial* materials[4] = {
+			m_SceneMaterials[1],
+			m_SceneMaterials[0],
+			m_SceneMaterials[1],
+			m_SceneMaterials[1]
+		};
+
+		float params[4] = {
+			m_ParamData.intensity.x, 
+			1, 
+			m_ParamData.intensity.x, 
+			m_ParamData.intensity.x
+		};
+		
+		for (int32 i = 0; i < m_SceneModel->meshes.size(); ++i)
+		{
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, materials[i]->GetPipeline());
+
+			materials[i]->BeginFrame();
+
+			m_MVPParam.model = m_SceneModel->meshes[i]->linkNode->GetGlobalMatrix();
+			m_MVPParam.view  = m_ViewCamera.GetView();
+			m_MVPParam.proj  = m_ViewCamera.GetProjection();
+
+			m_ParamData.intensity.x = params[i];
+
+			materials[i]->BeginObject();
+			materials[i]->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
+			materials[i]->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+			materials[i]->EndObject();
+
+			materials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_SceneModel->meshes[i]->BindDrawCmd(commandBuffer);
+
+			materials[i]->EndFrame();
+		}
+
+		// restore
+		m_ParamData.intensity.x = params[0];
+	}
+
+	void SourcePass(VkCommandBuffer commandBuffer)
+	{
+		m_RTSource->BeginRenderPass(commandBuffer);
+		RenderScene(commandBuffer);
+		m_RTSource->EndRenderPass(commandBuffer);
+	}
+
+	void BrightPass(VkCommandBuffer commandBuffer)
+	{
+		m_RTBright->BeginRenderPass(commandBuffer);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BrightMaterial->GetPipeline());
+		m_BrightMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+		m_RTBright->EndRenderPass(commandBuffer);
+	}
+
+	void RenderFinal(VkCommandBuffer commandBuffer, int32 backBufferIndex)
 	{
 		VkViewport viewport = {};
 		viewport.x        = 0;
@@ -405,114 +342,57 @@ private:
 		scissor.offset.x = 0;
 		scissor.offset.y = 0;
 
+		VkClearValue clearValues[2];
+		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo;
+		ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+		renderPassBeginInfo.renderPass               = m_RenderPass;
+		renderPassBeginInfo.framebuffer              = m_FrameBuffers[backBufferIndex];
+		renderPassBeginInfo.clearValueCount          = 2;
+		renderPassBeginInfo.pClearValues             = clearValues;
+		renderPassBeginInfo.renderArea.offset.x      = 0;
+		renderPassBeginInfo.renderArea.offset.y      = 0;
+		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
+		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
+		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
+		m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
+
+		vkCmdEndRenderPass(commandBuffer);
+	}
+
+	void SetupCommandBuffers(int32 backBufferIndex)
+	{
 		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
 
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
-		// render target pass
-		{
-			m_RTTNormal->BeginRenderPass(commandBuffer);
+		SourcePass(commandBuffer);
+		BrightPass(commandBuffer);
 
-			for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SceneMaterials[i]->GetPipeline());
-				for (int32 j = 0; j < m_SceneMatMeshes[i].size(); ++j) {
-					m_SceneMaterials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, j);
-					m_SceneMatMeshes[i][j]->BindDrawCmd(commandBuffer);
-				}
-			}
-
-			m_RTTNormal->EndRenderPass(commandBuffer);
-		}
-
-		// luminance
-		{
-			m_RTTQuater0->BeginRenderPass(commandBuffer);
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BrightMaterial->GetPipeline());
-				m_BrightMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-			}
-			m_RTTQuater0->EndRenderPass(commandBuffer);
-		}
-
-		// blurH
-		{
-			m_RTTQuater1->BeginRenderPass(commandBuffer);
-
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurHMaterial->GetPipeline());
-				m_BlurHMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-			}
-
-			m_RTTQuater1->EndRenderPass(commandBuffer);
-		}
-
-		// blurV
-		{
-			m_RTTQuater0->BeginRenderPass(commandBuffer);
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurVMateria->GetPipeline());
-				m_BlurVMateria->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-			}
-			m_RTTQuater0->EndRenderPass(commandBuffer);
-		}
-
-		// combine pass
-		{
-			VkClearValue clearValues[2];
-			clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
-			clearValues[1].depthStencil = { 1.0f, 0 };
-
-			VkRenderPassBeginInfo renderPassBeginInfo;
-			ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-			renderPassBeginInfo.renderPass               = m_RenderPass;
-			renderPassBeginInfo.framebuffer              = m_FrameBuffers[backBufferIndex];
-			renderPassBeginInfo.clearValueCount          = 2;
-			renderPassBeginInfo.pClearValues             = clearValues;
-			renderPassBeginInfo.renderArea.offset.x      = 0;
-			renderPassBeginInfo.renderArea.offset.y      = 0;
-			renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
-			renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
-			vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
-
-			{
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CombineMaterial->GetPipeline());
-				m_CombineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-				m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-			}
-
-			m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
-
-			vkCmdEndRenderPass(commandBuffer);
-		}
-
+		RenderFinal(commandBuffer, backBufferIndex);
+		
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void InitParmas()
 	{
-		m_MVPData.model.SetIdentity();
+		m_ParamData.intensity.x = 9.0f;
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
-		m_MVPData.view.SetOrigin(Vector3(0, 50.0f, -100.0f));
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.10f, 500.0f);
-        
-        m_FilterParam.width   = m_FrameWidth / 4.0f;
-        m_FilterParam.height  = m_FrameHeight / 4.0f;
-        m_FilterParam.step    = 1.25f;
-        m_FilterParam.bright  = 0.75f;
+		m_ViewCamera.SetPosition(0, 5.0f, -30.0f);
+		m_ViewCamera.LookAt(0, 5.0f, 0);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}
 
 	void CreateGUI()
@@ -529,44 +409,33 @@ private:
 
 private:
 
-	typedef std::vector<vk_demo::DVKTexture*>			TextureArray;
-	typedef std::vector<vk_demo::DVKMaterial*>			MaterialArray;
-	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
-
 	bool 						m_Ready = false;
 
 	vk_demo::DVKModel*			m_Quad = nullptr;
+	vk_demo::DVKMaterial*	    m_DebugMaterial;
+	vk_demo::DVKShader*		    m_DebugShader;
 
-	vk_demo::DVKRenderTarget*   m_RTTNormal = nullptr;
-	vk_demo::DVKRenderTarget*	m_RTTQuater0 = nullptr;
-	vk_demo::DVKRenderTarget*	m_RTTQuater1 = nullptr;
-
-	vk_demo::DVKTexture*        m_RTColor = nullptr;
-	vk_demo::DVKTexture*        m_RTDepth = nullptr;
-	vk_demo::DVKTexture*		m_RTColorQuater0 = nullptr;
-	vk_demo::DVKTexture*		m_RTColorQuater1 = nullptr;
-
-	ModelViewProjectionBlock	m_MVPData;
-
-	vk_demo::DVKModel*			m_ModelScene = nullptr;
+	vk_demo::DVKModel*			m_SceneModel = nullptr;
 	vk_demo::DVKShader*			m_SceneShader = nullptr;
-	TextureArray				m_SceneDiffuses;
-	MaterialArray				m_SceneMaterials;
-	MatMeshArray				m_SceneMatMeshes;
+	vk_demo::DVKTexture*		m_SceneTextures[2];
+	vk_demo::DVKMaterial*		m_SceneMaterials[2];
 
-	FilterParamBlock            m_FilterParam;
+	// source
+	vk_demo::DVKTexture*		m_TexSourceColor = nullptr;
+	vk_demo::DVKTexture*		m_TexSourceDepth = nullptr;
 
-	vk_demo::DVKMaterial*	    m_CombineMaterial;
-	vk_demo::DVKShader*		    m_CombineShader;
+	vk_demo::DVKRenderTarget*	m_RTSource = nullptr;
 
-	vk_demo::DVKMaterial*		m_BrightMaterial = nullptr;
+	// bright pass
+	vk_demo::DVKTexture*		m_TexBright = nullptr;
+	vk_demo::DVKRenderTarget*	m_RTBright = nullptr;
 	vk_demo::DVKShader*			m_BrightShader = nullptr;
+	vk_demo::DVKMaterial*		m_BrightMaterial = nullptr;
+	
+	vk_demo::DVKCamera		    m_ViewCamera;
 
-	vk_demo::DVKMaterial*		m_BlurHMaterial = nullptr;
-	vk_demo::DVKShader*			m_BlurHShader = nullptr;
-
-	vk_demo::DVKMaterial*		m_BlurVMateria = nullptr;
-	vk_demo::DVKShader*			m_BlurVShader = nullptr;
+	ModelViewProjectionBlock	m_MVPParam;
+	ParamBlock					m_ParamData;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
