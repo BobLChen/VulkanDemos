@@ -27,9 +27,10 @@ void main()
         vec4 originColor = texture(originTexture, inUV0 + PixelKernel[i] / texDim);
         float luminance = dot(originColor.xyz, weight);
         maximum = max(maximum, luminance);
-        average += (0.2 * log(0.00001 + luminance));
+        average += log(0.00001 + luminance);
     }
     
-    average = exp(average);
+    average *= 0.2;
+    average  = exp(average);
     outFragColor = vec4(average, maximum, 0, 1.0);
 }

@@ -28,10 +28,10 @@ void main()
     for (int i = 0; i < 9; ++i)
     {
         vec4 color = texture(originTexture, inUV0 + PixelKernel[i] / texDim);
-        maximum = max(maximum, color.x);
+        maximum  = max(maximum, color.y);
         average += color.x;
     }
-
+    
     average /= 9.0;
     outFragColor = vec4(average, maximum, 0, 1.0);
 }

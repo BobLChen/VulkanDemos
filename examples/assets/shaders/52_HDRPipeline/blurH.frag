@@ -40,6 +40,11 @@ layout (location = 0) in vec2 inUV0;
 
 layout (binding  = 1) uniform sampler2D originTexture;
 
+layout (binding  = 2) uniform ParamBlock 
+{
+    vec4 intensity;
+} param;
+
 layout (location = 0) out vec4 outFragColor;
 
 void main() 
@@ -48,7 +53,7 @@ void main()
     vec4 finalColor = vec4(0);
     for (int i = 0; i < KernelSize; ++i)
     {
-        vec2 uv = inUV0.xy + PixelKernel[i].xy / texDim * 1.2;
+        vec2 uv = inUV0.xy + PixelKernel[i].xy / texDim * param.intensity.w;
         vec4 color = texture(originTexture, uv);
         finalColor += color * BlurWeights[i];
     }

@@ -97,7 +97,10 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("HDRPipelineDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::SliderFloat("Intensity", &m_ParamData.intensity.x, 1.0f, 5.0f);
+			ImGui::SliderFloat("Intensity",		&m_ParamData.intensity.x, 1.0f, 5.0f);
+			ImGui::SliderFloat("Exposure",		&m_ParamData.intensity.y, 0.0f, 5.0f);
+			ImGui::SliderFloat("Multiplier",	&m_ParamData.intensity.z, 0.0f, 5.0f);
+			ImGui::SliderFloat("bias",			&m_ParamData.intensity.w, 0.0f, 5.0f);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -358,6 +361,25 @@ private:
 			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneTextures[i]);
 		}
 
+		// final
+		m_FinalShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/52_HDRPipeline/combine.vert.spv",
+			"assets/shaders/52_HDRPipeline/combine.frag.spv"
+		);
+
+		m_FinalMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_FinalShader
+		);
+		m_FinalMaterial->PreparePipeline();
+		m_FinalMaterial->SetTexture("originTexture",    m_TexSourceColor);
+		m_FinalMaterial->SetTexture("bloomTexture",     m_TexBlurV);
+		m_FinalMaterial->SetTexture("luminanceTexture", m_TexLuminances[0]);
+
 		// for debug
 		m_DebugShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -373,7 +395,7 @@ private:
 			m_DebugShader
 		);
 		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("originTexture", m_TexLuminances[3]);
+		m_DebugMaterial->SetTexture("originTexture", m_TexLuminances[0]);
 
 		delete cmdBuffer;
 	}
@@ -433,6 +455,12 @@ private:
 			}
 			delete m_LuminanceDowmSampleShader;
 			delete m_LuminanceShader;
+		}
+
+		// final
+		{
+			delete m_FinalShader;
+			delete m_FinalMaterial;
 		}
 	}
 
@@ -501,6 +529,10 @@ private:
 	{
 		m_RTBlurH->BeginRenderPass(commandBuffer);
 
+		m_BlurHMaterial->BeginObject();
+		m_BlurHMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+		m_BlurHMaterial->EndObject();
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurHMaterial->GetPipeline());
 		m_BlurHMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
@@ -527,6 +559,10 @@ private:
 	void BlurVPass(VkCommandBuffer commandBuffer)
 	{
 		m_RTBlurV->BeginRenderPass(commandBuffer);
+
+		m_BlurVMaterial->BeginObject();
+		m_BlurVMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+		m_BlurVMaterial->EndObject();
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurVMaterial->GetPipeline());
 		m_BlurVMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
@@ -570,8 +606,12 @@ private:
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugMaterial->GetPipeline());
-		m_DebugMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		m_FinalMaterial->BeginObject();
+		m_FinalMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+		m_FinalMaterial->EndObject();
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FinalMaterial->GetPipeline());
+		m_FinalMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -601,6 +641,9 @@ private:
 	void InitParmas()
 	{
 		m_ParamData.intensity.x = 2.5f;
+		m_ParamData.intensity.y = 0.5f; // Exposure
+		m_ParamData.intensity.z = 0.4f; // Multiplier
+		m_ParamData.intensity.w = 1.5f; // bias
 
 		m_ViewCamera.SetPosition(0, 5.0f, -30.0f);
 		m_ViewCamera.LookAt(0, 5.0f, 0);
@@ -662,6 +705,10 @@ private:
 	vk_demo::DVKShader*			m_LuminanceDowmSampleShader = nullptr;
 	vk_demo::DVKShader*			m_LuminanceShader = nullptr;
 	vk_demo::DVKMaterial*		m_LuminanceMaterials[7];
+
+	// finnal pass
+	vk_demo::DVKShader*			m_FinalShader = nullptr;
+	vk_demo::DVKMaterial*		m_FinalMaterial = nullptr;
 
 	vk_demo::DVKCamera		    m_ViewCamera;
 
