@@ -243,3 +243,6 @@ Reduce 5 float per vertex
 
 ### [51_Pick](https://github.com/BobLChen/VulkanDemos/tree/master/examples/51_Pick)
 ![51_Pick](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/51_Pick.gif)
+
+### [52_HDRPipeline](https://github.com/BobLChen/VulkanDemos/tree/master/examples/52_HDRPipeline)
+![52_HDRPipeline](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/52_HDRPipelines.gif)
