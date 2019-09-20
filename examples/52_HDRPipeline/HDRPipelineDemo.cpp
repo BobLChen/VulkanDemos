@@ -97,9 +97,10 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("HDRPipelineDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::SliderFloat("Intensity",		&m_ParamData.intensity.x, 1.0f, 5.0f);
+			ImGui::Checkbox("Debug", &m_Debug);
+
+			ImGui::SliderFloat("Intensity",		&m_ParamData.intensity.x, 1.0f, 10.0f);
 			ImGui::SliderFloat("Exposure",		&m_ParamData.intensity.y, 0.0f, 5.0f);
-			ImGui::SliderFloat("Multiplier",	&m_ParamData.intensity.z, 0.0f, 5.0f);
 			ImGui::SliderFloat("bias",			&m_ParamData.intensity.w, 0.0f, 5.0f);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
@@ -119,7 +120,7 @@ private:
         // down sample
         m_TexLuminances[6] = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R16G16_SFLOAT,
+			VK_FORMAT_R16_SFLOAT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_TexSourceColor->width / 4, m_TexSourceColor->height / 4,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -130,7 +131,7 @@ private:
         {
             m_TexLuminances[i] = vk_demo::DVKTexture::CreateRenderTarget(
                 m_VulkanDevice,
-                VK_FORMAT_R16G16_SFLOAT,
+				VK_FORMAT_R16_SFLOAT,
                 VK_IMAGE_ASPECT_COLOR_BIT,
                 MMath::Pow(3, i), MMath::Pow(3, i),
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
@@ -388,14 +389,95 @@ private:
 			"assets/shaders/52_HDRPipeline/debug.frag.spv"
 		);
 
-		m_DebugMaterial = vk_demo::DVKMaterial::Create(
+		m_DebugBright = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
 			m_DebugShader
 		);
-		m_DebugMaterial->PreparePipeline();
-		m_DebugMaterial->SetTexture("originTexture", m_TexLuminances[0]);
+		m_DebugBright->PreparePipeline();
+		m_DebugBright->SetTexture("originTexture", m_TexBright);
+
+		m_DebugBlurH = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugBlurH->PreparePipeline();
+		m_DebugBlurH->SetTexture("originTexture", m_TexBlurH);
+
+		m_DebugBlurV = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugBlurV->PreparePipeline();
+		m_DebugBlurV->SetTexture("originTexture", m_TexBlurV);
+
+		m_DebugLumDownsample = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLumDownsample->PreparePipeline();
+		m_DebugLumDownsample->SetTexture("originTexture", m_TexLuminances[6]);
+
+		m_DebugLum1x1 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum1x1->PreparePipeline();
+		m_DebugLum1x1->SetTexture("originTexture", m_TexLuminances[0]);
+
+		m_DebugLum3x3 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum3x3->PreparePipeline();
+		m_DebugLum3x3->SetTexture("originTexture", m_TexLuminances[1]);
+
+		m_DebugLum9x9 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum9x9->PreparePipeline();
+		m_DebugLum9x9->SetTexture("originTexture", m_TexLuminances[2]);
+
+		m_DebugLum27x27 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum27x27->PreparePipeline();
+		m_DebugLum27x27->SetTexture("originTexture", m_TexLuminances[3]);
+
+		m_DebugLum81x81 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum81x81->PreparePipeline();
+		m_DebugLum81x81->SetTexture("originTexture", m_TexLuminances[4]);
+
+		m_DebugLum243x243 = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_DebugShader
+		);
+		m_DebugLum243x243->PreparePipeline();
+		m_DebugLum243x243->SetTexture("originTexture", m_TexLuminances[5]);
 
 		delete cmdBuffer;
 	}
@@ -406,7 +488,16 @@ private:
 		delete m_SceneShader;
 
 		delete m_DebugShader;
-		delete m_DebugMaterial;
+		delete m_DebugBright;
+		delete m_DebugBlurH;
+		delete m_DebugBlurV;
+		delete m_DebugLumDownsample;
+		delete m_DebugLum1x1;
+		delete m_DebugLum3x3;
+		delete m_DebugLum9x9;
+		delete m_DebugLum27x27;
+		delete m_DebugLum81x81;
+		delete m_DebugLum243x243;
 
 		for (int32 i = 0; i < 2; ++i)
 		{
@@ -517,17 +608,20 @@ private:
 	void BrightPass(VkCommandBuffer commandBuffer)
 	{
 		m_RTBright->BeginRenderPass(commandBuffer);
+		m_BrightMaterial->BeginFrame();
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BrightMaterial->GetPipeline());
 		m_BrightMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
+		m_BrightMaterial->EndFrame();
 		m_RTBright->EndRenderPass(commandBuffer);
 	}
 
 	void BlurHPass(VkCommandBuffer commandBuffer)
 	{
 		m_RTBlurH->BeginRenderPass(commandBuffer);
+		m_BlurHMaterial->BeginFrame();
 
 		m_BlurHMaterial->BeginObject();
 		m_BlurHMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
@@ -537,6 +631,7 @@ private:
 		m_BlurHMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
+		m_BlurHMaterial->EndFrame();
 		m_RTBlurH->EndRenderPass(commandBuffer);
 	}
     
@@ -547,11 +642,13 @@ private:
         for (int32 i = 6; i >= 0; --i)
         {
             m_RTLuminances[i]->BeginRenderPass(commandBuffer);
-            
+			m_LuminanceMaterials[i]->BeginFrame();
+
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_LuminanceMaterials[i]->GetPipeline());
             m_LuminanceMaterials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
             m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
             
+			m_LuminanceMaterials[i]->EndFrame();
             m_RTLuminances[i]->EndRenderPass(commandBuffer);
         }
     }
@@ -559,6 +656,7 @@ private:
 	void BlurVPass(VkCommandBuffer commandBuffer)
 	{
 		m_RTBlurV->BeginRenderPass(commandBuffer);
+		m_BlurVMaterial->BeginFrame();
 
 		m_BlurVMaterial->BeginObject();
 		m_BlurVMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
@@ -568,25 +666,216 @@ private:
 		m_BlurVMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
 
+		m_BlurVMaterial->EndFrame();
 		m_RTBlurV->EndRenderPass(commandBuffer);
+	}
+
+	void RenderPipeline(VkCommandBuffer commandBuffer)
+	{
+		VkViewport viewport = {};
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		VkRect2D scissor  = {};
+
+		viewport.width  = m_FrameWidth  * 0.25f;
+		viewport.height = m_FrameHeight  * 0.25f * -1.0f;
+
+		scissor.extent.width  = m_FrameWidth  * 0.25f;
+		scissor.extent.height = m_FrameHeight * 0.25f;
+
+		// bright
+		{
+			viewport.x = m_FrameWidth  * 0.25f;
+			viewport.y = m_FrameHeight * 0.25f;
+			scissor.offset.x = m_FrameWidth  * 0.25f;
+			scissor.offset.y = 0;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugBright->BeginFrame();
+			
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugBright->GetPipeline());
+			m_DebugBright->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugBright->EndFrame();
+		}
+
+		// blurH pass
+		{
+			viewport.x = m_FrameWidth  * 0.50f;
+			viewport.y = m_FrameHeight * 0.25f;
+			scissor.offset.x = m_FrameWidth  * 0.50f;
+			scissor.offset.y = 0;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugBlurH->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugBlurH->GetPipeline());
+			m_DebugBlurH->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugBlurH->EndFrame();
+		}
+
+		// blurV pass
+		{
+			viewport.x = m_FrameWidth  * 0.75f;
+			viewport.y = m_FrameHeight * 0.25f;
+			scissor.offset.x = m_FrameWidth  * 0.75f;
+			scissor.offset.y = 0;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugBlurV->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugBlurV->GetPipeline());
+			m_DebugBlurV->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugBlurV->EndFrame();
+		}
+
+		// down sample
+		{
+			viewport.x = 0;
+			viewport.y = m_FrameHeight * 0.50f;
+			scissor.offset.x = 0;
+			scissor.offset.y = m_FrameHeight * 0.25f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLumDownsample->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLumDownsample->GetPipeline());
+			m_DebugLumDownsample->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLumDownsample->EndFrame();
+		}
+
+		// 1x1
+		{
+			viewport.x = 0;
+			viewport.y = m_FrameHeight * 0.75f;
+			scissor.offset.x = 0;
+			scissor.offset.y = m_FrameHeight * 0.50f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum1x1->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum1x1->GetPipeline());
+			m_DebugLum1x1->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum1x1->EndFrame();
+		}
+
+		// 3x3
+		{
+			viewport.x = 0;
+			viewport.y = m_FrameHeight;
+			scissor.offset.x = 0;
+			scissor.offset.y = m_FrameHeight * 0.75f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum3x3->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum3x3->GetPipeline());
+			m_DebugLum3x3->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum3x3->EndFrame();
+		}
+
+		// 9x9
+		{
+			viewport.x = m_FrameWidth * 0.25f;;
+			viewport.y = m_FrameHeight;
+			scissor.offset.x = m_FrameWidth * 0.25f;
+			scissor.offset.y = m_FrameHeight * 0.75f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum9x9->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum9x9->GetPipeline());
+			m_DebugLum9x9->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum9x9->EndFrame();
+		}
+
+		// 27x27
+		{
+			viewport.x = m_FrameWidth * 0.50f;;
+			viewport.y = m_FrameHeight;
+			scissor.offset.x = m_FrameWidth * 0.50f;
+			scissor.offset.y = m_FrameHeight * 0.75f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum27x27->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum27x27->GetPipeline());
+			m_DebugLum27x27->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum27x27->EndFrame();
+		}
+
+		// 81x81
+		{
+			viewport.x = m_FrameWidth * 0.75f;
+			viewport.y = m_FrameHeight;
+			scissor.offset.x = m_FrameWidth * 0.75f;
+			scissor.offset.y = m_FrameHeight * 0.75f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum81x81->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum81x81->GetPipeline());
+			m_DebugLum81x81->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum81x81->EndFrame();
+		}
+
+		// 243x243
+		{
+			viewport.x = m_FrameWidth * 0.75f;
+			viewport.y = m_FrameHeight * 0.75f;
+			scissor.offset.x = m_FrameWidth * 0.75f;
+			scissor.offset.y = m_FrameHeight * 0.50f;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_DebugLum243x243->BeginFrame();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DebugLum243x243->GetPipeline());
+			m_DebugLum243x243->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_DebugLum243x243->EndFrame();
+		}
 	}
 
 	void RenderFinal(VkCommandBuffer commandBuffer, int32 backBufferIndex)
 	{
-		VkViewport viewport = {};
-		viewport.x        = 0;
-		viewport.y        = m_FrameHeight;
-		viewport.width    = m_FrameWidth;
-		viewport.height   = -(float)m_FrameHeight;    // flip y axis
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.extent.width  = m_FrameWidth;
-		scissor.extent.height = m_FrameHeight;
-		scissor.offset.x = 0;
-		scissor.offset.y = 0;
-
 		VkClearValue clearValues[2];
 		clearValues[0].color        = { { 0.2f, 0.2f, 0.2f, 1.0f } };
 		clearValues[1].depthStencil = { 1.0f, 0 };
@@ -603,17 +892,49 @@ private:
 		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
 		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+		// combine pass
+		{
+			float w  = (m_Debug ? 0.5f : 1) * m_FrameWidth;
+			float h  = (m_Debug ? 0.5f : 1) * m_FrameHeight;
+			float tx = (m_Debug ? 0.25f : 0) * m_FrameWidth;
+			float ty = (m_Debug ? 0.25f : 0) * m_FrameHeight;
 
-		m_FinalMaterial->BeginObject();
-		m_FinalMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
-		m_FinalMaterial->EndObject();
+			VkViewport viewport = {};
+			viewport.x        = tx;
+			viewport.y        = m_FrameHeight - ty;
+			viewport.width    = w;
+			viewport.height   = -h;    // flip y axis
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FinalMaterial->GetPipeline());
-		m_FinalMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+			VkRect2D scissor = {};
+			scissor.extent.width  = w;
+			scissor.extent.height = h;
+			scissor.offset.x = tx;
+			scissor.offset.y = ty;
 
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+
+			m_FinalMaterial->BeginFrame();
+
+			m_FinalMaterial->BeginObject();
+			m_FinalMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+			m_FinalMaterial->EndObject();
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FinalMaterial->GetPipeline());
+			m_FinalMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
+
+			m_FinalMaterial->EndFrame();
+		}
+
+		// debug pass
+		if (m_Debug) {
+			RenderPipeline(commandBuffer);
+		}
+		
+		// ui pass
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
 		vkCmdEndRenderPass(commandBuffer);
@@ -632,7 +953,6 @@ private:
 		BlurHPass(commandBuffer);
 		BlurVPass(commandBuffer);
         LuminancePass(commandBuffer);
-
 		RenderFinal(commandBuffer, backBufferIndex);
 		
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
@@ -640,12 +960,12 @@ private:
 
 	void InitParmas()
 	{
-		m_ParamData.intensity.x = 2.5f;
-		m_ParamData.intensity.y = 0.5f; // Exposure
-		m_ParamData.intensity.z = 0.4f; // Multiplier
-		m_ParamData.intensity.w = 1.5f; // bias
+		m_ParamData.intensity.x = 5.0f;
+		m_ParamData.intensity.y = 1.0f; // Exposure
+		m_ParamData.intensity.z = 0.0f; // Not use
+		m_ParamData.intensity.w = 1.5f; // Bias
 
-		m_ViewCamera.SetPosition(0, 5.0f, -30.0f);
+		m_ViewCamera.SetPosition(25.0f, 15.0f, -20.0f);
 		m_ViewCamera.LookAt(0, 5.0f, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}
@@ -667,9 +987,19 @@ private:
 	bool 						m_Ready = false;
 
 	vk_demo::DVKModel*			m_Quad = nullptr;
-	vk_demo::DVKMaterial*	    m_DebugMaterial;
 	vk_demo::DVKShader*		    m_DebugShader;
+	vk_demo::DVKMaterial*	    m_DebugBright;
+	vk_demo::DVKMaterial*	    m_DebugBlurH;
+	vk_demo::DVKMaterial*	    m_DebugBlurV;
+	vk_demo::DVKMaterial*	    m_DebugLumDownsample;
+	vk_demo::DVKMaterial*	    m_DebugLum1x1;
+	vk_demo::DVKMaterial*	    m_DebugLum3x3;
+	vk_demo::DVKMaterial*	    m_DebugLum9x9;
+	vk_demo::DVKMaterial*	    m_DebugLum27x27;
+	vk_demo::DVKMaterial*	    m_DebugLum81x81;
+	vk_demo::DVKMaterial*	    m_DebugLum243x243;
 
+	// scene
 	vk_demo::DVKModel*			m_SceneModel = nullptr;
 	vk_demo::DVKShader*			m_SceneShader = nullptr;
 	vk_demo::DVKTexture*		m_SceneTextures[2];
@@ -678,7 +1008,6 @@ private:
 	// source
 	vk_demo::DVKTexture*		m_TexSourceColor = nullptr;
 	vk_demo::DVKTexture*		m_TexSourceDepth = nullptr;
-
 	vk_demo::DVKRenderTarget*	m_RTSource = nullptr;
 
 	// bright pass
@@ -714,6 +1043,7 @@ private:
 
 	ModelViewProjectionBlock	m_MVPParam;
 	ParamBlock					m_ParamData;
+	bool						m_Debug = false;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };

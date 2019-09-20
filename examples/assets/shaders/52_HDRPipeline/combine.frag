@@ -13,6 +13,21 @@ layout (binding = 4) uniform ParamBlock
 
 layout (location = 0) out vec4 outFragColor;
 
+float EyeAdaption(float lum)
+{
+	return mix(0.2, lum, 0.5);
+}
+
+vec3 ACESFilm(vec3 x)
+{
+	const float A = 2.51f;
+	const float B = 0.03f;
+	const float C = 2.43f;
+	const float D = 0.59f;
+	const float E = 0.14f;
+	return (x * (A * x + B)) / (x * (C * x + D) + E);
+}
+
 void main() 
 {
     vec4 originColor = texture(originTexture, inUV0);
@@ -21,9 +36,8 @@ void main()
     
     vec4 finalColor  = originColor + bloomColor;
 
-    float lp = (param.intensity.y / luminance.x) * max(finalColor.r, max(finalColor.g, finalColor.b));
-    float lmsqr = (luminance.y + param.intensity.z * luminance.y) * (luminance.y + param.intensity.z * luminance.y);
-    float toneScalar = (lp * (1.0 + (lp / lmsqr))) / (1.0 + lp);
-    
-    outFragColor = finalColor * toneScalar;
+    float adaptedLumDest = 2 / (max(0.1, 1 + 10 * EyeAdaption(luminance.x)));
+    finalColor.xyz = ACESFilm((adaptedLumDest * param.intensity.y * finalColor).xyz);
+
+    outFragColor = finalColor;
 }

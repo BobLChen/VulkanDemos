@@ -22,16 +22,14 @@ vec2 PixelKernel[9] =
 void main() 
 {
     ivec2 texDim  = textureSize(originTexture, 0);
-    float maximum = -10000;
     float average = 0;
 
     for (int i = 0; i < 9; ++i)
     {
         vec4 color = texture(originTexture, inUV0 + PixelKernel[i] / texDim);
-        maximum  = max(maximum, color.y);
         average += color.x;
     }
     
     average /= 9.0;
-    outFragColor = vec4(average, maximum, 0, 1.0);
+    outFragColor = vec4(average, average, average, 1.0);
 }
