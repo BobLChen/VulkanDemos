@@ -334,6 +334,7 @@ private:
 		float		zNear;
 		float		zFar;
 		float		one;
+
 		float		xMaxFar;
 		float		yMaxFar;
 		Vector2		padding;
@@ -755,7 +756,6 @@ private:
 			Vector3 viewPos = viewRay * depth01;
 
 			MLOG("posView:(%f,%f,%f) - (%f,%f,%f)", posView.x, posView.y, posView.z, viewPos.x, viewPos.y, viewPos.z);
-			MLOG("");
 		}
 		
 	}
