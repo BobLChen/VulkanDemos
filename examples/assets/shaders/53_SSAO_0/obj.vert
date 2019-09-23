@@ -17,9 +17,9 @@ out gl_PerVertex
     vec4 gl_Position;   
 };
 
-void main() 
+void main()
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
-	vec3 normal  = normalize(normalMatrix * inNormal);
-	gl_Position  = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
+	vec3 normal = normalize(normalMatrix * inNormal);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }
