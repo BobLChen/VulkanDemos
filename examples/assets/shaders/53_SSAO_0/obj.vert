@@ -20,9 +20,6 @@ out gl_PerVertex
 void main() 
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
-	vec3 normal  = normalize(normalMatrix * inNormal.xyz);
-	
-	outNormal    = normal;
-	
+	vec3 normal  = normalize(normalMatrix * inNormal);
 	gl_Position  = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

@@ -85,6 +85,15 @@ private:
 			m_ViewCamera.Update(time, delta);
 		}
 
+		{
+			m_ParamData.view = m_ViewCamera.GetView();
+
+			m_ParamData.invView = m_ViewCamera.GetView();
+			m_ParamData.invView.SetInverse();
+
+			m_ParamData.proj = m_ViewCamera.GetProjection();
+		}
+
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
 	}
@@ -227,6 +236,7 @@ private:
 				VertexAttribute::VA_Normal
 			}
 		);
+		m_SceneModel->rootNode->localMatrix.AppendScale(Vector3(0.0254f, 0.0254f, 0.0254f));
 
 		m_SceneShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
@@ -433,9 +443,8 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetRotation(Vector3(25.131f, 0.619f, 0));
-		m_ViewCamera.SetPosition(-26.10247f, 602.182, -890.2283f);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 100.0f, 3000.0f);
+		m_ViewCamera.SetPosition(0, 5, -25);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
 
 		m_ParamData.data.x = m_ViewCamera.GetNear();
 		m_ParamData.data.y = m_ViewCamera.GetFar();
