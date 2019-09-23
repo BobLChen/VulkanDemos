@@ -4,7 +4,7 @@ const float kContrast = 0.6;
 const float kGeometryCoeff = 0.8;
 const float kBeta = 0.002;
 
-#define SAMPLE_COUNT    15
+#define SAMPLE_COUNT    12
 #define HALF_MAX        65504.0
 #define HALF_MAX_MINUS1 65472.0
 #define EPSILON         1.0e-4
@@ -26,6 +26,7 @@ layout (location = 0) out vec4 outFragColor;
 layout (binding = 4) uniform ParamBlock
 {
 	vec4 data;
+    mat4 view;
     mat4 invView;
     mat4 proj;
 } param;
@@ -74,7 +75,6 @@ void main()
     vec4 inNormal = texture(normalTexture, inUV0);
     vec4 inDepth  = texture(depthTexture,  inUV0);
 
-    // Reconstruct the world-space position.
     float zNear   = param.data.x;
 	float zFar    = param.data.y;
 	float xMaxFar = param.data.z;
@@ -83,13 +83,10 @@ void main()
 	float zc0 = 1.0 - zFar / zNear;
 	float zc1 = zFar / zNear;
 	zBufferParams = vec4(zc0, zc1, zc0 / zFar, zc1 / zFar);
-	
-	// vec4 position = vec4(inRay.xyz * realZ01, 1.0);
-	// position = param.invView * position;
-
-    vec3 norm_o = inNormal.xyz * 2.0 - 1.0;
+    
+    vec3 norm_o   = mat3(param.view) * (inNormal.xyz * 2.0 - 1.0);
     float depth_o = Linear01Depth(inDepth.r);
-    vec3 vpos_o = inRay.xyz * depth_o;
+    vec3 vpos_o   = inRay.xyz * depth_o;
 
     float ao = 0.0;
     for (int s = 0; s < SAMPLE_COUNT; ++s)
@@ -121,8 +118,6 @@ void main()
 
     // Apply other parameters.
     ao = pow(ao * INTENSITY / SAMPLE_COUNT, kContrast);
-
-    inColor.xyz *= ao;
 
     outFragColor = inColor;
 }

@@ -9,6 +9,7 @@ layout (location = 1) out vec4 outRay;
 layout (binding = 4) uniform ParamBlock
 {
 	vec4 data;
+	mat4 view;
 	mat4 invView;
 	mat4 proj;
 } param;

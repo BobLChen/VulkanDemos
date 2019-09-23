@@ -69,6 +69,7 @@ private:
 	struct ParamBlock
 	{
 		Vector4		data;
+		Matrix4x4   view;
 		Matrix4x4	invView;
 		Matrix4x4	proj;
 	};
@@ -432,14 +433,16 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 750.0f, -1500.0f);
-		m_ViewCamera.LookAt(0, 50.0f, 0);
+		m_ViewCamera.SetRotation(Vector3(25.131f, 0.619f, 0));
+		m_ViewCamera.SetPosition(-26.10247f, 602.182, -890.2283f);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 100.0f, 3000.0f);
 
 		m_ParamData.data.x = m_ViewCamera.GetNear();
 		m_ParamData.data.y = m_ViewCamera.GetFar();
 		m_ParamData.data.z = m_ViewCamera.GetFar() * MMath::Tan(PI / 4 / 2);
 		m_ParamData.data.w = m_ParamData.data.z * (float)GetWidth() / (float)GetHeight();
+
+		m_ParamData.view = m_ViewCamera.GetView();
 
 		m_ParamData.invView = m_ViewCamera.GetView();
 		m_ParamData.invView.SetInverse();
