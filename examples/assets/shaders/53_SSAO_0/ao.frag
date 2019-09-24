@@ -1,10 +1,6 @@
 #version 450
 
-#define SAMPLE_COUNT    15
-#define TWO_PI          6.28318530718
-
-#define INTENSITY       4.0
-#define RADIUS          0.25
+#define TWO_PI 6.28318530718
 
 layout (location = 0) in vec2 inUV0;
 
@@ -17,10 +13,11 @@ layout (location = 0) out vec4 outFragColor;
 layout (binding = 5) uniform ParamBlock
 {
 	vec4 data;
+    vec4 data1;
+    vec4 data2;
     mat4 view;
     mat4 invView;
     mat4 proj;
-    vec4 data1;
 } param;
 
 vec4 zBufferParams;
@@ -62,7 +59,7 @@ vec3 PickSamplePoint(vec2 uv, float index)
     float u = fract(UVRandom(0.0, index + uv.x * 1e-10) + gn) * 2.0 - 1.0;
     float theta = (UVRandom(1.0, index + uv.x * 1e-10) + gn) * TWO_PI;
     vec3 v = vec3(CosSin(theta) * sqrt(1.0 - u * u), u);
-    float l = sqrt((index + 1.0) / SAMPLE_COUNT) * RADIUS;
+    float l = sqrt((index + 1.0) / kSampleCount) * kRadius;
     return v * l;
 }
 
@@ -89,11 +86,15 @@ vec3 SampleNormal(vec2 uv)
 
 void main() 
 {
-    const float kContrast = param.data1.x;
-    const float kGeometryCoeff = param.data1.y;
-    const float kBeta = param.data1.z;
-    const float kEpsilon = param.data1.w;
+    const float kContrast       = param.data1.x;
+    const float kGeometryCoeff  = param.data1.y;
+    const float kBeta           = param.data1.z;
+    const float kEpsilon        = param.data1.w;
 
+    const int kSampleCount      = int(param.data2.x);
+    const float kIntensity      = param.data2.y;
+    const float kRadius         = param.data2.z;
+    
     // buffer params
     float zNear   = param.data.x;
     float zFar    = param.data.y;
@@ -118,7 +119,7 @@ void main()
     vec3 viewPos = ReconstructViewPos(uv, depth, p11_22, p13_31);
 
     float occlusion = 0.0;
-    for (int index = 0; index < int(SAMPLE_COUNT); index++)
+    for (int index = 0; index < int(kSampleCount); index++)
     {
         // Sample point
         // This 'floor(1.0001 * index)' operation is needed to avoid a NVidia shader issue. This issue
@@ -145,10 +146,10 @@ void main()
         occlusion += a1 / a2;
     }
 
-    occlusion *= RADIUS; // Intensity normalization
+    occlusion *= kRadius; // Intensity normalization
 
     // Apply other parameters.
-    occlusion = pow(occlusion * INTENSITY / SAMPLE_COUNT, kContrast);
+    occlusion = pow(occlusion * kIntensity / kSampleCount, kContrast);
 
     vec4 finnalColor;
     finnalColor.xyz = vec3(occlusion);

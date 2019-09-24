@@ -21,5 +21,6 @@ void main()
 {
 	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
 	vec3 normal = normalize(normalMatrix * inNormal);
+	outNormal = normal;
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

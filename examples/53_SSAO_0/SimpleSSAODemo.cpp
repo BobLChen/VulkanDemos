@@ -35,7 +35,8 @@ public:
 		CreateGUI();
 		InitParmas();
 		CreateSourceRT();
-		//CreateBlurRT();
+		CreateAOPass();
+		CreateBlurRT();
 		LoadAssets();
 
 		m_Ready = true;
@@ -69,6 +70,9 @@ private:
 	struct ParamBlock
 	{
 		Vector4		data;
+		Vector4		data1;
+		Vector4		data2;
+
 		Matrix4x4   view;
 		Matrix4x4	invView;
 		Matrix4x4	proj;
@@ -87,6 +91,8 @@ private:
 
 		{
 			m_ParamData.view = m_ViewCamera.GetView();
+			m_ParamData.view.SetInverse();
+			m_ParamData.view.SetTransposed();
 
 			m_ParamData.invView = m_ViewCamera.GetView();
 			m_ParamData.invView.SetInverse();
@@ -107,6 +113,19 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SimpleSSAODemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			ImGui::SliderFloat("kContrast",			&m_ParamData.data1.x, 0.0, 1.0f);
+			ImGui::SliderFloat("kGeometryCoeff",	&m_ParamData.data1.y, 0.0, 1.0f);
+			ImGui::SliderFloat("kBeta",				&m_ParamData.data1.z, 0.0, 1.0f);
+			ImGui::SliderFloat("kEpsilon",			&m_ParamData.data1.w, 0.0, 1.0f);
+
+			ImGui::Separator();
+
+			ImGui::SliderFloat("kSampleCount",		&m_ParamData.data2.x, 0.0, 50.0f);
+			ImGui::SliderFloat("kIntensity",		&m_ParamData.data2.y, 0.0, 10.0f);
+			ImGui::SliderFloat("kRadius",			&m_ParamData.data2.z, 0.0, 10.0f);
+
+			ImGui::Separator();
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -119,6 +138,38 @@ private:
 		return hovered;
 	}
 
+	void CreateAOPass()
+	{
+		m_TexAoOcclusion = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			m_TexSourceColor->format,
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			m_TexSourceColor->width * 0.25f, m_TexSourceColor->height * 0.25f,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfoH(
+			m_TexAoOcclusion, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		m_RTAoOcclusion = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfoH);
+
+		m_AoOcclusionShader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/53_SSAO_0/blurH.vert.spv",
+			"assets/shaders/53_SSAO_0/blurH.frag.spv"
+		);
+
+		m_AoOcclusionMaterial = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RTAoOcclusion->GetRenderPass(),
+			m_PipelineCache,
+			m_AoOcclusionShader
+		);
+		m_AoOcclusionMaterial->PreparePipeline();
+		m_AoOcclusionMaterial->SetTexture("originTexture", m_TexAoOcclusion);
+	}
+
 	void CreateBlurRT()
 	{
 		// blurH
@@ -126,7 +177,7 @@ private:
 			m_VulkanDevice,
 			m_TexAoOcclusion->format,
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_TexAoOcclusion->width * 0.25f, m_TexAoOcclusion->height * 0.25f,
+			m_TexAoOcclusion->width, m_TexAoOcclusion->height,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
@@ -199,6 +250,14 @@ private:
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
+		m_TexSourceNormal->UpdateSampler(
+			VK_FILTER_NEAREST, 
+			VK_FILTER_NEAREST,
+			VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+		);
 
 		m_TexSourceDepth = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
@@ -206,6 +265,14 @@ private:
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+		m_TexSourceDepth->UpdateSampler(
+			VK_FILTER_NEAREST, 
+			VK_FILTER_NEAREST,
+			VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 
+			VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
 		);
 
 		vk_demo::DVKTexture* rtColors[2];
@@ -444,12 +511,23 @@ private:
 	void InitParmas()
 	{
 		m_ViewCamera.SetPosition(0, 5, -25);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
+
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 
 		m_ParamData.data.x = m_ViewCamera.GetNear();
 		m_ParamData.data.y = m_ViewCamera.GetFar();
 		m_ParamData.data.z = m_ViewCamera.GetFar() * MMath::Tan(PI / 4 / 2);
 		m_ParamData.data.w = m_ParamData.data.z * (float)GetWidth() / (float)GetHeight();
+
+		m_ParamData.data1.x = 0.6;
+		m_ParamData.data1.y = 0.8;
+		m_ParamData.data1.z = 0.002;
+		m_ParamData.data1.w = 0.0001;
+
+		m_ParamData.data2.x = 15;
+		m_ParamData.data2.y = 2;
+		m_ParamData.data2.z = 0.25;
+		m_ParamData.data2.w = 0;
 
 		m_ParamData.view = m_ViewCamera.GetView();
 
@@ -457,6 +535,12 @@ private:
 		m_ParamData.invView.SetInverse();
 
 		m_ParamData.proj = m_ViewCamera.GetProjection();
+
+		
+
+		const float kContrast = 0.6;
+		const float kGeometryCoeff = 0.8;
+		const float kBeta = 0.002;
 	}
 
 	void CreateGUI()
@@ -520,5 +604,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<SimpleSSAODemo>(1400, 900, "SimpleSSAODemo", cmdLine);
+	return std::make_shared<SimpleSSAODemo>(800, 600, "SimpleSSAODemo", cmdLine);
 }
