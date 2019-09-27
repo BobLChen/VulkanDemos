@@ -246,6 +246,9 @@ namespace vk_demo
                 clearValue.depthStencil = { 1.0f, 0 };
                 clearValues.push_back(clearValue);
             }
+
+			colorLayout = ImageLayoutBarrier::PixelShaderRead;
+			depthLayout = ImageLayoutBarrier::PixelShaderRead;
         }
         
     public:
@@ -281,8 +284,6 @@ namespace vk_demo
         static DVKRenderTarget* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo);
         
     public:
-        typedef std::unordered_map<VkImage, VkImageLayout> ImageLayouts;
-        
         DVKRenderTargetLayout       rtLayout;
         DVKRenderPassInfo           renderPassInfo;
 		
@@ -292,7 +293,9 @@ namespace vk_demo
         VkDevice                    device = VK_NULL_HANDLE;
         VkExtent2D                  extent2D;
         std::vector<VkClearValue>   clearValues;
-        ImageLayouts                imageLayouts;
+
+		ImageLayoutBarrier			colorLayout;
+		ImageLayoutBarrier			depthLayout;
     };
 
 };

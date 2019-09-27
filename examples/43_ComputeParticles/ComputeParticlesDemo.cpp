@@ -411,7 +411,7 @@ private:
 	vk_demo::DVKTexture*			m_DiffuseTexture = nullptr;
 
     vk_demo::DVKShader*             m_ComputeShader = nullptr;
-    vk_demo::DVKCompute*   m_ComputeProcessor = nullptr;
+    vk_demo::DVKCompute*   			m_ComputeProcessor = nullptr;
 	vk_demo::DVKCommandBuffer*		m_ComputeCommand = nullptr;
 
 	ParticleParam					m_ParticleParams;

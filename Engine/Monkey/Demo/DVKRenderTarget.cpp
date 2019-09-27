@@ -244,7 +244,7 @@ namespace vk_demo
 			subResRange.levelCount     = 1;
 			subResRange.layerCount	   = texture->depth;
 			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, colorLayout, subResRange);
 		}
 
 		if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
@@ -257,7 +257,7 @@ namespace vk_demo
 			subResRange.levelCount     = 1;
 			subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
 			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, ImageLayoutBarrier::PixelShaderRead, subResRange);
+			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, depthLayout, subResRange);
 		}
     }
     
