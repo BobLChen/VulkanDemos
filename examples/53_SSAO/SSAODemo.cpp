@@ -67,6 +67,11 @@ private:
 		Matrix4x4 proj;
 	};
 
+	struct DebugParamBlock
+	{
+		Vector4 data;
+	};
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -90,6 +95,21 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("SSAODemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+			// debug
+			int mode = m_DebugParam.data.x;
+			ImGui::SliderInt("Model", &mode, 0, 2);
+			m_DebugParam.data.x = mode;
+
+			ImGui::Separator();
+
+			// params
+			ImGui::SliderFloat("Blur Tolerance",			&m_BlurTolerance,		   -8.0f,  -1.0f);
+			ImGui::SliderFloat("Upsample Tolerance",		&m_UpsampleTolerance,	   -12.0f, -1.0f);
+			ImGui::SliderFloat("Noise Filter Threshold",	&m_NoiseFilterTolerance,   -8.0f,   0.0f);
+			ImGui::SliderFloat("Screenspace Diameter",		&m_ScreenspaceDiameter,		5.0f,   15.0f);
+			ImGui::SliderFloat("Rejection Falloff",			&m_RejectionFalloff,		1.0f,   10.0f);
+			ImGui::SliderFloat("Accentuation",				&m_Accentuation,			0.0f,   1.0f);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -227,7 +247,7 @@ private:
 			cmdBuffer,
 			VK_FORMAT_R32_SFLOAT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_TexSourceColor->width / 8, m_TexSourceColor->height / 8, 16,
+			Align(m_TexSourceColor->width, 8) / 8, Align(m_TexSourceColor->height, 8) / 8, 16,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
 			VK_SAMPLE_COUNT_1_BIT,
 			ImageLayoutBarrier::ComputeGeneralRW
@@ -292,7 +312,8 @@ private:
 			m_CombineShader
 		);
 		m_CombineMaterial->PreparePipeline();
-		m_CombineMaterial->SetTexture("originTexture",    m_TexSourceColor);
+		m_CombineMaterial->SetTexture("ssaoTexture",    m_TexAoFullScreen);
+		m_CombineMaterial->SetTexture("originTexture",  m_TexSourceColor);
 	}
 
 	void LoadBlurAndUpsampleRes(vk_demo::DVKCommandBuffer* cmdBuffer)
@@ -389,7 +410,7 @@ private:
 		}
 	}
 
-	void SourcePass(VkCommandBuffer commandBuffer)
+	void ScenePass(VkCommandBuffer commandBuffer)
 	{
 		m_RTSource->BeginRenderPass(commandBuffer);
 
@@ -414,7 +435,7 @@ private:
 			m_MVPParam.proj  = m_ViewCamera.GetProjection();
 
 			materials[i]->BeginObject();
-			materials[i]->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
+			materials[i]->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
 			materials[i]->EndObject();
 
 			materials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
@@ -464,6 +485,9 @@ private:
 			vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
 			m_CombineMaterial->BeginFrame();
+			m_CombineMaterial->BeginObject();
+			m_CombineMaterial->SetLocalUniform("param", &m_DebugParam, sizeof(DebugParamBlock));
+			m_CombineMaterial->EndObject();
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CombineMaterial->GetPipeline());
 			m_CombineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
@@ -486,7 +510,7 @@ private:
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
-		SourcePass(commandBuffer);
+		ScenePass(commandBuffer);
 		PrepareDepthPass(commandBuffer);
 		ComputeAoPass(commandBuffer);
 		BlurAndUpsamplePass(commandBuffer);
@@ -497,118 +521,124 @@ private:
 
 	void BlurAndUpsamplePass(VkCommandBuffer commandBuffer)
 	{
-		int32 LoWidth  = m_TexDepthDownSize->width;
-		int32 LoHeight = m_TexDepthDownSize->height;
-		int32 HiWidth  = m_TexLinearDepth->width;
-		int32 HiHeight = m_TexLinearDepth->height;
+		int32 lowWidth   = m_TexDepthDownSize->width;
+		int32 lowHeight  = m_TexDepthDownSize->height;
+		int32 highWidth  = m_TexLinearDepth->width;
+		int32 highHeight = m_TexLinearDepth->height;
 
-		float g_BlurTolerance = -5.0f;
-		float g_UpsampleTolerance = -7.0f;
-		float g_NoiseFilterTolerance = -3.0f;
+		float blurTolerance     = MMath::Pow(1.0f - MMath::Pow(10.0f, m_BlurTolerance) * m_FrameWidth / lowWidth, 2);
+		float upsampleTolerance = MMath::Pow(10.0f, m_UpsampleTolerance);
+		float noiseFilterWeight = 1.0f / (MMath::Pow(10.0f, m_NoiseFilterTolerance) + upsampleTolerance);
 
-		float kBlurTolerance = 1.0f - powf(10.0f, g_BlurTolerance) * 1920.0f / (float)LoWidth;
-		kBlurTolerance *= kBlurTolerance;
-		float kUpsampleTolerance = powf(10.0f, g_UpsampleTolerance);
-		float kNoiseFilterWeight = 1.0f / (powf(10.0f, g_NoiseFilterTolerance) + kUpsampleTolerance);
-
-		float cbData[8] = {
-			1.0f / LoWidth, 1.0f / LoHeight, 1.0f / HiWidth, 1.0f / HiHeight, 
-			kNoiseFilterWeight, 1920.0f / (float)LoWidth, kBlurTolerance, kUpsampleTolerance
+		float paramData[8] = {
+			1.0f / lowWidth, 
+			1.0f / lowHeight, 
+			1.0f / highWidth, 
+			1.0f / highHeight, 
+			noiseFilterWeight, 
+			m_FrameWidth * 1.0f / lowWidth, 
+			blurTolerance, 
+			upsampleTolerance
 		};
 
-		m_ComputeBlurAndUpsample->SetUniform("param", cbData, 8 * sizeof(float));
-		m_ComputeBlurAndUpsample->BindDispatch(commandBuffer, (HiWidth + 2) / 16, (HiHeight + 2) / 16, 1);
+		int32 groupSizeX = Align((highWidth  + 2), 16) / 16;
+		int32 groupSizeY = Align((highHeight + 2), 16) / 16;
+		m_ComputeBlurAndUpsample->SetUniform("param", paramData, 8 * sizeof(float));
+		m_ComputeBlurAndUpsample->BindDispatch(commandBuffer, groupSizeX, groupSizeY, 1);
 	}
 
 	void ComputeAoPass(VkCommandBuffer commandBuffer)
 	{
-		const float ScreenspaceDiameter = 10.0f;
-		const float TanHalfFovH = 1.0f / (1.0 / MMath::Tan(m_ViewCamera.GetFov() * 0.5f));
+		float tanHalfFov   = 1.0f / (1.0 / MMath::Tan(m_ViewCamera.GetFov() * 0.5f));
 
-		int32 BufferWidth  = m_TexDepthTiled->width;
-		int32 BufferHeight = m_TexDepthTiled->height;
-		int32 ArrayCount   = m_TexDepthTiled->layerCount;
+		int32 bufferWidth  = m_TexDepthTiled->width;
+		int32 bufferHeight = m_TexDepthTiled->height;
+		int32 arrayCount   = m_TexDepthTiled->layerCount;
 
-		float ThicknessMultiplier = 2.0f * TanHalfFovH * ScreenspaceDiameter / BufferWidth;
-		float InverseRangeFactor  = 1.0f / ThicknessMultiplier;
+		float thicknessMultiplier = 2.0f * tanHalfFov * m_ScreenspaceDiameter / bufferWidth;
+		float inverseRangeFactor  = 1.0f / thicknessMultiplier;
 
-		float SsaoCB[28];
-		SsaoCB[ 0] = InverseRangeFactor / SampleThickness[ 0];
-		SsaoCB[ 1] = InverseRangeFactor / SampleThickness[ 1];
-		SsaoCB[ 2] = InverseRangeFactor / SampleThickness[ 2];
-		SsaoCB[ 3] = InverseRangeFactor / SampleThickness[ 3];
-		SsaoCB[ 4] = InverseRangeFactor / SampleThickness[ 4];
-		SsaoCB[ 5] = InverseRangeFactor / SampleThickness[ 5];
-		SsaoCB[ 6] = InverseRangeFactor / SampleThickness[ 6];
-		SsaoCB[ 7] = InverseRangeFactor / SampleThickness[ 7];
-		SsaoCB[ 8] = InverseRangeFactor / SampleThickness[ 8];
-		SsaoCB[ 9] = InverseRangeFactor / SampleThickness[ 9];
-		SsaoCB[10] = InverseRangeFactor / SampleThickness[10];
-		SsaoCB[11] = InverseRangeFactor / SampleThickness[11];
+		float paramDatas[28];
+		paramDatas[0]  = inverseRangeFactor / m_SampleThickness[0];
+		paramDatas[1]  = inverseRangeFactor / m_SampleThickness[1];
+		paramDatas[2]  = inverseRangeFactor / m_SampleThickness[2];
+		paramDatas[3]  = inverseRangeFactor / m_SampleThickness[3];
+		paramDatas[4]  = inverseRangeFactor / m_SampleThickness[4];
+		paramDatas[5]  = inverseRangeFactor / m_SampleThickness[5];
+		paramDatas[6]  = inverseRangeFactor / m_SampleThickness[6];
+		paramDatas[7]  = inverseRangeFactor / m_SampleThickness[7];
+		paramDatas[8]  = inverseRangeFactor / m_SampleThickness[8];
+		paramDatas[9]  = inverseRangeFactor / m_SampleThickness[9];
+		paramDatas[10] = inverseRangeFactor / m_SampleThickness[10];
+		paramDatas[11] = inverseRangeFactor / m_SampleThickness[11];
 
-		SsaoCB[12] = 4.0f * SampleThickness[ 0];    // Axial
-		SsaoCB[13] = 4.0f * SampleThickness[ 1];    // Axial
-		SsaoCB[14] = 4.0f * SampleThickness[ 2];    // Axial
-		SsaoCB[15] = 4.0f * SampleThickness[ 3];    // Axial
-		SsaoCB[16] = 4.0f * SampleThickness[ 4];    // Diagonal
-		SsaoCB[17] = 8.0f * SampleThickness[ 5];    // L-shaped
-		SsaoCB[18] = 8.0f * SampleThickness[ 6];    // L-shaped
-		SsaoCB[19] = 8.0f * SampleThickness[ 7];    // L-shaped
-		SsaoCB[20] = 4.0f * SampleThickness[ 8];    // Diagonal
-		SsaoCB[21] = 8.0f * SampleThickness[ 9];    // L-shaped
-		SsaoCB[22] = 8.0f * SampleThickness[10];    // L-shaped
-		SsaoCB[23] = 4.0f * SampleThickness[11];    // Diagonal
+		paramDatas[12] = 4.0f * m_SampleThickness[0];     // Axial
+		paramDatas[13] = 4.0f * m_SampleThickness[1];     // Axial
+		paramDatas[14] = 4.0f * m_SampleThickness[2];     // Axial
+		paramDatas[15] = 4.0f * m_SampleThickness[3];     // Axial
+		paramDatas[16] = 4.0f * m_SampleThickness[4];     // Diagonal
+		paramDatas[17] = 8.0f * m_SampleThickness[5];     // L-shaped
+		paramDatas[18] = 8.0f * m_SampleThickness[6];     // L-shaped
+		paramDatas[19] = 8.0f * m_SampleThickness[7];     // L-shaped
+		paramDatas[20] = 4.0f * m_SampleThickness[8];     // Diagonal
+		paramDatas[21] = 8.0f * m_SampleThickness[9];     // L-shaped
+		paramDatas[22] = 8.0f * m_SampleThickness[10];    // L-shaped
+		paramDatas[23] = 4.0f * m_SampleThickness[11];    // Diagonal
 
-		SsaoCB[12] = 0.0f;
-		SsaoCB[14] = 0.0f;
-		SsaoCB[17] = 0.0f;
-		SsaoCB[19] = 0.0f;
-		SsaoCB[21] = 0.0f;
+		paramDatas[12] = 0.0f;
+		paramDatas[14] = 0.0f;
+		paramDatas[17] = 0.0f;
+		paramDatas[19] = 0.0f;
+		paramDatas[21] = 0.0f;
 
 		float totalWeight = 0.0f;
 		for (int i = 12; i < 24; ++i) {
-			totalWeight += SsaoCB[i];
+			totalWeight += paramDatas[i];
 		}
 
 		for (int i = 12; i < 24; ++i) {
-			SsaoCB[i] /= totalWeight;
+			paramDatas[i] /= totalWeight;
 		}
 
-		float RejectionFalloff = 2.5f;
-		float Accentuation     = 0.1f;
+		paramDatas[24] = 1.0f / bufferWidth;
+		paramDatas[25] = 1.0f / bufferHeight;
+		paramDatas[26] = 1.0f / -m_RejectionFalloff;
+		paramDatas[27] = 1.0f / (1.0f + m_Accentuation);
 
-		SsaoCB[24] = 1.0f / BufferWidth;
-		SsaoCB[25] = 1.0f / BufferHeight;
-		SsaoCB[26] = 1.0f / -RejectionFalloff;
-		SsaoCB[27] = 1.0f / (1.0f + Accentuation);
-
-		m_ComputeAoMerge->SetUniform("param", SsaoCB, 28 * sizeof(float));
-		m_ComputeAoMerge->BindDispatch(commandBuffer, BufferWidth / 8, BufferHeight / 8, ArrayCount);
+		int32 groupSizeX = Align(bufferWidth,  8) / 8;
+		int32 groupSizeY = Align(bufferHeight, 8) / 8;
+		m_ComputeAoMerge->SetUniform("param", paramDatas, 28 * sizeof(float));
+		m_ComputeAoMerge->BindDispatch(commandBuffer, groupSizeX, groupSizeY, arrayCount);
 	}
 
 	void PrepareDepthPass(VkCommandBuffer commandBuffer)
 	{
-		m_ComputeDepthPrepare->BindDispatch(commandBuffer, m_TexSourceColor->width / 16, m_TexSourceColor->height / 16, 1);
+		float params[4] = { m_ViewCamera.GetFar() - m_ViewCamera.GetNear(), 0, 0, 0 };
+		m_ComputeDepthPrepare->SetUniform("param", params, sizeof(float) * 4);
+
+		int32 groupSizeX = Align(m_TexSourceColor->width,  16) / 16;
+		int32 groupSizeY = Align(m_TexSourceColor->height, 16) / 16;
+		m_ComputeDepthPrepare->BindDispatch(commandBuffer, groupSizeX, groupSizeY, 1);
 	}
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 100.0f, -1000.0f);
+		m_ViewCamera.SetPosition(0, 500.0f, -1500.0f);
 		m_ViewCamera.LookAt(0, 100.0f, 0);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
-
-		SampleThickness[ 0] = sqrt(1.0f - 0.2f * 0.2f);
-		SampleThickness[ 1] = sqrt(1.0f - 0.4f * 0.4f);
-		SampleThickness[ 2] = sqrt(1.0f - 0.6f * 0.6f);
-		SampleThickness[ 3] = sqrt(1.0f - 0.8f * 0.8f);
-		SampleThickness[ 4] = sqrt(1.0f - 0.2f * 0.2f - 0.2f * 0.2f);
-		SampleThickness[ 5] = sqrt(1.0f - 0.2f * 0.2f - 0.4f * 0.4f);
-		SampleThickness[ 6] = sqrt(1.0f - 0.2f * 0.2f - 0.6f * 0.6f);
-		SampleThickness[ 7] = sqrt(1.0f - 0.2f * 0.2f - 0.8f * 0.8f);
-		SampleThickness[ 8] = sqrt(1.0f - 0.4f * 0.4f - 0.4f * 0.4f);
-		SampleThickness[ 9] = sqrt(1.0f - 0.4f * 0.4f - 0.6f * 0.6f);
-		SampleThickness[10] = sqrt(1.0f - 0.4f * 0.4f - 0.8f * 0.8f);
-		SampleThickness[11] = sqrt(1.0f - 0.6f * 0.6f - 0.6f * 0.6f);
+		
+		m_SampleThickness[0]  = MMath::Sqrt(1.0f - 0.2f * 0.2f);
+		m_SampleThickness[1]  = MMath::Sqrt(1.0f - 0.4f * 0.4f);
+		m_SampleThickness[2]  = MMath::Sqrt(1.0f - 0.6f * 0.6f);
+		m_SampleThickness[3]  = MMath::Sqrt(1.0f - 0.8f * 0.8f);
+		m_SampleThickness[4]  = MMath::Sqrt(1.0f - 0.2f * 0.2f - 0.2f * 0.2f);
+		m_SampleThickness[5]  = MMath::Sqrt(1.0f - 0.2f * 0.2f - 0.4f * 0.4f);
+		m_SampleThickness[6]  = MMath::Sqrt(1.0f - 0.2f * 0.2f - 0.6f * 0.6f);
+		m_SampleThickness[7]  = MMath::Sqrt(1.0f - 0.2f * 0.2f - 0.8f * 0.8f);
+		m_SampleThickness[8]  = MMath::Sqrt(1.0f - 0.4f * 0.4f - 0.4f * 0.4f);
+		m_SampleThickness[9]  = MMath::Sqrt(1.0f - 0.4f * 0.4f - 0.6f * 0.6f);
+		m_SampleThickness[10] = MMath::Sqrt(1.0f - 0.4f * 0.4f - 0.8f * 0.8f);
+		m_SampleThickness[11] = MMath::Sqrt(1.0f - 0.6f * 0.6f - 0.6f * 0.6f);
 	}
 
 	void CreateGUI()
@@ -626,7 +656,7 @@ private:
 private:
 
 	bool 						m_Ready = false;
-	float						SampleThickness[12];
+	float						m_SampleThickness[12];
 
 	vk_demo::DVKModel*			m_Quad = nullptr;
 
@@ -666,11 +696,19 @@ private:
 	vk_demo::DVKCamera		    m_ViewCamera;
 
 	ModelViewProjectionBlock	m_MVPParam;
+	DebugParamBlock				m_DebugParam;
+
+	float						m_BlurTolerance        = -5.0f;
+	float						m_UpsampleTolerance    = -7.0f;
+	float						m_NoiseFilterTolerance = -3.0f;
+	float						m_ScreenspaceDiameter  = 10.0f;
+	float						m_RejectionFalloff	   = 2.5f;
+	float						m_Accentuation		   = 0.10f;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<SSAODemo>(1280, 720, "SSAODemo", cmdLine);
+	return std::make_shared<SSAODemo>(1400, 900, "SSAODemo", cmdLine);
 }
