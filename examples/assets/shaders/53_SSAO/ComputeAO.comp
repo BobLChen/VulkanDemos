@@ -1,0 +1,100 @@
+#version 450
+
+layout (local_size_x = 8, local_size_y = 8) in;
+
+layout (binding = 0)       uniform sampler2DArray depthImage;
+layout (binding = 2, r8)   uniform image2D        outAoImage;
+
+layout (binding = 4) uniform AoParam 
+{
+	vec4 gInvThicknessTable[3];
+    vec4 gSampleWeightTable[3];
+    vec4 gInvSliceDimension; // + gRejectFadeoff + gRcpAccentuation
+} param;
+
+#define TILE_DIM       16
+#define THREAD_COUNT_X 8
+#define THREAD_COUNT_Y 8
+
+shared float DepthSamples[TILE_DIM * TILE_DIM];
+
+float TestSamplePair(float frontDepth, float invRange, uint base, int offset)
+{
+    float gRejectFadeoff = param.gInvSliceDimension.z;
+
+    float disocclusion1 = DepthSamples[base + offset] * invRange - frontDepth;
+    float disocclusion2 = DepthSamples[base - offset] * invRange - frontDepth;
+
+    float pseudoDisocclusion1 = clamp(gRejectFadeoff * disocclusion1, 0, 1);
+    float pseudoDisocclusion2 = clamp(gRejectFadeoff * disocclusion2, 0, 1);
+
+    return clamp(disocclusion1, pseudoDisocclusion2, 1.0) + clamp(disocclusion2, pseudoDisocclusion1, 1.0) - pseudoDisocclusion1 * pseudoDisocclusion2;
+}
+
+float TestSamples(uint centerIdx, uint x, uint y, float invDepth, float invThickness)
+{
+    float invRange   = invThickness * invDepth;
+    float frontDepth = invThickness - 0.5;
+
+    if (y == 0)
+    {
+        return 0.5 * (
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x)) +
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x * TILE_DIM))
+        );
+    }
+    else if (x == y)
+    {
+        return 0.5 * (
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x * TILE_DIM - x)) +
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x * TILE_DIM + x))
+        );
+    }
+    else
+    {
+        return 0.25 * (
+            TestSamplePair(frontDepth, invRange, centerIdx, int(y * TILE_DIM + x)) +
+            TestSamplePair(frontDepth, invRange, centerIdx, int(y * TILE_DIM - x)) +
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x * TILE_DIM + y)) +
+            TestSamplePair(frontDepth, invRange, centerIdx, int(x * TILE_DIM - y))
+        );
+    }
+}
+
+void main()
+{
+    vec4 gInvThicknessTable[3] = param.gInvThicknessTable;
+    vec4 gSampleWeightTable[3] = param.gSampleWeightTable;
+    vec2 gInvSliceDimension    = param.gInvSliceDimension.xy;
+    float gRejectFadeoff       = param.gInvSliceDimension.z;
+    float gRcpAccentuation     = param.gInvSliceDimension.w;
+
+    vec2 quadCenterUV = ivec2(gl_GlobalInvocationID.xy + gl_LocalInvocationID.xy - 3) * gInvSliceDimension;
+
+	vec4 depths = textureGather(depthImage, vec3(quadCenterUV, gl_GlobalInvocationID.z));
+    
+    int destIdx = int(gl_LocalInvocationID.x * 2 + gl_LocalInvocationID.y * 2 * TILE_DIM);
+    DepthSamples[destIdx]                = depths.w;
+    DepthSamples[destIdx + 1]            = depths.z;
+    DepthSamples[destIdx + TILE_DIM]     = depths.x;
+    DepthSamples[destIdx + TILE_DIM + 1] = depths.y;
+
+    groupMemoryBarrier();
+    barrier();
+
+	uint thisIdx       = gl_LocalInvocationID.x + gl_LocalInvocationID.y * TILE_DIM + 4 * TILE_DIM + 4;
+    float invThisDepth = 1.0 / DepthSamples[thisIdx];
+
+    float ao = 0.0;
+
+	ao += gSampleWeightTable[0].y * TestSamples(thisIdx, 2, 0, invThisDepth, gInvThicknessTable[0].y);
+	ao += gSampleWeightTable[0].w * TestSamples(thisIdx, 4, 0, invThisDepth, gInvThicknessTable[0].w);
+	ao += gSampleWeightTable[1].x * TestSamples(thisIdx, 1, 1, invThisDepth, gInvThicknessTable[1].x);
+	ao += gSampleWeightTable[2].x * TestSamples(thisIdx, 2, 2, invThisDepth, gInvThicknessTable[2].x);
+	ao += gSampleWeightTable[2].w * TestSamples(thisIdx, 3, 3, invThisDepth, gInvThicknessTable[2].w);
+	ao += gSampleWeightTable[1].z * TestSamples(thisIdx, 1, 3, invThisDepth, gInvThicknessTable[1].z);
+	ao += gSampleWeightTable[2].z * TestSamples(thisIdx, 2, 4, invThisDepth, gInvThicknessTable[2].z);
+
+	uvec2 outLoc = gl_GlobalInvocationID.xy << 2 | uvec2(gl_GlobalInvocationID.z & 3, gl_GlobalInvocationID.z >> 2);
+    imageStore(outAoImage, ivec2(outLoc), vec4(ao * gRcpAccentuation));
+}

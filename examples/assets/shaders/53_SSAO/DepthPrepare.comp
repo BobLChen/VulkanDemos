@@ -1,0 +1,45 @@
+#version 450
+
+layout (local_size_x = 8, local_size_y = 8) in;
+
+layout (binding = 0, r32f) uniform readonly image2D depthImage;
+
+layout (binding = 1, r32f) uniform image2D linearImage;
+layout (binding = 2, r32f) uniform image2D down2xImage;
+layout (binding = 3, r32f) uniform image2DArray down2xAtlas;
+
+shared float g_CacheW[256];
+
+float Linearize(uvec2 st)
+{
+    float depth = imageLoad(depthImage, ivec2(st)).x;
+    depth = 1.0 - depth;
+    float dist = 1.0 / ((3000 - 10) * depth + 1.0);
+
+    imageStore(linearImage, ivec2(st), vec4(dist));
+
+    return dist;
+}
+
+void main()
+{
+    uvec2 startST = gl_WorkGroupID.xy << 4 | gl_LocalInvocationID.xy;
+    uint  destIdx = gl_LocalInvocationID.y << 4 | gl_LocalInvocationID.x;
+    
+    g_CacheW[destIdx +  0 ] = Linearize(startST | uvec2(0, 0));
+    g_CacheW[destIdx +  8 ] = Linearize(startST | uvec2(8, 0));
+    g_CacheW[destIdx + 128] = Linearize(startST | uvec2(0, 8));
+    g_CacheW[destIdx + 136] = Linearize(startST | uvec2(8, 8));
+
+    groupMemoryBarrier();
+    barrier();
+
+    uint ldsIndex = (gl_LocalInvocationID.x << 1) | (gl_LocalInvocationID.y << 5);
+    float w1 = g_CacheW[ldsIndex];
+    
+    uvec2 st = gl_GlobalInvocationID.xy;
+    uint slice = (st.x & 3) | ((st.y & 3) << 2);
+    
+    imageStore(down2xImage, ivec2(st), vec4(w1));
+    imageStore(down2xAtlas, ivec3(st >> 2, slice), vec4(w1));
+}
