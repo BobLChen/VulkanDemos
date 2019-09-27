@@ -136,6 +136,19 @@ namespace vk_demo
 			DVKCommandBuffer* cmdBuffer,
 			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
 		);
+
+		static DVKTexture* Create2DArray(
+			std::shared_ptr<VulkanDevice> vulkanDevice,
+			DVKCommandBuffer* cmdBuffer,
+			VkFormat format, 
+			VkImageAspectFlags aspect, 
+			int32 width, 
+			int32 height, 
+			int32 depth,
+			VkImageUsageFlags usage, 
+			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
+			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
+		);
         
 		static DVKTexture* Create3D(
 			VkFormat format, 
