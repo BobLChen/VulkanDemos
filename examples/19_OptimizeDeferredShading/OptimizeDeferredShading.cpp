@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -405,8 +405,6 @@ private:
 			if (ImGui::Button("Random"))
 			{
 				vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-				Vector3 boundSize   = bounds.max - bounds.min;
-				Vector3 boundCenter = bounds.min + boundSize * 0.5f;
 
 				for (int32 i = 0; i < NUM_LIGHTS; ++i)
 				{
@@ -582,7 +580,7 @@ private:
 			m_DescriptorSets[i]->WriteImage("inputColor", m_AttachsColor[i]);
             m_DescriptorSets[i]->WriteImage("inputNormal", m_AttachsNormal[i]);
 			m_DescriptorSets[i]->WriteImage("inputDepth", m_AttachsDepth[i]);
-			m_DescriptorSets[i]->WriteBuffer("param", m_ParamBuffer);
+			m_DescriptorSets[i]->WriteBuffer("paramData", m_ParamBuffer);
 			m_DescriptorSets[i]->WriteBuffer("lightDatas", m_LightParamBuffer);
 		}
 	}
