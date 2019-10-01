@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -44,10 +44,9 @@ public:
 
 	virtual void Exist() override
 	{
-		DemoBase::Release();
-
 		DestroyAssets();
 		DestroyGUI();
+        DemoBase::Release();
 	}
 
 	virtual void Loop(float time, float delta) override
@@ -301,6 +300,8 @@ private:
 
 		cmdBuffer->End();
 		cmdBuffer->Submit();
+        
+        delete cmdBuffer;
 
 		m_FilterIndex = 0;
 		m_FilterNames.resize(4);

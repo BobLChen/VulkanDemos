@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -366,7 +366,7 @@ private:
 		// 设置postprocess的参数
 		m_Material1->BeginFrame();
 		m_Material1->BeginObject();
-		m_Material1->SetLocalUniform("param", &m_VertFragParam, sizeof(AttachmentParamBlock));
+		m_Material1->SetLocalUniform("paramData", &m_VertFragParam, sizeof(AttachmentParamBlock));
 		m_Material1->SetLocalUniform("lightDatas",  &m_LightDatas,    sizeof(LightDataBlock));
 		m_Material1->SetInputAttachment("inputColor",  m_AttachsColor[bufferIndex]);
 		m_Material1->SetInputAttachment("inputNormal", m_AttachsNormal[bufferIndex]);
@@ -411,9 +411,7 @@ private:
 			if (ImGui::Button("Random"))
 			{
 				vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-				Vector3 boundSize   = bounds.max - bounds.min;
-				Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-
+                
 				for (int32 i = 0; i < NUM_LIGHTS; ++i)
 				{
 					m_LightDatas.lights[i].position.x = MMath::RandRange(bounds.min.x, bounds.max.x);

@@ -9,7 +9,7 @@ layout (binding = 3) uniform ParamBlock
 	vec4 param0;	// (attachmentIndex, zNear, zFar, one)
 	vec4 param1;	// (xMaxFar, yMaxFar, padding, padding)
 	mat4 invView;
-} param;
+} paramData;
 
 #define NUM_LIGHTS 64
 struct PointLight {
@@ -29,12 +29,12 @@ layout (location = 0) out vec4 outFragColor;
 
 vec4 zBufferParams;
 
-float Linear01Depth( float z )
+float Linear01Depth(float z)
 {
 	return 1.0 / (zBufferParams.x * z + zBufferParams.y);
 }
 
-float LinearEyeDepth( float z )
+float LinearEyeDepth(float z)
 {
 	return 1.0 / (zBufferParams.z * z + zBufferParams.w);
 }
@@ -46,11 +46,11 @@ float DoAttenuation(float range, float d)
 
 void main() 
 {
-	int attachmentIndex = int(param.param0.x);
-	float zNear = param.param0.y;
-	float zFar  = param.param0.z;
-	float xMaxFar = param.param1.x;
-	float yMaxFar = param.param1.y;
+	int attachmentIndex = int(paramData.param0.x);
+	float zNear = paramData.param0.y;
+	float zFar  = paramData.param0.z;
+	float xMaxFar = paramData.param1.x;
+	float yMaxFar = paramData.param1.y;
 
 	float zc0 = 1.0 - zFar / zNear;
 	float zc1 = zFar / zNear;
@@ -60,7 +60,7 @@ void main()
 	float depth   = subpassLoad(inputDepth).r;
 	float realZ01 = Linear01Depth(depth);
 	vec4 position = vec4(inRay.xyz * realZ01, 1.0);
-	position = param.invView * position;
+	position = paramData.invView * position;
 
 	// normal [0, 1] -> [-1, 1]
 	vec4 normal  = subpassLoad(inputNormal);

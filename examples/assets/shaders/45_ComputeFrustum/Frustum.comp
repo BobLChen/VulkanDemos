@@ -14,7 +14,7 @@ layout (binding = 2) uniform ParticleParam
 {
 	vec4 count;
 	vec4 frustumPlanes[6];
-} param;
+} paramData;
 
 layout (local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
@@ -25,8 +25,8 @@ bool IsInFrustum(uint index)
 	
 	for (int i = 0; i < 6; ++i) 
 	{
-		vec4 plane = param.frustumPlanes[i];
-		float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + param.count.y;
+		vec4 plane = paramData.frustumPlanes[i];
+		float projDist = (plane.x * pos.x) + (plane.y * pos.y) + (plane.z * pos.z) + plane.w + paramData.count.y;
 		if (projDist <= 0) {
 			return false;
 		}
@@ -41,7 +41,7 @@ void main()
 	globalIndex = globalIndex * gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z;
 	globalIndex = globalIndex + gl_LocalInvocationIndex;
 
-	if (globalIndex >= param.count.x) {
+	if (globalIndex >= paramData.count.x) {
 		return;
 	}
 

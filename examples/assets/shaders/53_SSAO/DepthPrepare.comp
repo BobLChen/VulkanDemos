@@ -24,7 +24,7 @@ layout (binding = 3, r32f) uniform image2DArray down2xAtlas;
 layout (binding = 4) uniform ParamBlock 
 {
     vec4 data;
-} param;
+} paramData;
 
 shared float g_CacheDepth[256];
 
@@ -32,7 +32,7 @@ float Linearize(uvec2 uv)
 {
     float depth = imageLoad(depthImage, ivec2(uv)).x;
     depth = 1.0 - depth;
-    float dist = 1.0 / (param.data.x * depth + 1.0);
+    float dist = 1.0 / (paramData.data.x * depth + 1.0);
 
     imageStore(linearImage, ivec2(uv), vec4(dist));
 

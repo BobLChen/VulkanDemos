@@ -24,7 +24,7 @@ layout (binding = 4) uniform AoParam
 {
 	vec4 data0;
     vec4 data1;
-} param;
+} paramData;
 
 shared float g_DepthCache[256];
 shared float g_AOCache1[256];
@@ -160,12 +160,12 @@ float BilateralUpsample(float highDepth, float highAo, vec4 lowDepths, vec4 lowA
 
 void main()
 {
-    invLowResolution    = param.data0.xy;
-    invHighResolution   = param.data0.zw;
-    noiseFilterStrength = param.data1.x;
-    stepSize            = param.data1.y;
-    blurTolerance       = param.data1.z;
-    upsampleTolerance   = param.data1.w;
+    invLowResolution    = paramData.data0.xy;
+    invHighResolution   = paramData.data0.zw;
+    noiseFilterStrength = paramData.data1.x;
+    stepSize            = paramData.data1.y;
+    blurTolerance       = paramData.data1.z;
+    upsampleTolerance   = paramData.data1.w;
 
     PrefetchData(gl_LocalInvocationID.x << 1 | gl_LocalInvocationID.y << 5, ivec2(gl_GlobalInvocationID.xy + gl_LocalInvocationID.xy - 2) * invLowResolution);
     
