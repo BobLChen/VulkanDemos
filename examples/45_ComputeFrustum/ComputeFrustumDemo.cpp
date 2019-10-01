@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -304,7 +304,7 @@ private:
     {
         m_ComputeCommand->Begin();
         
-        m_ComputeProcessor->SetUniform("param", &m_FrustumParam, sizeof(FrustumParamBlock));
+        m_ComputeProcessor->SetUniform("paramData", &m_FrustumParam, sizeof(FrustumParamBlock));
 		m_ComputeProcessor->BindDispatch(m_ComputeCommand->cmdBuffer, 32, 32, 1);
         
 		m_ComputeCommand->Submit();

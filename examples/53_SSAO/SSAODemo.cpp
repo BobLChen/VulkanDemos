@@ -1,4 +1,4 @@
-﻿#include "Common/Common.h"
+#include "Common/Common.h"
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
@@ -486,7 +486,7 @@ private:
 
 			m_CombineMaterial->BeginFrame();
 			m_CombineMaterial->BeginObject();
-			m_CombineMaterial->SetLocalUniform("param", &m_DebugParam, sizeof(DebugParamBlock));
+			m_CombineMaterial->SetLocalUniform("paramData", &m_DebugParam, sizeof(DebugParamBlock));
 			m_CombineMaterial->EndObject();
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CombineMaterial->GetPipeline());
@@ -543,7 +543,7 @@ private:
 
 		int32 groupSizeX = Align((highWidth  + 2), 16) / 16;
 		int32 groupSizeY = Align((highHeight + 2), 16) / 16;
-		m_ComputeBlurAndUpsample->SetUniform("param", paramData, 8 * sizeof(float));
+		m_ComputeBlurAndUpsample->SetUniform("paramData", paramData, 8 * sizeof(float));
 		m_ComputeBlurAndUpsample->BindDispatch(commandBuffer, groupSizeX, groupSizeY, 1);
 	}
 
@@ -607,14 +607,14 @@ private:
 
 		int32 groupSizeX = Align(bufferWidth,  8) / 8;
 		int32 groupSizeY = Align(bufferHeight, 8) / 8;
-		m_ComputeAoMerge->SetUniform("param", paramDatas, 28 * sizeof(float));
+		m_ComputeAoMerge->SetUniform("paramData", paramDatas, 28 * sizeof(float));
 		m_ComputeAoMerge->BindDispatch(commandBuffer, groupSizeX, groupSizeY, arrayCount);
 	}
 
 	void PrepareDepthPass(VkCommandBuffer commandBuffer)
 	{
 		float params[4] = { m_ViewCamera.GetFar() - m_ViewCamera.GetNear(), 0, 0, 0 };
-		m_ComputeDepthPrepare->SetUniform("param", params, sizeof(float) * 4);
+		m_ComputeDepthPrepare->SetUniform("paramData", params, sizeof(float) * 4);
 
 		int32 groupSizeX = Align(m_TexSourceColor->width,  16) / 16;
 		int32 groupSizeY = Align(m_TexSourceColor->height, 16) / 16;

@@ -8,7 +8,7 @@ layout (binding  = 2) uniform sampler2D ssaoTexture;
 layout (binding = 3) uniform DebugParam 
 {
     vec4 data;
-} param;
+} paramData;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -18,13 +18,13 @@ void main()
     float ssaoColor  = texture(ssaoTexture, inUV0).x;
     vec4 finalColor  = vec4(0, 0, 0, 0);
 
-    if (param.data.x == 0) {
+    if (paramData.data.x == 0) {
         finalColor = originColor * ssaoColor;
     }
-    else if (param.data.x == 1) {
+    else if (paramData.data.x == 1) {
         finalColor = originColor;
     }
-    else if (param.data.x == 2) {
+    else if (paramData.data.x == 2) {
         finalColor = vec4(ssaoColor);
     }
     else {

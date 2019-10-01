@@ -9,7 +9,7 @@ layout (binding  = 3) uniform sampler2D luminanceTexture;
 layout (binding = 4) uniform ParamBlock 
 {
     vec4 intensity;
-} param;
+} paramData;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -37,7 +37,7 @@ void main()
     vec4 finalColor  = originColor + bloomColor;
 
     float adaptedLumDest = 2 / (max(0.1, 1 + 10 * EyeAdaption(luminance.x)));
-    finalColor.xyz = ACESFilm((adaptedLumDest * param.intensity.y * finalColor).xyz);
+    finalColor.xyz = ACESFilm((adaptedLumDest * paramData.intensity.y * finalColor).xyz);
 
     outFragColor = finalColor;
 }

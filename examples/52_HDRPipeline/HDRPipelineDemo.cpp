@@ -585,7 +585,7 @@ private:
 
 			materials[i]->BeginObject();
 			materials[i]->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			materials[i]->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+			materials[i]->SetLocalUniform("paramData",   &m_ParamData,        sizeof(ParamBlock));
 			materials[i]->EndObject();
 
 			materials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
@@ -624,7 +624,7 @@ private:
 		m_BlurHMaterial->BeginFrame();
 
 		m_BlurHMaterial->BeginObject();
-		m_BlurHMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+		m_BlurHMaterial->SetLocalUniform("paramData",       &m_ParamData,        sizeof(ParamBlock));
 		m_BlurHMaterial->EndObject();
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurHMaterial->GetPipeline());
@@ -659,7 +659,7 @@ private:
 		m_BlurVMaterial->BeginFrame();
 
 		m_BlurVMaterial->BeginObject();
-		m_BlurVMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+		m_BlurVMaterial->SetLocalUniform("paramData",       &m_ParamData,        sizeof(ParamBlock));
 		m_BlurVMaterial->EndObject();
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_BlurVMaterial->GetPipeline());
@@ -919,7 +919,7 @@ private:
 			m_FinalMaterial->BeginFrame();
 
 			m_FinalMaterial->BeginObject();
-			m_FinalMaterial->SetLocalUniform("param",       &m_ParamData,        sizeof(ParamBlock));
+			m_FinalMaterial->SetLocalUniform("paramData",       &m_ParamData,        sizeof(ParamBlock));
 			m_FinalMaterial->EndObject();
 
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_FinalMaterial->GetPipeline());

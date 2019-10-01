@@ -23,7 +23,7 @@ layout (binding = 4) uniform AoParam
 	vec4 invThicknessTable[3];
     vec4 sampleWeightTable[3];
     vec4 invSliceDimension;
-} param;
+} paramData;
 
 #define TILE_DIM       16
 #define THREAD_COUNT_X 8
@@ -33,7 +33,7 @@ shared float g_DepthSamples[TILE_DIM * TILE_DIM];
 
 float TestSamplePair(float frontDepth, float invRange, uint base, int offset)
 {
-    float rejectFadeoff = param.invSliceDimension.z;
+    float rejectFadeoff = paramData.invSliceDimension.z;
 
     float disocclusion1 = g_DepthSamples[base + offset] * invRange - frontDepth;
     float disocclusion2 = g_DepthSamples[base - offset] * invRange - frontDepth;
@@ -76,11 +76,11 @@ float TestSamples(uint centerIdx, uint x, uint y, float invDepth, float invThick
 
 void main()
 {
-    vec4 invThicknessTable[3] = param.invThicknessTable;
-    vec4 sampleWeightTable[3] = param.sampleWeightTable;
-    vec2 invSliceDimension    = param.invSliceDimension.xy;
-    float rejectFadeoff       = param.invSliceDimension.z;
-    float rcpAccentuation     = param.invSliceDimension.w;
+    vec4 invThicknessTable[3] = paramData.invThicknessTable;
+    vec4 sampleWeightTable[3] = paramData.sampleWeightTable;
+    vec2 invSliceDimension    = paramData.invSliceDimension.xy;
+    float rejectFadeoff       = paramData.invSliceDimension.z;
+    float rcpAccentuation     = paramData.invSliceDimension.w;
 
     vec2 quadCenterUV = ivec2(gl_GlobalInvocationID.xy + gl_LocalInvocationID.xy - 3) * invSliceDimension;
 
