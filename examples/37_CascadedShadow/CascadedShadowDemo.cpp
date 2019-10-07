@@ -438,6 +438,13 @@ private:
 		}    
 	}
 
+	//--------------------------------------------------------------------------------------
+	// File: CascadedShadowsManger.cpp
+	//
+	// This is where the shadows are calculated and rendered.
+	//
+	// Copyright (c) Microsoft Corporation. All rights reserved.
+	//--------------------------------------------------------------------------------------
 	void UpdateCascade()
 	{
 		static const Vector4 vector1100(1.0f, 1.0f, 0.0f, 0.0f);
