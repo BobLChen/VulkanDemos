@@ -848,3 +848,18 @@ SETUP_SAMPLE_START(53_SSAO)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(53_SSAO)
+
+SETUP_SAMPLE_START(54_ThreadedRendering)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/54_ThreadedRendering/ThreadedRenderingDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/54_ThreadedRendering/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(54_ThreadedRendering)
