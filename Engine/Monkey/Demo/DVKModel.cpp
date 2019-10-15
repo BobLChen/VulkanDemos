@@ -161,6 +161,8 @@ namespace vk_demo
 		model->LoadBones(scene);
 		model->LoadNode(scene->mRootNode, scene);
         model->LoadAnim(scene);
+
+		delete[] dataPtr;
         
         return model;
     }
