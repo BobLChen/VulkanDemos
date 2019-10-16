@@ -77,6 +77,22 @@ private:
 			m_ViewCamera.Update(time, delta);
 		}
 
+		Vector3 pos = m_Model->meshes[0]->linkNode->localMatrix.GetOrigin();
+
+		float anim = time;
+		float x = pos.x + (5.25629f + 4.71286f) * delta;
+		if (x >= 5.25629f) {
+			x = -4.71286f;
+		}
+		// x=-4.71286 - 5.25629
+		// y=-4.65963 - 2.41167
+		float y = abs(x) - abs(0.5f * x + 1) -abs(0.5f * x - 1) + (abs(0.5f * x + 2) + abs(0.5f * x - 2) - abs(0.5f * x + 1) - (abs(0.5f * x - 1))) * sin(5 * PI * x + 8 * anim);
+
+		pos.y = y;
+		pos.x = x;
+
+		m_Model->meshes[0]->linkNode->localMatrix.SetPosition(pos);
+
 		SetupCommandBuffers(bufferIndex);
 
 		DemoBase::Present(bufferIndex);
