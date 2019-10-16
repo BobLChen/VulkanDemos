@@ -9,5 +9,5 @@ layout (location = 0) out vec4 outFragColor;
 void main() 
 {
     vec4 diffuse = texture(diffuseMap, inUV);
-    outFragColor = diffuse;
+    outFragColor = diffuse * 0.25;
 }
