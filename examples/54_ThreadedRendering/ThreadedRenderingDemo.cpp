@@ -8,16 +8,184 @@
 
 #include <vector>
 
-class m_ThreadedRenderingDemo : public DemoBase
+// less than m_VulkanDevice->GetLimits().maxUniformBufferRange
+#define INSTANCE_COUNT 1024
+
+struct InstanceData
+{
+	Vector4 quat;
+	Vector4 dual;
+};
+
+struct ParticleData
+{
+	Vector3 velocity;
+	Vector3 direction;
+	float	grivity;
+	float   lifeTime;
+};
+
+struct ModelViewProjectionBlock
+{
+	Matrix4x4 model;
+	Matrix4x4 view;
+	Matrix4x4 proj;
+};
+
+class ParticleModel
 {
 public:
-	m_ThreadedRenderingDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
-		: DemoBase(width, height, title, cmdLine)
+	ParticleModel(vk_demo::DVKModel* model, vk_demo::DVKMaterial* material, vk_demo::DVKModel* templat, int32 baseIndex, int32 count)
+		: m_Model(model)
+		, m_Material(material)
+		, m_Template(templat)
+		, m_BaseIndex(baseIndex)
+		, m_Count(count)
+		, m_UpdateIndex(0)
 	{
-
+		
 	}
 
-	virtual ~m_ThreadedRenderingDemo()
+	void Draw(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
+	{
+		vk_demo::DVKPrimitive* primitive = m_Model->meshes[0]->primitives[0];
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
+
+		m_MVPParam.model = m_Model->meshes[0]->linkNode->GetGlobalMatrix();
+		m_MVPParam.view  = camera.GetView();
+		m_MVPParam.proj  = camera.GetProjection();
+
+		m_Material->BeginFrame();
+
+		m_Material->BeginObject();
+		m_Material->SetLocalUniform("uboMVP",		&m_MVPParam,		sizeof(ModelViewProjectionBlock));
+		m_Material->SetLocalUniform("uboTransform", &m_InstanceDatas,	sizeof(m_InstanceDatas));
+		m_Material->EndObject();
+
+		m_Material->EndFrame();
+
+		m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+		
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &(primitive->vertexBuffer->dvkBuffer->buffer), &(primitive->vertexBuffer->offset));
+		vkCmdBindVertexBuffers(commandBuffer, 1, 1, &(primitive->instanceBuffer->dvkBuffer->buffer), &(primitive->instanceBuffer->offset));
+		vkCmdBindIndexBuffer(commandBuffer, primitive->indexBuffer->dvkBuffer->buffer, 0, primitive->indexBuffer->indexType);
+		vkCmdDrawIndexed(commandBuffer, primitive->indexBuffer->indexCount, m_UpdateIndex, 0, 0, 0);
+	}
+
+	void Update(std::vector<Matrix4x4>& bonesData, vk_demo::DVKCamera& camera)
+	{
+		vk_demo::DVKMesh* mesh = m_Template->meshes[0];
+		vk_demo::DVKPrimitive* primitive = mesh->primitives[0];
+
+		// VertexAttribute::VA_Position,
+		// VertexAttribute::VA_Normal,
+		// VertexAttribute::VA_SkinIndex,
+		// VertexAttribute::VA_SkinWeight
+		if (m_UpdateIndex + m_Count > m_Model->meshes[0]->primitives[0]->indexBuffer->instanceCount) {
+			m_UpdateIndex = 0;
+		}
+
+		int32 stride    = primitive->vertices.size() / primitive->vertexCount;
+		int32 vertBegin = m_BaseIndex * stride;
+		int32 vertEnd   = (m_BaseIndex + m_Count) * stride;
+		int32 objIndex  = m_UpdateIndex;
+
+		for (int32 index = 0; index < m_UpdateIndex; ++index)
+		{
+
+		}
+
+		for (int32 index = vertBegin; index < vertEnd; index += stride)
+		{
+			Vector3 position(
+				primitive->vertices[index + 0],
+				primitive->vertices[index + 1],
+				primitive->vertices[index + 2]
+			);
+			Vector3 normal(
+				primitive->vertices[index + 3],
+				primitive->vertices[index + 4],
+				primitive->vertices[index + 5]
+			);
+			IntVector4 skinIndices(
+				primitive->vertices[index + 6],
+				primitive->vertices[index + 7],
+				primitive->vertices[index + 8],
+				primitive->vertices[index + 9]
+			);
+			Vector4 skinWeights(
+				primitive->vertices[index + 10],
+				primitive->vertices[index + 11],
+				primitive->vertices[index + 12],
+				primitive->vertices[index + 13]
+			);
+			
+			Vector3 finalPos = 
+				bonesData[skinIndices.x].TransformPosition(position) * skinWeights.x + 
+				bonesData[skinIndices.y].TransformPosition(position) * skinWeights.y + 
+				bonesData[skinIndices.z].TransformPosition(position) * skinWeights.z + 
+				bonesData[skinIndices.w].TransformPosition(position) * skinWeights.w;
+
+			Vector3 finalDir = 
+				bonesData[skinIndices.x].TransformVector(normal) * skinWeights.x + 
+				bonesData[skinIndices.y].TransformVector(normal) * skinWeights.y + 
+				bonesData[skinIndices.z].TransformVector(normal) * skinWeights.z + 
+				bonesData[skinIndices.w].TransformVector(normal) * skinWeights.w;
+
+			Matrix4x4 matrix;
+			matrix.SetPosition(finalPos);
+			matrix.LookAt(camera.GetTransform().GetOrigin());
+
+			Quat quat   = matrix.ToQuat();
+			Vector3 pos = matrix.GetOrigin();
+
+			float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+			float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+			float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+			float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+
+			m_InstanceDatas[objIndex].dual.Set(dx, dy, dz, dw);
+			m_InstanceDatas[objIndex].quat.Set(quat.x, quat.y, quat.z, quat.w);
+
+			m_ParticleDatas[objIndex].direction = finalDir;
+			m_ParticleDatas[objIndex].velocity  = Vector3(
+				MMath::FRandRange(0, 5.0f), 
+				MMath::FRandRange(0, 5.0f), 
+				MMath::FRandRange(0, 5.0f)
+			);
+			m_ParticleDatas[objIndex].grivity   = MMath::FRandRange(0, -5.0f);
+			m_ParticleDatas[objIndex].lifeTime  = MMath::FRandRange(1.0f, 5.0f);
+
+			objIndex += 1;
+		}
+
+		m_UpdateIndex += m_Count;
+	}
+
+private:
+
+	vk_demo::DVKModel*			m_Template;
+	vk_demo::DVKModel*			m_Model;
+	vk_demo::DVKMaterial*		m_Material;
+	int32						m_BaseIndex;
+	int32						m_Count;
+	int32						m_UpdateIndex;
+	InstanceData				m_InstanceDatas[INSTANCE_COUNT];
+	ParticleData				m_ParticleDatas[INSTANCE_COUNT];
+	ModelViewProjectionBlock	m_MVPParam;
+};
+
+class ThreadedRenderingDemo : public DemoBase
+{
+public:
+	ThreadedRenderingDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+		: DemoBase(width, height, title, cmdLine)
+	{
+		
+	}
+
+	virtual ~ThreadedRenderingDemo()
 	{
 
 	}
@@ -34,19 +202,18 @@ public:
 
 		CreateGUI();
 		InitParmas();
+		LoadAnimModel();
 		LoadAssets();
 
 		m_Ready = true;
-
 		return true;
 	}
 
 	virtual void Exist() override
 	{
-		DemoBase::Release();
-
 		DestroyAssets();
 		DestroyGUI();
+		DemoBase::Release();
 	}
 
 	virtual void Loop(float time, float delta) override
@@ -59,42 +226,20 @@ public:
 
 private:
 
-	struct ModelViewProjectionBlock
-	{
-		Matrix4x4 model;
-		Matrix4x4 view;
-		Matrix4x4 proj;
-	};
-
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
-		bool hovered = UpdateUI(time, delta);
 
+		bool hovered = UpdateUI(time, delta);
 		if (!hovered) {
 			m_ViewCamera.Update(time, delta);
 		}
 
-		Vector3 pos = m_Model->meshes[0]->linkNode->localMatrix.GetOrigin();
-
-		float anim = time;
-		float x = pos.x + (5.25629f + 4.71286f) * delta;
-		if (x >= 5.25629f) {
-			x = -4.71286f;
-		}
-		// x=-4.71286 - 5.25629
-		// y=-4.65963 - 2.41167
-		float y = abs(x) - abs(0.5f * x + 1) -abs(0.5f * x - 1) + (abs(0.5f * x + 2) + abs(0.5f * x - 2) - abs(0.5f * x + 1) - (abs(0.5f * x - 1))) * sin(5 * PI * x + 8 * anim);
-
-		pos.y = y;
-		pos.x = x;
-
-		m_Model->meshes[0]->linkNode->localMatrix.SetPosition(pos);
+		UpdateAnimation(time, delta);
 
 		SetupCommandBuffers(bufferIndex);
-
 		DemoBase::Present(bufferIndex);
 	}
 
@@ -105,7 +250,7 @@ private:
 		{
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
-			ImGui::Begin("m_ThreadedRenderingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+			ImGui::Begin("ThreadedRenderingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -119,85 +264,154 @@ private:
 		return hovered;
 	}
 
+	void UpdateAnimation(float time, float delta)
+	{
+		m_RoleModel->Update(time, delta);
+
+		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
+		for (int32 i = 0; i < mesh->bones.size(); ++i)
+		{
+			int32 index = mesh->bones[i];
+			m_BonesData[index] = m_RoleModel->bones[index]->finalTransform;
+		}
+
+		for (int32 i = 0; i < m_Particles.size(); ++i) {
+			m_Particles[i]->Update(m_BonesData, m_ViewCamera);
+		}
+	}
+
+	void LoadAnimModel()
+	{
+		m_RoleModel = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/xiaonan/nvhai.fbx",
+			m_VulkanDevice,
+			nullptr,
+			{
+				VertexAttribute::VA_Position,
+				VertexAttribute::VA_Normal,
+				VertexAttribute::VA_SkinIndex,
+				VertexAttribute::VA_SkinWeight
+			}
+		);
+
+		m_RoleModel->SetAnimation(0);
+		m_BonesData.resize(m_RoleModel->meshes[0]->bones.size());
+	}
+
 	void LoadAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		m_Model = vk_demo::DVKModel::LoadFromFile(
+		// fullscreen
+		m_Quad = vk_demo::DVKDefaultRes::fullQuad;
+
+		// scene model
+		m_ParticleModel = vk_demo::DVKModel::LoadFromFile(
 			"assets/models/plane_z.obj",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
 				VertexAttribute::VA_Position,
-				VertexAttribute::VA_UV0
+				VertexAttribute::VA_UV0,
 			}
 		);
 
-		m_Texture = vk_demo::DVKTexture::Create2D(
-			"assets/textures/flare3.png", 
-			m_VulkanDevice, 
-			cmdBuffer
-		);
-
-		m_Shader = vk_demo::DVKShader::Create(
+		m_ParticleShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
 			"assets/shaders/54_ThreadedRendering/obj.vert.spv",
-			"assets/shaders/54_ThreadedRendering/obj.frag.spv",
-			nullptr
+			"assets/shaders/54_ThreadedRendering/obj.frag.spv"
 		);
 
-		m_Material = vk_demo::DVKMaterial::Create(
+		m_ParticleTexture = vk_demo::DVKTexture::Create2D(
+			"assets/textures/flare3.png",
+			m_VulkanDevice,
+			cmdBuffer
+		);
+
+		m_ParticleMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
 			m_RenderPass,
 			m_PipelineCache,
-			m_Shader
+			m_ParticleShader
 		);
+		m_ParticleMaterial->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
+		m_ParticleMaterial->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+		m_ParticleMaterial->pipelineInfo.inputAssemblyState.primitiveRestartEnable = VK_FALSE;
+		m_ParticleMaterial->pipelineInfo.depthStencilState.depthTestEnable = VK_FALSE;
+		m_ParticleMaterial->pipelineInfo.depthStencilState.depthWriteEnable = VK_FALSE;
+		m_ParticleMaterial->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
+		m_ParticleMaterial->pipelineInfo.depthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].blendEnable = VK_TRUE;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		m_ParticleMaterial->pipelineInfo.blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+		m_ParticleMaterial->PreparePipeline();
+		m_ParticleMaterial->SetTexture("diffuseMap", m_ParticleTexture);
+		
+		// particle instance data
+		{
+			// write instance index
+			vk_demo::DVKPrimitive* primitive = m_ParticleModel->meshes[0]->primitives[0];
+			primitive->instanceDatas.resize(INSTANCE_COUNT);
 
-		m_Material->pipelineInfo.rasterizationState.cullMode = VK_CULL_MODE_NONE;
-		m_Material->pipelineInfo.rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-		m_Material->pipelineInfo.inputAssemblyState.primitiveRestartEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthTestEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthWriteEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
-		m_Material->pipelineInfo.depthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
-		m_Material->pipelineInfo.blendAttachmentStates[0].blendEnable = VK_TRUE;
-		m_Material->pipelineInfo.blendAttachmentStates[0].colorBlendOp = VK_BLEND_OP_ADD;
-		m_Material->pipelineInfo.blendAttachmentStates[0].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		m_Material->pipelineInfo.blendAttachmentStates[0].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
-		m_Material->pipelineInfo.blendAttachmentStates[0].alphaBlendOp = VK_BLEND_OP_ADD;
-		m_Material->pipelineInfo.blendAttachmentStates[0].srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		m_Material->pipelineInfo.blendAttachmentStates[0].dstAlphaBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
-		m_Material->PreparePipeline();
-		m_Material->SetTexture("diffuseMap", m_Texture);
+			for (int32 i = 0; i < INSTANCE_COUNT; ++i) {
+				primitive->instanceDatas[i] = i;
+			}
+
+			// create instance buffer
+			primitive->indexBuffer->instanceCount = INSTANCE_COUNT;
+			primitive->instanceBuffer = vk_demo::DVKVertexBuffer::Create(
+				m_VulkanDevice, 
+				cmdBuffer, 
+				primitive->instanceDatas, 
+				m_ParticleShader->instancesAttributes
+			);
+		}
+
+		// prepare thread task
+		{
+			vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
+
+			int32 threadNum = 8 * 50;
+			int32 perThread = primitive->vertexCount / threadNum;
+			int32 remainNum = primitive->vertexCount - perThread * threadNum;
+			int32 vertIndex = 0;
+
+			m_Particles.resize(threadNum);
+			for (int32 i = 0; i < threadNum; ++i)
+			{
+				int32 count = remainNum > 0 ? perThread + 1 : perThread;
+
+				m_Particles[i] = new ParticleModel(m_ParticleModel, m_ParticleMaterial, m_RoleModel, vertIndex, count);
+
+				remainNum -= 1;
+				vertIndex += count;
+			}
+		}
 
 		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
 	{
-		delete m_Model;
-		delete m_Material;
-		delete m_Shader;
-		delete m_Texture;
+		delete m_RoleModel;
+		delete m_ParticleModel;
+		delete m_ParticleShader;
+		delete m_ParticleMaterial;
+		delete m_ParticleTexture;
+
+		for (int32 i = 0; i < m_Particles.size(); ++i) {
+			delete m_Particles[i];
+		}
+		m_Particles.clear();
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
 	{
-		VkViewport viewport = {};
-		viewport.x        = 0;
-		viewport.y        = m_FrameHeight;
-		viewport.width    = m_FrameWidth;
-		viewport.height   = -(float)m_FrameHeight;    // flip y axis
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		VkRect2D scissor = {};
-		scissor.extent.width  = m_FrameWidth;
-		scissor.extent.height = m_FrameHeight;
-		scissor.offset.x = 0;
-		scissor.offset.y = 0;
-
 		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
 
 		VkCommandBufferBeginInfo cmdBeginInfo;
@@ -220,36 +434,46 @@ private:
 		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
 		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		float w  = m_FrameWidth;
+		float h  = m_FrameHeight;
+		float tx = 0;
+		float ty = 0;
+
+		VkViewport viewport = {};
+		viewport.x        = tx;
+		viewport.y        = m_FrameHeight - ty;
+		viewport.width    = w;
+		viewport.height   = -h;    // flip y axis
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.extent.width  = w;
+		scissor.extent.height = h;
+		scissor.offset.x = tx;
+		scissor.offset.y = ty;
+
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
-		m_Material->BeginFrame();
-		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
-		{
-			m_MVPParam.model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
-			m_MVPParam.view  = m_ViewCamera.GetView();
-			m_MVPParam.proj  = m_ViewCamera.GetProjection();
-
-			m_Material->BeginObject();
-			m_Material->SetLocalUniform("uboMVP",      &m_MVPParam,         sizeof(ModelViewProjectionBlock));
-			m_Material->EndObject();
-
-			m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, i);
-			m_Model->meshes[i]->BindDrawCmd(commandBuffer);
+		// particles
+		for (int32 i = 0; i < m_Particles.size(); ++i) {
+			m_Particles[i]->Draw(commandBuffer, m_ViewCamera);
 		}
-		m_Material->EndFrame();
 
+		// ui pass
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
+
 		vkCmdEndRenderPass(commandBuffer);
+
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 0, -50.0f);
+		m_ViewCamera.SetPosition(0, 0, -10);
 		m_ViewCamera.LookAt(0, 0, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 500.0f);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}
 
 	void CreateGUI()
@@ -266,20 +490,26 @@ private:
 
 private:
 
-	bool 						    m_Ready = false;
+	bool 						m_Ready = false;
 
-	vk_demo::DVKModel*			    m_Model = nullptr;
-	vk_demo::DVKMaterial*		    m_Material = nullptr;
-	vk_demo::DVKShader*			    m_Shader = nullptr;
-	vk_demo::DVKTexture*			m_Texture = nullptr;
+	vk_demo::DVKModel*			m_Quad = nullptr;
 
-	vk_demo::DVKCamera		        m_ViewCamera;
-	ModelViewProjectionBlock	    m_MVPParam;
+	vk_demo::DVKModel*			m_RoleModel = nullptr;
+	vk_demo::DVKModel*			m_ParticleModel = nullptr;
+	vk_demo::DVKShader*			m_ParticleShader = nullptr;
+	vk_demo::DVKTexture*		m_ParticleTexture = nullptr;
+	vk_demo::DVKMaterial*		m_ParticleMaterial = nullptr;
 
-	ImageGUIContext*			    m_GUI = nullptr;
+	vk_demo::DVKCamera		    m_ViewCamera;
+
+	ModelViewProjectionBlock	m_MVPParam;
+	std::vector<ParticleModel*> m_Particles;
+	std::vector<Matrix4x4>		m_BonesData;
+
+	ImageGUIContext*			m_GUI = nullptr;
 };
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<m_ThreadedRenderingDemo>(1400, 900, "m_ThreadedRenderingDemo", cmdLine);
+	return std::make_shared<ThreadedRenderingDemo>(1400, 900, "ThreadedRenderingDemo", cmdLine);
 }
