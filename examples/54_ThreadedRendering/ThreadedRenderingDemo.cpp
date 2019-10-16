@@ -11,17 +11,25 @@
 // less than m_VulkanDevice->GetLimits().maxUniformBufferRange
 #define INSTANCE_COUNT 1024
 
-struct InstanceData
+struct QualQuat
 {
 	Vector4 quat;
 	Vector4 dual;
 };
 
+struct InstanceData
+{
+	QualQuat	dualQuats[INSTANCE_COUNT];
+	Vector4		colors[INSTANCE_COUNT];
+};
+
 struct ParticleData
 {
+	Vector3 position;
 	Vector3 velocity;
 	Vector3 direction;
 	float	grivity;
+	float   time;
 	float   lifeTime;
 };
 
@@ -43,7 +51,7 @@ public:
 		, m_Count(count)
 		, m_UpdateIndex(0)
 	{
-		
+
 	}
 
 	void Draw(VkCommandBuffer commandBuffer, vk_demo::DVKCamera& camera)
@@ -60,7 +68,7 @@ public:
 
 		m_Material->BeginObject();
 		m_Material->SetLocalUniform("uboMVP",		&m_MVPParam,		sizeof(ModelViewProjectionBlock));
-		m_Material->SetLocalUniform("uboTransform", &m_InstanceDatas,	sizeof(m_InstanceDatas));
+		m_Material->SetLocalUniform("uboTransform", &m_InstanceData,	sizeof(InstanceData));
 		m_Material->EndObject();
 
 		m_Material->EndFrame();
@@ -73,28 +81,52 @@ public:
 		vkCmdDrawIndexed(commandBuffer, primitive->indexBuffer->indexCount, m_UpdateIndex, 0, 0, 0);
 	}
 
-	void Update(std::vector<Matrix4x4>& bonesData, vk_demo::DVKCamera& camera)
+	void Update(std::vector<Matrix4x4>& bonesData, vk_demo::DVKCamera& camera, float time, float delta)
 	{
-		vk_demo::DVKMesh* mesh = m_Template->meshes[0];
-		vk_demo::DVKPrimitive* primitive = mesh->primitives[0];
-
-		// VertexAttribute::VA_Position,
-		// VertexAttribute::VA_Normal,
-		// VertexAttribute::VA_SkinIndex,
-		// VertexAttribute::VA_SkinWeight
+		// ring buffer
 		if (m_UpdateIndex + m_Count > m_Model->meshes[0]->primitives[0]->indexBuffer->instanceCount) {
 			m_UpdateIndex = 0;
 		}
 
+		vk_demo::DVKPrimitive* primitive = m_Template->meshes[0]->primitives[0];
+
+		// move particle
+		for (int32 index = 0; index < m_UpdateIndex; ++index)
+		{
+			if (m_ParticleDatas[index].time >= m_ParticleDatas[index].lifeTime) {
+				m_InstanceData.colors[index].w = 0;
+				m_InstanceData.dualQuats[index].dual.Set(0, 0, 0, 0);
+				m_InstanceData.dualQuats[index].quat.Set(0, 0, 0, 1);
+				continue;
+			}
+
+			m_ParticleDatas[index].time       += delta;
+			m_ParticleDatas[index].position   += m_ParticleDatas[index].direction * m_ParticleDatas[index].velocity * delta;
+			m_ParticleDatas[index].position.y += m_ParticleDatas[index].grivity * delta;
+
+			Matrix4x4 matrix;
+			matrix.SetPosition(m_ParticleDatas[index].position);
+			matrix.LookAt(camera.GetTransform().GetOrigin());
+			
+			Quat quat   = matrix.ToQuat();
+			Vector3 pos = matrix.GetOrigin();
+
+			float dx = (+0.5) * ( pos.x * quat.w + pos.y * quat.z - pos.z * quat.y);
+			float dy = (+0.5) * (-pos.x * quat.z + pos.y * quat.w + pos.z * quat.x);
+			float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
+			float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
+
+			m_InstanceData.colors[index].w = m_ParticleDatas[index].time / m_ParticleDatas[index].lifeTime;
+
+			m_InstanceData.dualQuats[index].dual.Set(dx, dy, dz, dw);
+			m_InstanceData.dualQuats[index].quat.Set(quat.x, quat.y, quat.z, quat.w);
+		}
+
+		// init particle position
 		int32 stride    = primitive->vertices.size() / primitive->vertexCount;
 		int32 vertBegin = m_BaseIndex * stride;
 		int32 vertEnd   = (m_BaseIndex + m_Count) * stride;
 		int32 objIndex  = m_UpdateIndex;
-
-		for (int32 index = 0; index < m_UpdateIndex; ++index)
-		{
-
-		}
 
 		for (int32 index = vertBegin; index < vertEnd; index += stride)
 		{
@@ -102,11 +134,6 @@ public:
 				primitive->vertices[index + 0],
 				primitive->vertices[index + 1],
 				primitive->vertices[index + 2]
-			);
-			Vector3 normal(
-				primitive->vertices[index + 3],
-				primitive->vertices[index + 4],
-				primitive->vertices[index + 5]
 			);
 			IntVector4 skinIndices(
 				primitive->vertices[index + 6],
@@ -120,18 +147,12 @@ public:
 				primitive->vertices[index + 12],
 				primitive->vertices[index + 13]
 			);
-			
+
 			Vector3 finalPos = 
 				bonesData[skinIndices.x].TransformPosition(position) * skinWeights.x + 
 				bonesData[skinIndices.y].TransformPosition(position) * skinWeights.y + 
 				bonesData[skinIndices.z].TransformPosition(position) * skinWeights.z + 
 				bonesData[skinIndices.w].TransformPosition(position) * skinWeights.w;
-
-			Vector3 finalDir = 
-				bonesData[skinIndices.x].TransformVector(normal) * skinWeights.x + 
-				bonesData[skinIndices.y].TransformVector(normal) * skinWeights.y + 
-				bonesData[skinIndices.z].TransformVector(normal) * skinWeights.z + 
-				bonesData[skinIndices.w].TransformVector(normal) * skinWeights.w;
 
 			Matrix4x4 matrix;
 			matrix.SetPosition(finalPos);
@@ -145,17 +166,17 @@ public:
 			float dz = (+0.5) * ( pos.x * quat.y - pos.y * quat.x + pos.z * quat.w);
 			float dw = (-0.5) * ( pos.x * quat.x + pos.y * quat.y + pos.z * quat.z);
 
-			m_InstanceDatas[objIndex].dual.Set(dx, dy, dz, dw);
-			m_InstanceDatas[objIndex].quat.Set(quat.x, quat.y, quat.z, quat.w);
+			m_InstanceData.colors[objIndex] = Vector4(MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f), 1.0f);
 
-			m_ParticleDatas[objIndex].direction = finalDir;
-			m_ParticleDatas[objIndex].velocity  = Vector3(
-				MMath::FRandRange(0, 5.0f), 
-				MMath::FRandRange(0, 5.0f), 
-				MMath::FRandRange(0, 5.0f)
-			);
+			m_InstanceData.dualQuats[objIndex].dual.Set(dx, dy, dz, dw);
+			m_InstanceData.dualQuats[objIndex].quat.Set(quat.x, quat.y, quat.z, quat.w);
+
+			m_ParticleDatas[objIndex].position  = pos;
+			m_ParticleDatas[objIndex].direction = Vector3(MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f)).GetSafeNormal();
+			m_ParticleDatas[objIndex].velocity  = Vector3(MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f), MMath::FRandRange(0, 1.0f)).GetSafeNormal() * MMath::FRandRange(1.0f, 10.0f);
 			m_ParticleDatas[objIndex].grivity   = MMath::FRandRange(0, -5.0f);
-			m_ParticleDatas[objIndex].lifeTime  = MMath::FRandRange(1.0f, 5.0f);
+			m_ParticleDatas[objIndex].lifeTime  = MMath::FRandRange(0.1f, 0.5f);
+			m_ParticleDatas[objIndex].time      = 0;
 
 			objIndex += 1;
 		}
@@ -171,7 +192,7 @@ private:
 	int32						m_BaseIndex;
 	int32						m_Count;
 	int32						m_UpdateIndex;
-	InstanceData				m_InstanceDatas[INSTANCE_COUNT];
+	InstanceData				m_InstanceData;
 	ParticleData				m_ParticleDatas[INSTANCE_COUNT];
 	ModelViewProjectionBlock	m_MVPParam;
 };
@@ -201,9 +222,9 @@ public:
 		DemoBase::Prepare();
 
 		CreateGUI();
-		InitParmas();
 		LoadAnimModel();
 		LoadAssets();
+		InitParmas();
 
 		m_Ready = true;
 		return true;
@@ -276,7 +297,7 @@ private:
 		}
 
 		for (int32 i = 0; i < m_Particles.size(); ++i) {
-			m_Particles[i]->Update(m_BonesData, m_ViewCamera);
+			m_Particles[i]->Update(m_BonesData, m_ViewCamera, time, delta);
 		}
 	}
 
@@ -471,8 +492,12 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 0, -10);
-		m_ViewCamera.LookAt(0, 0, 0);
+		vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		boundCenter.z -= boundSize.Size() * 1.5f;
+
+		m_ViewCamera.SetPosition(boundCenter);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
 	}
 

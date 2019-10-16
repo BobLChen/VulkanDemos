@@ -16,9 +16,11 @@ layout (binding = 0) uniform MVPBlock
 layout (binding = 2) uniform TransformBlock 
 {
 	mat2x4 transforms[INSTANCE_COUNT];
+	vec4   colors[INSTANCE_COUNT];
 } uboTransform;
 
 layout (location = 0) out vec2 outUV;
+layout (location = 1) out vec4 outColor;
 
 out gl_PerVertex 
 {
@@ -44,6 +46,8 @@ void main()
 
 	vec4 position   = vec4(DualQuatTransformPosition(dualQuat, inPosition.xyz), 1.0);
 	
-	outUV = inUV0;
+	outUV    = inUV0;
+	outColor = uboTransform.colors[instanceID];
+	
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * position;
 }

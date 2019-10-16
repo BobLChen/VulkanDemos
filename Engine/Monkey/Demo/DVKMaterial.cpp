@@ -312,6 +312,7 @@ namespace vk_demo
 		
 		// 拷贝数据
 		memcpy(ringCPUData + ringOffset, dataPtr, bufferSize);
+
 		// 记录Offset
 		dynOffsets[it->second.dynamicIndex] = ringOffset;
     }
