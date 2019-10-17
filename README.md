@@ -254,3 +254,5 @@ Reduce 5 float per vertex
 ### [53_SSAO](https://github.com/BobLChen/VulkanDemos/tree/master/examples/53_SSAO)
 ![53_SSAO](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/53_SSAO.gif)
 
+### [54_ThreadedRendering](https://github.com/BobLChen/VulkanDemos/tree/master/examples/54_ThreadedRendering)
+![54_ThreadedRendering](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/54_ThreadedRendering.gif)
