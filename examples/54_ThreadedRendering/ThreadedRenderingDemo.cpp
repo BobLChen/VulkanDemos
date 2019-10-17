@@ -7,6 +7,8 @@
 #include "Math/Matrix4x4.h"
 
 #include <vector>
+#include <thread>
+#include <mutex>
 
 // less than m_VulkanDevice->GetLimits().maxUniformBufferRange
 #define INSTANCE_COUNT 1024
@@ -197,6 +199,42 @@ private:
 	ModelViewProjectionBlock	m_MVPParam;
 };
 
+struct ThreadData
+{
+	int32 index;
+	int32 frameID;
+	std::vector<ParticleModel*> particles;
+	std::vector<vk_demo::DVKCommandBuffer*> threadCommandBuffers;
+};
+
+class MyThread
+{
+public:
+	typedef std::function<void ()> ThreadFunc;
+
+	explicit MyThread(ThreadFunc func)
+		: m_ThreadFunc(func)
+		, m_Thread(func)
+	{
+
+	}
+
+	~MyThread()
+	{
+		if (m_Thread.joinable()) {
+			m_Thread.join();
+		}
+	}
+
+	MyThread(MyThread const&)=delete;
+
+	MyThread& operator=(MyThread const&)=delete;
+
+private:
+	std::thread m_Thread;
+	ThreadFunc  m_ThreadFunc;
+};
+
 class ThreadedRenderingDemo : public DemoBase
 {
 public:
@@ -225,6 +263,7 @@ public:
 		LoadAnimModel();
 		LoadAssets();
 		InitParmas();
+		InitThreads();
 
 		m_Ready = true;
 		return true;
@@ -393,27 +432,6 @@ private:
 			);
 		}
 
-		// prepare thread task
-		{
-			vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
-
-			int32 threadNum = 8 * 50;
-			int32 perThread = primitive->vertexCount / threadNum;
-			int32 remainNum = primitive->vertexCount - perThread * threadNum;
-			int32 vertIndex = 0;
-
-			m_Particles.resize(threadNum);
-			for (int32 i = 0; i < threadNum; ++i)
-			{
-				int32 count = remainNum > 0 ? perThread + 1 : perThread;
-
-				m_Particles[i] = new ParticleModel(m_ParticleModel, m_ParticleMaterial, m_RoleModel, vertIndex, count);
-
-				remainNum -= 1;
-				vertIndex += count;
-			}
-		}
-
 		delete cmdBuffer;
 	}
 
@@ -429,11 +447,56 @@ private:
 			delete m_Particles[i];
 		}
 		m_Particles.clear();
+
+		for (int32 i = 0; i < m_UICommandBuffers.size(); ++i) {
+			delete m_UICommandBuffers[i];
+		}
+
+		for (int32 i = 0; i < m_ThreadDatas.size(); ++i) 
+		{
+			for (int32 j = 0; j < m_ThreadDatas[i]->threadCommandBuffers.size(); ++j)
+			{
+				delete m_ThreadDatas[i]->threadCommandBuffers[j];
+			}
+
+			delete m_ThreadDatas[i];
+		}
+		m_ThreadDatas.clear();
+
+		for (int32 i = 0; i < m_Threads.size(); ++i)
+		{
+			delete m_Threads[i];
+		}
+		m_Threads.clear();
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
 	{
+		float w  = m_FrameWidth;
+		float h  = m_FrameHeight;
+		float tx = 0;
+		float ty = 0;
+
+		VkViewport viewport = {};
+		viewport.x        = tx;
+		viewport.y        = m_FrameHeight - ty;
+		viewport.width    = w;
+		viewport.height   = -h;    // flip y axis
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.extent.width  = w;
+		scissor.extent.height = h;
+		scissor.offset.x = tx;
+		scissor.offset.y = ty;
+
 		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
+
+		VkCommandBufferInheritanceInfo cmdBufferInheritanceInfo;
+		ZeroVulkanStruct(cmdBufferInheritanceInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+		cmdBufferInheritanceInfo.renderPass  = m_RenderPass;
+		cmdBufferInheritanceInfo.framebuffer = m_FrameBuffers[backBufferIndex];
 
 		VkCommandBufferBeginInfo cmdBeginInfo;
 		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
@@ -453,7 +516,31 @@ private:
 		renderPassBeginInfo.renderArea.offset.y      = 0;
 		renderPassBeginInfo.renderArea.extent.width  = m_FrameWidth;
 		renderPassBeginInfo.renderArea.extent.height = m_FrameHeight;
-		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
+		//RenderParticles(cmdBufferInheritanceInfo, backBufferIndex);
+
+		RenderUI(cmdBufferInheritanceInfo, backBufferIndex);
+
+		//vkCmdExecuteCommands(commandBuffer, 1, &(m_ThreadCommandBuffers[backBufferIndex]->cmdBuffer));
+		vkCmdExecuteCommands(commandBuffer, 1, &(m_UICommandBuffers[backBufferIndex]->cmdBuffer));
+
+		vkCmdEndRenderPass(commandBuffer);
+
+		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
+	}
+
+	void RenderParticles(VkCommandBufferInheritanceInfo inheritanceInfo, int32 backBufferIndex)
+	{
+		VkCommandBuffer commandBuffer;// = m_ThreadCommandBuffers[backBufferIndex]->cmdBuffer;
+
+		VkCommandBufferBeginInfo cmdBufferBeginInfo;
+		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+		cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		cmdBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
+
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo));
 
 		float w  = m_FrameWidth;
 		float h  = m_FrameHeight;
@@ -475,17 +562,51 @@ private:
 		scissor.offset.y = ty;
 
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		// particles
 		for (int32 i = 0; i < m_Particles.size(); ++i) {
 			m_Particles[i]->Draw(commandBuffer, m_ViewCamera);
 		}
 
+		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
+	}
+
+	void RenderUI(VkCommandBufferInheritanceInfo inheritanceInfo, int32 backBufferIndex)
+	{
+		VkCommandBuffer commandBuffer = m_UICommandBuffers[backBufferIndex]->cmdBuffer;
+
+		VkCommandBufferBeginInfo cmdBufferBeginInfo;
+		ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+		cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+		cmdBufferBeginInfo.pInheritanceInfo = &inheritanceInfo;
+
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo));
+
+		float w  = m_FrameWidth;
+		float h  = m_FrameHeight;
+		float tx = 0;
+		float ty = 0;
+
+		VkViewport viewport = {};
+		viewport.x        = tx;
+		viewport.y        = m_FrameHeight - ty;
+		viewport.width    = w;
+		viewport.height   = -h;    // flip y axis
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		VkRect2D scissor = {};
+		scissor.extent.width  = w;
+		scissor.extent.height = h;
+		scissor.offset.x = tx;
+		scissor.offset.y = ty;
+
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
 		// ui pass
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
-
-		vkCmdEndRenderPass(commandBuffer);
 
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
 	}
@@ -499,6 +620,95 @@ private:
 
 		m_ViewCamera.SetPosition(boundCenter);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 1500.0f);
+
+		m_UICommandBuffers.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
+		for (int32 i = 0; i < m_UICommandBuffers.size(); ++i) {
+			m_UICommandBuffers[i] = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+		}
+	}
+
+	void InitThreads()
+	{
+		m_MainFrameID = 0;
+
+		int32 numThreads = std::thread::hardware_concurrency();
+		if (numThreads == 0) {
+			numThreads = 8;
+		}
+
+		vk_demo::DVKPrimitive* primitive = m_RoleModel->meshes[0]->primitives[0];
+
+		int32 threadNum = numThreads * 25;
+		int32 perThread = primitive->vertexCount / threadNum;
+		int32 remainNum = primitive->vertexCount - perThread * threadNum;
+		int32 dataIndex = 0;
+
+		m_Particles.resize(threadNum);
+		for (int32 i = 0; i < threadNum; ++i)
+		{
+			int32 count = remainNum > 0 ? perThread + 1 : perThread;
+			remainNum -= 1;
+
+			m_Particles[i] = new ParticleModel(m_ParticleModel, m_ParticleMaterial, m_RoleModel, dataIndex, count);
+			
+			dataIndex += count;
+		}
+
+		// thread task
+		m_ThreadRunning = true;
+
+		perThread = m_Particles.size() / numThreads;
+		remainNum = m_Particles.size() - perThread * numThreads;
+		dataIndex = 0;
+
+		m_ThreadDatas.resize(numThreads);
+		m_Threads.resize(numThreads);
+
+		for (int32 i = 0; i < numThreads; ++i)
+		{
+			m_ThreadDatas[i] = new ThreadData();
+
+			int32 count = remainNum > 0 ? perThread + 1 : perThread;
+			remainNum -= 1;
+
+			for (int32 index = dataIndex; index < dataIndex + count; ++index) {
+				m_ThreadDatas[i]->particles.push_back(m_Particles[index]);
+			}
+
+			m_ThreadDatas[i]->threadCommandBuffers.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
+			for (int32 index = 0; index < m_ThreadDatas[i]->threadCommandBuffers.size(); ++index) {
+				m_ThreadDatas[i]->threadCommandBuffers[index] = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+			}
+
+			m_ThreadDatas[i]->index = i;
+			m_Threads[i] = new MyThread([=] {
+				ThreadRendering(m_ThreadDatas[i]);
+			});
+		}
+	}
+
+	void ThreadRendering(void* param)
+	{
+		ThreadData* threadData = (ThreadData*)param;
+		threadData->frameID = 0;
+
+		while (m_ThreadRunning)
+		{
+			{
+				std::unique_lock<std::mutex> guardLock(m_FrameStartLock);
+				if (m_MainFrameID == threadData->frameID) {
+					m_FrameStartCV.wait(guardLock);
+				}
+
+				if (!m_ThreadRunning) {
+					break;
+				}
+			}
+
+
+		}
+
+		MLOG("Thread exist -> index = %d", threadData->index);
 	}
 
 	void CreateGUI()
@@ -515,6 +725,8 @@ private:
 
 private:
 
+	typedef std::vector<vk_demo::DVKCommandBuffer*> CommandBufferArray;
+
 	bool 						m_Ready = false;
 
 	vk_demo::DVKModel*			m_Quad = nullptr;
@@ -525,11 +737,21 @@ private:
 	vk_demo::DVKTexture*		m_ParticleTexture = nullptr;
 	vk_demo::DVKMaterial*		m_ParticleMaterial = nullptr;
 
+	CommandBufferArray			m_UICommandBuffers;
+	
 	vk_demo::DVKCamera		    m_ViewCamera;
 
+	std::mutex					m_FrameStartLock;
+	std::condition_variable		m_FrameStartCV;
+
 	ModelViewProjectionBlock	m_MVPParam;
-	std::vector<ParticleModel*> m_Particles;
 	std::vector<Matrix4x4>		m_BonesData;
+
+	std::vector<ParticleModel*> m_Particles;
+	std::vector<ThreadData*>	m_ThreadDatas;
+	std::vector<MyThread*>		m_Threads;
+	bool						m_ThreadRunning;
+	int32						m_MainFrameID;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
