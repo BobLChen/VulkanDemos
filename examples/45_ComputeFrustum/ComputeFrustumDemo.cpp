@@ -10,6 +10,7 @@
 
 #define OBJECT_COUNT 1024 * 256
 
+// incorrect usage of compute shader
 class ComputeFrustumDemo : public DemoBase
 {
 public:
