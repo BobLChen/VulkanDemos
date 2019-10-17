@@ -21,8 +21,8 @@ struct QualQuat
 
 struct InstanceData
 {
-	QualQuat	dualQuats[INSTANCE_COUNT];
-	Vector4		colors[INSTANCE_COUNT];
+	QualQuat dualQuats[INSTANCE_COUNT];
+	Vector4	 colors[INSTANCE_COUNT];
 };
 
 struct ParticleData
@@ -90,15 +90,11 @@ public:
 			m_UpdateIndex = 0;
 		}
 
-		vk_demo::DVKPrimitive* primitive = m_Template->meshes[0]->primitives[0];
-
 		// move particle
 		for (int32 index = 0; index < m_UpdateIndex; ++index)
 		{
 			if (m_ParticleDatas[index].time >= m_ParticleDatas[index].lifeTime) {
 				m_InstanceData.colors[index].w = 0;
-				m_InstanceData.dualQuats[index].dual.Set(0, 0, 0, 0);
-				m_InstanceData.dualQuats[index].quat.Set(0, 0, 0, 1);
 				continue;
 			}
 
@@ -124,7 +120,8 @@ public:
 			m_InstanceData.dualQuats[index].quat.Set(quat.x, quat.y, quat.z, quat.w);
 		}
 
-		// init particle position
+		// init particle
+		vk_demo::DVKPrimitive* primitive = m_Template->meshes[0]->primitives[0];
 		int32 stride    = primitive->vertices.size() / primitive->vertexCount;
 		int32 vertBegin = m_BaseIndex * stride;
 		int32 vertEnd   = (m_BaseIndex + m_Count) * stride;
@@ -290,6 +287,10 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
+		m_bufferIndex = bufferIndex;
+		m_FrameTime   = time;
+		m_FrameDelta  = delta;
+
 		UpdateFPS(time, delta);
 
 		bool hovered = UpdateUI(time, delta);
@@ -299,7 +300,24 @@ private:
 
 		UpdateAnimation(time, delta);
 
+		// notify fram start
+		{
+			std::lock_guard<std::mutex> lockGuard(m_FrameStartLock);
+			m_ThreadDoneCount  = 0;
+			m_MainFrameID     += 1;
+			m_FrameStartCV.notify_all();
+		}
+
+		// wait for thread done
+		{
+			std::unique_lock<std::mutex> lockGuard(m_ThreadDoneLock);
+			while (m_ThreadDoneCount != m_Threads.size()) {
+				m_ThreadDoneCV.wait(lockGuard);
+			}
+		}
+
 		SetupCommandBuffers(bufferIndex);
+
 		DemoBase::Present(bufferIndex);
 	}
 
@@ -333,10 +351,6 @@ private:
 		{
 			int32 index = mesh->bones[i];
 			m_BonesData[index] = m_RoleModel->bones[index]->finalTransform;
-		}
-
-		for (int32 i = 0; i < m_Particles.size(); ++i) {
-			m_Particles[i]->Update(m_BonesData, m_ViewCamera, time, delta);
 		}
 	}
 
@@ -437,6 +451,9 @@ private:
 
 	void DestroyAssets()
 	{
+		m_ThreadRunning = false;
+		m_FrameStartCV.notify_all();
+
 		delete m_RoleModel;
 		delete m_ParticleModel;
 		delete m_ParticleShader;
@@ -463,8 +480,7 @@ private:
 		}
 		m_ThreadDatas.clear();
 
-		for (int32 i = 0; i < m_Threads.size(); ++i)
-		{
+		for (int32 i = 0; i < m_Threads.size(); ++i) {
 			delete m_Threads[i];
 		}
 		m_Threads.clear();
@@ -629,8 +645,6 @@ private:
 
 	void InitThreads()
 	{
-		m_MainFrameID = 0;
-
 		int32 numThreads = std::thread::hardware_concurrency();
 		if (numThreads == 0) {
 			numThreads = 8;
@@ -655,12 +669,14 @@ private:
 		}
 
 		// thread task
-		m_ThreadRunning = true;
+		m_MainFrameID      = 0;
+		m_ThreadRunning    = true;
 
 		perThread = m_Particles.size() / numThreads;
 		remainNum = m_Particles.size() - perThread * numThreads;
 		dataIndex = 0;
 
+		m_ActiveThreads = numThreads;
 		m_ThreadDatas.resize(numThreads);
 		m_Threads.resize(numThreads);
 
@@ -674,6 +690,8 @@ private:
 			for (int32 index = dataIndex; index < dataIndex + count; ++index) {
 				m_ThreadDatas[i]->particles.push_back(m_Particles[index]);
 			}
+
+			dataIndex += count;
 
 			m_ThreadDatas[i]->threadCommandBuffers.resize(GetVulkanRHI()->GetSwapChain()->GetBackBufferCount());
 			for (int32 index = 0; index < m_ThreadDatas[i]->threadCommandBuffers.size(); ++index) {
@@ -692,20 +710,79 @@ private:
 		ThreadData* threadData = (ThreadData*)param;
 		threadData->frameID = 0;
 
-		while (m_ThreadRunning)
+		while (true)
 		{
 			{
 				std::unique_lock<std::mutex> guardLock(m_FrameStartLock);
-				if (m_MainFrameID == threadData->frameID) {
+				if (threadData->frameID == m_MainFrameID) {
 					m_FrameStartCV.wait(guardLock);
-				}
-
-				if (!m_ThreadRunning) {
-					break;
 				}
 			}
 
+			threadData->frameID = m_MainFrameID;
 
+			if (!m_ThreadRunning) {
+				break;
+			}
+
+			if (threadData->index >= m_ActiveThreads) {
+				continue;
+			}
+
+			// update particles
+			for (int32 i = 0; i < threadData->particles.size(); ++i) {
+				threadData->particles[i]->Update(m_BonesData, m_ViewCamera, m_FrameTime, m_FrameDelta);
+			}
+
+			// record commands
+			VkCommandBuffer commandBuffer = threadData->threadCommandBuffers[m_bufferIndex]->cmdBuffer;
+
+			VkCommandBufferInheritanceInfo cmdBufferInheritanceInfo;
+			ZeroVulkanStruct(cmdBufferInheritanceInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO);
+			cmdBufferInheritanceInfo.renderPass  = m_RenderPass;
+			cmdBufferInheritanceInfo.framebuffer = m_FrameBuffers[m_bufferIndex];
+
+			VkCommandBufferBeginInfo cmdBufferBeginInfo;
+			ZeroVulkanStruct(cmdBufferBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+			cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+			cmdBufferBeginInfo.pInheritanceInfo = &cmdBufferInheritanceInfo;
+
+			VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo));
+
+			float w  = m_FrameWidth;
+			float h  = m_FrameHeight;
+			float tx = 0;
+			float ty = 0;
+
+			VkViewport viewport = {};
+			viewport.x        = tx;
+			viewport.y        = m_FrameHeight - ty;
+			viewport.width    = w;
+			viewport.height   = -h;    // flip y axis
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			VkRect2D scissor = {};
+			scissor.extent.width  = w;
+			scissor.extent.height = h;
+			scissor.offset.x = tx;
+			scissor.offset.y = ty;
+
+			vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+			vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+			for (int32 i = 0; i < threadData->particles.size(); ++i) {
+				// threadData->particles[i]->Draw(commandBuffer, m_ViewCamera);
+			}
+
+			VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
+
+			// notify thread done
+			{
+				std::lock_guard<std::mutex> lockGuard(m_ThreadDoneLock);
+				m_ThreadDoneCount  += 1;
+				m_ThreadDoneCV.notify_one();
+			}
 		}
 
 		MLOG("Thread exist -> index = %d", threadData->index);
@@ -744,6 +821,10 @@ private:
 	std::mutex					m_FrameStartLock;
 	std::condition_variable		m_FrameStartCV;
 
+	std::mutex					m_ThreadDoneLock;
+	std::condition_variable		m_ThreadDoneCV;
+	int32						m_ThreadDoneCount;
+
 	ModelViewProjectionBlock	m_MVPParam;
 	std::vector<Matrix4x4>		m_BonesData;
 
@@ -751,7 +832,12 @@ private:
 	std::vector<ThreadData*>	m_ThreadDatas;
 	std::vector<MyThread*>		m_Threads;
 	bool						m_ThreadRunning;
+	int32						m_ActiveThreads;
 	int32						m_MainFrameID;
+
+	float						m_FrameTime;
+	float						m_FrameDelta;
+	int32						m_bufferIndex;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
