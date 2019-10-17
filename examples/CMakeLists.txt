@@ -863,3 +863,18 @@ SETUP_SAMPLE_START(54_ThreadedRendering)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(54_ThreadedRendering)
+
+SETUP_SAMPLE_START(55_PBR_DirectLighting)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/55_PBR_DirectLighting/PBRDirectLightingDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/55_PBR_DirectLighting/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(55_PBR_DirectLighting)
