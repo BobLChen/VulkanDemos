@@ -16,6 +16,7 @@ layout (location = 0) out vec2 outUV;
 layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec3 outTangent;
 layout (location = 3) out vec3 outBiTangent;
+layout (location = 4) out vec3 outWorldPos;
 
 out gl_PerVertex 
 {
@@ -35,6 +36,7 @@ void main()
 	outBiTangent = cross(normal, tangent) * inTangent.w;
 
 	outUV        = vec2(inUV0.x, 1.0 - inUV0.y);
+	outWorldPos  = (uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0)).xyz;
 	
-	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
+	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * vec4(outWorldPos, 1.0);
 }

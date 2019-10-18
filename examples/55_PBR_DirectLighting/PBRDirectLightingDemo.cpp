@@ -67,6 +67,8 @@ private:
 	struct PBRParamBlock
 	{
 		Vector4 param;
+		Vector4 cameraPos;
+		Vector4 lightColor;
 	};
 
 	void Draw(float time, float delta)
@@ -79,6 +81,8 @@ private:
 		if (!hovered) {
 			m_ViewCamera.Update(time, delta);
 		}
+
+		m_PBRParam.cameraPos = m_ViewCamera.GetTransform().GetOrigin();
 
 		SetupCommandBuffers(bufferIndex);
 		DemoBase::Present(bufferIndex);
@@ -93,19 +97,28 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("PBRDirectLightingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			{
-				int32 debug = m_PBRParam.param.w;
-				const char* models[6] = {
-					"None",
-					"Albedo",
-					"Normal",
-					"Occlusion",
-					"Metallic",
-					"Roughness"
-				};
-				ImGui::Combo("Debug", &debug, models, 6);
-				m_PBRParam.param.w = debug;
-			}
+			ImGui::SliderFloat("AO", &m_PBRParam.param.x, 0.0f, 1.0f);
+			ImGui::SliderFloat("Roughness", &m_PBRParam.param.y, 0.0f, 1.0f);
+			ImGui::SliderFloat("Metallic", &m_PBRParam.param.z, 0.0f, 1.0f);
+
+			ImGui::Separator();
+
+			ImGui::ColorEdit3("LightColor", (float*)(&m_PBRParam.lightColor));
+			ImGui::SliderFloat("Intensity", &m_PBRParam.lightColor.w, 0.0f, 100.0f);
+
+			ImGui::Separator();
+
+			int32 debug = m_PBRParam.param.w;
+			const char* models[6] = {
+				"None",
+				"Albedo",
+				"Normal",
+				"Occlusion",
+				"Metallic",
+				"Roughness"
+			};
+			ImGui::Combo("Debug", &debug, models, 6);
+			m_PBRParam.param.w = debug;
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -264,10 +277,14 @@ private:
 		m_ViewCamera.LookAt(boundCenter);
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
 
-		m_PBRParam.param.x = 1.0f; // metallic;
+		m_PBRParam.param.x = 1.0f; // ao
 		m_PBRParam.param.y = 1.0f; // roughness
-		m_PBRParam.param.z = 0.0f;
+		m_PBRParam.param.z = 1.0f; // metallic
 		m_PBRParam.param.w = 0.0f; // debug
+
+		m_PBRParam.cameraPos = m_ViewCamera.GetTransform().GetOrigin();
+
+		m_PBRParam.lightColor = Vector4(1, 1, 1, 10);
 	}
 
 	void CreateGUI()
