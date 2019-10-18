@@ -3,6 +3,7 @@
 layout (location = 0) in vec3 inPosition;
 layout (location = 1) in vec2 inUV0;
 layout (location = 2) in vec3 inNormal;
+layout (location = 3) in vec4 inTangent;
 
 layout (binding = 0) uniform MVPBlock 
 {
@@ -13,6 +14,8 @@ layout (binding = 0) uniform MVPBlock
 
 layout (location = 0) out vec2 outUV;
 layout (location = 1) out vec3 outNormal;
+layout (location = 2) out vec3 outTangent;
+layout (location = 3) out vec3 outBiTangent;
 
 out gl_PerVertex 
 {
@@ -21,11 +24,17 @@ out gl_PerVertex
 
 void main() 
 {
-	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
+	mat3 model33 = mat3(uboMVP.modelMatrix);
+	mat3 normalMatrix = transpose(inverse(model33));
+
 	vec3 normal  = normalize(normalMatrix * inNormal.xyz);
+	vec3 tangent = normalize(normalMatrix * inTangent.xyz);
 	
-	outUV       = inUV0;
-	outNormal   = normal;
+	outNormal    = normal;
+	outTangent   = tangent;
+	outBiTangent = cross(normal, tangent) * inTangent.w;
+
+	outUV        = vec2(inUV0.x, 1.0 - inUV0.y);
 	
 	gl_Position = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

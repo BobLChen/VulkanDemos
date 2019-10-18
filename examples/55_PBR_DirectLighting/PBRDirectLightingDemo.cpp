@@ -8,8 +8,6 @@
 
 #include <vector>
 
-#define TEX_SIZE 4
-
 class PBRDirectLightingDemo : public DemoBase
 {
 public:
@@ -35,8 +33,8 @@ public:
 		DemoBase::Prepare();
 
 		CreateGUI();
-		InitParmas();
 		LoadAssets();
+		InitParmas();
 
 		m_Ready = true;
 		return true;
@@ -66,9 +64,9 @@ private:
 		Matrix4x4 proj;
 	};
 
-	struct DebugParamBlock
+	struct PBRParamBlock
 	{
-		Vector4 data;
+		Vector4 param;
 	};
 
 	void Draw(float time, float delta)
@@ -95,6 +93,20 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("PBRDirectLightingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			{
+				int32 debug = m_PBRParam.param.w;
+				const char* models[6] = {
+					"None",
+					"Albedo",
+					"Normal",
+					"Occlusion",
+					"Metallic",
+					"Roughness"
+				};
+				ImGui::Combo("Debug", &debug, models, 6);
+				m_PBRParam.param.w = debug;
+			}
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -111,62 +123,67 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		m_SceneModel = vk_demo::DVKModel::LoadFromFile(
-			"assets/models/Room/miniHouse_FBX.FBX",
+		m_Model = vk_demo::DVKModel::LoadFromFile(
+			"assets/models/leather-shoes/model.fbx",
 			m_VulkanDevice,
 			cmdBuffer,
 			{ 
 				VertexAttribute::VA_Position,
 				VertexAttribute::VA_UV0,
-				VertexAttribute::VA_Normal
+				VertexAttribute::VA_Normal,
+				VertexAttribute::VA_Tangent
 			}
 		);
 
-		m_SceneShader = vk_demo::DVKShader::Create(
+		m_TexAlbedo = vk_demo::DVKTexture::Create2D(
+			"assets/models/leather-shoes/RootNode_baseColor.jpg",
+			m_VulkanDevice,
+			cmdBuffer
+		);
+
+		m_TexNormal = vk_demo::DVKTexture::Create2D(
+			"assets/models/leather-shoes/RootNode_normal.jpg",
+			m_VulkanDevice,
+			cmdBuffer
+		);
+
+		m_TexORMParam = vk_demo::DVKTexture::Create2D(
+			"assets/models/leather-shoes/RootNode_occlusionRoughnessMetallic.jpg",
+			m_VulkanDevice,
+			cmdBuffer
+		);
+
+		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
 			"assets/shaders/55_PBR_DirectLighting/obj.vert.spv",
 			"assets/shaders/55_PBR_DirectLighting/obj.frag.spv"
 		);
 
-		const char* textures[TEX_SIZE] = {
-			"assets/models/Room/miniHouse_Part1.jpg",
-			"assets/models/Room/miniHouse_Part2.jpg",
-			"assets/models/Room/miniHouse_Part3.jpg",
-			"assets/models/Room/miniHouse_Part4.jpg"
-		};
-
-		for (int32 i = 0; i < TEX_SIZE; ++i)
-		{
-			m_SceneTextures[i] = vk_demo::DVKTexture::Create2D(
-				textures[i],
-				m_VulkanDevice,
-				cmdBuffer
-			);
-
-			m_SceneMaterials[i] = vk_demo::DVKMaterial::Create(
-				m_VulkanDevice,
-				m_RenderPass,
-				m_PipelineCache,
-				m_SceneShader
-			);
-			m_SceneMaterials[i]->PreparePipeline();
-			m_SceneMaterials[i]->SetTexture("diffuseMap", m_SceneTextures[i]);
-		}
+		m_Material = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			m_RenderPass,
+			m_PipelineCache,
+			m_Shader
+		);
+		m_Material->PreparePipeline();
+		m_Material->SetTexture("texAlbedo", m_TexAlbedo);
+		m_Material->SetTexture("texNormal", m_TexNormal);
+		m_Material->SetTexture("texORMParam", m_TexORMParam);
 
 		delete cmdBuffer;
 	}
 
 	void DestroyAssets()
 	{
-		delete m_SceneModel;
-		delete m_SceneShader;
+		delete m_Model;
 
-		for (int32 i = 0; i < TEX_SIZE; ++i)
-		{
-			delete m_SceneTextures[i];
-			delete m_SceneMaterials[i];
-		}
+		delete m_Shader;
+		delete m_Material;
+
+		delete m_TexAlbedo;
+		delete m_TexNormal;
+		delete m_TexORMParam;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -210,35 +227,28 @@ private:
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-		vk_demo::DVKMaterial* materials[7] = {
-			m_SceneMaterials[3],
-			m_SceneMaterials[2],
-			m_SceneMaterials[1],
-			m_SceneMaterials[0],
-			m_SceneMaterials[0],
-			m_SceneMaterials[3],
-			m_SceneMaterials[0],
-		};
-
-		for (int32 i = 0; i < m_SceneModel->meshes.size(); ++i)
+		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, materials[i]->GetPipeline());
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 
-			materials[i]->BeginFrame();
+			m_Material->BeginFrame();
 
-			m_MVPParam.model = m_SceneModel->meshes[i]->linkNode->GetGlobalMatrix();
+			m_MVPParam.model = m_Model->meshes[i]->linkNode->GetGlobalMatrix();
 			m_MVPParam.view  = m_ViewCamera.GetView();
 			m_MVPParam.proj  = m_ViewCamera.GetProjection();
 
-			materials[i]->BeginObject();
-			materials[i]->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
-			materials[i]->EndObject();
+			m_Material->BeginObject();
+			m_Material->SetLocalUniform("uboMVP",   &m_MVPParam, sizeof(ModelViewProjectionBlock));
+			m_Material->SetLocalUniform("uboParam", &m_PBRParam, sizeof(PBRParamBlock));
+			m_Material->EndObject();
 
-			materials[i]->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-			m_SceneModel->meshes[i]->BindDrawCmd(commandBuffer);
+			m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+			m_Model->meshes[i]->BindDrawCmd(commandBuffer);
 
-			materials[i]->EndFrame();
+			m_Material->EndFrame();
 		}
+
+		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
 
 		vkCmdEndRenderPass(commandBuffer);
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
@@ -246,9 +256,18 @@ private:
 
 	void InitParmas()
 	{
-		m_ViewCamera.SetPosition(0, 500.0f, -1500.0f);
-		m_ViewCamera.LookAt(0, 100.0f, 0);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - 500.0f);
+		m_ViewCamera.LookAt(boundCenter);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
+
+		m_PBRParam.param.x = 1.0f; // metallic;
+		m_PBRParam.param.y = 1.0f; // roughness
+		m_PBRParam.param.z = 0.0f;
+		m_PBRParam.param.w = 0.0f; // debug
 	}
 
 	void CreateGUI()
@@ -267,16 +286,18 @@ private:
 
 	bool 						m_Ready = false;
 
-	// scene
-	vk_demo::DVKModel*			m_SceneModel = nullptr;
-	vk_demo::DVKShader*			m_SceneShader = nullptr;
-	vk_demo::DVKTexture*		m_SceneTextures[TEX_SIZE];
-	vk_demo::DVKMaterial*		m_SceneMaterials[TEX_SIZE];
+	vk_demo::DVKModel*			m_Model = nullptr;
+	vk_demo::DVKShader*			m_Shader = nullptr;
+	vk_demo::DVKMaterial*		m_Material = nullptr;
+
+	vk_demo::DVKTexture*		m_TexAlbedo = nullptr;
+	vk_demo::DVKTexture*		m_TexNormal = nullptr;
+	vk_demo::DVKTexture*		m_TexORMParam = nullptr;
 
 	vk_demo::DVKCamera		    m_ViewCamera;
 
 	ModelViewProjectionBlock	m_MVPParam;
-	DebugParamBlock				m_DebugParam;
+	PBRParamBlock				m_PBRParam;
 
 	ImageGUIContext*			m_GUI = nullptr;
 };
