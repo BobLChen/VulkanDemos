@@ -119,6 +119,13 @@ namespace vk_demo
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
 			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined
 		);
+
+		static DVKTexture* CreateCube(
+			const std::vector<std::string> filenames,
+			std::shared_ptr<VulkanDevice> vulkanDevice, 
+			DVKCommandBuffer* cmdBuffer,
+			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::PixelShaderRead
+		);
         
         static DVKTexture* CreateCubeRenderTarget(
             std::shared_ptr<VulkanDevice> vulkanDevice,
