@@ -8,6 +8,7 @@
 
 #include <vector>
 
+// http://yangwc.com/2019/07/21/ImageBasedLighting/
 class PBRIBLDemo : public DemoBase
 {
 public:
@@ -35,6 +36,7 @@ public:
 		CreateGUI();
 		LoadEnvAssets();
 		LoadModelAssets();
+		GenEnvIrradiance();
 		InitParmas();
 
 		m_Ready = true;
@@ -179,6 +181,8 @@ private:
 		m_EnvMaterial->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
 		m_EnvMaterial->PreparePipeline();
 		m_EnvMaterial->SetTexture("diffuseMap", m_EnvTexture);
+
+		delete cmdBuffer;
 	}
 
 	void LoadModelAssets()
@@ -236,6 +240,51 @@ private:
 		delete cmdBuffer;
 	}
 
+	void GenEnvIrradiance()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		m_EnvIrradiance = vk_demo::DVKTexture::CreateCube(
+			m_VulkanDevice,
+			cmdBuffer,
+			VK_FORMAT_R32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			64, 64,
+			VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		
+
+		vk_demo::DVKTexture* tempTexture = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			VK_FORMAT_R32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			64, 64,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfo(
+			tempTexture, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		vk_demo::DVKRenderTarget* tempRenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+
+		// generate env irradiancee
+		{
+			cmdBuffer->Begin();
+
+			tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
+
+			tempRenderTarget->EndRenderPass(cmdBuffer->cmdBuffer);
+
+			cmdBuffer->End();
+			cmdBuffer->Submit();
+		}
+
+		delete tempRenderTarget;
+		delete tempTexture;
+		delete cmdBuffer;
+	}
+
 	void DestroyAssets()
 	{
 		delete m_Model;
@@ -251,6 +300,7 @@ private:
 		delete m_EnvMaterial;
 		delete m_EnvShader;
 		delete m_EnvTexture;
+		delete m_EnvIrradiance;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -379,6 +429,8 @@ private:
 	vk_demo::DVKTexture*		m_EnvTexture = nullptr;
 	vk_demo::DVKShader*			m_EnvShader = nullptr;
 	vk_demo::DVKMaterial*		m_EnvMaterial = nullptr;
+
+	vk_demo::DVKTexture*		m_EnvIrradiance = nullptr;
 
 	vk_demo::DVKModel*			m_Model = nullptr;
 	vk_demo::DVKShader*			m_Shader = nullptr;

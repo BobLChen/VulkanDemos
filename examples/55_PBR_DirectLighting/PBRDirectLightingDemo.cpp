@@ -8,6 +8,7 @@
 
 #include <vector>
 
+// http://yangwc.com/2019/07/14/PhysicallyBasedRendering/
 class PBRDirectLightingDemo : public DemoBase
 {
 public:
