@@ -13,9 +13,11 @@ layout (binding = 1) uniform PBRParamBlock
     vec4 lightColor;
 } uboParam;
 
-layout (binding  = 2) uniform sampler2D texAlbedo;
-layout (binding  = 3) uniform sampler2D texNormal;
-layout (binding  = 4) uniform sampler2D texORMParam;
+layout (binding = 2) uniform sampler2D texAlbedo;
+layout (binding = 3) uniform sampler2D texNormal;
+layout (binding = 4) uniform sampler2D texORMParam;
+layout (binding = 5) uniform samplerCube envIrradiance;
+layout (binding = 6) uniform sampler2D envBRDFLut;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -129,6 +131,8 @@ void main()
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
+    albedo = albedo * (1 - metallic) * (1 - 0.04);
+
     // F
     vec3  F = FresnelSchlick(H, V, F0);
     // D
@@ -138,7 +142,7 @@ void main()
     // BRDF
     vec3 brdf = (D * F * G) / (4.0 * max(dot(V, N), 0) * max(dot(L, N), 0) + 0.0001f);
     // KD
-    vec3 KD = (vec3(1.0f) - F) * (1 - metallic);
+    vec3 KD = (vec3(1.0f) - F);
     
     vec3 finalColor = (KD * albedo / PI + brdf) * max(dot(N, L), 0) * uboParam.lightColor.xyz * uboParam.lightColor.w;
     finalColor *= occlusion;
@@ -174,6 +178,9 @@ void main()
     finalColor.xyz = pow(finalColor.xyz, vec3(1.0 / 2.2));
 
     finalColor.xyz = saturate(finalColor.xyz);
+
+    finalColor.xyz += texture(envBRDFLut, inUV).xyz;
+    finalColor.xyz += texture(envIrradiance, N).xyz;
 
     outFragColor.xyz = finalColor;
     outFragColor.w   = 1.0;

@@ -229,9 +229,13 @@ namespace vk_demo
         return texture;
     }
 
-	DVKTexture* DVKTexture::CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
+	DVKTexture* DVKTexture::CreateCube(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, bool mipmaps, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount, ImageLayoutBarrier imageLayout)
 	{
 		VkDevice device = vulkanDevice->GetInstanceHandle();
+		int32 mipLevels = 1;
+		if (mipmaps) {
+			mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
+		}
 
 		uint32 memoryTypeIndex = 0;
 		VkMemoryRequirements memReqs = {};
@@ -250,7 +254,7 @@ namespace vk_demo
 		ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
 		imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format          = format;
-		imageCreateInfo.mipLevels       = 1;
+		imageCreateInfo.mipLevels       = mipLevels;
 		imageCreateInfo.arrayLayers     = 6;
 		imageCreateInfo.samples         = sampleCount;
 		imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
@@ -292,7 +296,7 @@ namespace vk_demo
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		viewInfo.subresourceRange.aspectMask     = aspect;
 		viewInfo.subresourceRange.layerCount     = 6;
-		viewInfo.subresourceRange.levelCount     = 1;
+		viewInfo.subresourceRange.levelCount     = mipLevels;
 		viewInfo.subresourceRange.baseMipLevel   = 0;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
@@ -301,7 +305,7 @@ namespace vk_demo
 		{
 			VkImageSubresourceRange subresourceRange = {};
 			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.levelCount     = 1;
+			subresourceRange.levelCount     = mipLevels;
 			subresourceRange.layerCount     = 6;
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.baseMipLevel   = 0;
@@ -333,7 +337,7 @@ namespace vk_demo
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
 		texture->device			= device;
-		texture->mipLevels		= 1;
+		texture->mipLevels		= mipLevels;
 		texture->layerCount		= 1;
 		texture->numSamples     = sampleCount;
 		texture->isCubeMap      = true;

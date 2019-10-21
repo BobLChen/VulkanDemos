@@ -35,8 +35,10 @@ public:
 
 		CreateGUI();
 		LoadEnvAssets();
-		LoadModelAssets();
 		GenEnvIrradiance();
+		GenEnvBRDFLut();
+		GenEnvPrefiltered();
+		LoadModelAssets();
 		InitParmas();
 
 		m_Ready = true;
@@ -236,7 +238,179 @@ private:
 		m_Material->SetTexture("texAlbedo", m_TexAlbedo);
 		m_Material->SetTexture("texNormal", m_TexNormal);
 		m_Material->SetTexture("texORMParam", m_TexORMParam);
+		m_Material->SetTexture("envIrradiance", m_EnvIrradiance);
+		m_Material->SetTexture("envBRDFLut", m_EnvBRDFLut);
 
+		delete cmdBuffer;
+	}
+
+	void GenEnvPrefiltered()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		int32 envSize = 512;
+
+		m_EnvPrefiltered = vk_demo::DVKTexture::CreateCube(
+			m_VulkanDevice,
+			cmdBuffer,
+			VK_FORMAT_R32G32B32A32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			envSize, envSize,
+			true,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VK_SAMPLE_COUNT_1_BIT,
+			ImageLayoutBarrier::PixelShaderRead
+		);
+
+		vk_demo::DVKTexture* tempTexture = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			VK_FORMAT_R32G32B32A32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			envSize, envSize,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfo(
+			tempTexture, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		vk_demo::DVKRenderTarget* tempRenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+		tempRenderTarget->colorLayout = ImageLayoutBarrier::TransferSource;
+
+		vk_demo::DVKShader* shader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/56_PBR_IBL/skybox.vert.spv",
+			"assets/shaders/56_PBR_IBL/irradiance.frag.spv"
+		);
+
+		vk_demo::DVKMaterial* material = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			tempRenderTarget->GetRenderPass(),
+			m_PipelineCache,
+			shader
+		);
+		material->pipelineInfo.rasterizationState.frontFace        = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		material->pipelineInfo.depthStencilState.depthCompareOp    = VK_COMPARE_OP_ALWAYS;
+		material->pipelineInfo.depthStencilState.depthTestEnable   = VK_FALSE;
+		material->pipelineInfo.depthStencilState.depthWriteEnable  = VK_FALSE;
+		material->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
+		material->PreparePipeline();
+		material->SetTexture("environmentMap", m_EnvTexture);
+
+		vk_demo::DVKCamera camera;
+		camera.SetPosition(0, 0, 0);
+		camera.Perspective(PI / 2, envSize, envSize, 0.10f, 3000.0f);
+
+		Vector3 viewTargets[6] = {
+			Vector3( 1,  0,  0),
+			Vector3(-1,  0,  0),
+			Vector3( 0,  1,  0),
+			Vector3( 0, -1,  0),
+			Vector3( 0,  0,  1),
+			Vector3( 0,  0, -1)
+		};
+
+		{
+			VkImageSubresourceRange subresourceRange = {};
+			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.levelCount     = m_EnvPrefiltered->mipLevels;
+			subresourceRange.layerCount     = 6;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.baseMipLevel   = 0;
+
+			{
+				cmdBuffer->Begin();
+
+				vk_demo::ImagePipelineBarrier(
+					cmdBuffer->cmdBuffer, 
+					m_EnvPrefiltered->image, 
+					ImageLayoutBarrier::PixelShaderRead,
+					ImageLayoutBarrier::TransferDest,
+					subresourceRange
+				);
+
+				cmdBuffer->Submit();
+			}
+
+			for (int32 mip = 0; mip < m_EnvIrradiance->mipLevels; ++mip)
+			{
+				for (int32 face = 0; face < 6; ++face)
+				{
+					cmdBuffer->Begin();
+
+					tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
+
+					vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
+
+					camera.SetPosition(Vector3(0, 0, 0));
+					camera.LookAt(viewTargets[face]);
+
+					Vector3 ray = camera.GetForwardVec();
+
+					m_MVPParam.model.SetIdentity();
+					m_MVPParam.view = camera.GetView();
+					m_MVPParam.proj = camera.GetProjection();
+
+					material->BeginFrame();
+					material->BeginObject();
+					material->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
+					material->EndObject();
+					material->EndFrame();
+
+					material->BindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+					m_EnvModel->meshes[0]->BindDrawCmd(cmdBuffer->cmdBuffer);
+
+					tempRenderTarget->EndRenderPass(cmdBuffer->cmdBuffer);
+
+					VkImageCopy copyRegion = {};
+
+					copyRegion.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+					copyRegion.srcSubresource.baseArrayLayer = 0;
+					copyRegion.srcSubresource.mipLevel       = 0;
+					copyRegion.srcSubresource.layerCount     = 1;
+
+					copyRegion.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+					copyRegion.dstSubresource.baseArrayLayer = face;
+					copyRegion.dstSubresource.mipLevel       = 0;
+					copyRegion.dstSubresource.layerCount     = 1;
+
+					copyRegion.extent.width  = envSize;
+					copyRegion.extent.height = envSize;
+					copyRegion.extent.depth  = 1;
+
+					vkCmdCopyImage(
+						cmdBuffer->cmdBuffer,
+						tempTexture->image,
+						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+						m_EnvIrradiance->image,
+						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						1,
+						&copyRegion
+					);
+
+					cmdBuffer->Submit();
+				}
+			}
+
+			{
+				cmdBuffer->Begin();
+
+				vk_demo::ImagePipelineBarrier(
+					cmdBuffer->cmdBuffer, 
+					m_EnvPrefiltered->image, 
+					ImageLayoutBarrier::TransferDest,
+					ImageLayoutBarrier::PixelShaderRead,
+					subresourceRange
+				);
+
+				cmdBuffer->Submit();
+			}
+		}
+
+		delete shader;
+		delete material;
+		delete tempRenderTarget;
+		delete tempTexture;
 		delete cmdBuffer;
 	}
 
@@ -244,45 +418,224 @@ private:
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
+		int32 envSize = 64;
+
 		m_EnvIrradiance = vk_demo::DVKTexture::CreateCube(
 			m_VulkanDevice,
 			cmdBuffer,
-			VK_FORMAT_R32_SFLOAT, 
+			VK_FORMAT_R32G32B32A32_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			64, 64,
-			VK_IMAGE_USAGE_SAMPLED_BIT
+			envSize, envSize,
+			false,
+			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			VK_SAMPLE_COUNT_1_BIT,
+			ImageLayoutBarrier::PixelShaderRead
 		);
-
 		
-
 		vk_demo::DVKTexture* tempTexture = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R32_SFLOAT, 
+			VK_FORMAT_R32G32B32A32_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			64, 64,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+			envSize, envSize,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 		);
 
 		vk_demo::DVKRenderPassInfo rttInfo(
 			tempTexture, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
 		);
 		vk_demo::DVKRenderTarget* tempRenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+		tempRenderTarget->colorLayout = ImageLayoutBarrier::TransferSource;
+
+		vk_demo::DVKShader* shader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/56_PBR_IBL/skybox.vert.spv",
+			"assets/shaders/56_PBR_IBL/irradiance.frag.spv"
+		);
+
+		vk_demo::DVKMaterial* material = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			tempRenderTarget->GetRenderPass(),
+			m_PipelineCache,
+			shader
+		);
+		material->pipelineInfo.rasterizationState.frontFace        = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		material->pipelineInfo.depthStencilState.depthCompareOp    = VK_COMPARE_OP_ALWAYS;
+		material->pipelineInfo.depthStencilState.depthTestEnable   = VK_FALSE;
+		material->pipelineInfo.depthStencilState.depthWriteEnable  = VK_FALSE;
+		material->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
+		material->PreparePipeline();
+		material->SetTexture("environmentMap", m_EnvTexture);
+
+		vk_demo::DVKCamera camera;
+		camera.SetPosition(0, 0, 0);
+		camera.Perspective(PI / 2, envSize, envSize, 0.10f, 3000.0f);
+
+		Vector3 viewTargets[6] = {
+			Vector3( 1,  0,  0),
+			Vector3(-1,  0,  0),
+			Vector3( 0,  1,  0),
+			Vector3( 0, -1,  0),
+			Vector3( 0,  0,  1),
+			Vector3( 0,  0, -1)
+		};
 
 		// generate env irradiancee
 		{
-			cmdBuffer->Begin();
+			VkImageSubresourceRange subresourceRange = {};
+			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+			subresourceRange.levelCount     = 1;
+			subresourceRange.layerCount     = 6;
+			subresourceRange.baseArrayLayer = 0;
+			subresourceRange.baseMipLevel   = 0;
 
-			tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
+			{
+				cmdBuffer->Begin();
 
-			tempRenderTarget->EndRenderPass(cmdBuffer->cmdBuffer);
+				vk_demo::ImagePipelineBarrier(
+					cmdBuffer->cmdBuffer, 
+					m_EnvIrradiance->image, 
+					ImageLayoutBarrier::PixelShaderRead,
+					ImageLayoutBarrier::TransferDest,
+					subresourceRange
+				);
 
-			cmdBuffer->End();
-			cmdBuffer->Submit();
+				cmdBuffer->Submit();
+			}
+
+			for (int32 face = 0; face < 6; ++face)
+			{
+				cmdBuffer->Begin();
+
+				tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
+
+				vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
+
+				camera.SetPosition(Vector3(0, 0, 0));
+				camera.LookAt(viewTargets[face]);
+
+				Vector3 ray = camera.GetForwardVec();
+
+				m_MVPParam.model.SetIdentity();
+				m_MVPParam.view = camera.GetView();
+				m_MVPParam.proj = camera.GetProjection();
+
+				material->BeginFrame();
+				material->BeginObject();
+				material->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
+				material->EndObject();
+				material->EndFrame();
+
+				material->BindDescriptorSets(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
+				m_EnvModel->meshes[0]->BindDrawCmd(cmdBuffer->cmdBuffer);
+
+				tempRenderTarget->EndRenderPass(cmdBuffer->cmdBuffer);
+
+				VkImageCopy copyRegion = {};
+
+				copyRegion.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+				copyRegion.srcSubresource.baseArrayLayer = 0;
+				copyRegion.srcSubresource.mipLevel       = 0;
+				copyRegion.srcSubresource.layerCount     = 1;
+
+				copyRegion.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+				copyRegion.dstSubresource.baseArrayLayer = face;
+				copyRegion.dstSubresource.mipLevel       = 0;
+				copyRegion.dstSubresource.layerCount     = 1;
+
+				copyRegion.extent.width  = envSize;
+				copyRegion.extent.height = envSize;
+				copyRegion.extent.depth  = 1;
+
+				vkCmdCopyImage(
+					cmdBuffer->cmdBuffer,
+					tempTexture->image,
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					m_EnvIrradiance->image,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&copyRegion
+				);
+
+				cmdBuffer->Submit();
+			}
+
+			{
+				cmdBuffer->Begin();
+
+				vk_demo::ImagePipelineBarrier(
+					cmdBuffer->cmdBuffer, 
+					m_EnvIrradiance->image, 
+					ImageLayoutBarrier::TransferDest,
+					ImageLayoutBarrier::PixelShaderRead,
+					subresourceRange
+				);
+
+				cmdBuffer->Submit();
+			}
 		}
 
+		delete shader;
+		delete material;
 		delete tempRenderTarget;
 		delete tempTexture;
 		delete cmdBuffer;
+	}
+
+	void GenEnvBRDFLut()
+	{
+		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		vk_demo::DVKModel* quad = vk_demo::DVKDefaultRes::fullQuad;
+
+		m_EnvBRDFLut = vk_demo::DVKTexture::CreateRenderTarget(
+			m_VulkanDevice,
+			VK_FORMAT_R32G32_SFLOAT, 
+			VK_IMAGE_ASPECT_COLOR_BIT,
+			512, 512,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+		);
+
+		vk_demo::DVKRenderPassInfo rttInfo(
+			m_EnvBRDFLut, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
+		);
+		vk_demo::DVKRenderTarget* tempRenderTarget = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+
+		vk_demo::DVKShader* shader = vk_demo::DVKShader::Create(
+			m_VulkanDevice,
+			true,
+			"assets/shaders/56_PBR_IBL/brdflut.vert.spv",
+			"assets/shaders/56_PBR_IBL/brdflut.frag.spv"
+		);
+
+		vk_demo::DVKMaterial* material = vk_demo::DVKMaterial::Create(
+			m_VulkanDevice,
+			tempRenderTarget->GetRenderPass(),
+			m_PipelineCache,
+			shader
+		);
+		material->pipelineInfo.depthStencilState.depthCompareOp    = VK_COMPARE_OP_ALWAYS;
+		material->pipelineInfo.depthStencilState.depthTestEnable   = VK_FALSE;
+		material->pipelineInfo.depthStencilState.depthWriteEnable  = VK_FALSE;
+		material->pipelineInfo.depthStencilState.stencilTestEnable = VK_FALSE;
+		material->PreparePipeline();
+
+		{
+			cmdBuffer->Begin();
+			tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
+
+			vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
+
+			quad->meshes[0]->BindDrawCmd(cmdBuffer->cmdBuffer);
+			
+			tempRenderTarget->EndRenderPass(cmdBuffer->cmdBuffer);
+			cmdBuffer->Submit();
+		}
+
+		delete cmdBuffer;
+		delete shader;
+		delete material;
+		delete tempRenderTarget;
 	}
 
 	void DestroyAssets()
@@ -300,7 +653,10 @@ private:
 		delete m_EnvMaterial;
 		delete m_EnvShader;
 		delete m_EnvTexture;
+
 		delete m_EnvIrradiance;
+		delete m_EnvBRDFLut;
+		delete m_EnvPrefiltered;
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -431,6 +787,8 @@ private:
 	vk_demo::DVKMaterial*		m_EnvMaterial = nullptr;
 
 	vk_demo::DVKTexture*		m_EnvIrradiance = nullptr;
+	vk_demo::DVKTexture*		m_EnvBRDFLut = nullptr;
+	vk_demo::DVKTexture*		m_EnvPrefiltered = nullptr;
 
 	vk_demo::DVKModel*			m_Model = nullptr;
 	vk_demo::DVKShader*			m_Shader = nullptr;

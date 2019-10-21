@@ -115,6 +115,7 @@ namespace vk_demo
 			VkImageAspectFlags aspect, 
 			int32 width, 
 			int32 height, 
+			bool mipmaps,
 			VkImageUsageFlags usage, 
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT,
 			ImageLayoutBarrier imageLayout = ImageLayoutBarrier::Undefined

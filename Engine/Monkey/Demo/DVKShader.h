@@ -414,6 +414,10 @@ namespace vk_demo
         
 		DVKDescriptorSet* AllocateDescriptorSet()
 		{
+			if (setLayoutsInfo.setLayouts.size() == 0) {
+				return nullptr;
+			}
+
 			DVKDescriptorSet* dvkSet = new DVKDescriptorSet();
 			dvkSet->device = device;
 			dvkSet->setLayoutsInfo = setLayoutsInfo;
