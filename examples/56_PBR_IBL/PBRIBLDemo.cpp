@@ -74,6 +74,7 @@ private:
 		Vector4 param;
 		Vector4 cameraPos;
 		Vector4 lightColor;
+		Vector4 envLod;
 	};
 
 	void Draw(float time, float delta)
@@ -240,6 +241,7 @@ private:
 		m_Material->SetTexture("texORMParam", m_TexORMParam);
 		m_Material->SetTexture("envIrradiance", m_EnvIrradiance);
 		m_Material->SetTexture("envBRDFLut", m_EnvBRDFLut);
+		m_Material->SetTexture("envPrefiltered", m_EnvPrefiltered);
 
 		delete cmdBuffer;
 	}
@@ -280,7 +282,7 @@ private:
 			m_VulkanDevice,
 			true,
 			"assets/shaders/56_PBR_IBL/skybox.vert.spv",
-			"assets/shaders/56_PBR_IBL/irradiance.frag.spv"
+			"assets/shaders/56_PBR_IBL/prefiltered.frag.spv"
 		);
 
 		vk_demo::DVKMaterial* material = vk_demo::DVKMaterial::Create(
@@ -332,20 +334,49 @@ private:
 				cmdBuffer->Submit();
 			}
 
-			for (int32 mip = 0; mip < m_EnvIrradiance->mipLevels; ++mip)
+			VkViewport viewport = {};
+			viewport.x        = 0;
+			viewport.y        = envSize;
+			viewport.width    = envSize;
+			viewport.height   = -envSize;    // flip y axis
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+
+			VkRect2D scissor = {};
+			scissor.extent.width  = envSize;
+			scissor.extent.height = envSize;
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+
+			for (int32 mip = 0; mip < m_EnvPrefiltered->mipLevels; ++mip)
 			{
+				float rtSize = envSize * std::pow(0.5f, mip);
+
+				Vector4 params;
+				params.x = mip * 1.0f / (m_EnvPrefiltered->mipLevels - 1.0f);
+				params.y = envSize;
+
 				for (int32 face = 0; face < 6; ++face)
 				{
 					cmdBuffer->Begin();
 
 					tempRenderTarget->BeginRenderPass(cmdBuffer->cmdBuffer);
 
+					viewport.x = 0;
+					viewport.y = rtSize;
+					viewport.width  = rtSize;
+					viewport.height = -rtSize;
+					
+					scissor.extent.width  = rtSize;
+					scissor.extent.height = rtSize;
+
+					vkCmdSetViewport(cmdBuffer->cmdBuffer, 0, 1, &viewport);
+					vkCmdSetScissor(cmdBuffer->cmdBuffer, 0, 1, &scissor);
+
 					vkCmdBindPipeline(cmdBuffer->cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, material->GetPipeline());
 
 					camera.SetPosition(Vector3(0, 0, 0));
 					camera.LookAt(viewTargets[face]);
-
-					Vector3 ray = camera.GetForwardVec();
 
 					m_MVPParam.model.SetIdentity();
 					m_MVPParam.view = camera.GetView();
@@ -353,7 +384,8 @@ private:
 
 					material->BeginFrame();
 					material->BeginObject();
-					material->SetLocalUniform("uboMVP", &m_MVPParam, sizeof(ModelViewProjectionBlock));
+					material->SetLocalUniform("uboMVP",   &m_MVPParam, sizeof(ModelViewProjectionBlock));
+					material->SetLocalUniform("uboParam", &params,     sizeof(Vector4));
 					material->EndObject();
 					material->EndFrame();
 
@@ -371,18 +403,18 @@ private:
 
 					copyRegion.dstSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 					copyRegion.dstSubresource.baseArrayLayer = face;
-					copyRegion.dstSubresource.mipLevel       = 0;
+					copyRegion.dstSubresource.mipLevel       = mip;
 					copyRegion.dstSubresource.layerCount     = 1;
 
-					copyRegion.extent.width  = envSize;
-					copyRegion.extent.height = envSize;
+					copyRegion.extent.width  = rtSize;
+					copyRegion.extent.height = rtSize;
 					copyRegion.extent.depth  = 1;
 
 					vkCmdCopyImage(
 						cmdBuffer->cmdBuffer,
 						tempTexture->image,
 						VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-						m_EnvIrradiance->image,
+						m_EnvPrefiltered->image,
 						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 						1,
 						&copyRegion
@@ -406,6 +438,8 @@ private:
 				cmdBuffer->Submit();
 			}
 		}
+
+		m_PBRParam.envLod.x = m_EnvPrefiltered->mipLevels;
 
 		delete shader;
 		delete material;
@@ -513,8 +547,6 @@ private:
 
 				camera.SetPosition(Vector3(0, 0, 0));
 				camera.LookAt(viewTargets[face]);
-
-				Vector3 ray = camera.GetForwardVec();
 
 				m_MVPParam.model.SetIdentity();
 				m_MVPParam.view = camera.GetView();

@@ -58,9 +58,9 @@ float NormalDistributionGGX(vec3 N, vec3 H, float roughness)
 	float a  = roughness * roughness;
 	float a2 = a * a;
 
-	float NdotH  = max(dot(N, H), 0.0f);
+	float NdotH  = max(dot(N, H), 0.0);
 	float NdotH2 = NdotH * NdotH;
-	float denom  = (NdotH2 * (a2 - 1.0f) + 1.0f);
+	float denom  = (NdotH2 * (a2 - 1.0) + 1.0);
 
 	return a2 / (PI * denom * denom);
 }
@@ -76,8 +76,8 @@ void main()
 
 	const uint sampleCount = 1024u;
 
-	float totalWeight = 0.0f;
-	vec3 prefiltered  = vec3(0.0f);
+	float totalWeight = 0.0;
+	vec3 prefiltered  = vec3(0.0);
 
 	for (uint i = 0u; i < sampleCount; ++i)
 	{
@@ -86,7 +86,7 @@ void main()
 		vec3 L  = normalize(2.0 * dot(V, H) * H - V);
 		float NdotL = max(dot(N, L), 0.0);
 
-		if (NdotL > 0.0f);
+		if (NdotL > 0.0);
 		{
 			float NdotH = max(dot(N, H), 0.0);
 			float VdotH = max(dot(V, H), 0.0);
@@ -95,7 +95,7 @@ void main()
 			float omegaS = 1.0 / (sampleCount * pdf);
 			float omegaP = 4.0 * PI / (6.0 * envSize * envSize);
 
-			float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
+			float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0);
 
 			prefiltered += textureLod(environmentMap, L, mipLevel).xyz * NdotL;
 			totalWeight += NdotL;
@@ -103,6 +103,5 @@ void main()
 	}
 
 	prefiltered = prefiltered / totalWeight;
-
 	outColor = vec4(prefiltered, 1.0);
 }

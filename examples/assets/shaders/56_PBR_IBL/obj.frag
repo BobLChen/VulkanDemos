@@ -11,13 +11,15 @@ layout (binding = 1) uniform PBRParamBlock
 	vec4 param;
     vec4 cameraPos;
     vec4 lightColor;
+    vec4 envLod;
 } uboParam;
 
-layout (binding = 2) uniform sampler2D texAlbedo;
-layout (binding = 3) uniform sampler2D texNormal;
-layout (binding = 4) uniform sampler2D texORMParam;
+layout (binding = 2) uniform sampler2D   texAlbedo;
+layout (binding = 3) uniform sampler2D   texNormal;
+layout (binding = 4) uniform sampler2D   texORMParam;
 layout (binding = 5) uniform samplerCube envIrradiance;
-layout (binding = 6) uniform sampler2D envBRDFLut;
+layout (binding = 6) uniform sampler2D   envBRDFLut;
+layout (binding = 7) uniform samplerCube envPrefiltered;
 
 layout (location = 0) out vec4 outFragColor;
 
@@ -53,6 +55,12 @@ vec3 FresnelSchlick(vec3 H, vec3 V, vec3 F0)
 {
     float HdotV = max(dot(H, V), 0.0f);
 	return F0 + (1.0f - F0) * pow(1.0 - HdotV, 5.0f);
+}
+
+vec3 FresnelSchlickRoughness(vec3 N, vec3 V, vec3 F0, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0f);
+	return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow (1.0 - NdotV, 5.0f);
 }
 
 float GeometrySchlickGGX(float NdotV, float K)
@@ -122,6 +130,7 @@ void main()
     vec3 L = vec3(0, 0, -1);
     vec3 V = normalize(uboParam.cameraPos.xyz - inWorldPos.xyz);
     vec3 H = normalize(L + V);
+    vec3 R = normalize(reflect(-V, N));
     
     float occlusion = texORMParamColor.r * uboParam.param.x;
     float roughness = texORMParamColor.g * uboParam.param.y;
@@ -143,9 +152,21 @@ void main()
     vec3 brdf = (D * F * G) / (4.0 * max(dot(V, N), 0) * max(dot(L, N), 0) + 0.0001f);
     // KD
     vec3 KD = (vec3(1.0f) - F);
+    // Lo
+    vec3 Lo = (KD * albedo / PI + brdf) * max(dot(N, L), 0) * uboParam.lightColor.xyz * uboParam.lightColor.w;
+
+    // ambient
+    float maxEnvLod  = uboParam.envLod.x;
+    vec3 irradiance  = texture(envIrradiance, N).xyz;
+    vec3 prefiltered = texture(envPrefiltered, R, roughness * maxEnvLod).rgb;
+    vec2 envBrdf     = texture(envBRDFLut, vec2(max(dot(N, V), 0.0f), roughness)).rg;
     
-    vec3 finalColor = (KD * albedo / PI + brdf) * max(dot(N, L), 0) * uboParam.lightColor.xyz * uboParam.lightColor.w;
-    finalColor *= occlusion;
+    vec3 ambientS    = FresnelSchlickRoughness(N, V, F0, roughness);
+    vec3 ambientD    = (vec3(1.0f) - ambientS) * (1.0 - metallic);
+    vec3 envSpecular = prefiltered * (ambientS * envBrdf.x + envBrdf.y);
+    vec3 ambient     = (albedo * irradiance * ambientD + envSpecular) * occlusion;
+    
+    vec3 finalColor = Lo + ambient;
 
     // none
     if (uboParam.param.w == 0) {
@@ -178,9 +199,6 @@ void main()
     finalColor.xyz = pow(finalColor.xyz, vec3(1.0 / 2.2));
 
     finalColor.xyz = saturate(finalColor.xyz);
-
-    finalColor.xyz += texture(envBRDFLut, inUV).xyz;
-    finalColor.xyz += texture(envIrradiance, N).xyz;
 
     outFragColor.xyz = finalColor;
     outFragColor.w   = 1.0;
