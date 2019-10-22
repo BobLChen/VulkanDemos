@@ -78,15 +78,19 @@ private:
 
 	void Draw(float time, float delta)
 	{
-        UpdateUI(time, delta);
-		if (m_AutoRotate) {
-			UpdateUniformBuffers(time, delta);
-		}
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		UpdateUniformBuffers(time, delta);
+		
 		DemoBase::Present(bufferIndex);
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -101,12 +105,16 @@ private:
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
             ImGui::End();
 		}
-        
+
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -280,7 +288,15 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-        m_Model->rootNode->localMatrix.AppendRotation(10.0f * delta, Vector3::UpVector);
+		if (m_AutoRotate) {
+			m_Model->rootNode->localMatrix.AppendRotation(30.0f * delta, Vector3::UpVector);
+		}
+
+        m_ViewProjData.view = m_ViewCamera.GetView();
+		m_ViewProjData.projection = m_ViewCamera.GetProjection();
+
+		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
         SetupCommandBuffers();
 	}
 
@@ -289,15 +305,10 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size();
         
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
-
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 100.0f, 1500.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 100.0f, 5000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y + 1000, boundCenter.z - boundSize.Size() * 1.5f);
+		m_ViewCamera.LookAt(boundCenter);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -333,6 +344,8 @@ private:
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
+	vk_demo::DVKCamera				m_ViewCamera;
+
 	ViewProjectionBlock 			m_ViewProjData;
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 

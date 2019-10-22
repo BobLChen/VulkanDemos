@@ -2,6 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DemoBase.h"
+#include "Demo/DVKCamera.h"
 #include "Demo/FileManager.h"
 
 #include "Math/Vector4.h"
@@ -117,6 +118,7 @@ private:
     
 	void Draw(float time, float delta)
 	{
+		m_ViewCamera.Update(time, delta);
 		UpdateUniformBuffers(time, delta);
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         DemoBase::Present(bufferIndex);
@@ -373,6 +375,9 @@ private:
 	void UpdateUniformBuffers(float time, float delta)
 	{
 		m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
+
 		uint8_t *pData = nullptr;
 		VERIFYVULKANRESULT(vkMapMemory(m_Device, m_MVPBuffer.memory, 0, sizeof(UBOData), 0, (void**)&pData));
 		std::memcpy(pData, &m_MVPData, sizeof(UBOData));
@@ -401,15 +406,9 @@ private:
 		m_MVPDescriptor.offset = 0;
 		m_MVPDescriptor.range  = sizeof(UBOData);
         
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
-        
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector4(0, 0, -2.5f));
-		m_MVPData.view.SetInverse();
-        
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.1f, 1000.0f);
+		m_ViewCamera.SetPosition(0, 0, -5.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
 	}
 	
 	void DestroyUniformBuffers()
@@ -558,6 +557,7 @@ private:
     
 private:
 	bool 							m_Ready = false;
+	vk_demo::DVKCamera				m_ViewCamera;
     
 	UBOData 						m_MVPData;
 

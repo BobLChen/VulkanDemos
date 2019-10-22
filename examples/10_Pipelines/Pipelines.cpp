@@ -2,6 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
+#include "Demo/DVKCamera.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -82,13 +83,17 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniformBuffers(time, delta);
 		
 		DemoBase::Present(bufferIndex);
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -104,11 +109,15 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -309,8 +318,12 @@ private:
 	{
 		if (m_AutoRotate) {
 			m_MVPData.model.AppendRotation(90.0f * delta, Vector3::UpVector);
-			m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
+
+		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
 		m_ParamBuffer->CopyFrom(&m_ParamData, sizeof(ParamBlock));
 	}
 
@@ -319,17 +332,12 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size();
 
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+		m_MVPData.model.AppendRotation(180, Vector3::UpVector);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 3.0f, (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth() / 3.0f, GetHeight(), 0.1f, 1000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size() * 2.0f);
+		m_ViewCamera.LookAt(boundCenter);
 
 		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -358,7 +366,6 @@ private:
 
 		m_ParamBuffer->UnMap();
 		delete m_ParamBuffer;
-		m_ParamBuffer = nullptr;
 	}
 
 	void CreateGUI()
@@ -379,6 +386,8 @@ private:
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
+	vk_demo::DVKCamera				m_ViewCamera;
+
 	MVPBlock 						m_MVPData;
 	vk_demo::DVKBuffer*				m_MVPBuffer;
 

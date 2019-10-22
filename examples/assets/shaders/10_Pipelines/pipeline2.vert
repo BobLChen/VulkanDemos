@@ -24,8 +24,10 @@ out gl_PerVertex
 
 void main() 
 {
-    vec3 normal   = normalize(inNormal);
     vec3 position = inPosition + inNormal * uboParam.intensity;
-    outNormal     = inNormal;
 	gl_Position   = uboMVP.projectionMatrix * uboMVP.viewMatrix * uboMVP.modelMatrix * vec4(position.xyz, 1.0);
+
+	mat3 normalMatrix = transpose(inverse(mat3(uboMVP.modelMatrix)));
+	vec3 normal = normalize(normalMatrix * inNormal.xyz);
+	outNormal = normal;
 }
