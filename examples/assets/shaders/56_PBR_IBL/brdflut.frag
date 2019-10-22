@@ -57,8 +57,9 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 vec2 IntegrateBRDF(float NdotV, float roughness)
 {
-	vec3 V  = vec3(sqrt(1.0 - NdotV * NdotV), 0.0, NdotV);
-    vec3 N  = vec3(0.0, 0.0, 1.0);
+	vec3 N = vec3(0.0, 0.0, 1.0);
+	vec3 V = vec3(sqrt(1.0 - NdotV * NdotV), 0.0, NdotV);
+	
 	float A = 0.0;
 	float B = 0.0;
 	
@@ -92,5 +93,5 @@ vec2 IntegrateBRDF(float NdotV, float roughness)
 
 void main() 
 {
-    outFragColor = vec4(IntegrateBRDF(inUV0.x, inUV0.y), 0.0, 1.0);
+    outFragColor = vec4(IntegrateBRDF(inUV0.x, 1.0 - inUV0.y), 0.0, 1.0);
 }

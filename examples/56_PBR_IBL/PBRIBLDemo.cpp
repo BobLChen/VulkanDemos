@@ -74,7 +74,7 @@ private:
 		Vector4 param;
 		Vector4 cameraPos;
 		Vector4 lightColor;
-		Vector4 envLod;
+		Vector4 envParam;
 	};
 
 	void Draw(float time, float delta)
@@ -103,6 +103,8 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("PBRIBLDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			ImGui::Separator();
+
 			ImGui::SliderFloat("AO", &m_PBRParam.param.x, 0.0f, 1.0f);
 			ImGui::SliderFloat("Roughness", &m_PBRParam.param.y, 0.0f, 1.0f);
 			ImGui::SliderFloat("Metallic", &m_PBRParam.param.z, 0.0f, 1.0f);
@@ -111,6 +113,10 @@ private:
 
 			ImGui::ColorEdit3("LightColor", (float*)(&m_PBRParam.lightColor));
 			ImGui::SliderFloat("Intensity", &m_PBRParam.lightColor.w, 0.0f, 100.0f);
+
+			ImGui::Separator();
+
+			ImGui::SliderFloat("Exposure", &m_PBRParam.envParam.w, 0.0f, 10.0f);
 
 			ImGui::Separator();
 
@@ -255,7 +261,7 @@ private:
 		m_EnvPrefiltered = vk_demo::DVKTexture::CreateCube(
 			m_VulkanDevice,
 			cmdBuffer,
-			VK_FORMAT_R32G32B32A32_SFLOAT, 
+			VK_FORMAT_R16G16B16A16_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			envSize, envSize,
 			true,
@@ -266,7 +272,7 @@ private:
 
 		vk_demo::DVKTexture* tempTexture = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R32G32B32A32_SFLOAT, 
+			VK_FORMAT_R16G16B16A16_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			envSize, envSize,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
@@ -439,7 +445,8 @@ private:
 			}
 		}
 
-		m_PBRParam.envLod.x = m_EnvPrefiltered->mipLevels;
+		m_PBRParam.envParam.x = m_EnvPrefiltered->width;
+		m_PBRParam.envParam.y = m_EnvPrefiltered->mipLevels;
 
 		delete shader;
 		delete material;
@@ -622,7 +629,7 @@ private:
 
 		m_EnvBRDFLut = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			VK_FORMAT_R32G32_SFLOAT, 
+			VK_FORMAT_R16G16_SFLOAT, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			512, 512,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
@@ -743,6 +750,7 @@ private:
 			m_EnvMaterial->BeginFrame();
 			m_EnvMaterial->BeginObject();
 			m_EnvMaterial->SetLocalUniform("uboMVP",   &m_MVPParam, sizeof(ModelViewProjectionBlock));
+			m_EnvMaterial->SetLocalUniform("uboParam", &m_PBRParam, sizeof(PBRParamBlock));
 			m_EnvMaterial->EndObject();
 			m_EnvMaterial->EndFrame();
 
@@ -794,7 +802,12 @@ private:
 
 		m_PBRParam.cameraPos = m_ViewCamera.GetTransform().GetOrigin();
 
-		m_PBRParam.lightColor = Vector4(1, 1, 1, 2);
+		m_PBRParam.lightColor = Vector4(1, 1, 1, 1);
+
+		m_PBRParam.envParam.x = 512;
+		m_PBRParam.envParam.y = 9;
+		m_PBRParam.envParam.z = 0;
+		m_PBRParam.envParam.w = 4.5;
 	}
 
 	void CreateGUI()

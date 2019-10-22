@@ -1,5 +1,13 @@
 #version 450
 
+layout (binding = 1) uniform PBRParamBlock 
+{
+	vec4 param;
+    vec4 cameraPos;
+    vec4 lightColor;
+    vec4 envParam;
+} uboParam;
+
 layout (binding = 2) uniform samplerCube diffuseMap;
 
 layout (set = 0, location = 0) in vec3 inUVW;
@@ -43,9 +51,26 @@ vec3 ACESFitted(vec3 color)
     return color;
 }
 
+// http://filmicworlds.com/blog/filmic-tonemapping-operators/
+vec3 Uncharted2Tonemap(vec3 color)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+}
+
 void main() 
 {
-    vec3 color = ACESFitted(textureLod(diffuseMap, inUVW, 4.5).xyz * 2.5);
+    vec3 color = textureLod(diffuseMap, inUVW, 5.0).xyz;
+
+    color = Uncharted2Tonemap(color * uboParam.envParam.w);
+	color = color * (1.0f / Uncharted2Tonemap(vec3(11.2f)));	
+
     color = pow(color, vec3(1.0 / 2.2));
 	outColor = vec4(color, 1.0);
 }

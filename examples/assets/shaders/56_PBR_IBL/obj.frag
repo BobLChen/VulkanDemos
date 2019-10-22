@@ -11,7 +11,7 @@ layout (binding = 1) uniform PBRParamBlock
 	vec4 param;
     vec4 cameraPos;
     vec4 lightColor;
-    vec4 envLod;
+    vec4 envParam;
 } uboParam;
 
 layout (binding = 2) uniform sampler2D   texAlbedo;
@@ -25,6 +25,11 @@ layout (location = 0) out vec4 outFragColor;
 
 #define PI 3.14159265359
 #define saturate(x) clamp(x, 0.0, 1.0)
+
+vec3 ToLinearSpace(vec3 color)
+{
+	return pow(color, vec3(2.2));
+}
 
 vec3 GammaToLinearSpace(vec3 sRGB)
 {
@@ -115,6 +120,17 @@ vec3 ACESFitted(vec3 color)
     return color;
 }
 
+vec3 Uncharted2Tonemap(vec3 x)
+{
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
+}
+
 void main() 
 {
     mat3 TBN = mat3(inTangent, inBiTangent, inNormal);
@@ -123,11 +139,11 @@ void main()
     vec4 texNormalColor   = texture(texNormal, inUV);
     vec4 texORMParamColor = texture(texORMParam, inUV);
 
-    vec3 albedo = GammaToLinearSpace(texAlbedoColor.xyz);
+    vec3 albedo = ToLinearSpace(texAlbedoColor.xyz);
     vec3 normal = TBN * normalize(texNormalColor.xyz * 2.0 - 1.0);
 
-    vec3 N = normal;
     vec3 L = vec3(0, 0, -1);
+    vec3 N = normal;
     vec3 V = normalize(uboParam.cameraPos.xyz - inWorldPos.xyz);
     vec3 H = normalize(L + V);
     vec3 R = normalize(reflect(-V, N));
@@ -140,8 +156,6 @@ void main()
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
-    albedo = albedo * (1 - metallic) * (1 - 0.04);
-
     // F
     vec3  F = FresnelSchlick(H, V, F0);
     // D
@@ -150,23 +164,25 @@ void main()
     float G = GeometrySmith(N, V, L, roughness);
     // BRDF
     vec3 brdf = (D * F * G) / (4.0 * max(dot(V, N), 0) * max(dot(L, N), 0) + 0.0001f);
+    // KS
+    vec3 KS = F;
     // KD
-    vec3 KD = (vec3(1.0f) - F);
+    vec3 KD = (vec3(1.0f) - KS);
     // Lo
-    vec3 Lo = (KD * albedo / PI + brdf) * max(dot(N, L), 0) * uboParam.lightColor.xyz * uboParam.lightColor.w;
+    vec3 Lo = (KD * albedo * (1.0 - metallic) / PI + brdf) * max(dot(N, L), 0) * uboParam.lightColor.xyz * uboParam.lightColor.w;
 
     // ambient
-    float maxEnvLod  = uboParam.envLod.x;
-    vec3 irradiance  = texture(envIrradiance, N).xyz;
-    vec3 prefiltered = texture(envPrefiltered, R, roughness * maxEnvLod).xyz;
+    float roughLod   = uboParam.envParam.y * roughness;
+    vec3 prefiltered = texture(envPrefiltered, R, roughLod).xyz;
     vec2 envBrdf     = texture(envBRDFLut, vec2(max(dot(N, V), 0.0f), roughness)).xy;
+    vec3 irradiance  = texture(envIrradiance, N).xyz;
     
-    vec3 ambientS    = FresnelSchlickRoughness(N, V, F0, roughness);
-    vec3 ambientD    = (vec3(1.0f) - ambientS) * (1.0 - metallic);
-    vec3 envSpecular = prefiltered * (ambientS * envBrdf.x + envBrdf.y);
-    vec3 ambient     = (albedo * irradiance * ambientD + envSpecular) * occlusion;
+    vec3 ambientKS   = FresnelSchlickRoughness(N, V, F0, roughness);
+    vec3 ambientKD   = (vec3(1.0f) - ambientKS) * (1.0 - metallic);
+    vec3 envSpecular = prefiltered * (ambientKS * envBrdf.x + envBrdf.y);
+    vec3 ambient     = (albedo * irradiance * ambientKD + envSpecular);
     
-    vec3 finalColor = Lo + ambient;
+    vec3 finalColor = Lo + ambient * occlusion;
 
     // none
     if (uboParam.param.w == 0) {
@@ -193,11 +209,12 @@ void main()
         finalColor.xyz = vec3(roughness);
     }
 
-    // tonemap
-    finalColor.xyz = ACESFitted(finalColor.xyz);
-    // linear to gamma
-    finalColor.xyz = pow(finalColor.xyz, vec3(1.0 / 2.2));
+    // tonemapping
+    finalColor = Uncharted2Tonemap(finalColor * uboParam.envParam.w);
+	finalColor = finalColor * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
 
+    // gamma
+    finalColor.xyz = pow(finalColor.xyz, vec3(1.0 / 2.2));
     finalColor.xyz = saturate(finalColor.xyz);
 
     outFragColor.xyz = finalColor;
