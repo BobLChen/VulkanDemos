@@ -28,7 +28,6 @@ void main()
 			// tangent spcae to world space
 			vec3 sampleDir = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
 			sampleDir = sampleDir.x * right + sampleDir.y * up + sampleDir.z * N;
-
 			// irradiance
 			irradiance  += texture(environmentMap, sampleDir).xyz * cos(theta) * sin(theta);
 			sampleCount += 1;

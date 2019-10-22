@@ -794,7 +794,7 @@ private:
 
 		m_PBRParam.cameraPos = m_ViewCamera.GetTransform().GetOrigin();
 
-		m_PBRParam.lightColor = Vector4(1, 1, 1, 10);
+		m_PBRParam.lightColor = Vector4(1, 1, 1, 2);
 	}
 
 	void CreateGUI()

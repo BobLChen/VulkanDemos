@@ -45,7 +45,7 @@ vec3 ACESFitted(vec3 color)
 
 void main() 
 {
-    vec3 color = ACESFitted(texture(diffuseMap, inUVW).xyz * 2.5);
+    vec3 color = ACESFitted(textureLod(diffuseMap, inUVW, 4.5).xyz * 2.5);
     color = pow(color, vec3(1.0 / 2.2));
 	outColor = vec4(color, 1.0);
 }

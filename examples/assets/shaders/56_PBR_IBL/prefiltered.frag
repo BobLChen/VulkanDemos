@@ -67,7 +67,6 @@ float NormalDistributionGGX(vec3 N, vec3 H, float roughness)
 
 void main() 
 {
-
 	float roughness = uboParam.param.x;
 	float envSize   = uboParam.param.y;
 

@@ -60,7 +60,7 @@ vec3 FresnelSchlick(vec3 H, vec3 V, vec3 F0)
 vec3 FresnelSchlickRoughness(vec3 N, vec3 V, vec3 F0, float roughness)
 {
     float NdotV = max(dot(N, V), 0.0f);
-	return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow (1.0 - NdotV, 5.0f);
+	return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(1.0 - NdotV, 5.0f);
 }
 
 float GeometrySchlickGGX(float NdotV, float K)
@@ -158,8 +158,8 @@ void main()
     // ambient
     float maxEnvLod  = uboParam.envLod.x;
     vec3 irradiance  = texture(envIrradiance, N).xyz;
-    vec3 prefiltered = texture(envPrefiltered, R, roughness * maxEnvLod).rgb;
-    vec2 envBrdf     = texture(envBRDFLut, vec2(max(dot(N, V), 0.0f), roughness)).rg;
+    vec3 prefiltered = texture(envPrefiltered, R, roughness * maxEnvLod).xyz;
+    vec2 envBrdf     = texture(envBRDFLut, vec2(max(dot(N, V), 0.0f), roughness)).xy;
     
     vec3 ambientS    = FresnelSchlickRoughness(N, V, F0, roughness);
     vec3 ambientD    = (vec3(1.0f) - ambientS) * (1.0 - metallic);
