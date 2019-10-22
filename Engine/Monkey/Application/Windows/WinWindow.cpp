@@ -100,7 +100,7 @@ void WinWindow::Initialize(WinApplication* const application)
 	m_Window = CreateWindow(
 		AppWindowClass,
 		m_Title.c_str(),
-		WS_OVERLAPPEDWINDOW,
+		WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		windowRect.right  - windowRect.left,

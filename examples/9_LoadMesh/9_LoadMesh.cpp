@@ -2,6 +2,7 @@
 #include "Common/Log.h"
 
 #include "Demo/DVKCommon.h"
+#include "Demo/DVKCamera.h"
 
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
@@ -77,15 +78,18 @@ private:
     
 	void Draw(float time, float delta)
 	{
-        UpdateUI(time, delta);
-		if (m_AutoRotate) {
-			UpdateUniformBuffers(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
 		}
+
+		UpdateUniformBuffers(time, delta);
+		
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		DemoBase::Present(bufferIndex);
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -107,11 +111,15 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -380,8 +388,15 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
-		for (int32 i = 0; i < m_MVPDatas.size(); ++i) {
-			m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
+		for (int32 i = 0; i < m_MVPDatas.size(); ++i) 
+		{
+			if (m_AutoRotate) {
+				m_MVPDatas[i].model.AppendRotation(90.0f * delta, Vector3::UpVector);
+			}
+
+			m_MVPDatas[i].view = m_ViewCamera.GetView();
+			m_MVPDatas[i].projection = m_ViewCamera.GetProjection();
+			
 			m_MVPBuffers[i]->CopyFrom(&(m_MVPDatas[i]), sizeof(UBOData));
 		}
 	}
@@ -391,23 +406,14 @@ private:
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z -= boundSize.Size();
 
 		m_MVPDatas.resize(m_Model->meshes.size());
 		m_MVPBuffers.resize(m_Model->meshes.size());
 
 		for (int32 i = 0; i < m_Model->meshes.size(); ++i)
 		{
-			m_MVPDatas[i].model.SetIdentity();
-			m_MVPDatas[i].model.SetOrigin(Vector3(0, 0, 0));
-        
-			m_MVPDatas[i].view.SetIdentity();
-			m_MVPDatas[i].view.SetOrigin(boundCenter);
-			m_MVPDatas[i].view.SetInverse();
+			m_MVPDatas[i].model.AppendRotation(180, Vector3::UpVector);
 
-			m_MVPDatas[i].projection.SetIdentity();
-			m_MVPDatas[i].projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
-		
 			m_MVPBuffers[i] = vk_demo::DVKBuffer::CreateBuffer(
 				m_VulkanDevice, 
 				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -417,6 +423,10 @@ private:
 			);
 			m_MVPBuffers[i]->Map();
 		}
+
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.1f, 1000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - 50.0f);
+		m_ViewCamera.LookAt(boundCenter);
 	}
 	
 	void DestroyUniformBuffers()
@@ -454,6 +464,7 @@ private:
 	std::vector<UBOData> 			m_MVPDatas;
 	DVKBuffers						m_MVPBuffers;
 
+	vk_demo::DVKCamera				m_ViewCamera;
 	vk_demo::DVKModel*				m_Model = nullptr;
 
 	VkPipeline 						m_Pipeline = VK_NULL_HANDLE;

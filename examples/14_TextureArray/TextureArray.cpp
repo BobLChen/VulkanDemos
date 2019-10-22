@@ -89,13 +89,17 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniformBuffers(time, delta);
 		
 		DemoBase::Present(bufferIndex);
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -115,11 +119,15 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -447,6 +455,11 @@ private:
             m_ModelBuffer->CopyFrom(m_ModelDatas.data(), m_ModelBuffer->size);
         }
         
+		m_ViewProjData.view = m_ViewCamera.GetView();
+		m_ViewProjData.projection = m_ViewCamera.GetProjection();
+
+		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
         m_ParamBuffer->CopyFrom(&m_ParamData, m_ParamBuffer->size);
 	}
 
@@ -471,14 +484,9 @@ private:
 		);
 		m_ModelBuffer->Map();
         
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-        m_ViewProjData.view.AppendRotation(45.0f, Vector3::RightVector);
-		m_ViewProjData.view.SetOrigin(Vector3(0.0f, 5.0f, -6.0f));
-		m_ViewProjData.view.SetInverse();
-
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 3000.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 1.0f, 3000.0f);
+		m_ViewCamera.SetPosition(0.0f, 10.0f, -10.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
 		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -534,6 +542,8 @@ private:
 	bool							m_AutoRotate = false;
 	bool 							m_Ready = false;
     
+	vk_demo::DVKCamera				m_ViewCamera;
+
     std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
     
@@ -543,7 +553,7 @@ private:
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;
 
-    vk_demo::DVKGfxPipeline*           m_Pipeline = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline = nullptr;
 	vk_demo::DVKTexture*			m_Texture = nullptr;
 	vk_demo::DVKModel*				m_Model = nullptr;
 
