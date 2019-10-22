@@ -878,3 +878,18 @@ SETUP_SAMPLE_START(55_PBR_DirectLighting)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(55_PBR_DirectLighting)
+
+SETUP_SAMPLE_START(56_PBR_IBL)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/56_PBR_IBL/PBRIBLDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/56_PBR_IBL/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(56_PBR_IBL)
