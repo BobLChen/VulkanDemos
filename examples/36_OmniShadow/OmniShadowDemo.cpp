@@ -88,7 +88,14 @@ private:
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
 		UpdateFPS(time, delta);
-		UpdateUI(time, delta);
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
 
 		m_LightCamera.position = m_LightPosition;
 		m_ShadowParam.position = m_LightPosition;
@@ -151,7 +158,7 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -174,8 +181,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void CreateRenderTarget()
@@ -381,22 +392,15 @@ private:
 
 		m_LightPosition.Set(boundCenter.x, boundCenter.y + 50.0f, boundCenter.z, 325.0f);
 
-		m_MVPData.model.SetIdentity();
-
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(-300, 650, 0));
-		m_MVPData.view.LookAt(Vector3(0, 0, 0));
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 1000.0f);
-
 		m_LightCamera.model.SetIdentity();
-
 		m_LightCamera.projection.SetIdentity();
 		m_LightCamera.projection.Perspective(PI / 2.0f, 1.0f, 1.0f, 1.0f, 1500.0f);
 
 		m_ShadowParam.bias.Set(1.5f, 0.005f, 0.0f, 0.0f);
+
+		m_ViewCamera.SetPosition(-500, 800, 0);
+		m_ViewCamera.LookAt(0, 200, 0);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 10.0f, 3000.0f);
 	}
 
 	void CreateGUI()
@@ -418,6 +422,7 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
 
 	// Shadow Rendertarget
 	vk_demo::DVKRenderTarget*   m_ShadowRTT = nullptr;

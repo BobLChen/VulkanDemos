@@ -222,7 +222,7 @@ namespace vk_demo
     
     DVKTexture* DVKTexture::CreateCubeRenderTarget(std::shared_ptr<VulkanDevice> vulkanDevice, VkFormat format, VkImageAspectFlags aspect, int32 width, int32 height, VkImageUsageFlags usage, VkSampleCountFlagBits sampleCount)
     {
-        DVKTexture* texture = CreateCube(vulkanDevice, nullptr, format, aspect, width, height, usage, sampleCount);
+        DVKTexture* texture = CreateCube(vulkanDevice, nullptr, format, aspect, width, height, false, usage, sampleCount);
         texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         texture->descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         return texture;
