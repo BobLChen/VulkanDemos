@@ -78,7 +78,11 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniform(time, delta);
 
 		// 设置Role参数
@@ -116,15 +120,19 @@ private:
 		}
 
 		SetupCommandBuffers(bufferIndex);
+
 		DemoBase::Present(bufferIndex);
 	}
 
 	void UpdateUniform(float time, float delta)
 	{
-		
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
+
+		m_RayData.viewDir = -m_ViewCamera.GetTransform().GetForward();
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -152,8 +160,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -393,18 +405,11 @@ private:
 
 	void InitParmas()
 	{
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 10.0f, 5000.0f);
+		m_ViewCamera.SetPosition(0, 500.0f, -1500.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
 
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 100.0f, -750.0f));
-		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
-		
-		m_RayData.viewDir = -m_MVPData.view.GetForward();
+		m_RayData.viewDir = -m_ViewCamera.GetTransform().GetForward();
 		m_RayData.color   = Vector3(0.0f, 0.6f, 1.0f);
 		m_RayData.power   = 5.0f;
 		m_RayData.padding = 0;
@@ -429,6 +434,8 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 							m_Ready = false;
+
+	vk_demo::DVKCamera				m_ViewCamera;
 
 	ModelViewProjectionBlock		m_MVPData;
 	RayParamBlock					m_RayData;

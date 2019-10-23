@@ -350,7 +350,11 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniform(time, delta);
 
 		// 设置model的参数
@@ -380,12 +384,15 @@ private:
 
 	void UpdateUniform(float time, float delta)
 	{
-		// 相机参数
-		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
+		m_ViewCamera.Perspective(PI / 2, GetWidth(), GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
+		m_ViewProjData.view = m_ViewCamera.GetView();
+		m_ViewProjData.projection = m_ViewCamera.GetProjection();
+
+		m_VertFragParam.invView = m_ViewCamera.GetView();
+		m_VertFragParam.invView.SetInverse();
+		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(45.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
-		// 投影矩阵
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
-		// 灯光参数
+		
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
 		{
 			float bias = MMath::Sin(time * m_LightInfos.speed[i]) / 5.0f;
@@ -395,7 +402,7 @@ private:
 		}
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -435,8 +442,12 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -599,23 +610,18 @@ private:
 
 		// param
 		m_VertFragParam.attachmentIndex = 0;
-		m_VertFragParam.zNear   = 300.0f;
-		m_VertFragParam.zFar    = 1500.0f;
+		m_VertFragParam.zNear   = 10.0f;
+		m_VertFragParam.zFar    = 3000.0f;
 		m_VertFragParam.one     = 1.0f;
 		m_VertFragParam.yMaxFar = m_VertFragParam.zFar * MMath::Tan(MMath::DegreesToRadians(75.0f) / 2);
 		m_VertFragParam.xMaxFar = m_VertFragParam.yMaxFar * (float)GetWidth() / (float)GetHeight();
 		
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(Vector3(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size()));
-		m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y + 1000, boundCenter.z - boundSize.Size());
+		m_ViewCamera.LookAt(boundCenter);
 
 		m_VertFragParam.invView = m_ViewProjData.view;
 		m_VertFragParam.invView.SetInverse();
-		
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_VertFragParam.zNear, m_VertFragParam.zFar);
 	}
 	
 	void CreateGUI()
@@ -635,6 +641,7 @@ private:
 	typedef std::vector<vk_demo::DVKTexture*>			DVKTextureArray;
 
 	bool 							m_Ready = false;
+	vk_demo::DVKCamera				m_ViewCamera;
     
 	ViewProjectionBlock				m_ViewProjData;
 

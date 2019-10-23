@@ -372,7 +372,14 @@ private:
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
-		UpdateUI(time, delta);
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
 
 		// 设置Room参数
 		m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
@@ -389,7 +396,9 @@ private:
 		}
 
         UpdateFilterParams(time, delta);
+
 		SetupCommandBuffers(bufferIndex);
+
 		DemoBase::Present(bufferIndex);
 	}
     
@@ -773,7 +782,7 @@ private:
         }
     }
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -790,8 +799,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void CreateRenderTarget()
@@ -1144,16 +1157,9 @@ private:
 
 	void InitParmas()
 	{
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
-
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 100.0f, -750.0f));
-		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 10.0f, 5000.0f);
+		m_ViewCamera.SetPosition(0, 500.0f, -1500.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
 
 		{
             filter3x3ConvolutionParam.lineSize    = 1.0f;
@@ -1317,6 +1323,8 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 						m_Ready = false;
+
+	vk_demo::DVKCamera			m_ViewCamera;
 
 	FrameBufferObject			m_RenderTarget;
 
