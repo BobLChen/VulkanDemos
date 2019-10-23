@@ -90,7 +90,13 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
         
 		if (m_AutoRotate) {
 			m_LineModel->rootNode->localMatrix.AppendRotation(delta * 15.0f, Vector3::UpVector);
@@ -117,7 +123,7 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -136,8 +142,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void GenerateLineSphere(std::vector<float>& outVertices, int32 sphslices, float scale)
@@ -472,14 +482,8 @@ private:
 		m_FXAAParam.frame.x = 1.0f / m_FrameWidth;
 		m_FXAAParam.frame.y = 1.0f / m_FrameHeight;
 
-		m_MVPData.model.SetIdentity();
-        
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(Vector3(0, 0.0f, -3.0f));
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.01f, 100.0f);
+		m_ViewCamera.SetPosition(0, 0.0f, -3.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.1f, 1000.0f);
 	}
     
 	void CreateGUI()
@@ -497,6 +501,7 @@ private:
 private:
     
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
 	ImageGUIContext*			m_GUI = nullptr;
 
 	ModelViewProjectionBlock	m_MVPData;

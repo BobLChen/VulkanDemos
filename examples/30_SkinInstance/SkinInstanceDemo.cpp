@@ -106,12 +106,21 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_ParamData.view = m_ViewCamera.GetView();
+		m_ParamData.projection = m_ViewCamera.GetProjection();
+
 		UpdateAnimation(time, delta);
         
         m_RoleMaterial->BeginFrame();
+
 		vk_demo::DVKMesh* mesh = m_RoleModel->meshes[0];
 		m_ParamData.model = mesh->linkNode->GetGlobalMatrix();
+
 		m_RoleMaterial->BeginObject();
 		m_RoleMaterial->SetLocalUniform("paramData", &m_ParamData, sizeof(ParamDataBlock));
 		m_RoleMaterial->EndObject();
@@ -122,7 +131,7 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -154,8 +163,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
     
     void SetAnimation(int32 index)
@@ -210,6 +223,7 @@ private:
 				// 也可以使用对偶四元素来替换矩阵的计算
 				Matrix4x4 boneTransform = bone->finalTransform;
 				boneTransform.Append(mesh->linkNode->GetGlobalMatrix().Inverse());
+				boneTransform.AppendRotation(180, Vector3::ForwardVector);
 				// 从Transform矩阵中获取四元数以及位移信息
 				Quat quat   = boneTransform.ToQuat();
 				Vector3 pos = boneTransform.GetOrigin();
@@ -403,17 +417,9 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 12.5f;
-        boundCenter.y += 10.0f;
         
-		m_ParamData.model.SetIdentity();
-        
-		m_ParamData.view.SetIdentity();
-		m_ParamData.view.SetOrigin(boundCenter);
-		m_ParamData.view.SetInverse();
-
-		m_ParamData.projection.SetIdentity();
-		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 3000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size() * 10.0);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.10f, 3000.0f);
 	}
     
 	void CreateGUI()
@@ -431,6 +437,7 @@ private:
 private:
     
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
     
 	ParamDataBlock				m_ParamData;
 

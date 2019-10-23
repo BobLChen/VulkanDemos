@@ -76,7 +76,13 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
         
 		UpdateAnimation(time, delta);
         
@@ -127,7 +133,7 @@ private:
         }
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -152,8 +158,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
     
     void SetAnimation(int32 index)
@@ -181,6 +191,7 @@ private:
                 VertexAttribute::VA_SkinWeight
             }
 		);
+		m_RoleModel->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		// 索引一般不会超过255，因此可以将四个索引打包到一个UInt32里面。
 		// 权重信息范围[0, 1]也可以压缩为16个Bit，打包到两个UInt32里面，动作可能会有抖动。
@@ -340,17 +351,9 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 1.5f;
-        boundCenter.y += 10;
         
-		m_MVPData.model.SetIdentity();
-        
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size() * 2.0);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.10f, 3000.0f);
         
         for (int32 i = 0; i < MAX_BONES; ++i) {
             m_BonesData.bones[i].SetIdentity();
@@ -372,7 +375,8 @@ private:
 private:
     
 	bool 						m_Ready = false;
-    
+	vk_demo::DVKCamera			m_ViewCamera;
+
 	ModelViewProjectionBlock	m_MVPData;
 	BonesTransformBlock			m_BonesData;
 

@@ -166,10 +166,6 @@ void main()
 	instanceDualQuat[1] = inInstanceQuat1;
 	position = vec4(DualQuatTransformPosition(instanceDualQuat, position.xyz), 1.0);
 	normal   = DualQuatTransformVector(instanceDualQuat, normal);
-	
-	// 转换法线
-	mat3 normalMatrix = transpose(inverse(mat3(paramData.modelMatrix)));
-	normal = normalize(normalMatrix * normal);
 
 	outUV     = inUV0;
 	outNormal = normal;

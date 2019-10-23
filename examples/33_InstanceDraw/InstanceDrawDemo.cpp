@@ -77,7 +77,14 @@ private:
         }
 
         UpdateFPS(time, delta);
-		UpdateUI(time, delta);
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
         
         m_RoleMaterial->BeginFrame();
         for (int32 j = 0; j < m_RoleModel->meshes.size(); ++j)
@@ -98,7 +105,7 @@ private:
         m_MVPData.model.AppendRotation(60.0f * delta, Vector3::ForwardVector);
     }
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -118,8 +125,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -273,14 +284,8 @@ private:
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
         boundCenter.z -= boundSize.Size() * 20.0f;
         
-        m_MVPData.model.SetIdentity();
-        
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 1.0f, 1000.0f);
+		m_ViewCamera.SetPosition(boundCenter);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.1f, 1000.0f);
 	}
 
 	void CreateGUI()
@@ -298,6 +303,7 @@ private:
 private:
     
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
 
 	ModelViewProjectionBlock	m_MVPData;
 

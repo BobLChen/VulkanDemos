@@ -104,7 +104,14 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
         
-		UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_ParamData.view = m_ViewCamera.GetView();
+		m_ParamData.projection = m_ViewCamera.GetProjection();
+
 		UpdateAnimation(time, delta);
         
         // m_RoleModel->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
@@ -127,7 +134,7 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -146,8 +153,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
     
     void SetAnimation(int32 index)
@@ -256,6 +267,7 @@ private:
                 VertexAttribute::VA_SkinPack,
             }
 		);
+		m_RoleModel->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		// animation
 		SetAnimation(0);
@@ -358,17 +370,9 @@ private:
         vk_demo::DVKBoundingBox bounds = m_RoleModel->rootNode->GetBounds();
         Vector3 boundSize   = bounds.max - bounds.min;
         Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size() * 1.5f;
-        boundCenter.y += 10;
         
-		m_ParamData.model.SetIdentity();
-        
-		m_ParamData.view.SetIdentity();
-		m_ParamData.view.SetOrigin(boundCenter);
-		m_ParamData.view.SetInverse();
-
-		m_ParamData.projection.SetIdentity();
-		m_ParamData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 10.0f, 3000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - boundSize.Size() * 2.0);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.10f, 3000.0f);
 	}
     
 	void CreateGUI()
@@ -386,6 +390,7 @@ private:
 private:
     
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
     
 	ParamDataBlock				m_ParamData;
 
