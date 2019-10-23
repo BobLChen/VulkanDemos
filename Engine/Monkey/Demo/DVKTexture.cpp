@@ -31,13 +31,11 @@ namespace vk_demo
         VkSampler                       imageSampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo           descriptorInfo = {};
 
-		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) 
-		{
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)) {
 			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 		}
 
-		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) 
-		{
+		if (!(imageUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)) {
 			imageUsageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 		}
 		
@@ -155,7 +153,8 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = (float)mipLevels;
+		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 		
 		VkImageViewCreateInfo viewInfo;
@@ -285,7 +284,8 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = 1.0f;
+		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
 		VkImageViewCreateInfo viewInfo;
@@ -382,6 +382,8 @@ namespace vk_demo
 		VkMemoryAllocateInfo memAllocInfo;
 		ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 
+		int32 mipLevels = 1;
+
 		// image info
 		VkImage                         image = VK_NULL_HANDLE;
 		VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
@@ -394,7 +396,7 @@ namespace vk_demo
 		ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
 		imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format          = format;
-		imageCreateInfo.mipLevels       = 1;
+		imageCreateInfo.mipLevels       = mipLevels;
 		imageCreateInfo.arrayLayers     = numArray;
 		imageCreateInfo.samples         = sampleCount;
 		imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
@@ -424,7 +426,8 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = 1.0f;
+		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
 		VkImageViewCreateInfo viewInfo;
@@ -435,7 +438,7 @@ namespace vk_demo
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		viewInfo.subresourceRange.aspectMask     = aspect;
 		viewInfo.subresourceRange.layerCount     = numArray;
-		viewInfo.subresourceRange.levelCount     = 1;
+		viewInfo.subresourceRange.levelCount     = mipLevels;
 		viewInfo.subresourceRange.baseMipLevel   = 0;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
@@ -444,7 +447,7 @@ namespace vk_demo
 		{
 			VkImageSubresourceRange subresourceRange = {};
 			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.levelCount     = 1;
+			subresourceRange.levelCount     = mipLevels;
 			subresourceRange.layerCount     = numArray;
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.baseMipLevel   = 0;
@@ -476,7 +479,7 @@ namespace vk_demo
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
 		texture->device			= device;
-		texture->mipLevels		= 1;
+		texture->mipLevels		= mipLevels;
 		texture->layerCount		= numArray;
 		texture->numSamples     = sampleCount;
 
@@ -492,6 +495,8 @@ namespace vk_demo
 		VkMemoryAllocateInfo memAllocInfo;
 		ZeroVulkanStruct(memAllocInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO);
 
+		int32 mipLevels = 1;
+
 		// image info
 		VkImage                         image = VK_NULL_HANDLE;
 		VkDeviceMemory                  imageMemory = VK_NULL_HANDLE;
@@ -504,7 +509,7 @@ namespace vk_demo
 		ZeroVulkanStruct(imageCreateInfo, VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO);
 		imageCreateInfo.imageType       = VK_IMAGE_TYPE_2D;
 		imageCreateInfo.format          = format;
-		imageCreateInfo.mipLevels       = 1;
+		imageCreateInfo.mipLevels       = mipLevels;
 		imageCreateInfo.arrayLayers     = 1;
 		imageCreateInfo.samples         = sampleCount;
 		imageCreateInfo.tiling          = VK_IMAGE_TILING_OPTIMAL;
@@ -534,7 +539,8 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = 1.0f;
+		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
 		VkImageViewCreateInfo viewInfo;
@@ -545,7 +551,7 @@ namespace vk_demo
 		viewInfo.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		viewInfo.subresourceRange.aspectMask     = aspect;
 		viewInfo.subresourceRange.layerCount     = 1;
-		viewInfo.subresourceRange.levelCount     = 1;
+		viewInfo.subresourceRange.levelCount     = mipLevels;
 		viewInfo.subresourceRange.baseMipLevel   = 0;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		VERIFYVULKANRESULT(vkCreateImageView(device, &viewInfo, VULKAN_CPU_ALLOCATOR, &imageView));
@@ -554,7 +560,7 @@ namespace vk_demo
 		{
 			VkImageSubresourceRange subresourceRange = {};
 			subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.levelCount     = 1;
+			subresourceRange.levelCount     = mipLevels;
 			subresourceRange.layerCount     = 1;
 			subresourceRange.baseArrayLayer = 0;
 			subresourceRange.baseMipLevel   = 0;
@@ -586,7 +592,7 @@ namespace vk_demo
 		texture->imageSampler   = imageSampler;
 		texture->imageView      = imageView;
 		texture->device			= device;
-		texture->mipLevels		= 1;
+		texture->mipLevels		= mipLevels;
 		texture->layerCount		= 1;
 		texture->numSamples     = sampleCount;
 
@@ -812,7 +818,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = (float)mipLevels;
+		samplerInfo.maxLod           = mipLevels;
 		samplerInfo.minLod           = 0;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
@@ -1036,7 +1042,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = (float)mipLevels;
+		samplerInfo.maxLod           = mipLevels;
         samplerInfo.minLod           = 0;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
         
@@ -1159,7 +1165,7 @@ namespace vk_demo
 		samplerInfo.mipLodBias       = 0.0f;
 		samplerInfo.compareOp        = VK_COMPARE_OP_NEVER;
 		samplerInfo.minLod           = 0.0f;
-		samplerInfo.maxLod           = 0.0f;
+		samplerInfo.maxLod           = 1.0f;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;

@@ -209,6 +209,7 @@ private:
 				VertexAttribute::VA_Tangent
 			}
 		);
+		m_Model->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		m_TexAlbedo = vk_demo::DVKTexture::Create2D(
 			"assets/models/leather-shoes/RootNode_baseColor.jpg",
@@ -796,7 +797,7 @@ private:
 		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 0.10f, 3000.0f);
 
 		m_PBRParam.param.x = 1.0f; // ao
-		m_PBRParam.param.y = 1.0f; // roughness
+		m_PBRParam.param.y = 0.5f; // roughness
 		m_PBRParam.param.z = 1.0f; // metallic
 		m_PBRParam.param.w = 0.0f; // debug
 
