@@ -93,13 +93,17 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniformBuffers(time, delta);
 		
 		DemoBase::Present(bufferIndex);
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -115,11 +119,15 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -366,6 +374,10 @@ private:
 	
 	void UpdateUniformBuffers(float time, float delta)
 	{
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
+		m_MVPBuffer->CopyFrom(&m_MVPData, sizeof(MVPBlock));
+
         m_LutDebugBuffer->CopyFrom(&m_LutDebugData, sizeof(LutDebugBlock));
 	}
     
@@ -373,21 +385,15 @@ private:
 	{
 		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
 		Vector3 boundSize   = bounds.max - bounds.min;
-        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-		boundCenter.z = -0.5f;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+		boundCenter.z = -1.0f;
 
-		// mvp数据
-		m_MVPData.model.SetIdentity();
-		m_MVPData.model.SetOrigin(Vector3(0, 0, 0));
+		m_MVPData.model.AppendRotation(180, Vector3::UpVector);
 		m_MVPData.model.AppendScale(Vector3(1.0f, 0.5f, 1.0f));
-        
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.SetOrigin(boundCenter);
-		m_MVPData.view.SetInverse();
 
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth() / 2, (float)GetHeight() / 2, 0.01f, 3000.0f);
-		
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.1f, 1500.0f);
+		m_ViewCamera.SetPosition(boundCenter);
+
 		m_MVPBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -434,6 +440,8 @@ private:
 
 	bool 							m_Ready = false;
     
+	vk_demo::DVKCamera				m_ViewCamera;
+
 	MVPBlock 						m_MVPData;
 	vk_demo::DVKBuffer*				m_MVPBuffer;
     
@@ -443,10 +451,10 @@ private:
 	vk_demo::DVKTexture*			m_TexOrigin = nullptr;
 	vk_demo::DVKTexture*			m_Tex3DLut  = nullptr;
 	
-    vk_demo::DVKGfxPipeline*           m_Pipeline0 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline1 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline2 = nullptr;
-    vk_demo::DVKGfxPipeline*           m_Pipeline3 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline0 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline1 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline2 = nullptr;
+    vk_demo::DVKGfxPipeline*        m_Pipeline3 = nullptr;
     
 	vk_demo::DVKShader*				m_ShaderTexture = nullptr;
 	vk_demo::DVKShader*				m_ShaderLut = nullptr;

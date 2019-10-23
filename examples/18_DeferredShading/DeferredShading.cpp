@@ -384,7 +384,11 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 		
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniform(time, delta);
 		
 		DemoBase::Present(bufferIndex);
@@ -392,6 +396,10 @@ private:
 
 	void UpdateUniform(float time, float delta)
 	{
+		m_ViewProjData.view = m_ViewCamera.GetView();
+		m_ViewProjData.projection = m_ViewCamera.GetProjection();
+		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
 		for (int32 i = 0; i < NUM_LIGHTS; ++i)
 		{
 			float bias = MMath::Sin(time * m_LightInfos.speed[i]) / 5.0f;
@@ -402,7 +410,7 @@ private:
 		m_LightBuffer->CopyFrom(&m_LightDatas, sizeof(LightDataBlock));
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -441,10 +449,14 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -699,17 +711,6 @@ private:
 		);
 		m_LightBuffer->Map();
 
-		boundCenter.z -= boundSize.Size();
-
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-		m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
-
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 300.0f, 1500.0f);
-		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -718,6 +719,10 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
+
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 300.0f, 3000.0f);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y + 1000, boundCenter.z - boundSize.Size());
+		m_ViewCamera.LookAt(boundCenter);
 	}
 	
 	void DestroyUniformBuffers()
@@ -754,6 +759,8 @@ private:
 
 	bool 							m_Ready = false;
     
+	vk_demo::DVKCamera				m_ViewCamera;
+
 	std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
 

@@ -79,10 +79,16 @@ private:
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
-		UpdateUI(time, delta);
+
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
+		m_MVPData.view = m_ViewCamera.GetView();
+		m_MVPData.projection = m_ViewCamera.GetProjection();
 
 		// 设置Room参数
-		// m_ModelScene->rootNode->localMatrix.AppendRotation(delta * 90.0f, Vector3::UpVector);
 		for (int32 i = 0; i < m_SceneMatMeshes.size(); ++i)
 		{
 			m_SceneMaterials[i]->BeginFrame();
@@ -111,7 +117,7 @@ private:
 		DemoBase::Present(bufferIndex);
 	}
 
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
 
@@ -127,8 +133,12 @@ private:
 			ImGui::End();
 		}
 
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
 		m_GUI->Update();
+
+		return hovered;
 	}
 
 	void CreateRenderTarget()
@@ -207,6 +217,7 @@ private:
 			cmdBuffer,
 			{ VertexAttribute::VA_Position, VertexAttribute::VA_UV0, VertexAttribute::VA_Normal }
 		);
+		m_ModelScene->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		// room shader
 		m_SceneShader = vk_demo::DVKShader::Create(
@@ -501,15 +512,9 @@ private:
 
 	void InitParmas()
 	{
-		m_MVPData.model.SetIdentity();
-
-		m_MVPData.view.SetIdentity();
-		m_MVPData.view.AppendRotation(22.50f, Vector3::RightVector);
-		m_MVPData.view.SetOrigin(Vector3(0, 50.0f, -100.0f));
-		m_MVPData.view.SetInverse();
-
-		m_MVPData.projection.SetIdentity();
-		m_MVPData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), 0.10f, 500.0f);
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), 0.10f, 3000.0f);
+		m_ViewCamera.SetPosition(0, 150.0f, -250.0f);
+		m_ViewCamera.LookAt(0, 0, 0);
         
         m_FilterParam.width   = m_FrameWidth / 4.0f;
         m_FilterParam.height  = m_FrameHeight / 4.0f;
@@ -536,6 +541,7 @@ private:
 	typedef std::vector<std::vector<vk_demo::DVKMesh*>> MatMeshArray;
 
 	bool 						m_Ready = false;
+	vk_demo::DVKCamera			m_ViewCamera;
 
 	vk_demo::DVKModel*			m_Quad = nullptr;
 

@@ -338,7 +338,11 @@ private:
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
 
-        UpdateUI(time, delta);
+		bool hovered = UpdateUI(time, delta);
+		if (!hovered) {
+			m_ViewCamera.Update(time, delta);
+		}
+
 		UpdateUniform();
 		
 		DemoBase::Present(bufferIndex);
@@ -346,13 +350,15 @@ private:
 
 	void UpdateUniform()
 	{
-		m_DebugBuffer->CopyFrom(&m_DebugParam, sizeof(AttachmentParamBlock));
-
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewCamera.Perspective(PI / 4.0f, (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewProjData.view = m_ViewCamera.GetView();
+		m_ViewProjData.projection = m_ViewCamera.GetProjection();
 		m_ViewProjBuffer->CopyFrom(&m_ViewProjData, sizeof(ViewProjectionBlock));
+
+		m_DebugBuffer->CopyFrom(&m_DebugParam, sizeof(AttachmentParamBlock));
 	}
     
-	void UpdateUI(float time, float delta)
+	bool UpdateUI(float time, float delta)
 	{
 		m_GUI->StartFrame();
         
@@ -364,7 +370,7 @@ private:
             
 			ImGui::Combo("Attachment", &m_DebugParam.attachmentIndex, m_DebugNames.data(), m_DebugNames.size());
 			ImGui::SliderFloat("Z-Near", &m_DebugParam.zNear, 0.1f, 3000.0f);
-			ImGui::SliderFloat("Z-Far", &m_DebugParam.zFar, 0.1f, 3000.0f);
+			ImGui::SliderFloat("Z-Far", &m_DebugParam.zFar, 0.1f, 6000.0f);
 
 			if (m_DebugParam.zNear >= m_DebugParam.zFar) {
 				m_DebugParam.zNear = m_DebugParam.zFar * 0.5f;
@@ -374,11 +380,15 @@ private:
             ImGui::End();
 		}
         
+		bool hovered = ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered() || ImGui::IsRootWindowOrAnyChildHovered();
+
 		m_GUI->EndFrame();
         
 		if (m_GUI->Update()) {
 			SetupCommandBuffers();
 		}
+
+		return hovered;
 	}
 
 	void LoadAssets()
@@ -581,11 +591,6 @@ private:
 	
 	void CreateUniformBuffers()
 	{
-		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
-		Vector3 boundSize   = bounds.max - bounds.min;
-        Vector3 boundCenter = bounds.min + boundSize * 0.5f;
-        boundCenter.z -= boundSize.Size();
-        
 		// dynamic
 		uint32 alignment  = m_VulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
 		uint32 modelAlign = Align(sizeof(ModelBlock), alignment);
@@ -608,7 +613,7 @@ private:
 		// debug params
 		m_DebugParam.attachmentIndex = 0;
 		m_DebugParam.zNear = 300.0f;
-		m_DebugParam.zFar = 1500.0f;
+		m_DebugParam.zFar = 3000.0f;
 		m_DebugBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -622,15 +627,6 @@ private:
 		m_DebugNames.push_back("Depth");
 		m_DebugNames.push_back("Normal");
         
-		// view projection buffer
-		m_ViewProjData.view.SetIdentity();
-		m_ViewProjData.view.SetOrigin(boundCenter);
-        m_ViewProjData.view.AppendRotation(30, Vector3::RightVector);
-		m_ViewProjData.view.SetInverse();
-
-		m_ViewProjData.projection.SetIdentity();
-		m_ViewProjData.projection.Perspective(MMath::DegreesToRadians(75.0f), (float)GetWidth(), (float)GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
-		
 		m_ViewProjBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
@@ -639,6 +635,14 @@ private:
 			&(m_ViewProjData)
 		);
 		m_ViewProjBuffer->Map();
+
+		vk_demo::DVKBoundingBox bounds = m_Model->rootNode->GetBounds();
+		Vector3 boundSize   = bounds.max - bounds.min;
+		Vector3 boundCenter = bounds.min + boundSize * 0.5f;
+
+		m_ViewCamera.Perspective(PI / 4, GetWidth(), GetHeight(), m_DebugParam.zNear, m_DebugParam.zFar);
+		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y + 1000, boundCenter.z - boundSize.Size());
+		m_ViewCamera.LookAt(boundCenter);
 	}
 	
 	void DestroyUniformBuffers()
@@ -674,6 +678,8 @@ private:
 	typedef std::vector<vk_demo::DVKTexture*>			DVKTextureArray;
 
 	bool 							m_Ready = false;
+
+	vk_demo::DVKCamera				m_ViewCamera;
     
 	std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
