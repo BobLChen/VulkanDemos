@@ -183,6 +183,7 @@ private:
 				VertexAttribute::VA_Normal
 			}
 		);
+		m_SceneModel->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		m_SceneShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,

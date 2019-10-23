@@ -14,6 +14,8 @@ layout (location = 0) out vec3 outColor;
 
 void main(void)
 {	
+    gl_PointSize = 1.0;
+    
     vec4 position = gl_in[0].gl_Position;
     float size  = 2;
 

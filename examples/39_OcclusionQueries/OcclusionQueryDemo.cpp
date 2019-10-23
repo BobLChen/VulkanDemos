@@ -145,7 +145,7 @@ private:
 				VertexAttribute::VA_Normal
 			}
 		);
-		m_ModelGround->rootNode->localMatrix.AppendRotation(90.0f, Vector3::RightVector);
+		m_ModelGround->rootNode->localMatrix.AppendRotation(270.0f, Vector3::RightVector);
 		m_ModelGround->rootNode->localMatrix.AppendScale(Vector3(500, 500, 500));
 
 		vk_demo::DVKBoundingBox bounds = m_ModelSphere->rootNode->GetBounds();

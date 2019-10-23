@@ -125,6 +125,7 @@ private:
 				VertexAttribute::VA_UV0
 			}
 		);
+		m_Model->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,

@@ -148,6 +148,7 @@ private:
 				VertexAttribute::VA_Tangent
 			}
 		);
+		m_Model->rootNode->localMatrix.AppendRotation(180, Vector3::UpVector);
 
 		m_TexAlbedo = vk_demo::DVKTexture::Create2D(
 			"assets/models/leather-shoes/RootNode_baseColor.jpg",

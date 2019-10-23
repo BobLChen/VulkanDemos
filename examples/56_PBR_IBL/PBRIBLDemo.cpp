@@ -803,7 +803,7 @@ private:
 
 		m_PBRParam.cameraPos = m_ViewCamera.GetTransform().GetOrigin();
 
-		m_PBRParam.lightColor = Vector4(1, 1, 1, 1);
+		m_PBRParam.lightColor = Vector4(1, 1, 1, 10.0);
 
 		m_PBRParam.envParam.x = 512;
 		m_PBRParam.envParam.y = 9;

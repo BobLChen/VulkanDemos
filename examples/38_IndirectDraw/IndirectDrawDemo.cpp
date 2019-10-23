@@ -687,7 +687,7 @@ private:
 			}
 		);
 		m_GroundModel->rootNode->localMatrix.AppendScale(Vector3(GROUND_RADIUS, GROUND_RADIUS, GROUND_RADIUS));
-		m_GroundModel->rootNode->localMatrix.AppendRotation(90.0f, Vector3::RightVector);
+		m_GroundModel->rootNode->localMatrix.AppendRotation(270.0f, Vector3::RightVector);
 		m_GroundModel->rootNode->localMatrix.AppendTranslation(Vector3(0, -0.0f, 0));
 
 		m_GroundShader = vk_demo::DVKShader::Create(
