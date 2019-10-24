@@ -864,6 +864,10 @@ SETUP_SAMPLE_START(54_ThreadedRendering)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(54_ThreadedRendering)
 
+if (NOT WIN32)
+	TARGET_LINK_LIBRARIES(54_ThreadedRendering pthread)
+endif()
+
 SETUP_SAMPLE_START(55_PBR_DirectLighting)
 	SET(SOURCE_FILES
 		${MainLaunch}
