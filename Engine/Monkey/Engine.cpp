@@ -71,7 +71,7 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 
 	m_VulkanRHI->Init();
     
-    ParseAssetsPath(cmdLine);
+	ParseAppPath(cmdLine);
 
     InputManager::Init();
 	GenericPlatformTime::InitTiming();
@@ -79,7 +79,7 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	return 0;
 }
 
-void Engine::ParseAssetsPath(const std::vector<std::string>& cmdLine)
+void Engine::ParseAppPath(const std::vector<std::string>& cmdLine)
 {
     if (cmdLine.size() > 0)
     {
@@ -96,15 +96,15 @@ void Engine::ParseAssetsPath(const std::vector<std::string>& cmdLine)
             }
             length += 1;
         }
-        m_AssetsPath = exePath.substr(0, exePath.size() - length);
+		m_AppPath = exePath.substr(0, exePath.size() - length);
     }
     
-    MLOG("AssetsPath:%s", m_AssetsPath.c_str());
+    MLOG("AssetsPath:%s", m_AppPath.c_str());
 }
 
-const std::string& Engine::GetAssetsPath() const
+const std::string& Engine::GetAppPath() const
 {
-	return m_AssetsPath;
+	return m_AppPath;
 }
 
 int32 Engine::Init()

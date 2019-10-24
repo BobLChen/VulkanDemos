@@ -43,7 +43,7 @@ public:
 
 	VkDevice GetDeviceHandle();
 
-	const std::string& GetAssetsPath() const;
+	const std::string& GetAppPath() const;
 
 	static Engine* Get();
     
@@ -74,7 +74,7 @@ public:
 
 protected:
     
-    void ParseAssetsPath(const std::vector<std::string>& cmdLine);
+    void ParseAppPath(const std::vector<std::string>& cmdLine);
     
 protected:
 
@@ -84,7 +84,7 @@ protected:
 	std::shared_ptr<Application>	m_SlateApplication;
     
     std::string                         m_AppTitle;
-	std::string							m_AssetsPath;
+	std::string							m_AppPath;
 	bool								m_IsRequestingExit;
 
 	std::vector<const char*>			m_AppDeviceExtensions;

@@ -5,12 +5,10 @@
 
 std::string FileManager::GetFilePath(const std::string& filepath)
 {
-#if PLATFORM_IOS
-    return Engine::Get()->GetAssetsPath() + filepath;
-#elif PLATFORM_ANDROID
-    return Engine::Get()->GetAssetsPath() + filepath;
+#if defined(DEMO_RES_PATH)
+	return DEMO_RES_PATH + filepath;
 #else
-    return Engine::Get()->GetAssetsPath() + "../../../examples/" + filepath;
+	return Engine::Get()->GetAppPath() + filepath;
 #endif
 }
 
