@@ -9,6 +9,7 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 // less than m_VulkanDevice->GetLimits().maxUniformBufferRange
 #define INSTANCE_COUNT 512
