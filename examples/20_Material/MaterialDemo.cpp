@@ -18,7 +18,7 @@ public:
 	MaterialDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
-        
+		
 	}
     
 	virtual ~MaterialDemo()
