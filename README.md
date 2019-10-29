@@ -262,3 +262,6 @@ Reduce 5 float per vertex
 
 ### [56_PBR_IBL](https://github.com/BobLChen/VulkanDemos/tree/master/examples/56_PBR_IBL)
 ![56_PBR_IBL](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/56_PBR_IBL.jpg)
+
+### [57_GodRay](https://github.com/BobLChen/VulkanDemos/tree/master/examples/57_GodRay)
+![57_GodRay](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/57_GodRay.jpg)

@@ -34,7 +34,6 @@ public:
 
 		CreateGUI();
 		CreateSourceRT();
-		CreateGodRayRT();
 		CreateSunRT();
 		LoadModelAssets();
 		InitParmas();
@@ -67,6 +66,12 @@ private:
 		Matrix4x4 proj;
 	};
 
+	struct ParamBlock
+	{
+		Vector4 param;
+		Vector4 color;
+	};
+
 	void Draw(float time, float delta)
 	{
 		int32 bufferIndex = DemoBase::AcquireBackbufferIndex();
@@ -90,6 +95,15 @@ private:
 			ImGui::SetNextWindowPos(ImVec2(0, 0));
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("GodRayDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+
+			ImGui::SliderFloat("Density",  &m_CombineParam.param.x, 0.0f, 5.0f);
+			ImGui::SliderFloat("Decay",    &m_CombineParam.param.y, 0.0f, 1.0f);
+			ImGui::SliderFloat("Weight",   &m_CombineParam.param.z, 0.0f, 1.0f);
+			ImGui::SliderFloat("Exposure", &m_CombineParam.param.w, 0.0f, 10.0f);
+
+			ImGui::Separator();
+
+			ImGui::ColorEdit3("Color", (float*)&m_CombineParam.color);
 			
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -105,35 +119,19 @@ private:
 
 	void CreateSunRT()
 	{
-		m_TexSun = vk_demo::DVKTexture::CreateRenderTarget(
+		m_TexLight = vk_demo::DVKTexture::CreateRenderTarget(
 			m_VulkanDevice,
-			m_TexSourceColor->format, 
+			VK_FORMAT_R8G8B8A8_UNORM, 
 			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_TexSourceColor->width, m_TexSourceColor->height,
+			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 		);
 
 		vk_demo::DVKRenderPassInfo rttInfo(
-			m_TexSun, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE, nullptr
-		);
-		m_RTSun = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
-	}
-
-	void CreateGodRayRT()
-	{
-		m_TexGodRay = vk_demo::DVKTexture::CreateRenderTarget(
-			m_VulkanDevice,
-			m_TexSourceColor->format, 
-			VK_IMAGE_ASPECT_COLOR_BIT,
-			m_TexSourceColor->width, m_TexSourceColor->height,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-		);
-
-		vk_demo::DVKRenderPassInfo rttInfo(
-			m_TexGodRay, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+			m_TexLight,         VK_ATTACHMENT_LOAD_OP_CLEAR,     VK_ATTACHMENT_STORE_OP_STORE,
 			m_TexSourceDepth, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE
 		);
-		m_RTGodRay = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
+		m_RTLight = vk_demo::DVKRenderTarget::Create(m_VulkanDevice, rttInfo);
 	}
 
 	void CreateSourceRT()
@@ -164,6 +162,16 @@ private:
 	void LoadModelAssets()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
+
+		m_SphereModel= vk_demo::DVKModel::LoadFromFile(
+			"assets/models/sphere1.obj",
+			m_VulkanDevice,
+			cmdBuffer,
+			{ 
+				VertexAttribute::VA_Position,
+				VertexAttribute::VA_UV0
+			}
+		);
 
 		// object
 		m_Model = vk_demo::DVKModel::LoadFromFile(
@@ -218,27 +226,11 @@ private:
 
 		m_EmissiveMaterial = vk_demo::DVKMaterial::Create(
 			m_VulkanDevice,
-			m_RTSun->GetRenderPass(),
+			m_RTLight->GetRenderPass(),
 			m_PipelineCache,
 			m_EmissiveShader
 		);
 		m_EmissiveMaterial->PreparePipeline();
-
-		// god ray
-		m_GodRayShader = vk_demo::DVKShader::Create(
-			m_VulkanDevice,
-			true,
-			"assets/shaders/57_GodRay/godray.vert.spv",
-			"assets/shaders/57_GodRay/godray.frag.spv"
-		);
-		
-		m_GodRayMaterial = vk_demo::DVKMaterial::Create(
-			m_VulkanDevice,
-			m_RTGodRay->GetRenderPass(),
-			m_PipelineCache,
-			m_GodRayShader
-		);
-		m_GodRayMaterial->PreparePipeline();
 
 		// combine
 		m_CombineShader = vk_demo::DVKShader::Create(
@@ -255,8 +247,8 @@ private:
 			m_CombineShader
 		);
 		m_CombineMaterial->PreparePipeline();
-		m_CombineMaterial->SetTexture("originTexture",    m_TexSourceColor);
-		m_CombineMaterial->SetTexture("volumeTexture",    m_TexSun);
+		m_CombineMaterial->SetTexture("originTexture", m_TexSourceColor);
+		m_CombineMaterial->SetTexture("lightTexture",  m_TexLight);
 
 		delete cmdBuffer;
 	}
@@ -264,6 +256,7 @@ private:
 	void DestroyAssets()
 	{
 		delete m_Model;
+		delete m_SphereModel;
 
 		delete m_Shader;
 		delete m_Material;
@@ -275,20 +268,14 @@ private:
 		delete m_TexSourceDepth;
 		delete m_RTSource;
 
-		delete m_TexGodRay;
-		delete m_RTGodRay;
-
 		delete m_CombineShader;
 		delete m_CombineMaterial;
-
-		delete m_GodRayShader;
-		delete m_GodRayMaterial;
 
 		delete m_EmissiveShader;
 		delete m_EmissiveMaterial;
 
-		delete m_RTSun;
-		delete m_TexSun;
+		delete m_RTLight;
+		delete m_TexLight;
 	}
 
 	void DrawScene(VkCommandBuffer commandBuffer)
@@ -353,6 +340,12 @@ private:
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
+		m_CombineMaterial->BeginFrame();
+		m_CombineMaterial->BeginObject();
+		m_CombineMaterial->SetLocalUniform("paramData", &m_CombineParam, sizeof(ParamBlock));
+		m_CombineMaterial->EndObject();
+		m_CombineMaterial->EndFrame();
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_CombineMaterial->GetPipeline());
 		m_CombineMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		vk_demo::DVKDefaultRes::fullQuad->meshes[0]->BindDrawCmd(commandBuffer);
@@ -362,11 +355,12 @@ private:
 		vkCmdEndRenderPass(commandBuffer);
 	}
 
-	void DrawSun(VkCommandBuffer commandBuffer)
+	void DrawLight(VkCommandBuffer commandBuffer)
 	{
-		m_RTSun->BeginRenderPass(commandBuffer);
+		m_RTLight->BeginRenderPass(commandBuffer);
 
 		m_MVPParam.model.SetIdentity();
+		m_MVPParam.model.AppendScale(Vector3(0.75f, 0.75f, 0.75f));
 		m_MVPParam.view = m_ViewCamera.GetView();
 		m_MVPParam.proj = m_ViewCamera.GetProjection();
 
@@ -378,18 +372,9 @@ private:
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_EmissiveMaterial->GetPipeline());
 		m_EmissiveMaterial->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
-		vk_demo::DVKDefaultRes::fullQuad->meshes[0]->BindDrawCmd(commandBuffer);
+		m_SphereModel->meshes[0]->BindDrawCmd(commandBuffer);
 
-		m_RTSun->EndRenderPass(commandBuffer);
-	}
-
-	void DrawGodRay(VkCommandBuffer commandBuffer)
-	{
-		m_RTGodRay->BeginRenderPass(commandBuffer);
-
-		
-
-		m_RTGodRay->EndRenderPass(commandBuffer);
+		m_RTLight->EndRenderPass(commandBuffer);
 	}
 
 	void SetupCommandBuffers(int32 backBufferIndex)
@@ -401,8 +386,7 @@ private:
 		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
 		DrawScene(commandBuffer);
-		DrawSun(commandBuffer);
-		DrawGodRay(commandBuffer);
+		DrawLight(commandBuffer);
 		DrawFinal(commandBuffer, backBufferIndex);
 
 		VERIFYVULKANRESULT(vkEndCommandBuffer(commandBuffer));
@@ -416,7 +400,17 @@ private:
 
 		m_ViewCamera.SetPosition(boundCenter.x, boundCenter.y, boundCenter.z - 5.0f);
 		m_ViewCamera.LookAt(boundCenter);
-		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 0.10f, 3000.0f);
+		m_ViewCamera.Perspective(PI / 4, (float)GetWidth(), (float)GetHeight(), 1.0f, 100.0f);
+
+		m_CombineParam.param.x = 0.65f;
+		m_CombineParam.param.y = 0.85f;
+		m_CombineParam.param.z = 0.75f;
+		m_CombineParam.param.w = 1.25f;
+
+		m_CombineParam.color.x = 0.785f;
+		m_CombineParam.color.y = 1.0f;
+		m_CombineParam.color.z = 0.0f;
+		m_CombineParam.color.w = 1.0f;
 	}
 
 	void CreateGUI()
@@ -442,6 +436,9 @@ private:
 	vk_demo::DVKTexture*		m_TexAlbedo = nullptr;
 	vk_demo::DVKTexture*		m_TexNormal = nullptr;
 
+	// sphere
+	vk_demo::DVKModel*			m_SphereModel = nullptr;
+
 	// emissive
 	vk_demo::DVKShader*			m_EmissiveShader = nullptr;
 	vk_demo::DVKMaterial*		m_EmissiveMaterial = nullptr;
@@ -450,25 +447,18 @@ private:
 	vk_demo::DVKShader*			m_CombineShader = nullptr;
 	vk_demo::DVKMaterial*		m_CombineMaterial = nullptr;
 
-	// god ray
-	vk_demo::DVKShader*			m_GodRayShader = nullptr;
-	vk_demo::DVKMaterial*		m_GodRayMaterial = nullptr;
-
 	// source
 	vk_demo::DVKTexture*		m_TexSourceColor = nullptr;
 	vk_demo::DVKTexture*		m_TexSourceDepth = nullptr;
 	vk_demo::DVKRenderTarget*	m_RTSource = nullptr;
 
 	// light source
-	vk_demo::DVKTexture*		m_TexSun = nullptr;
-	vk_demo::DVKRenderTarget*	m_RTSun = nullptr;
-
-	// god ray
-	vk_demo::DVKTexture*		m_TexGodRay = nullptr;
-	vk_demo::DVKRenderTarget*	m_RTGodRay = nullptr;
+	vk_demo::DVKTexture*		m_TexLight = nullptr;
+	vk_demo::DVKRenderTarget*	m_RTLight = nullptr;
 
 	vk_demo::DVKCamera		    m_ViewCamera;
 
+	ParamBlock					m_CombineParam;
 	ModelViewProjectionBlock	m_MVPParam;
 
 	ImageGUIContext*			m_GUI = nullptr;
