@@ -290,8 +290,16 @@ namespace vk_demo
                 }
                 else if (attributes[j] == VertexAttribute::VA_UV0)
                 {
-                    vertices.push_back(aiMesh->mTextureCoords[0][i].x);
-                    vertices.push_back(aiMesh->mTextureCoords[0][i].y);
+					if (aiMesh->HasTextureCoords(i)) 
+					{
+						vertices.push_back(aiMesh->mTextureCoords[0][i].x);
+						vertices.push_back(aiMesh->mTextureCoords[0][i].y);
+					}
+					else 
+					{
+						vertices.push_back(0);
+						vertices.push_back(0);
+					}
                 }
                 else if (attributes[j] == VertexAttribute::VA_UV1)
                 {
