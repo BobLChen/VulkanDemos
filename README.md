@@ -37,6 +37,10 @@ Vulkan Samples
 
 - 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_MacOS.md
 
+## Android环境搭建
+
+- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Android.md
+
 ## Introduction
 
 Vulkan Examples 
@@ -58,6 +62,10 @@ Vulkan Examples
 ### Linux
 
 - CMake 3.13.0
+
+### Android
+- Android Studio 3.2
+- NDK r16b
 
 ## Usage
 
