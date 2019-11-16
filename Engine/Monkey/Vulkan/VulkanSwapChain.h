@@ -51,7 +51,7 @@ public:
     
     inline int32 GetBackBufferCount() const
     {
-        return m_SwapChainInfo.minImageCount;
+        return m_BackBufferCount;
     }
     
     inline const VkSwapchainCreateInfoKHR& GetInfo() const
@@ -74,6 +74,7 @@ protected:
 	VkSurfaceKHR					m_Surface;
 	VkSwapchainCreateInfoKHR		m_SwapChainInfo;
 	VkFormat						m_ColorFormat;
+	int32							m_BackBufferCount;
 	
 	std::shared_ptr<VulkanDevice>	m_Device;
 	std::vector<VkSemaphore>		m_ImageAcquiredSemaphore;

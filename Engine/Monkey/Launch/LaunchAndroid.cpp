@@ -1,6 +1,6 @@
 ﻿#include "Common/Common.h"
 #include "Common/Log.h"
-#include "Launch/Launch.h"
+#include "Launch.h"
 #include "Engine.h"
 #include "Application/Android/AndroidWindow.h"
 
@@ -21,25 +21,20 @@ static bool active      = false;
 
 static void InitAppEngine()
 {
-    GameEngine = new Engine();
-    AppMode    = CreateAppMode(g_CmdLine);
-    AppMode->SetWidth((int32)400);
-    AppMode->SetHeight((int32)300);
+    g_GameEngine = std::make_shared<Engine>();
+    g_AppModule  = CreateAppMode(g_CmdLine);
 
-    if (AppMode == nullptr)
-    {
+    if (g_AppModule == nullptr) {
         MLOGE("Failed create app.")
     }
     
     int32 errorLevel = EnginePreInit(g_CmdLine);
-    if (errorLevel != 0)
-    {
+    if (errorLevel != 0) {
         MLOGE("Failed init engine.");
     }
     
     errorLevel = EngineInit();
-    if (errorLevel != 0)
-    {
+    if (errorLevel != 0) {
         MLOGE("Failed init engine.");
     }
 }
@@ -96,7 +91,7 @@ void android_main(android_app* app)
             }
         }
 
-        if (initialized && active && !GameEngine->IsRequestingExit()) 
+        if (initialized && active && !g_GameEngine->IsRequestingExit())
         {
             EngineLoop();
         }

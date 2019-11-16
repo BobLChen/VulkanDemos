@@ -7,7 +7,9 @@ def ndkDir = properties.getProperty('ndk.dir')
 def valLayerBinDir = "${ndkDir}/sources/third_party/vulkan/src/build-android/jniLibs"
 
 android {
+
     compileSdkVersion 26
+
     defaultConfig {
         applicationId "com.monkey.sample.triangle"
         minSdkVersion 19
@@ -24,10 +26,15 @@ android {
             }
         }
     }
+
     sourceSets {
         main {
             jniLibs {
                 srcDirs = ["${valLayerBinDir}"]
+            }
+
+            assets {
+                srcDirs = ['assets']
             }
         }
     }
@@ -46,26 +53,18 @@ android {
     }
 }
 
-// main.assets.srcDirs = ['assets']
-// task copyTask << {
-//     copy {
-//         from '../../common/res/drawable'
-//         into "src/main/res/drawable"
-//         include 'icon.png'
-//     }
+task copyTask << {
+    copy {
+        from '../../common/res/drawable'
+        into "src/main/res/drawable"
+        include 'icon.png'
+    }
 
-//     copy {
-//         from '../../../data/shaders/base'
-//         into "assets/shaders/base"
-//         include '*.spv'
-//     }
+    copy {
+       from '../../../examples/assets/shaders/2_Triangle'
+       into 'assets/assets/shaders/2_Triangle'
+       include '*.*'
+    }
+}
 
-//     copy {
-//        from '../../../data/shaders/triangle'
-//        into 'assets/shaders/triangle'
-//        include '*.*'
-//     }
-
-// }
-
-// preBuild.dependsOn copyTask
+preBuild.dependsOn copyTask

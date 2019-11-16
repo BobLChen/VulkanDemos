@@ -146,12 +146,6 @@ public:
 
 	FORCEINLINE Vector3 GetUnsafeNormal() const;
 
-	FORCEINLINE Vector3 GridSnap(const float& gridSz) const;
-
-	FORCEINLINE Vector3 BoundToCube(float radius) const;
-
-	FORCEINLINE Vector3 BoundToBox(const Vector3& min, const Vector3 max) const;
-
 	FORCEINLINE Vector3 GetClampedToSize(float min, float max) const;
 
 	FORCEINLINE Vector3 GetClampedToSize2D(float min, float max) const;
@@ -159,8 +153,6 @@ public:
 	FORCEINLINE Vector3 GetClampedToMaxSize(float maxSize) const;
 
 	FORCEINLINE Vector3 GetClampedToMaxSize2D(float maxSize) const;
-
-	FORCEINLINE void AddBounded(const Vector3& v, float radius = MAX_int16);
 
 	FORCEINLINE Vector3 Reciprocal() const;
 
@@ -230,19 +222,7 @@ public:
 
 	static FORCEINLINE float DistSquared2D(const Vector3 &v1, const Vector3 &v2) { return DistSquaredXY(v1, v2); }
 
-	static FORCEINLINE float BoxPushOut(const Vector3& normal, const Vector3& Size);
-
-	static FORCEINLINE bool Parallel(const Vector3& normal1, const Vector3& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
-
-	static FORCEINLINE bool Coincident(const Vector3& normal1, const Vector3& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
-
 	static FORCEINLINE bool Orthogonal(const Vector3& normal1, const Vector3& normal2, float OrthogonalCosineThreshold = THRESH_NORMALS_ARE_ORTHOGONAL);
-
-	static FORCEINLINE bool Coplanar(const Vector3& Base1, const Vector3& normal1, const Vector3& Base2, const Vector3& normal2, float parallelCosineThreshold = THRESH_NORMALS_ARE_PARALLEL);
-
-	static FORCEINLINE float Triple(const Vector3& x, const Vector3& y, const Vector3& z);
-
-	static FORCEINLINE float EvaluateBezier(const Vector3* controlPoints, int32 numPoints, std::vector<Vector3>& outPoints);
 
 	static FORCEINLINE Vector3 RadiansToDegrees(const Vector3& radVector);
 
@@ -449,83 +429,10 @@ FORCEINLINE Vector3 Vector3::Max(const Vector3& a, const Vector3& b)
 	return result;
 }
 
-FORCEINLINE bool Vector3::Parallel(const Vector3& normal1, const Vector3& normal2, float parallelCosineThreshold)
-{
-	const float NormalDot = normal1 | normal2;
-	return MMath::Abs(NormalDot) >= parallelCosineThreshold;
-}
-
-FORCEINLINE bool Vector3::Coincident(const Vector3& normal1, const Vector3& normal2, float parallelCosineThreshold)
-{
-	const float NormalDot = normal1 | normal2;
-	return NormalDot >= parallelCosineThreshold;
-}
-
 FORCEINLINE bool Vector3::Orthogonal(const Vector3& normal1, const Vector3& normal2, float OrthogonalCosineThreshold)
 {
 	const float NormalDot = normal1 | normal2;
 	return MMath::Abs(NormalDot) <= OrthogonalCosineThreshold;
-}
-
-FORCEINLINE bool Vector3::Coplanar(const Vector3 &Base1, const Vector3 &normal1, const Vector3 &Base2, const Vector3 &normal2, float parallelCosineThreshold)
-{
-	if (!Vector3::Parallel(normal1, normal2, parallelCosineThreshold)) {
-		return false;
-	}
-	else if (Vector3::PointPlaneDist(Base2, Base1, normal1) > THRESH_POINT_ON_PLANE) {
-		return false;
-	}
-	else {
-		return true;
-	}
-}
-
-FORCEINLINE float Vector3::Triple(const Vector3& x, const Vector3& y, const Vector3& z)
-{
-	return (
-		(x.x * (y.y * z.z - y.z * z.y)) +
-		(x.y * (y.z * z.x - y.x * z.z)) +
-		(x.z * (y.x * z.y - y.y * z.x))
-	);
-}
-
-FORCEINLINE float Vector3::EvaluateBezier(const Vector3* controlPoints, int32 numPoints, std::vector<Vector3>& outPoints)
-{
-	const float q = 1.f / (numPoints - 1);
-
-	const Vector3& p0 = controlPoints[0];
-	const Vector3& p1 = controlPoints[1];
-	const Vector3& p2 = controlPoints[2];
-	const Vector3& p3 = controlPoints[3];
-
-	const Vector3 a = p0;
-	const Vector3 b = 3 * (p1 - p0);
-	const Vector3 c = 3 * (p2 - 2 * p1 + p0);
-	const Vector3 d = p3 - 3 * p2 + 3 * p1 - p0;
-
-	Vector3 s = a;
-	Vector3 u = b * q + c * q*q + d * q*q*q;
-	Vector3 v = 2 * c*q*q + 6 * d*q*q*q;
-	Vector3 w = 6 * d*q*q*q;
-
-	float length = 0.f;
-
-	Vector3 oldPos = p0;
-	outPoints.push_back(p0);
-
-	for (int32 i = 1; i < numPoints; ++i)
-	{
-		s += u;
-		u += v;
-		v += w;
-
-		length += Vector3::Dist(s, oldPos);
-		oldPos = s;
-
-		outPoints.push_back(s);
-	}
-
-	return length;
 }
 
 FORCEINLINE Vector3 Vector3::RadiansToDegrees(const Vector3& radVector)
@@ -848,34 +755,6 @@ FORCEINLINE Vector3 Vector3::GetUnsafeNormal() const
 	return Vector3(x * scale, y * scale, z * scale);
 }
 
-FORCEINLINE Vector3 Vector3::GridSnap(const float& gridSz) const
-{
-	return Vector3 (
-		MMath::GridSnap(x, gridSz), 
-		MMath::GridSnap(y, gridSz), 
-		MMath::GridSnap(z, gridSz)
-	);
-}
-
-FORCEINLINE Vector3 Vector3::BoundToCube(float radius) const
-{
-	return Vector3 (
-		MMath::Clamp(x, -radius, radius),
-		MMath::Clamp(y, -radius, radius),
-		MMath::Clamp(z, -radius, radius)
-	);
-}
-
-FORCEINLINE Vector3 Vector3::BoundToBox(const Vector3& min, const Vector3 max) const
-{
-	return Vector3
-	(
-		MMath::Clamp(x, min.x, max.x),
-		MMath::Clamp(y, min.y, max.y),
-		MMath::Clamp(z, min.z, max.z)
-	);
-}
-
 FORCEINLINE Vector3 Vector3::GetClampedToSize(float min, float max) const
 {
 	float VecSize = Size();
@@ -922,11 +801,6 @@ FORCEINLINE Vector3 Vector3::GetClampedToMaxSize2D(float maxSize) const
 	else {
 		return *this;
 	}
-}
-
-FORCEINLINE void Vector3::AddBounded(const Vector3& v, float radius)
-{
-	*this = (*this + v).BoundToCube(radius);
 }
 
 FORCEINLINE float& Vector3::component(int32 index)
@@ -1131,11 +1005,6 @@ FORCEINLINE float Vector3::distSquared(const Vector3 &v1, const Vector3 &v2)
 FORCEINLINE float Vector3::DistSquaredXY(const Vector3 &v1, const Vector3 &v2)
 {
 	return MMath::Square(v2.x - v1.x) + MMath::Square(v2.y - v1.y);
-}
-
-FORCEINLINE float Vector3::BoxPushOut(const Vector3& normal, const Vector3& Size)
-{
-	return MMath::Abs(normal.x*Size.x) + MMath::Abs(normal.y*Size.y) + MMath::Abs(normal.z*Size.z);
 }
 
 FORCEINLINE Vector3 ClampVector(const Vector3& v, const Vector3& min, const Vector3& max)

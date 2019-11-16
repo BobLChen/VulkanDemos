@@ -65,11 +65,6 @@ public:
 		return m_PixelFormat;
 	}
 
-	inline bool SupportsDebugUtilsExt() const
-	{
-		return m_SupportsDebugUtilsExt;
-	}
-	
 	inline const char* GetName()
 	{ 
 		return "Vulkan";
@@ -91,7 +86,7 @@ protected:
 
 	void SelectAndInitDevice();
 
-	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers, bool& outDebugUtils);
+	static void GetInstanceLayersAndExtensions(std::vector<const char*>& outInstanceExtensions, std::vector<const char*>& outInstanceLayers);
 
 #if MONKEY_DEBUG
     void SetupDebugLayerCallback();
@@ -123,8 +118,6 @@ protected:
 	PixelFormat							m_PixelFormat;
 	std::vector<VkImage>				m_BackbufferImages;
 	std::vector<VkImageView>			m_BackbufferViews;
-
-	bool								m_SupportsDebugUtilsExt;
 };
 
 

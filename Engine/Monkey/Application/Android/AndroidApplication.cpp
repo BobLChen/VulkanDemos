@@ -28,17 +28,17 @@ AndroidApplication::~AndroidApplication()
 	}
 }
 
-void AndroidApplication::SetMessageHandler(const std::shared_ptr<GenericApplicationMessageHandler>& messageHandler)
+void AndroidApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)
 {
 	GenericApplication::SetMessageHandler(messageHandler);
 }
 
-void AndroidApplication::PumpMessages(const float deltaTime)
+void AndroidApplication::PumpMessages()
 {
 	
 }
 
-void AndroidApplication::Tick(const float deltaTime)
+void AndroidApplication::Tick(float time, float delta)
 {
 
 }
@@ -53,7 +53,7 @@ std::shared_ptr<GenericWindow> AndroidApplication::GetWindow()
 	return m_Window;
 }
 
-void AndroidApplication::InitializeWindow(const std::shared_ptr<GenericWindow>& window, const bool showImmediately)
+void AndroidApplication::InitializeWindow(const std::shared_ptr<GenericWindow> window, const bool showImmediately)
 {
 	m_Window = std::dynamic_pointer_cast<AndroidWindow>(window);
 	m_Window->Initialize(this);

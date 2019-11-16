@@ -10,6 +10,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	, m_SwapChain(VK_NULL_HANDLE)
     , m_Surface(VK_NULL_HANDLE)
 	, m_ColorFormat(VK_FORMAT_R8G8B8A8_UNORM)
+	, m_BackBufferCount(3)
 	, m_Device(device)
 	, m_CurrentImageIndex(-1)
 	, m_SemaphoreIndex(0)
@@ -192,8 +193,6 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	m_SwapChainInfo.clipped				= VK_TRUE;
 	m_SwapChainInfo.compositeAlpha		= compositeAlpha;
 	
-	*outDesiredNumBackBuffers			= desiredNumBuffers;
-
 	if (m_SwapChainInfo.imageExtent.width == 0) {
 		m_SwapChainInfo.imageExtent.width = width;
 	}
@@ -214,10 +213,13 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 	// 获取Backbuffer数量
 	uint32 numSwapChainImages;
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, nullptr));
-	
+
 	outImages.resize(numSwapChainImages);
 	VERIFYVULKANRESULT(vkGetSwapchainImagesKHR(m_Device->GetInstanceHandle(), m_SwapChain, &numSwapChainImages, outImages.data()));
     
+	*outDesiredNumBackBuffers = numSwapChainImages;
+	m_BackBufferCount = numSwapChainImages;
+
 	// 创建Fence
 	m_ImageAcquiredSemaphore.resize(numSwapChainImages);
 	for (int32 index = 0; index < numSwapChainImages; ++index)
@@ -251,7 +253,7 @@ int32 VulkanSwapChain::AcquireImageIndex(VkSemaphore* outSemaphore)
 	const int32 prev  = m_SemaphoreIndex;
 
 	m_SemaphoreIndex  = (m_SemaphoreIndex + 1) % m_ImageAcquiredSemaphore.size();
-	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, MAX_int64, m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
+	VkResult result   = vkAcquireNextImageKHR(device, m_SwapChain, MAX_uint64, m_ImageAcquiredSemaphore[m_SemaphoreIndex], VK_NULL_HANDLE, &imageIndex);
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		m_SemaphoreIndex = prev;

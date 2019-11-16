@@ -3,11 +3,13 @@
 #include "Vulkan/VulkanRHI.h"
 #include "Vulkan/VulkanGlobals.h"
 #include "Application/Application.h"
+#include "Engine.h"
 
 #include <dlfcn.h>
 
 #define DEFINE_VK_ENTRYPOINTS(Type,Func) Type Func = NULL;
 ENUM_VK_ENTRYPOINTS_ALL(DEFINE_VK_ENTRYPOINTS)
+#undef DEFINE_VK_ENTRYPOINTS
 
 void* VulkanAndroidPlatform::g_VulkanLib = nullptr;
 bool  VulkanAndroidPlatform::g_AttemptedLoad = false;
@@ -69,8 +71,7 @@ bool VulkanAndroidPlatform::LoadVulkanInstanceFunctions(VkInstance instance)
 	ENUM_VK_ENTRYPOINTS_PLATFORM_INSTANCE(GETINSTANCE_VK_ENTRYPOINTS);
 	ENUM_VK_ENTRYPOINTS_PLATFORM_INSTANCE(CHECK_VK_ENTRYPOINTS);
 
-	if (!foundAllEntryPoints)
-	{
+	if (!foundAllEntryPoints) {
 		return false;
 	}
     
@@ -105,9 +106,8 @@ void VulkanAndroidPlatform::FreeVulkanLibrary()
 void VulkanAndroidPlatform::GetInstanceExtensions(std::vector<const char*>& outExtensions)
 {
     uint32_t count;
-    const char** extensions = Application::Get().GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
-    for (int32 i = 0; i < count; ++i)
-    {
+    const char** extensions = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
+    for (int32 i = 0; i < count; ++i) {
         outExtensions.push_back(extensions[i]);
     }
 }
@@ -119,7 +119,7 @@ void VulkanAndroidPlatform::GetDeviceExtensions(std::vector<const char*>& outExt
 
 void VulkanAndroidPlatform::CreateSurface(VkInstance instance, VkSurfaceKHR* outSurface)
 {
-    Application::Get().GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
+    Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->CreateVKSurface(instance, outSurface);
 }
 
 bool VulkanAndroidPlatform::SupportsDeviceLocalHostVisibleWithNoPenalty()

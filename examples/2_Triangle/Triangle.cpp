@@ -136,6 +136,7 @@ private:
         VkQueue queue = GetVulkanRHI()->GetDevice()->GetPresentQueue()->GetHandle();
         VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
         int32 backBufferIndex = GetVulkanRHI()->GetSwapChain()->AcquireImageIndex(&m_PresentComplete);
+
         VkPipelineStageFlags waitStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         
 		VkSubmitInfo submitInfo = {};
@@ -147,7 +148,7 @@ private:
 		submitInfo.signalSemaphoreCount = 1;											
 		submitInfo.pCommandBuffers 		= &(m_CommandBuffers[backBufferIndex]);
 		submitInfo.commandBufferCount 	= 1;												
-		
+
 		// 提交绘制命令
         vkResetFences(device, 1, &(m_Fences[backBufferIndex]));
 		VERIFYVULKANRESULT(vkQueueSubmit(queue, 1, &submitInfo, m_Fences[backBufferIndex]));
@@ -219,7 +220,7 @@ private:
 		}
 	}
     
-    void CreateFrameBuffers()
+    void CreateFrameBuffers() override
     {
         DestroyFrameBuffers();
         
@@ -248,7 +249,7 @@ private:
         }
     }
     
-    void CreateDepthStencil()
+    void CreateDepthStencil() override
     {
         DestoryDepthStencil();
         
@@ -296,7 +297,7 @@ private:
         VERIFYVULKANRESULT(vkCreateImageView(device, &imageViewCreateInfo, VULKAN_CPU_ALLOCATOR, &m_DepthStencilView));
     }
     
-    void CreateRenderPass()
+    void CreateRenderPass() override
     {
         DestoryRenderPass();
         
@@ -370,7 +371,7 @@ private:
         VERIFYVULKANRESULT(vkCreateRenderPass(device, &renderPassInfo, VULKAN_CPU_ALLOCATOR, &m_RenderPass));
     }
     
-    void DestroyFrameBuffers()
+    void DestroyFrameBuffers() override
     {
         VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
         for (int32 i = 0; i < m_FrameBuffers.size(); ++i) {
@@ -379,7 +380,7 @@ private:
         m_FrameBuffers.clear();
     }
     
-    void DestoryRenderPass()
+    void DestoryRenderPass() override
     {
         VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
         if (m_RenderPass != VK_NULL_HANDLE) {
@@ -388,7 +389,7 @@ private:
         }
     }
     
-    void DestoryDepthStencil()
+    void DestoryDepthStencil() override
     {
         VkDevice device = GetVulkanRHI()->GetDevice()->GetInstanceHandle();
         

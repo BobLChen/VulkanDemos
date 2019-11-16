@@ -3,6 +3,18 @@
 #include "Engine.h"
 #include "FileManager.h"
 
+#if PLATFORM_WINDOWS
+
+#elif PLATFORM_MAC
+
+#elif PLATFORM_IOS
+
+#elif PLATFORM_LINUX
+
+#elif PLATFORM_ANDROID
+	#include "Application/Android/AndroidWindow.h"
+#endif
+
 std::string FileManager::GetFilePath(const std::string& filepath)
 {
 #if defined(DEMO_RES_PATH)
@@ -15,6 +27,16 @@ std::string FileManager::GetFilePath(const std::string& filepath)
 bool FileManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32& dataSize)
 {
 	std::string finalPath = FileManager::GetFilePath(filepath);
+
+#if PLATFORM_ANDROID
+
+	AAsset* asset = AAssetManager_open(g_AndroidApp->activity->assetManager, finalPath.c_str(), AASSET_MODE_STREAMING);
+	dataSize = AAsset_getLength(asset);
+	dataPtr = new uint8[dataSize];
+	AAsset_read(asset, dataPtr, dataSize);
+	AAsset_close(asset);
+
+#else
 
 	FILE* file = fopen(finalPath.c_str(), "rb");
 	if (!file) {
@@ -35,6 +57,8 @@ bool FileManager::ReadFile(const std::string& filepath, uint8*& dataPtr, uint32&
 	dataPtr = new uint8[dataSize];
 	fread(dataPtr, 1, dataSize, file);
 	fclose(file);
+
+#endif
 
 	return true;
 }

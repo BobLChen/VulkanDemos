@@ -69,7 +69,6 @@ endif ()
 
 include_directories(
 	Engine/Monkey/
-	external/glm/include/
 	external/imgui/
 	external/SPIRV-Cross/
 	external/assimp/include/
