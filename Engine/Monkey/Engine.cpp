@@ -36,26 +36,26 @@ VkDevice Engine::GetDeviceHandle()
 
 std::shared_ptr<Application> Engine::GetApplication()
 {
-	return m_SlateApplication;
+	return m_Application;
 }
 
 std::shared_ptr<GenericApplication> Engine::GetPlatformApplication()
 {
-	return m_SlateApplication->GetPlatformApplication();
+	return m_Application->GetPlatformApplication();
 }
 
 std::shared_ptr<GenericWindow> Engine::GetPlatformWindow()
 {
-	return m_SlateApplication->GetPlatformWindow();
+	return m_Application->GetPlatformWindow();
 }
 
 int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int32 height, const char* title)
 {
     m_AppTitle = title;
     
-	m_SlateApplication = std::make_shared<Application>();
-	m_SlateApplication->Init(this);
-	m_SlateApplication->MakeWindow(width, height, title);
+	m_Application = std::make_shared<Application>();
+	m_Application->Init(this);
+	m_Application->MakeWindow(width, height, title);
 
 	m_VulkanRHI = std::make_shared<VulkanRHI>();
 
@@ -118,17 +118,17 @@ void Engine::Exist()
 	m_VulkanRHI->Shutdown();
 	m_VulkanRHI = nullptr;
 
-	m_SlateApplication->Shutdown(true);
+	m_Application->Shutdown(true);
 }
 
 void Engine::Tick(float time, float delta)
 {
-	m_SlateApplication->Tick(time, delta);
+	m_Application->Tick(time, delta);
 }
 
 void Engine::PumpMessage()
 {
-	m_SlateApplication->PumpMessages();
+	m_Application->PumpMessages();
 }
 
 bool Engine::IsRequestingExit()

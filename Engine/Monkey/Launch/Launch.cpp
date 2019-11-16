@@ -40,7 +40,12 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 	if (errorLevel) {
 		return errorLevel;
 	}
-    
+
+	int32 realWidth  = g_GameEngine->GetApplication()->GetPlatformWindow()->GetWidth();
+    int32 realHeight = g_GameEngine->GetApplication()->GetPlatformWindow()->GetHeight();
+
+	g_AppModule->SetSize(realWidth, realHeight);
+
 	if (!g_AppModule->PreInit()) {
 		return FailedPreInitAppModule;
 	}

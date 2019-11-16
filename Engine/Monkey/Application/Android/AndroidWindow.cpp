@@ -76,7 +76,13 @@ void AndroidWindow::SetDPIScaleFactor(float value)
 
 std::shared_ptr<AndroidWindow> AndroidWindow::Make(int32 width, int32 height, const char* title)
 {
-	return std::shared_ptr<AndroidWindow>(new AndroidWindow(width, height, title));
+
+	int32 deviceWidth  = ANativeWindow_getWidth(g_AndroidApp->window);
+    int32 deviceHeight = ANativeWindow_getHeight(g_AndroidApp->window);
+
+	MLOG("Get android physic size=%dx%d", deviceWidth, deviceHeight);
+
+	return std::shared_ptr<AndroidWindow>(new AndroidWindow(deviceWidth, deviceHeight, title));
 }
 
 

@@ -606,7 +606,7 @@ FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData) const
 	rawData[12] = m[3][0];
 	rawData[13] = m[3][1];
 	rawData[14] = m[3][2];
-	rawData[15] = m[4][3];
+	rawData[15] = m[3][3];
 }
 
 FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v) const

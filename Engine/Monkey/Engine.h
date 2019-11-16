@@ -81,7 +81,7 @@ protected:
 	static Engine*						g_Instance;
 
 	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
-	std::shared_ptr<Application>	m_SlateApplication;
+	std::shared_ptr<Application>	m_Application;
     
     std::string                         m_AppTitle;
 	std::string							m_AppPath;

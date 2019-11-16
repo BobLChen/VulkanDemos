@@ -35,6 +35,12 @@ public:
 
 	}
     
+	inline void SetSize(int32 width, int32 height)
+	{
+		m_Width  = width;
+		m_Height = height;
+	}
+
 	inline std::shared_ptr<VulkanRHI> GetVulkanRHI() const
 	{
 		return Engine::Get()->GetVulkanRHI();

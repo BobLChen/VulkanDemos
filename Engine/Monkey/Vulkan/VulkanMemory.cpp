@@ -138,7 +138,7 @@ void VulkanDeviceMemoryManager::Destory()
     {
         if (m_HeapInfos[index].allocations.size() > 0)
         {
-            MLOG("Found %lu unfreed allocations!", m_HeapInfos[index].allocations.size());
+            MLOG("Found %u unfreed allocations!", m_HeapInfos[index].allocations.size());
 #if MONKEY_DEBUG
             DumpMemory();
 #endif

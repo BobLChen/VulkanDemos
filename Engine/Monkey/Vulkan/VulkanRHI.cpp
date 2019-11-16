@@ -20,7 +20,6 @@ VulkanRHI::VulkanRHI()
 	, m_Device(nullptr)
 	, m_SwapChain(nullptr)
     , m_PixelFormat(PF_B8G8R8A8)
-	, m_SupportsDebugUtilsExt(false)
 {
 	
 }
@@ -59,6 +58,10 @@ void VulkanRHI::Shutdown()
 void VulkanRHI::InitInstance()
 {
 	CreateInstance();
+	if (!VulkanPlatform::LoadVulkanInstanceFunctions(m_Instance)) {
+		MLOG("%s\n", "Failed load vulkan instance functions.");
+		return;
+	}
 #if MONKEY_DEBUG
     SetupDebugLayerCallback();
 #endif
@@ -105,7 +108,7 @@ void VulkanRHI::DestorySwapChain()
 
 void VulkanRHI::CreateInstance()
 {
-	GetInstanceLayersAndExtensions(m_InstanceExtensions, m_InstanceLayers, m_SupportsDebugUtilsExt);
+	GetInstanceLayersAndExtensions(m_InstanceExtensions, m_InstanceLayers);
 	
 	if (m_AppInstanceExtensions.size() > 0)
 	{
@@ -180,7 +183,7 @@ void VulkanRHI::CreateInstance()
 
 void VulkanRHI::SelectAndInitDevice()
 {
-    uint32 gpuCount = 0;
+	uint32_t gpuCount = 0;
     VkResult result = vkEnumeratePhysicalDevices(m_Instance, &gpuCount, nullptr);
 
     if (result == VK_ERROR_INITIALIZATION_FAILED) {
