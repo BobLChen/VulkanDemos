@@ -9,10 +9,14 @@
 #include "DVKBuffer.h"
 #include "DVKTexture.h"
 
-#include "spirv_cross.hpp"
-
 #include "FileManager.h"
 #include "Vulkan/VulkanCommon.h"
+
+namespace spirv_cross
+{
+	class Compiler;
+	struct ShaderResources;
+}
 
 namespace vk_demo
 {

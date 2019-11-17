@@ -31,7 +31,13 @@ add_library(example-lib SHARED
 target_link_libraries(
     example-lib
     imgui
-	SPIRV_Cross
+	spirv-cross-glsl
+    spirv-cross-hlsl
+    spirv-cross-cpp
+    spirv-cross-reflect
+    spirv-cross-msl
+    spirv-cross-util
+    spirv-cross-core
     Monkey
     assimp
     native-app-glue

@@ -166,8 +166,8 @@ private:
 		m_SceneShader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/21_Stencil/obj.vert.spv",
-			"assets/shaders/21_Stencil/obj.frag.spv"
+			"assets/shaders/22_RenderTarget/obj.vert.spv",
+			"assets/shaders/22_RenderTarget/obj.frag.spv"
 		);
 		// Room textures
 		std::vector<std::string> diffusePaths = {
