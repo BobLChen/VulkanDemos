@@ -122,16 +122,8 @@ namespace vk_demo
 		model->attributes = attributes;
 		model->cmdBuffer  = cmdBuffer;
         
-        int assimpFlags =
-            aiProcess_Triangulate |
-            aiProcess_MakeLeftHanded |
-            aiProcess_FlipUVs |
-            aiProcess_FlipWindingOrder;
-        
-		assimpFlags = 
-			aiProcess_Triangulate |
-			aiProcess_FlipUVs;
-
+        int assimpFlags = aiProcess_Triangulate | aiProcess_FlipUVs;
+		
         for (int32 i = 0; i < attributes.size(); ++i) {
             if (attributes[i] == VertexAttribute::VA_Tangent) {
                 assimpFlags = assimpFlags | aiProcess_CalcTangentSpace;

@@ -1,1 +1,5 @@
 include 'examples/:2_Triangle'
+include 'examples/:3_DemoBase'
+include 'examples/:4_OptimizeBuffer'
+include 'examples/:5_OptimizeCommandBuffer'
+include 'examples/:6_ImageGUI'

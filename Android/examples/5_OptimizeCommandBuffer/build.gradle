@@ -9,7 +9,7 @@ android {
     compileSdkVersion 26
 
     defaultConfig {
-        applicationId "com.monkey.sample.demo02"
+        applicationId "com.monkey.sample.demo05"
         minSdkVersion 19
         targetSdkVersion 26
         versionCode 1

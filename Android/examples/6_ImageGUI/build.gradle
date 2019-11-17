@@ -9,7 +9,7 @@ android {
     compileSdkVersion 26
 
     defaultConfig {
-        applicationId "com.monkey.sample.demo02"
+        applicationId "com.monkey.sample.demo06"
         minSdkVersion 19
         targetSdkVersion 26
         versionCode 1
@@ -58,6 +58,12 @@ task copyTask << {
     copy {
         from '../../../examples/assets/shaders/2_Triangle'
         into 'assets/assets/shaders/2_Triangle'
+        include '*.*'
+    }
+
+    copy {
+        from '../../../examples/assets/fonts/'
+        into 'assets/assets/fonts/'
         include '*.*'
     }
 }
