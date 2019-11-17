@@ -1,17 +1,15 @@
 apply plugin: 'com.android.application'
 apply from: '../gradle/outputfilename.gradle'
-
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def ndkDir = properties.getProperty('ndk.dir')
 def valLayerBinDir = "${ndkDir}/sources/third_party/vulkan/src/build-android/jniLibs"
-
 android {
 
     compileSdkVersion 26
 
     defaultConfig {
-        applicationId "com.monkey.sample.triangle"
+        applicationId "com.monkey.sample.triangle02"
         minSdkVersion 19
         targetSdkVersion 26
         versionCode 1
@@ -42,7 +40,11 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            debuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
         }
     }
 
@@ -52,7 +54,6 @@ android {
         }
     }
 }
-
 task copyTask << {
     copy {
         from '../../common/res/drawable'
@@ -61,10 +62,13 @@ task copyTask << {
     }
 
     copy {
-       from '../../../examples/assets/shaders/2_Triangle'
-       into 'assets/assets/shaders/2_Triangle'
-       include '*.*'
+        from '../../../examples/assets/shaders/2_Triangle'
+        into 'assets/assets/shaders/2_Triangle'
+        include '*.*'
     }
 }
 
 preBuild.dependsOn copyTask
+
+dependencies {
+}

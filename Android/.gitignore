@@ -1,0 +1,10 @@
+
+build/
+assets/
+
+.DS_Store
+.externalNativeBuild/
+.gradle/
+.idea/
+.project
+.settings/

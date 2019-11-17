@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.6.0)
 
 set(ANDROID TRUE CACHE BOOL "")
 
-set(NAME triangle)
+set(NAME 2_Triangle)
 set(BASE_DIR ../../../../VulkanTutorials)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
@@ -23,13 +23,13 @@ add_subdirectory(${BASE_DIR}/external/assimp Build/assimp)
 
 add_library(native-app-glue STATIC ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
 
-add_library(monkeyandroid-lib SHARED
+add_library(example-lib SHARED
     ${BASE_DIR}/Engine/Monkey/Launch/LaunchAndroid.cpp
     ${BASE_DIR}/examples/2_Triangle/Triangle.cpp
 )
 
 target_link_libraries(
-    monkeyandroid-lib
+    example-lib
     imgui
 	SPIRV_Cross
     Monkey

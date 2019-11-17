@@ -10,7 +10,7 @@ import java.util.concurrent.Semaphore;
 public class VulkanActivity extends NativeActivity {
 
     static {
-        System.loadLibrary("monkeyandroid-libd");
+        System.loadLibrary("example-libd");
     }
     
     @Override
