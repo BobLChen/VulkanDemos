@@ -30,7 +30,7 @@
 #include <locale.h>
 
 using namespace spv;
-using namespace spirv_cross;
+using namespace SPIRV_CROSS_NAMESPACE;
 using namespace std;
 
 static bool is_unsigned_opcode(Op op)
@@ -106,11 +106,25 @@ static bool packing_has_flexible_offset(BufferPackingStandard packing)
 	{
 	case BufferPackingStd140:
 	case BufferPackingStd430:
+	case BufferPackingScalar:
 	case BufferPackingHLSLCbuffer:
 		return false;
 
 	default:
 		return true;
+	}
+}
+
+static bool packing_is_scalar(BufferPackingStandard packing)
+{
+	switch (packing)
+	{
+	case BufferPackingScalar:
+	case BufferPackingScalarEnhancedLayout:
+		return true;
+
+	default:
+		return false;
 	}
 }
 
@@ -124,6 +138,8 @@ static BufferPackingStandard packing_to_substruct_packing(BufferPackingStandard 
 		return BufferPackingStd430;
 	case BufferPackingHLSLCbufferPackOffset:
 		return BufferPackingHLSLCbuffer;
+	case BufferPackingScalarEnhancedLayout:
+		return BufferPackingScalar;
 	default:
 		return packing;
 	}
@@ -169,15 +185,19 @@ void CompilerGLSL::init()
 	// tricky.
 #ifdef _WIN32
 	// On Windows, localeconv uses thread-local storage, so it should be fine.
-	// const struct lconv *conv = localeconv();
-	// if (conv && conv->decimal_point)
-	//	current_locale_radix_character = *conv->decimal_point;
+	const struct lconv *conv = localeconv();
+	if (conv && conv->decimal_point)
+		current_locale_radix_character = *conv->decimal_point;
+#elif defined(__ANDROID__) && __ANDROID_API__ < 26
+	// nl_langinfo is not supported on this platform, fall back to the worse alternative.
+	const struct lconv *conv = localeconv();
+	if (conv && conv->decimal_point)
+		current_locale_radix_character = *conv->decimal_point;
 #else
 	// localeconv, the portable function is not MT safe ...
-	// const char *decimal_point = nl_langinfo(RADIXCHAR);
-    // const char *decimal_point = nullptr;
-	// if (decimal_point && *decimal_point != '\0')
-	//	current_locale_radix_character = *decimal_point;
+	const char *decimal_point = nl_langinfo(RADIXCHAR);
+	if (decimal_point && *decimal_point != '\0')
+		current_locale_radix_character = *decimal_point;
 #endif
 }
 
@@ -268,8 +288,17 @@ static uint32_t pls_format_to_components(PlsFormat format)
 
 static const char *vector_swizzle(int vecsize, int index)
 {
-	static const char *swizzle[4][4] = {
-		{ ".x", ".y", ".z", ".w" }, { ".xy", ".yz", ".zw" }, { ".xyz", ".yzw" }, { "" }
+	static const char *const swizzle[4][4] = {
+		{ ".x", ".y", ".z", ".w" },
+		{ ".xy", ".yz", ".zw", nullptr },
+		{ ".xyz", ".yzw", nullptr, nullptr },
+#if defined(__GNUC__) && (__GNUC__ == 9)
+		// This works around a GCC 9 bug, see details in https://gcc.gnu.org/bugzilla/show_bug.cgi?id=90947.
+		// This array ends up being compiled as all nullptrs, tripping the assertions below.
+		{ "", nullptr, nullptr, "$" },
+#else
+		{ "", nullptr, nullptr, nullptr },
+#endif
 	};
 
 	assert(vecsize >= 1 && vecsize <= 4);
@@ -284,7 +313,7 @@ void CompilerGLSL::reset()
 	// We do some speculative optimizations which should pretty much always work out,
 	// but just in case the SPIR-V is rather weird, recompile until it's happy.
 	// This typically only means one extra pass.
-	force_recompile = false;
+	clear_force_recompile();
 
 	// Clear invalid expression tracking.
 	invalid_expressions.clear();
@@ -293,6 +322,10 @@ void CompilerGLSL::reset()
 	// Clear temporary usage tracking.
 	expression_usage_counts.clear();
 	forwarded_temporaries.clear();
+	suppressed_usage_tracking.clear();
+
+	// Ensure that we declare phi-variable copies even if the original declaration isn't deferred
+	flushed_phi_variables.clear();
 
 	reset_name_caches();
 
@@ -406,6 +439,17 @@ void CompilerGLSL::find_static_extensions()
 			require_extension_internal("GL_ARB_tessellation_shader");
 		break;
 
+	case ExecutionModelRayGenerationNV:
+	case ExecutionModelIntersectionNV:
+	case ExecutionModelAnyHitNV:
+	case ExecutionModelClosestHitNV:
+	case ExecutionModelMissNV:
+	case ExecutionModelCallableNV:
+		if (options.es || options.version < 460)
+			SPIRV_CROSS_THROW("Ray tracing shaders require non-es profile with version 460 or above.");
+		require_extension_internal("GL_NV_ray_tracing");
+		break;
+
 	default:
 		break;
 	}
@@ -415,6 +459,44 @@ void CompilerGLSL::find_static_extensions()
 
 	if (options.separate_shader_objects && !options.es && options.version < 410)
 		require_extension_internal("GL_ARB_separate_shader_objects");
+
+	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64EXT)
+	{
+		if (!options.vulkan_semantics)
+			SPIRV_CROSS_THROW("GL_EXT_buffer_reference is only supported in Vulkan GLSL.");
+		if (options.es && options.version < 320)
+			SPIRV_CROSS_THROW("GL_EXT_buffer_reference requires ESSL 320.");
+		else if (!options.es && options.version < 450)
+			SPIRV_CROSS_THROW("GL_EXT_buffer_reference requires GLSL 450.");
+		require_extension_internal("GL_EXT_buffer_reference");
+	}
+	else if (ir.addressing_model != AddressingModelLogical)
+	{
+		SPIRV_CROSS_THROW("Only Logical and PhysicalStorageBuffer64EXT addressing models are supported.");
+	}
+
+	// Check for nonuniform qualifier.
+	// Instead of looping over all decorations to find this, just look at capabilities.
+	for (auto &cap : ir.declared_capabilities)
+	{
+		bool nonuniform_indexing = false;
+		switch (cap)
+		{
+		case CapabilityShaderNonUniformEXT:
+		case CapabilityRuntimeDescriptorArrayEXT:
+			if (!options.vulkan_semantics)
+				SPIRV_CROSS_THROW("GL_EXT_nonuniform_qualifier is only supported in Vulkan GLSL.");
+			require_extension_internal("GL_EXT_nonuniform_qualifier");
+			nonuniform_indexing = true;
+			break;
+
+		default:
+			break;
+		}
+
+		if (nonuniform_indexing)
+			break;
+	}
 }
 
 string CompilerGLSL::compile()
@@ -423,13 +505,22 @@ string CompilerGLSL::compile()
 		backend.allow_precision_qualifiers = true;
 	backend.force_gl_in_out_block = true;
 	backend.supports_extensions = true;
+	backend.use_array_constructor = true;
 
 	// Scan the SPIR-V to find trivial uses of extensions.
+	fixup_type_alias();
+	reorder_type_alias();
 	build_function_control_flow_graphs_and_analyze();
 	find_static_extensions();
 	fixup_image_load_store_access();
 	update_active_builtins();
 	analyze_image_and_sampler_usage();
+	analyze_interlocked_resource_usage();
+
+	// Shaders might cast unrelated data to pointers of non-block types.
+	// Find all such instances and make sure we can cast the pointers to a synthesized block type.
+	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64EXT)
+		analyze_non_block_pointer_types();
 
 	uint32_t pass_count = 0;
 	do
@@ -439,8 +530,7 @@ string CompilerGLSL::compile()
 
 		reset();
 
-		// Move constructor for this type is broken on GCC 4.9 ...
-		buffer = unique_ptr<ostringstream>(new ostringstream());
+		buffer.reset();
 
 		emit_header();
 		emit_resources();
@@ -448,20 +538,39 @@ string CompilerGLSL::compile()
 		emit_function(get<SPIRFunction>(ir.default_entry_point), Bitset());
 
 		pass_count++;
-	} while (force_recompile);
+	} while (is_forcing_recompilation());
+
+	// Implement the interlocked wrapper function at the end.
+	// The body was implemented in lieu of main().
+	if (interlocked_is_complex)
+	{
+		statement("void main()");
+		begin_scope();
+		statement("// Interlocks were used in a way not compatible with GLSL, this is very slow.");
+		if (options.es)
+			statement("beginInvocationInterlockNV();");
+		else
+			statement("beginInvocationInterlockARB();");
+		statement("spvMainInterlockedBody();");
+		if (options.es)
+			statement("endInvocationInterlockNV();");
+		else
+			statement("endInvocationInterlockARB();");
+		end_scope();
+	}
 
 	// Entry point in GLSL is always main().
 	get_entry_point().name = "main";
 
-	return buffer->str();
+	return buffer.str();
 }
 
 std::string CompilerGLSL::get_partial_source()
 {
-	return buffer ? buffer->str() : "No compiled source available yet.";
+	return buffer.str();
 }
 
-void CompilerGLSL::build_workgroup_size(vector<string> &arguments, const SpecializationConstant &wg_x,
+void CompilerGLSL::build_workgroup_size(SmallVector<string> &arguments, const SpecializationConstant &wg_x,
                                         const SpecializationConstant &wg_y, const SpecializationConstant &wg_z)
 {
 	auto &execution = get_entry_point();
@@ -516,6 +625,30 @@ void CompilerGLSL::emit_header()
 			require_extension_internal("GL_ARB_shader_image_load_store");
 	}
 
+	// Needed for: layout(post_depth_coverage) in;
+	if (execution.flags.get(ExecutionModePostDepthCoverage))
+		require_extension_internal("GL_ARB_post_depth_coverage");
+
+	// Needed for: layout({pixel,sample}_interlock_[un]ordered) in;
+	if (execution.flags.get(ExecutionModePixelInterlockOrderedEXT) ||
+	    execution.flags.get(ExecutionModePixelInterlockUnorderedEXT) ||
+	    execution.flags.get(ExecutionModeSampleInterlockOrderedEXT) ||
+	    execution.flags.get(ExecutionModeSampleInterlockUnorderedEXT))
+	{
+		if (options.es)
+		{
+			if (options.version < 310)
+				SPIRV_CROSS_THROW("At least ESSL 3.10 required for fragment shader interlock.");
+			require_extension_internal("GL_NV_fragment_shader_interlock");
+		}
+		else
+		{
+			if (options.version < 420)
+				require_extension_internal("GL_ARB_shader_image_load_store");
+			require_extension_internal("GL_ARB_fragment_shader_interlock");
+		}
+	}
+
 	for (auto &ext : forced_extensions)
 	{
 		if (ext == "GL_EXT_shader_explicit_arithmetic_types_float16")
@@ -551,6 +684,19 @@ void CompilerGLSL::emit_header()
 				statement("#endif");
 			}
 		}
+		else if (ext == "GL_ARB_post_depth_coverage")
+		{
+			if (options.es)
+				statement("#extension GL_EXT_post_depth_coverage : require");
+			else
+			{
+				statement("#if defined(GL_ARB_post_depth_coverge)");
+				statement("#extension GL_ARB_post_depth_coverage : require");
+				statement("#else");
+				statement("#extension GL_EXT_post_depth_coverage : require");
+				statement("#endif");
+			}
+		}
 		else
 			statement("#extension ", ext, " : require");
 	}
@@ -558,8 +704,8 @@ void CompilerGLSL::emit_header()
 	for (auto &header : header_lines)
 		statement(header);
 
-	vector<string> inputs;
-	vector<string> outputs;
+	SmallVector<string> inputs;
+	SmallVector<string> outputs;
 
 	switch (execution.model)
 	{
@@ -625,7 +771,8 @@ void CompilerGLSL::emit_header()
 
 			// If there are any spec constants on legacy GLSL, defer declaration, we need to set up macro
 			// declarations before we can emit the work group size.
-			if (options.vulkan_semantics || ((wg_x.id == 0) && (wg_y.id == 0) && (wg_z.id == 0)))
+			if (options.vulkan_semantics ||
+			    ((wg_x.id == ConstantID(0)) && (wg_y.id == ConstantID(0)) && (wg_z.id == ConstantID(0))))
 				build_workgroup_size(inputs, wg_x, wg_y, wg_z);
 		}
 		else
@@ -679,6 +826,17 @@ void CompilerGLSL::emit_header()
 
 		if (execution.flags.get(ExecutionModeEarlyFragmentTests))
 			inputs.push_back("early_fragment_tests");
+		if (execution.flags.get(ExecutionModePostDepthCoverage))
+			inputs.push_back("post_depth_coverage");
+
+		if (execution.flags.get(ExecutionModePixelInterlockOrderedEXT))
+			inputs.push_back("pixel_interlock_ordered");
+		else if (execution.flags.get(ExecutionModePixelInterlockUnorderedEXT))
+			inputs.push_back("pixel_interlock_unordered");
+		else if (execution.flags.get(ExecutionModeSampleInterlockOrderedEXT))
+			inputs.push_back("sample_interlock_ordered");
+		else if (execution.flags.get(ExecutionModeSampleInterlockUnorderedEXT))
+			inputs.push_back("sample_interlock_unordered");
 
 		if (!options.es && execution.flags.get(ExecutionModeDepthGreater))
 			statement("layout(depth_greater) out float gl_FragDepth;");
@@ -711,7 +869,8 @@ void CompilerGLSL::emit_struct(SPIRType &type)
 	// Type-punning with these types is legal, which complicates things
 	// when we are storing struct and array types in an SSBO for example.
 	// If the type master is packed however, we can no longer assume that the struct declaration will be redundant.
-	if (type.type_alias != 0 && !has_extended_decoration(type.type_alias, SPIRVCrossDecorationPacked))
+	if (type.type_alias != TypeID(0) &&
+	    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
 		return;
 
 	add_resource_name(type.self);
@@ -738,6 +897,9 @@ void CompilerGLSL::emit_struct(SPIRType &type)
 		statement("int empty_struct_member;");
 		emitted = true;
 	}
+
+	if (has_extended_decoration(type.self, SPIRVCrossDecorationPaddingTarget))
+		emit_struct_padding_target(type);
 
 	end_scope_decl();
 
@@ -783,7 +945,7 @@ string CompilerGLSL::layout_for_member(const SPIRType &type, uint32_t index)
 		return "";
 	auto &dec = memb[index];
 
-	vector<string> attr;
+	SmallVector<string> attr;
 
 	// We can only apply layouts on members in block interfaces.
 	// This is a bit problematic because in SPIR-V decorations are applied on the struct types directly.
@@ -827,7 +989,8 @@ string CompilerGLSL::layout_for_member(const SPIRType &type, uint32_t index)
 
 	// SPIRVCrossDecorationPacked is set by layout_for_variable earlier to mark that we need to emit offset qualifiers.
 	// This is only done selectively in GLSL as needed.
-	if (has_extended_decoration(type.self, SPIRVCrossDecorationPacked) && dec.decoration_flags.get(DecorationOffset))
+	if (has_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset) &&
+	    dec.decoration_flags.get(DecorationOffset))
 		attr.push_back(join("offset = ", dec.offset));
 
 	if (attr.empty())
@@ -958,6 +1121,24 @@ uint32_t CompilerGLSL::type_to_packed_base_size(const SPIRType &type, BufferPack
 uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bitset &flags,
                                                 BufferPackingStandard packing)
 {
+	// If using PhysicalStorageBufferEXT storage class, this is a pointer,
+	// and is 64-bit.
+	if (type.storage == StorageClassPhysicalStorageBufferEXT)
+	{
+		if (!type.pointer)
+			SPIRV_CROSS_THROW("Types in PhysicalStorageBufferEXT must be pointers.");
+
+		if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64EXT)
+		{
+			if (packing_is_vec4_padded(packing) && type_is_array_of_pointers(type))
+				return 16;
+			else
+				return 8;
+		}
+		else
+			SPIRV_CROSS_THROW("AddressingModelPhysicalStorageBuffer64EXT must be used for PhysicalStorageBufferEXT.");
+	}
+
 	if (!type.array.empty())
 	{
 		uint32_t minimum_alignment = 1;
@@ -992,6 +1173,10 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 	else
 	{
 		const uint32_t base_alignment = type_to_packed_base_size(type, packing);
+
+		// Alignment requirement for scalar block layout is always the alignment for the most basic component.
+		if (packing_is_scalar(packing))
+			return base_alignment;
 
 		// Vectors are *not* aligned in HLSL, but there's an extra rule where vectors cannot straddle
 		// a vec4, this is handled outside since that part knows our current offset.
@@ -1074,6 +1259,19 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 		return to_array_size_literal(type) * type_to_packed_array_stride(type, flags, packing);
 	}
 
+	// If using PhysicalStorageBufferEXT storage class, this is a pointer,
+	// and is 64-bit.
+	if (type.storage == StorageClassPhysicalStorageBufferEXT)
+	{
+		if (!type.pointer)
+			SPIRV_CROSS_THROW("Types in PhysicalStorageBufferEXT must be pointers.");
+
+		if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64EXT)
+			return 8;
+		else
+			SPIRV_CROSS_THROW("AddressingModelPhysicalStorageBuffer64EXT must be used for PhysicalStorageBufferEXT.");
+	}
+
 	uint32_t size = 0;
 
 	if (type.basetype == SPIRType::Struct)
@@ -1103,27 +1301,34 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 	{
 		const uint32_t base_alignment = type_to_packed_base_size(type, packing);
 
-		if (type.columns == 1)
-			size = type.vecsize * base_alignment;
-
-		if (flags.get(DecorationColMajor) && type.columns > 1)
+		if (packing_is_scalar(packing))
 		{
-			if (packing_is_vec4_padded(packing))
-				size = type.columns * 4 * base_alignment;
-			else if (type.vecsize == 3)
-				size = type.columns * 4 * base_alignment;
-			else
-				size = type.columns * type.vecsize * base_alignment;
+			size = type.vecsize * type.columns * base_alignment;
 		}
-
-		if (flags.get(DecorationRowMajor) && type.vecsize > 1)
+		else
 		{
-			if (packing_is_vec4_padded(packing))
-				size = type.vecsize * 4 * base_alignment;
-			else if (type.columns == 3)
-				size = type.vecsize * 4 * base_alignment;
-			else
-				size = type.vecsize * type.columns * base_alignment;
+			if (type.columns == 1)
+				size = type.vecsize * base_alignment;
+
+			if (flags.get(DecorationColMajor) && type.columns > 1)
+			{
+				if (packing_is_vec4_padded(packing))
+					size = type.columns * 4 * base_alignment;
+				else if (type.vecsize == 3)
+					size = type.columns * 4 * base_alignment;
+				else
+					size = type.columns * type.vecsize * base_alignment;
+			}
+
+			if (flags.get(DecorationRowMajor) && type.vecsize > 1)
+			{
+				if (packing_is_vec4_padded(packing))
+					size = type.vecsize * 4 * base_alignment;
+				else if (type.columns == 3)
+					size = type.vecsize * 4 * base_alignment;
+				else
+					size = type.vecsize * type.columns * base_alignment;
+			}
 		}
 	}
 
@@ -1131,7 +1336,8 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 }
 
 bool CompilerGLSL::buffer_is_packing_standard(const SPIRType &type, BufferPackingStandard packing,
-                                              uint32_t start_offset, uint32_t end_offset)
+                                              uint32_t *failed_validation_index, uint32_t start_offset,
+                                              uint32_t end_offset)
 {
 	// This is very tricky and error prone, but try to be exhaustive and correct here.
 	// SPIR-V doesn't directly say if we're using std430 or std140.
@@ -1197,7 +1403,7 @@ bool CompilerGLSL::buffer_is_packing_standard(const SPIRType &type, BufferPackin
 
 		// The next member following a struct member is aligned to the base alignment of the struct that came before.
 		// GL 4.5 spec, 7.6.2.2.
-		if (memb_type.basetype == SPIRType::Struct)
+		if (memb_type.basetype == SPIRType::Struct && !memb_type.pointer)
 			pad_alignment = packed_alignment;
 		else
 			pad_alignment = 1;
@@ -1205,26 +1411,47 @@ bool CompilerGLSL::buffer_is_packing_standard(const SPIRType &type, BufferPackin
 		// Only care about packing if we are in the given range
 		if (offset >= start_offset)
 		{
+			uint32_t actual_offset = type_struct_member_offset(type, i);
+
 			// We only care about offsets in std140, std430, etc ...
 			// For EnhancedLayout variants, we have the flexibility to choose our own offsets.
 			if (!packing_has_flexible_offset(packing))
 			{
-				uint32_t actual_offset = type_struct_member_offset(type, i);
 				if (actual_offset != offset) // This cannot be the packing we're looking for.
+				{
+					if (failed_validation_index)
+						*failed_validation_index = i;
 					return false;
+				}
+			}
+			else if ((actual_offset & (alignment - 1)) != 0)
+			{
+				// We still need to verify that alignment rules are observed, even if we have explicit offset.
+				if (failed_validation_index)
+					*failed_validation_index = i;
+				return false;
 			}
 
 			// Verify array stride rules.
 			if (!memb_type.array.empty() && type_to_packed_array_stride(memb_type, member_flags, packing) !=
 			                                    type_struct_member_array_stride(type, i))
+			{
+				if (failed_validation_index)
+					*failed_validation_index = i;
 				return false;
+			}
 
 			// Verify that sub-structs also follow packing rules.
 			// We cannot use enhanced layouts on substructs, so they better be up to spec.
 			auto substruct_packing = packing_to_substruct_packing(packing);
 
-			if (!memb_type.member_types.empty() && !buffer_is_packing_standard(memb_type, substruct_packing))
+			if (!memb_type.pointer && !memb_type.member_types.empty() &&
+			    !buffer_is_packing_standard(memb_type, substruct_packing))
+			{
+				if (failed_validation_index)
+					*failed_validation_index = i;
 				return false;
+			}
 		}
 
 		// Bump size.
@@ -1259,7 +1486,7 @@ bool CompilerGLSL::can_use_io_location(StorageClass storage, bool block)
 			return false;
 	}
 
-	if (storage == StorageClassUniform || storage == StorageClassUniformConstant)
+	if (storage == StorageClassUniform || storage == StorageClassUniformConstant || storage == StorageClassPushConstant)
 	{
 		if (options.es && options.version < 310)
 			return false;
@@ -1279,7 +1506,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	if (is_legacy())
 		return "";
 
-	vector<string> attr;
+	SmallVector<string> attr;
 
 	auto &dec = ir.meta[var.self].decoration;
 	auto &type = get<SPIRType>(var.basetype);
@@ -1288,6 +1515,8 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 	if (options.vulkan_semantics && var.storage == StorageClassPushConstant)
 		attr.push_back("push_constant");
+	else if (var.storage == StorageClassShaderRecordBufferNV)
+		attr.push_back("shaderRecordNV");
 
 	if (flags.get(DecorationRowMajor))
 		attr.push_back("row_major");
@@ -1333,14 +1562,24 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 	// Do not emit set = decoration in regular GLSL output, but
 	// we need to preserve it in Vulkan GLSL mode.
-	if (var.storage != StorageClassPushConstant)
+	if (var.storage != StorageClassPushConstant && var.storage != StorageClassShaderRecordBufferNV)
 	{
 		if (flags.get(DecorationDescriptorSet) && options.vulkan_semantics)
 			attr.push_back(join("set = ", dec.set));
 	}
 
+	bool push_constant_block = options.vulkan_semantics && var.storage == StorageClassPushConstant;
+	bool ssbo_block = var.storage == StorageClassStorageBuffer || var.storage == StorageClassShaderRecordBufferNV ||
+	                  (var.storage == StorageClassUniform && typeflags.get(DecorationBufferBlock));
+	bool emulated_ubo = var.storage == StorageClassPushConstant && options.emit_push_constant_as_uniform_buffer;
+	bool ubo_block = var.storage == StorageClassUniform && typeflags.get(DecorationBlock);
+
 	// GL 3.0/GLSL 1.30 is not considered legacy, but it doesn't have UBOs ...
 	bool can_use_buffer_blocks = (options.es && options.version >= 300) || (!options.es && options.version >= 140);
+
+	// pretend no UBOs when options say so
+	if (ubo_block && options.emit_uniform_buffer_as_plain_uniforms)
+		can_use_buffer_blocks = false;
 
 	bool can_use_binding;
 	if (options.es)
@@ -1352,85 +1591,24 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	if (!can_use_buffer_blocks && var.storage == StorageClassUniform)
 		can_use_binding = false;
 
+	if (var.storage == StorageClassShaderRecordBufferNV)
+		can_use_binding = false;
+
 	if (can_use_binding && flags.get(DecorationBinding))
 		attr.push_back(join("binding = ", dec.binding));
 
 	if (flags.get(DecorationOffset))
 		attr.push_back(join("offset = ", dec.offset));
 
-	bool push_constant_block = options.vulkan_semantics && var.storage == StorageClassPushConstant;
-	bool ssbo_block = var.storage == StorageClassStorageBuffer ||
-	                  (var.storage == StorageClassUniform && typeflags.get(DecorationBufferBlock));
-
 	// Instead of adding explicit offsets for every element here, just assume we're using std140 or std430.
 	// If SPIR-V does not comply with either layout, we cannot really work around it.
-	if (can_use_buffer_blocks && var.storage == StorageClassUniform && typeflags.get(DecorationBlock))
+	if (can_use_buffer_blocks && (ubo_block || emulated_ubo))
 	{
-		if (buffer_is_packing_standard(type, BufferPackingStd140))
-			attr.push_back("std140");
-		else if (buffer_is_packing_standard(type, BufferPackingStd140EnhancedLayout))
-		{
-			attr.push_back("std140");
-			// Fallback time. We might be able to use the ARB_enhanced_layouts to deal with this difference,
-			// however, we can only use layout(offset) on the block itself, not any substructs, so the substructs better be the appropriate layout.
-			// Enhanced layouts seem to always work in Vulkan GLSL, so no need for extensions there.
-			if (options.es && !options.vulkan_semantics)
-				SPIRV_CROSS_THROW("Push constant block cannot be expressed as neither std430 nor std140. ES-targets do "
-				                  "not support GL_ARB_enhanced_layouts.");
-			if (!options.es && !options.vulkan_semantics && options.version < 440)
-				require_extension_internal("GL_ARB_enhanced_layouts");
-
-			// This is a very last minute to check for this, but use this unused decoration to mark that we should emit
-			// explicit offsets for this block type.
-			// layout_for_variable() will be called before the actual buffer emit.
-			// The alternative is a full pass before codegen where we deduce this decoration,
-			// but then we are just doing the exact same work twice, and more complexity.
-			set_extended_decoration(type.self, SPIRVCrossDecorationPacked);
-		}
-		else
-		{
-			SPIRV_CROSS_THROW("Uniform buffer cannot be expressed as std140, even with enhanced layouts. You can try "
-			                  "flattening this block to "
-			                  "support a more flexible layout.");
-		}
+		attr.push_back(buffer_to_packing_standard(type, false));
 	}
 	else if (can_use_buffer_blocks && (push_constant_block || ssbo_block))
 	{
-		if (buffer_is_packing_standard(type, BufferPackingStd430))
-			attr.push_back("std430");
-		else if (buffer_is_packing_standard(type, BufferPackingStd140))
-			attr.push_back("std140");
-		else if (buffer_is_packing_standard(type, BufferPackingStd140EnhancedLayout))
-		{
-			attr.push_back("std140");
-
-			// Fallback time. We might be able to use the ARB_enhanced_layouts to deal with this difference,
-			// however, we can only use layout(offset) on the block itself, not any substructs, so the substructs better be the appropriate layout.
-			// Enhanced layouts seem to always work in Vulkan GLSL, so no need for extensions there.
-			if (options.es && !options.vulkan_semantics)
-				SPIRV_CROSS_THROW("Push constant block cannot be expressed as neither std430 nor std140. ES-targets do "
-				                  "not support GL_ARB_enhanced_layouts.");
-			if (!options.es && !options.vulkan_semantics && options.version < 440)
-				require_extension_internal("GL_ARB_enhanced_layouts");
-
-			set_extended_decoration(type.self, SPIRVCrossDecorationPacked);
-		}
-		else if (buffer_is_packing_standard(type, BufferPackingStd430EnhancedLayout))
-		{
-			attr.push_back("std430");
-			if (options.es && !options.vulkan_semantics)
-				SPIRV_CROSS_THROW("Push constant block cannot be expressed as neither std430 nor std140. ES-targets do "
-				                  "not support GL_ARB_enhanced_layouts.");
-			if (!options.es && !options.vulkan_semantics && options.version < 440)
-				require_extension_internal("GL_ARB_enhanced_layouts");
-
-			set_extended_decoration(type.self, SPIRVCrossDecorationPacked);
-		}
-		else
-		{
-			SPIRV_CROSS_THROW("Buffer block cannot be expressed as neither std430 nor std140, even with enhanced "
-			                  "layouts. You can try flattening this block to support a more flexible layout.");
-		}
+		attr.push_back(buffer_to_packing_standard(type, true));
 	}
 
 	// For images, the type itself adds a layout qualifer.
@@ -1451,12 +1629,79 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	return res;
 }
 
+string CompilerGLSL::buffer_to_packing_standard(const SPIRType &type, bool support_std430_without_scalar_layout)
+{
+	if (support_std430_without_scalar_layout && buffer_is_packing_standard(type, BufferPackingStd430))
+		return "std430";
+	else if (buffer_is_packing_standard(type, BufferPackingStd140))
+		return "std140";
+	else if (options.vulkan_semantics && buffer_is_packing_standard(type, BufferPackingScalar))
+	{
+		require_extension_internal("GL_EXT_scalar_block_layout");
+		return "scalar";
+	}
+	else if (support_std430_without_scalar_layout &&
+	         buffer_is_packing_standard(type, BufferPackingStd430EnhancedLayout))
+	{
+		if (options.es && !options.vulkan_semantics)
+			SPIRV_CROSS_THROW("Push constant block cannot be expressed as neither std430 nor std140. ES-targets do "
+			                  "not support GL_ARB_enhanced_layouts.");
+		if (!options.es && !options.vulkan_semantics && options.version < 440)
+			require_extension_internal("GL_ARB_enhanced_layouts");
+
+		set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
+		return "std430";
+	}
+	else if (buffer_is_packing_standard(type, BufferPackingStd140EnhancedLayout))
+	{
+		// Fallback time. We might be able to use the ARB_enhanced_layouts to deal with this difference,
+		// however, we can only use layout(offset) on the block itself, not any substructs, so the substructs better be the appropriate layout.
+		// Enhanced layouts seem to always work in Vulkan GLSL, so no need for extensions there.
+		if (options.es && !options.vulkan_semantics)
+			SPIRV_CROSS_THROW("Push constant block cannot be expressed as neither std430 nor std140. ES-targets do "
+			                  "not support GL_ARB_enhanced_layouts.");
+		if (!options.es && !options.vulkan_semantics && options.version < 440)
+			require_extension_internal("GL_ARB_enhanced_layouts");
+
+		set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
+		return "std140";
+	}
+	else if (options.vulkan_semantics && buffer_is_packing_standard(type, BufferPackingScalarEnhancedLayout))
+	{
+		set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
+		require_extension_internal("GL_EXT_scalar_block_layout");
+		return "scalar";
+	}
+	else if (!support_std430_without_scalar_layout && options.vulkan_semantics &&
+	         buffer_is_packing_standard(type, BufferPackingStd430))
+	{
+		// UBOs can support std430 with GL_EXT_scalar_block_layout.
+		require_extension_internal("GL_EXT_scalar_block_layout");
+		return "std430";
+	}
+	else if (!support_std430_without_scalar_layout && options.vulkan_semantics &&
+	         buffer_is_packing_standard(type, BufferPackingStd430EnhancedLayout))
+	{
+		// UBOs can support std430 with GL_EXT_scalar_block_layout.
+		set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
+		require_extension_internal("GL_EXT_scalar_block_layout");
+		return "std430";
+	}
+	else
+	{
+		SPIRV_CROSS_THROW("Buffer block cannot be expressed as any of std430, std140, scalar, even with enhanced "
+		                  "layouts. You can try flattening this block to support a more flexible layout.");
+	}
+}
+
 void CompilerGLSL::emit_push_constant_block(const SPIRVariable &var)
 {
 	if (flattened_buffer_blocks.count(var.self))
 		emit_buffer_block_flattened(var);
 	else if (options.vulkan_semantics)
 		emit_push_constant_block_vulkan(var);
+	else if (options.emit_push_constant_as_uniform_buffer)
+		emit_buffer_block_native(var);
 	else
 		emit_push_constant_block_glsl(var);
 }
@@ -1498,9 +1743,13 @@ void CompilerGLSL::emit_push_constant_block_glsl(const SPIRVariable &var)
 
 void CompilerGLSL::emit_buffer_block(const SPIRVariable &var)
 {
+	auto &type = get<SPIRType>(var.basetype);
+	bool ubo_block = var.storage == StorageClassUniform && has_decoration(type.self, DecorationBlock);
+
 	if (flattened_buffer_blocks.count(var.self))
 		emit_buffer_block_flattened(var);
-	else if (is_legacy() || (!options.es && options.version == 130))
+	else if (is_legacy() || (!options.es && options.version == 130) ||
+	         (ubo_block && options.emit_uniform_buffer_as_plain_uniforms))
 		emit_buffer_block_legacy(var);
 	else
 		emit_buffer_block_native(var);
@@ -1526,12 +1775,87 @@ void CompilerGLSL::emit_buffer_block_legacy(const SPIRVariable &var)
 	statement("");
 }
 
+void CompilerGLSL::emit_buffer_reference_block(SPIRType &type, bool forward_declaration)
+{
+	string buffer_name;
+
+	if (forward_declaration)
+	{
+		// Block names should never alias, but from HLSL input they kind of can because block types are reused for UAVs ...
+		// Allow aliased name since we might be declaring the block twice. Once with buffer reference (forward declared) and one proper declaration.
+		// The names must match up.
+		buffer_name = to_name(type.self, false);
+
+		// Shaders never use the block by interface name, so we don't
+		// have to track this other than updating name caches.
+		// If we have a collision for any reason, just fallback immediately.
+		if (ir.meta[type.self].decoration.alias.empty() ||
+		    block_ssbo_names.find(buffer_name) != end(block_ssbo_names) ||
+		    resource_names.find(buffer_name) != end(resource_names))
+		{
+			buffer_name = join("_", type.self);
+		}
+
+		// Make sure we get something unique for both global name scope and block name scope.
+		// See GLSL 4.5 spec: section 4.3.9 for details.
+		add_variable(block_ssbo_names, resource_names, buffer_name);
+
+		// If for some reason buffer_name is an illegal name, make a final fallback to a workaround name.
+		// This cannot conflict with anything else, so we're safe now.
+		// We cannot reuse this fallback name in neither global scope (blocked by block_names) nor block name scope.
+		if (buffer_name.empty())
+			buffer_name = join("_", type.self);
+
+		block_names.insert(buffer_name);
+		block_ssbo_names.insert(buffer_name);
+	}
+	else if (type.basetype != SPIRType::Struct)
+		buffer_name = type_to_glsl(type);
+	else
+		buffer_name = to_name(type.self, false);
+
+	if (!forward_declaration)
+	{
+		if (type.basetype == SPIRType::Struct)
+			statement("layout(buffer_reference, ", buffer_to_packing_standard(type, true), ") buffer ", buffer_name);
+		else
+			statement("layout(buffer_reference) buffer ", buffer_name);
+
+		begin_scope();
+
+		if (type.basetype == SPIRType::Struct)
+		{
+			type.member_name_cache.clear();
+
+			uint32_t i = 0;
+			for (auto &member : type.member_types)
+			{
+				add_member_name(type, i);
+				emit_struct_member(type, member, i);
+				i++;
+			}
+		}
+		else
+		{
+			auto &pointee_type = get_pointee_type(type);
+			statement(type_to_glsl(pointee_type), " value", type_to_array_glsl(pointee_type), ";");
+		}
+
+		end_scope_decl();
+		statement("");
+	}
+	else
+	{
+		statement("layout(buffer_reference) buffer ", buffer_name, ";");
+	}
+}
+
 void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
 
 	Bitset flags = ir.get_buffer_block_flags(var);
-	bool ssbo = var.storage == StorageClassStorageBuffer ||
+	bool ssbo = var.storage == StorageClassStorageBuffer || var.storage == StorageClassShaderRecordBufferNV ||
 	            ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
 	bool is_restrict = ssbo && flags.get(DecorationRestrict);
 	bool is_writeonly = ssbo && flags.get(DecorationNonReadable);
@@ -1611,7 +1935,7 @@ void CompilerGLSL::emit_buffer_block_flattened(const SPIRVariable &var)
 			SPIRV_CROSS_THROW("Basic types in a flattened UBO must be float, int or uint.");
 
 		auto flags = ir.get_buffer_block_flags(var);
-		statement("uniform ", flags_to_precision_qualifiers_glsl(tmp, flags), type_to_glsl(tmp), " ", buffer_name, "[",
+		statement("uniform ", flags_to_qualifiers_glsl(tmp, flags), type_to_glsl(tmp), " ", buffer_name, "[",
 		          buffer_size, "];");
 	}
 	else
@@ -1635,6 +1959,26 @@ const char *CompilerGLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 	         var.storage == StorageClassPushConstant)
 	{
 		return "uniform ";
+	}
+	else if (var.storage == StorageClassRayPayloadNV)
+	{
+		return "rayPayloadNV ";
+	}
+	else if (var.storage == StorageClassIncomingRayPayloadNV)
+	{
+		return "rayPayloadInNV ";
+	}
+	else if (var.storage == StorageClassHitAttributeNV)
+	{
+		return "hitAttributeNV ";
+	}
+	else if (var.storage == StorageClassCallableDataNV)
+	{
+		return "callableDataNV ";
+	}
+	else if (var.storage == StorageClassIncomingCallableDataNV)
+	{
+		return "callableDataInNV ";
 	}
 
 	return "";
@@ -1807,7 +2151,7 @@ void CompilerGLSL::emit_constant(const SPIRConstant &constant)
 	auto name = to_name(constant.self);
 
 	SpecializationConstant wg_x, wg_y, wg_z;
-	uint32_t workgroup_size_id = get_work_group_size_specialization_constants(wg_x, wg_y, wg_z);
+	ID workgroup_size_id = get_work_group_size_specialization_constants(wg_x, wg_y, wg_z);
 
 	// This specialization constant is implicitly declared by emitting layout() in;
 	if (constant.self == workgroup_size_id)
@@ -1816,7 +2160,8 @@ void CompilerGLSL::emit_constant(const SPIRConstant &constant)
 	// These specialization constants are implicitly declared by emitting layout() in;
 	// In legacy GLSL, we will still need to emit macros for these, so a layout() in; declaration
 	// later can use macro overrides for work group size.
-	bool is_workgroup_size_constant = constant.self == wg_x.id || constant.self == wg_y.id || constant.self == wg_z.id;
+	bool is_workgroup_size_constant = ConstantID(constant.self) == wg_x.id || ConstantID(constant.self) == wg_y.id ||
+	                                  ConstantID(constant.self) == wg_z.id;
 
 	if (options.vulkan_semantics && is_workgroup_size_constant)
 	{
@@ -2166,7 +2511,7 @@ void CompilerGLSL::declare_undefined_values()
 
 bool CompilerGLSL::variable_is_lut(const SPIRVariable &var) const
 {
-	bool statically_assigned = var.statically_assigned && var.static_expression != 0 && var.remapped_variable;
+	bool statically_assigned = var.statically_assigned && var.static_expression != ID(0) && var.remapped_variable;
 
 	if (statically_assigned)
 	{
@@ -2238,44 +2583,47 @@ void CompilerGLSL::emit_resources()
 	// emit specialization constants as actual floats,
 	// spec op expressions will redirect to the constant name.
 	//
-	for (auto &id_ : ir.ids_for_constant_or_type)
 	{
-		auto &id = ir.ids[id_];
-
-		if (id.get_type() == TypeConstant)
+		auto loop_lock = ir.create_loop_hard_lock();
+		for (auto &id_ : ir.ids_for_constant_or_type)
 		{
-			auto &c = id.get<SPIRConstant>();
+			auto &id = ir.ids[id_];
 
-			bool needs_declaration = c.specialization || c.is_used_as_lut;
-
-			if (needs_declaration)
+			if (id.get_type() == TypeConstant)
 			{
-				if (!options.vulkan_semantics && c.specialization)
+				auto &c = id.get<SPIRConstant>();
+
+				bool needs_declaration = c.specialization || c.is_used_as_lut;
+
+				if (needs_declaration)
 				{
-					c.specialization_constant_macro_name =
-					    constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
+					if (!options.vulkan_semantics && c.specialization)
+					{
+						c.specialization_constant_macro_name =
+						    constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
+					}
+					emit_constant(c);
+					emitted = true;
 				}
-				emit_constant(c);
+			}
+			else if (id.get_type() == TypeConstantOp)
+			{
+				emit_specialization_constant_op(id.get<SPIRConstantOp>());
 				emitted = true;
 			}
-		}
-		else if (id.get_type() == TypeConstantOp)
-		{
-			emit_specialization_constant_op(id.get<SPIRConstantOp>());
-			emitted = true;
-		}
-		else if (id.get_type() == TypeType)
-		{
-			auto &type = id.get<SPIRType>();
-			if (type.basetype == SPIRType::Struct && type.array.empty() && !type.pointer &&
-			    (!ir.meta[type.self].decoration.decoration_flags.get(DecorationBlock) &&
-			     !ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock)))
+			else if (id.get_type() == TypeType)
 			{
-				if (emitted)
-					statement("");
-				emitted = false;
+				auto &type = id.get<SPIRType>();
+				if (type.basetype == SPIRType::Struct && type.array.empty() && !type.pointer &&
+				    (!ir.meta[type.self].decoration.decoration_flags.get(DecorationBlock) &&
+				     !ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock)))
+				{
+					if (emitted)
+						statement("");
+					emitted = false;
 
-				emit_struct(type);
+					emit_struct(type);
+				}
 			}
 		}
 	}
@@ -2292,9 +2640,9 @@ void CompilerGLSL::emit_resources()
 		SpecializationConstant wg_x, wg_y, wg_z;
 		get_work_group_size_specialization_constants(wg_x, wg_y, wg_z);
 
-		if ((wg_x.id != 0) || (wg_y.id != 0) || (wg_z.id != 0))
+		if ((wg_x.id != ConstantID(0)) || (wg_y.id != ConstantID(0)) || (wg_z.id != ConstantID(0)))
 		{
-			vector<string> inputs;
+			SmallVector<string> inputs;
 			build_workgroup_size(inputs, wg_x, wg_y, wg_z);
 			statement("layout(", merge(inputs), ") in;");
 			statement("");
@@ -2303,11 +2651,42 @@ void CompilerGLSL::emit_resources()
 
 	emitted = false;
 
+	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64EXT)
+	{
+		for (auto type : physical_storage_non_block_pointer_types)
+		{
+			emit_buffer_reference_block(get<SPIRType>(type), false);
+		}
+
+		// Output buffer reference blocks.
+		// Do this in two stages, one with forward declaration,
+		// and one without. Buffer reference blocks can reference themselves
+		// to support things like linked lists.
+		ir.for_each_typed_id<SPIRType>([&](uint32_t, SPIRType &type) {
+			bool has_block_flags = has_decoration(type.self, DecorationBlock);
+			if (has_block_flags && type.pointer && type.pointer_depth == 1 && !type_is_array_of_pointers(type) &&
+			    type.storage == StorageClassPhysicalStorageBufferEXT)
+			{
+				emit_buffer_reference_block(type, true);
+			}
+		});
+
+		ir.for_each_typed_id<SPIRType>([&](uint32_t, SPIRType &type) {
+			bool has_block_flags = has_decoration(type.self, DecorationBlock);
+			if (has_block_flags && type.pointer && type.pointer_depth == 1 && !type_is_array_of_pointers(type) &&
+			    type.storage == StorageClassPhysicalStorageBufferEXT)
+			{
+				emit_buffer_reference_block(type, false);
+			}
+		});
+	}
+
 	// Output UBOs and SSBOs
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 
-		bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform;
+		bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform ||
+		                        type.storage == StorageClassShaderRecordBufferNV;
 		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(DecorationBlock) ||
 		                       ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
 
@@ -2346,7 +2725,10 @@ void CompilerGLSL::emit_resources()
 		}
 
 		if (var.storage != StorageClassFunction && type.pointer &&
-		    (type.storage == StorageClassUniformConstant || type.storage == StorageClassAtomicCounter) &&
+		    (type.storage == StorageClassUniformConstant || type.storage == StorageClassAtomicCounter ||
+		     type.storage == StorageClassRayPayloadNV || type.storage == StorageClassIncomingRayPayloadNV ||
+		     type.storage == StorageClassCallableDataNV || type.storage == StorageClassIncomingCallableDataNV ||
+		     type.storage == StorageClassHitAttributeNV) &&
 		    !is_hidden_variable(var))
 		{
 			emit_uniform(var);
@@ -2406,7 +2788,7 @@ void CompilerGLSL::emit_resources()
 // Returns a string representation of the ID, usable as a function arg.
 // Default is to simply return the expression representation fo the arg ID.
 // Subclasses may override to modify the return value.
-string CompilerGLSL::to_func_call_arg(uint32_t id)
+string CompilerGLSL::to_func_call_arg(const SPIRFunction::Parameter &, uint32_t id)
 {
 	// Make sure that we use the name of the original variable, and not the parameter alias.
 	uint32_t name_id = id;
@@ -2421,14 +2803,14 @@ void CompilerGLSL::handle_invalid_expression(uint32_t id)
 	// We tried to read an invalidated expression.
 	// This means we need another pass at compilation, but next time, force temporary variables so that they cannot be invalidated.
 	forced_temporaries.insert(id);
-	force_recompile = true;
+	force_recompile();
 }
 
 // Converts the format of the current expression from packed to unpacked,
 // by wrapping the expression in a constructor of the appropriate type.
 // GLSL does not support packed formats, so simply return the expression.
-// Subclasses that do will override
-string CompilerGLSL::unpack_expression_type(string expr_str, const SPIRType &, uint32_t)
+// Subclasses that do will override.
+string CompilerGLSL::unpack_expression_type(string expr_str, const SPIRType &, uint32_t, bool, bool)
 {
 	return expr_str;
 }
@@ -2502,26 +2884,42 @@ string CompilerGLSL::enclose_expression(const string &expr)
 		return expr;
 }
 
-string CompilerGLSL::dereference_expression(const std::string &expr)
+string CompilerGLSL::dereference_expression(const SPIRType &expr_type, const std::string &expr)
 {
 	// If this expression starts with an address-of operator ('&'), then
 	// just return the part after the operator.
 	// TODO: Strip parens if unnecessary?
 	if (expr.front() == '&')
 		return expr.substr(1);
-	else
+	else if (backend.native_pointers)
 		return join('*', expr);
+	else if (expr_type.storage == StorageClassPhysicalStorageBufferEXT && expr_type.basetype != SPIRType::Struct &&
+	         expr_type.pointer_depth == 1)
+	{
+		return join(enclose_expression(expr), ".value");
+	}
+	else
+		return expr;
 }
 
 string CompilerGLSL::address_of_expression(const std::string &expr)
 {
-	// If this expression starts with a dereference operator ('*'), then
-	// just return the part after the operator.
-	// TODO: Strip parens if unnecessary?
-	if (expr.front() == '*')
+	if (expr.size() > 3 && expr[0] == '(' && expr[1] == '*' && expr.back() == ')')
+	{
+		// If we have an expression which looks like (*foo), taking the address of it is the same as stripping
+		// the first two and last characters. We might have to enclose the expression.
+		// This doesn't work for cases like (*foo + 10),
+		// but this is an r-value expression which we cannot take the address of anyways.
+		return enclose_expression(expr.substr(2, expr.size() - 3));
+	}
+	else if (expr.front() == '*')
+	{
+		// If this expression starts with a dereference operator ('*'), then
+		// just return the part after the operator.
 		return expr.substr(1);
+	}
 	else
-		return join('&', expr);
+		return join('&', enclose_expression(expr));
 }
 
 // Just like to_expression except that we enclose the expression inside parentheses if needed.
@@ -2530,14 +2928,30 @@ string CompilerGLSL::to_enclosed_expression(uint32_t id, bool register_expressio
 	return enclose_expression(to_expression(id, register_expression_read));
 }
 
+// Used explicitly when we want to read a row-major expression, but without any transpose shenanigans.
+// need_transpose must be forced to false.
+string CompilerGLSL::to_unpacked_row_major_matrix_expression(uint32_t id)
+{
+	return unpack_expression_type(to_expression(id), expression_type(id),
+	                              get_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID),
+	                              has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked), true);
+}
+
 string CompilerGLSL::to_unpacked_expression(uint32_t id, bool register_expression_read)
 {
 	// If we need to transpose, it will also take care of unpacking rules.
 	auto *e = maybe_get<SPIRExpression>(id);
 	bool need_transpose = e && e->need_transpose;
-	if (!need_transpose && has_extended_decoration(id, SPIRVCrossDecorationPacked))
-		return unpack_expression_type(to_expression(id, register_expression_read), expression_type(id),
-		                              get_extended_decoration(id, SPIRVCrossDecorationPackedType));
+	bool is_remapped = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID);
+	bool is_packed = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+
+	if (!need_transpose && (is_remapped || is_packed))
+	{
+		return unpack_expression_type(to_expression(id, register_expression_read),
+		                              get_pointee_type(expression_type_id(id)),
+		                              get_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID),
+		                              has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked), false);
+	}
 	else
 		return to_expression(id, register_expression_read);
 }
@@ -2547,9 +2961,14 @@ string CompilerGLSL::to_enclosed_unpacked_expression(uint32_t id, bool register_
 	// If we need to transpose, it will also take care of unpacking rules.
 	auto *e = maybe_get<SPIRExpression>(id);
 	bool need_transpose = e && e->need_transpose;
-	if (!need_transpose && has_extended_decoration(id, SPIRVCrossDecorationPacked))
+	bool is_remapped = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID);
+	bool is_packed = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+	if (!need_transpose && (is_remapped || is_packed))
+	{
 		return unpack_expression_type(to_expression(id, register_expression_read), expression_type(id),
-		                              get_extended_decoration(id, SPIRVCrossDecorationPackedType));
+		                              get_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID),
+		                              has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked), false);
+	}
 	else
 		return to_enclosed_expression(id, register_expression_read);
 }
@@ -2558,7 +2977,7 @@ string CompilerGLSL::to_dereferenced_expression(uint32_t id, bool register_expre
 {
 	auto &type = expression_type(id);
 	if (type.pointer && should_dereference(id))
-		return dereference_expression(to_enclosed_expression(id, register_expression_read));
+		return dereference_expression(type, to_enclosed_expression(id, register_expression_read));
 	else
 		return to_expression(id, register_expression_read);
 }
@@ -2584,10 +3003,53 @@ string CompilerGLSL::to_enclosed_pointer_expression(uint32_t id, bool register_e
 string CompilerGLSL::to_extract_component_expression(uint32_t id, uint32_t index)
 {
 	auto expr = to_enclosed_expression(id);
-	if (has_extended_decoration(id, SPIRVCrossDecorationPacked))
+	if (has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked))
 		return join(expr, "[", index, "]");
 	else
 		return join(expr, ".", index_to_swizzle(index));
+}
+
+string CompilerGLSL::to_rerolled_array_expression(const string &base_expr, const SPIRType &type)
+{
+	uint32_t size = to_array_size_literal(type);
+	auto &parent = get<SPIRType>(type.parent_type);
+	string expr = "{ ";
+
+	for (uint32_t i = 0; i < size; i++)
+	{
+		auto subexpr = join(base_expr, "[", convert_to_string(i), "]");
+		if (parent.array.empty())
+			expr += subexpr;
+		else
+			expr += to_rerolled_array_expression(subexpr, parent);
+
+		if (i + 1 < size)
+			expr += ", ";
+	}
+
+	expr += " }";
+	return expr;
+}
+
+string CompilerGLSL::to_composite_constructor_expression(uint32_t id)
+{
+	auto &type = expression_type(id);
+	if (!backend.array_is_value_type && !type.array.empty())
+	{
+		// For this case, we need to "re-roll" an array initializer from a temporary.
+		// We cannot simply pass the array directly, since it decays to a pointer and it cannot
+		// participate in a struct initializer. E.g.
+		// float arr[2] = { 1.0, 2.0 };
+		// Foo foo = { arr }; must be transformed to
+		// Foo foo = { { arr[0], arr[1] } };
+		// The array sizes cannot be deduced from specialization constants since we cannot use any loops.
+
+		// We're only triggering one read of the array expression, but this is fine since arrays have to be declared
+		// as temporaries anyways.
+		return to_rerolled_array_expression(to_enclosed_expression(id), type);
+	}
+	else
+		return to_unpacked_expression(id);
 }
 
 string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
@@ -2627,12 +3089,16 @@ string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
 			return to_enclosed_expression(e.base_expression) + e.expression;
 		else if (e.need_transpose)
 		{
-			bool is_packed = has_extended_decoration(id, SPIRVCrossDecorationPacked);
-			return convert_row_major_matrix(e.expression, get<SPIRType>(e.expression_type), is_packed);
+			// This should not be reached for access chains, since we always deal explicitly with transpose state
+			// when consuming an access chain expression.
+			uint32_t physical_type_id = get_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID);
+			bool is_packed = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+			return convert_row_major_matrix(e.expression, get<SPIRType>(e.expression_type), physical_type_id,
+			                                is_packed);
 		}
 		else
 		{
-			if (force_recompile)
+			if (is_forcing_recompilation())
 			{
 				// During first compilation phase, certain expression patterns can trigger exponential growth of memory.
 				// Avoid this by returning dummy expressions during this phase.
@@ -2836,7 +3302,7 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 	}
 
 	uint32_t bit_width = 0;
-	if (unary || binary)
+	if (unary || binary || cop.opcode == OpSConvert || cop.opcode == OpUConvert)
 		bit_width = expression_type(cop.arguments[0]).width;
 
 	SPIRType::BaseType input_type;
@@ -2856,6 +3322,8 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 	case OpSMod:
 	case OpSDiv:
 	case OpShiftRightArithmetic:
+	case OpSConvert:
+	case OpSNegate:
 		input_type = to_signed_basetype(bit_width);
 		break;
 
@@ -2866,6 +3334,7 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 	case OpUMod:
 	case OpUDiv:
 	case OpShiftRightLogical:
+	case OpUConvert:
 		input_type = to_unsigned_basetype(bit_width);
 		break;
 
@@ -2907,6 +3376,21 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 		// Works around various casting scenarios in glslang as there is no OpBitcast for specialization constants.
 		return join("(", op, bitcast_glsl(type, cop.arguments[0]), ")");
 	}
+	else if (cop.opcode == OpSConvert || cop.opcode == OpUConvert)
+	{
+		if (cop.arguments.size() < 1)
+			SPIRV_CROSS_THROW("Not enough arguments to OpSpecConstantOp.");
+
+		auto &arg_type = expression_type(cop.arguments[0]);
+		if (arg_type.width < type.width && input_type != arg_type.basetype)
+		{
+			auto expected = arg_type;
+			expected.basetype = input_type;
+			return join(op, "(", bitcast_glsl(expected, cop.arguments[0]), ")");
+		}
+		else
+			return join(op, "(", to_expression(cop.arguments[0]), ")");
+	}
 	else
 	{
 		if (cop.arguments.size() < 1)
@@ -2927,10 +3411,18 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c)
 	{
 		// Handles Arrays and structures.
 		string res;
+
+		// Allow Metal to use the array<T> template to make arrays a value type
+		bool needs_trailing_tracket = false;
 		if (backend.use_initializer_list && backend.use_typed_initializer_list && type.basetype == SPIRType::Struct &&
 		    type.array.empty())
 		{
 			res = type_to_glsl_constructor(type) + "{ ";
+		}
+		else if (backend.use_initializer_list && backend.use_typed_initializer_list && !type.array.empty())
+		{
+			res = type_to_glsl_constructor(type) + "({ ";
+			needs_trailing_tracket = true;
 		}
 		else if (backend.use_initializer_list)
 		{
@@ -2954,7 +3446,22 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c)
 		}
 
 		res += backend.use_initializer_list ? " }" : ")";
+		if (needs_trailing_tracket)
+			res += ")";
+
 		return res;
+	}
+	else if (type.basetype == SPIRType::Struct && type.member_types.size() == 0)
+	{
+		// Metal tessellation likes empty structs which are then constant expressions.
+		if (backend.supports_empty_struct)
+			return "{ }";
+		else if (backend.use_typed_initializer_list)
+			return join(type_to_glsl(get<SPIRType>(c.constant_type)), "{ 0 }");
+		else if (backend.use_initializer_list)
+			return "{ 0 }";
+		else
+			return join(type_to_glsl(get<SPIRType>(c.constant_type)), "(0)");
 	}
 	else if (c.columns() == 1)
 	{
@@ -3410,15 +3917,6 @@ string CompilerGLSL::constant_expression_vector(const SPIRConstant &c, uint32_t 
 		if (splat)
 		{
 			res += convert_to_string(c.scalar(vector, 0));
-			if (is_legacy())
-			{
-				// Fake unsigned constant literals with signed ones if possible.
-				// Things like array sizes, etc, tend to be unsigned even though they could just as easily be signed.
-				if (c.scalar_i16(vector, 0) < 0)
-					SPIRV_CROSS_THROW("Tried to convert uint literal into int, but this made the literal negative.");
-			}
-			else if (backend.uint16_t_literal_suffix)
-				res += backend.uint16_t_literal_suffix;
 		}
 		else
 		{
@@ -3428,17 +3926,19 @@ string CompilerGLSL::constant_expression_vector(const SPIRConstant &c, uint32_t 
 					res += to_name(c.specialization_constant_id(vector, i));
 				else
 				{
-					res += convert_to_string(c.scalar(vector, i));
-					if (is_legacy())
+					if (*backend.uint16_t_literal_suffix)
 					{
-						// Fake unsigned constant literals with signed ones if possible.
-						// Things like array sizes, etc, tend to be unsigned even though they could just as easily be signed.
-						if (c.scalar_i16(vector, i) < 0)
-							SPIRV_CROSS_THROW(
-							    "Tried to convert uint literal into int, but this made the literal negative.");
-					}
-					else if (backend.uint16_t_literal_suffix)
+						res += convert_to_string(c.scalar_u16(vector, i));
 						res += backend.uint16_t_literal_suffix;
+					}
+					else
+					{
+						// If backend doesn't have a literal suffix, we need to value cast.
+						res += type_to_glsl(scalar_type);
+						res += "(";
+						res += convert_to_string(c.scalar_u16(vector, i));
+						res += ")";
+					}
 				}
 
 				if (i + 1 < c.vector_size())
@@ -3451,8 +3951,6 @@ string CompilerGLSL::constant_expression_vector(const SPIRConstant &c, uint32_t 
 		if (splat)
 		{
 			res += convert_to_string(c.scalar_i16(vector, 0));
-			if (backend.int16_t_literal_suffix)
-				res += backend.int16_t_literal_suffix;
 		}
 		else
 		{
@@ -3462,10 +3960,21 @@ string CompilerGLSL::constant_expression_vector(const SPIRConstant &c, uint32_t 
 					res += to_name(c.specialization_constant_id(vector, i));
 				else
 				{
-					res += convert_to_string(c.scalar_i16(vector, i));
-					if (backend.int16_t_literal_suffix)
+					if (*backend.int16_t_literal_suffix)
+					{
+						res += convert_to_string(c.scalar_i16(vector, i));
 						res += backend.int16_t_literal_suffix;
+					}
+					else
+					{
+						// If backend doesn't have a literal suffix, we need to value cast.
+						res += type_to_glsl(scalar_type);
+						res += "(";
+						res += convert_to_string(c.scalar_i16(vector, i));
+						res += ")";
+					}
 				}
+
 				if (i + 1 < c.vector_size())
 					res += ", ";
 			}
@@ -3550,6 +4059,41 @@ string CompilerGLSL::constant_expression_vector(const SPIRConstant &c, uint32_t 
 	return res;
 }
 
+SPIRExpression &CompilerGLSL::emit_uninitialized_temporary_expression(uint32_t type, uint32_t id)
+{
+	forced_temporaries.insert(id);
+	emit_uninitialized_temporary(type, id);
+	return set<SPIRExpression>(id, to_name(id), type, true);
+}
+
+void CompilerGLSL::emit_uninitialized_temporary(uint32_t result_type, uint32_t result_id)
+{
+	// If we're declaring temporaries inside continue blocks,
+	// we must declare the temporary in the loop header so that the continue block can avoid declaring new variables.
+	if (current_continue_block && !hoisted_temporaries.count(result_id))
+	{
+		auto &header = get<SPIRBlock>(current_continue_block->loop_dominator);
+		if (find_if(begin(header.declare_temporary), end(header.declare_temporary),
+		            [result_type, result_id](const pair<uint32_t, uint32_t> &tmp) {
+			            return tmp.first == result_type && tmp.second == result_id;
+		            }) == end(header.declare_temporary))
+		{
+			header.declare_temporary.emplace_back(result_type, result_id);
+			hoisted_temporaries.insert(result_id);
+			force_recompile();
+		}
+	}
+	else if (hoisted_temporaries.count(result_id) == 0)
+	{
+		auto &type = get<SPIRType>(result_type);
+		auto &flags = ir.meta[result_id].decoration.decoration_flags;
+
+		// The result_id has not been made into an expression yet, so use flags interface.
+		add_local_variable_name(result_id);
+		statement(flags_to_qualifiers_glsl(type, flags), variable_decl(type, to_name(result_id)), ";");
+	}
+}
+
 string CompilerGLSL::declare_temporary(uint32_t result_type, uint32_t result_id)
 {
 	auto &type = get<SPIRType>(result_type);
@@ -3567,7 +4111,7 @@ string CompilerGLSL::declare_temporary(uint32_t result_type, uint32_t result_id)
 		{
 			header.declare_temporary.emplace_back(result_type, result_id);
 			hoisted_temporaries.insert(result_id);
-			force_recompile = true;
+			force_recompile();
 		}
 
 		return join(to_name(result_id), " = ");
@@ -3581,13 +4125,18 @@ string CompilerGLSL::declare_temporary(uint32_t result_type, uint32_t result_id)
 	{
 		// The result_id has not been made into an expression yet, so use flags interface.
 		add_local_variable_name(result_id);
-		return join(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(result_id)), " = ");
+		return join(flags_to_qualifiers_glsl(type, flags), variable_decl(type, to_name(result_id)), " = ");
 	}
 }
 
-bool CompilerGLSL::expression_is_forwarded(uint32_t id)
+bool CompilerGLSL::expression_is_forwarded(uint32_t id) const
 {
-	return forwarded_temporaries.find(id) != end(forwarded_temporaries);
+	return forwarded_temporaries.count(id) != 0;
+}
+
+bool CompilerGLSL::expression_suppresses_usage_tracking(uint32_t id) const
+{
+	return suppressed_usage_tracking.count(id) != 0;
 }
 
 SPIRExpression &CompilerGLSL::emit_op(uint32_t result_type, uint32_t result_id, const string &rhs, bool forwarding,
@@ -3597,8 +4146,9 @@ SPIRExpression &CompilerGLSL::emit_op(uint32_t result_type, uint32_t result_id, 
 	{
 		// Just forward it without temporary.
 		// If the forward is trivial, we do not force flushing to temporary for this expression.
-		if (!suppress_usage_tracking)
-			forwarded_temporaries.insert(result_id);
+		forwarded_temporaries.insert(result_id);
+		if (suppress_usage_tracking)
+			suppressed_usage_tracking.insert(result_id);
 
 		return set<SPIRExpression>(result_id, rhs, result_type, true);
 	}
@@ -3649,8 +4199,18 @@ void CompilerGLSL::emit_unrolled_unary_op(uint32_t result_type, uint32_t result_
 }
 
 void CompilerGLSL::emit_unrolled_binary_op(uint32_t result_type, uint32_t result_id, uint32_t op0, uint32_t op1,
-                                           const char *op)
+                                           const char *op, bool negate, SPIRType::BaseType expected_type)
 {
+	auto &type0 = expression_type(op0);
+	auto &type1 = expression_type(op1);
+
+	SPIRType target_type0 = type0;
+	SPIRType target_type1 = type1;
+	target_type0.basetype = expected_type;
+	target_type1.basetype = expected_type;
+	target_type0.vecsize = 1;
+	target_type1.vecsize = 1;
+
 	auto &type = get<SPIRType>(result_type);
 	auto expr = type_to_glsl_constructor(type);
 	expr += '(';
@@ -3658,11 +4218,25 @@ void CompilerGLSL::emit_unrolled_binary_op(uint32_t result_type, uint32_t result
 	{
 		// Make sure to call to_expression multiple times to ensure
 		// that these expressions are properly flushed to temporaries if needed.
-		expr += to_extract_component_expression(op0, i);
+		if (negate)
+			expr += "!(";
+
+		if (expected_type != SPIRType::Unknown && type0.basetype != expected_type)
+			expr += bitcast_expression(target_type0, type0.basetype, to_extract_component_expression(op0, i));
+		else
+			expr += to_extract_component_expression(op0, i);
+
 		expr += ' ';
 		expr += op;
 		expr += ' ';
-		expr += to_extract_component_expression(op1, i);
+
+		if (expected_type != SPIRType::Unknown && type1.basetype != expected_type)
+			expr += bitcast_expression(target_type1, type1.basetype, to_extract_component_expression(op1, i));
+		else
+			expr += to_extract_component_expression(op1, i);
+
+		if (negate)
+			expr += ")";
 
 		if (i + 1 < type.vecsize)
 			expr += ", ";
@@ -3753,6 +4327,121 @@ void CompilerGLSL::emit_binary_func_op(uint32_t result_type, uint32_t result_id,
 	inherit_expression_dependencies(result_id, op1);
 }
 
+void CompilerGLSL::emit_unary_func_op_cast(uint32_t result_type, uint32_t result_id, uint32_t op0, const char *op,
+                                           SPIRType::BaseType input_type, SPIRType::BaseType expected_result_type)
+{
+	auto &out_type = get<SPIRType>(result_type);
+	auto &expr_type = expression_type(op0);
+	auto expected_type = out_type;
+
+	// Bit-widths might be different in unary cases because we use it for SConvert/UConvert and friends.
+	expected_type.basetype = input_type;
+	expected_type.width = expr_type.width;
+	string cast_op = expr_type.basetype != input_type ? bitcast_glsl(expected_type, op0) : to_unpacked_expression(op0);
+
+	string expr;
+	if (out_type.basetype != expected_result_type)
+	{
+		expected_type.basetype = expected_result_type;
+		expected_type.width = out_type.width;
+		expr = bitcast_glsl_op(out_type, expected_type);
+		expr += '(';
+		expr += join(op, "(", cast_op, ")");
+		expr += ')';
+	}
+	else
+	{
+		expr += join(op, "(", cast_op, ")");
+	}
+
+	emit_op(result_type, result_id, expr, should_forward(op0));
+	inherit_expression_dependencies(result_id, op0);
+}
+
+// Very special case. Handling bitfieldExtract requires us to deal with different bitcasts of different signs
+// and different vector sizes all at once. Need a special purpose method here.
+void CompilerGLSL::emit_trinary_func_op_bitextract(uint32_t result_type, uint32_t result_id, uint32_t op0, uint32_t op1,
+                                                   uint32_t op2, const char *op,
+                                                   SPIRType::BaseType expected_result_type,
+                                                   SPIRType::BaseType input_type0, SPIRType::BaseType input_type1,
+                                                   SPIRType::BaseType input_type2)
+{
+	auto &out_type = get<SPIRType>(result_type);
+	auto expected_type = out_type;
+	expected_type.basetype = input_type0;
+
+	string cast_op0 =
+	    expression_type(op0).basetype != input_type0 ? bitcast_glsl(expected_type, op0) : to_unpacked_expression(op0);
+
+	auto op1_expr = to_unpacked_expression(op1);
+	auto op2_expr = to_unpacked_expression(op2);
+
+	// Use value casts here instead. Input must be exactly int or uint, but SPIR-V might be 16-bit.
+	expected_type.basetype = input_type1;
+	expected_type.vecsize = 1;
+	string cast_op1 = expression_type(op1).basetype != input_type1 ?
+	                      join(type_to_glsl_constructor(expected_type), "(", op1_expr, ")") :
+	                      op1_expr;
+
+	expected_type.basetype = input_type2;
+	expected_type.vecsize = 1;
+	string cast_op2 = expression_type(op2).basetype != input_type2 ?
+	                      join(type_to_glsl_constructor(expected_type), "(", op2_expr, ")") :
+	                      op2_expr;
+
+	string expr;
+	if (out_type.basetype != expected_result_type)
+	{
+		expected_type.vecsize = out_type.vecsize;
+		expected_type.basetype = expected_result_type;
+		expr = bitcast_glsl_op(out_type, expected_type);
+		expr += '(';
+		expr += join(op, "(", cast_op0, ", ", cast_op1, ", ", cast_op2, ")");
+		expr += ')';
+	}
+	else
+	{
+		expr += join(op, "(", cast_op0, ", ", cast_op1, ", ", cast_op2, ")");
+	}
+
+	emit_op(result_type, result_id, expr, should_forward(op0) && should_forward(op1) && should_forward(op2));
+	inherit_expression_dependencies(result_id, op0);
+	inherit_expression_dependencies(result_id, op1);
+	inherit_expression_dependencies(result_id, op2);
+}
+
+void CompilerGLSL::emit_trinary_func_op_cast(uint32_t result_type, uint32_t result_id, uint32_t op0, uint32_t op1,
+                                             uint32_t op2, const char *op, SPIRType::BaseType input_type)
+{
+	auto &out_type = get<SPIRType>(result_type);
+	auto expected_type = out_type;
+	expected_type.basetype = input_type;
+	string cast_op0 =
+	    expression_type(op0).basetype != input_type ? bitcast_glsl(expected_type, op0) : to_unpacked_expression(op0);
+	string cast_op1 =
+	    expression_type(op1).basetype != input_type ? bitcast_glsl(expected_type, op1) : to_unpacked_expression(op1);
+	string cast_op2 =
+	    expression_type(op2).basetype != input_type ? bitcast_glsl(expected_type, op2) : to_unpacked_expression(op2);
+
+	string expr;
+	if (out_type.basetype != input_type)
+	{
+		expr = bitcast_glsl_op(out_type, expected_type);
+		expr += '(';
+		expr += join(op, "(", cast_op0, ", ", cast_op1, ", ", cast_op2, ")");
+		expr += ')';
+	}
+	else
+	{
+		expr += join(op, "(", cast_op0, ", ", cast_op1, ", ", cast_op2, ")");
+	}
+
+	emit_op(result_type, result_id, expr, should_forward(op0) && should_forward(op1) && should_forward(op2));
+	inherit_expression_dependencies(result_id, op0);
+	inherit_expression_dependencies(result_id, op1);
+	inherit_expression_dependencies(result_id, op2);
+}
+
 void CompilerGLSL::emit_binary_func_op_cast(uint32_t result_type, uint32_t result_id, uint32_t op0, uint32_t op1,
                                             const char *op, SPIRType::BaseType input_type, bool skip_cast_if_equal_type)
 {
@@ -3801,6 +4490,44 @@ void CompilerGLSL::emit_quaternary_func_op(uint32_t result_type, uint32_t result
 	emit_op(result_type, result_id,
 	        join(op, "(", to_unpacked_expression(op0), ", ", to_unpacked_expression(op1), ", ",
 	             to_unpacked_expression(op2), ", ", to_unpacked_expression(op3), ")"),
+	        forward);
+
+	inherit_expression_dependencies(result_id, op0);
+	inherit_expression_dependencies(result_id, op1);
+	inherit_expression_dependencies(result_id, op2);
+	inherit_expression_dependencies(result_id, op3);
+}
+
+void CompilerGLSL::emit_bitfield_insert_op(uint32_t result_type, uint32_t result_id, uint32_t op0, uint32_t op1,
+                                           uint32_t op2, uint32_t op3, const char *op,
+                                           SPIRType::BaseType offset_count_type)
+{
+	// Only need to cast offset/count arguments. Types of base/insert must be same as result type,
+	// and bitfieldInsert is sign invariant.
+	bool forward = should_forward(op0) && should_forward(op1) && should_forward(op2) && should_forward(op3);
+
+	auto op0_expr = to_unpacked_expression(op0);
+	auto op1_expr = to_unpacked_expression(op1);
+	auto op2_expr = to_unpacked_expression(op2);
+	auto op3_expr = to_unpacked_expression(op3);
+
+	SPIRType target_type;
+	target_type.vecsize = 1;
+	target_type.basetype = offset_count_type;
+
+	if (expression_type(op2).basetype != offset_count_type)
+	{
+		// Value-cast here. Input might be 16-bit. GLSL requires int.
+		op2_expr = join(type_to_glsl_constructor(target_type), "(", op2_expr, ")");
+	}
+
+	if (expression_type(op3).basetype != offset_count_type)
+	{
+		// Value-cast here. Input might be 16-bit. GLSL requires int.
+		op3_expr = join(type_to_glsl_constructor(target_type), "(", op3_expr, ")");
+	}
+
+	emit_op(result_type, result_id, join(op, "(", op0_expr, ", ", op1_expr, ", ", op2_expr, ", ", op3_expr, ")"),
 	        forward);
 
 	inherit_expression_dependencies(result_id, op0);
@@ -4040,7 +4767,7 @@ void CompilerGLSL::emit_mix_op(uint32_t result_type, uint32_t id, uint32_t left,
 	}
 
 	string mix_op;
-	bool has_boolean_mix = backend.boolean_mix_support &&
+	bool has_boolean_mix = *backend.boolean_mix_function &&
 	                       ((options.es && options.version >= 310) || (!options.es && options.version >= 450));
 	bool trivial_mix = to_trivial_mix_op(restype, mix_op, left, right, lerp);
 
@@ -4070,11 +4797,13 @@ void CompilerGLSL::emit_mix_op(uint32_t result_type, uint32_t id, uint32_t left,
 		inherit_expression_dependencies(id, right);
 		inherit_expression_dependencies(id, lerp);
 	}
+	else if (lerptype.basetype == SPIRType::Boolean)
+		emit_trinary_func_op(result_type, id, left, right, lerp, backend.boolean_mix_function);
 	else
 		emit_trinary_func_op(result_type, id, left, right, lerp, "mix");
 }
 
-string CompilerGLSL::to_combined_image_sampler(uint32_t image_id, uint32_t samp_id)
+string CompilerGLSL::to_combined_image_sampler(VariableID image_id, VariableID samp_id)
 {
 	// Keep track of the array indices we have used to load the image.
 	// We'll need to use the same array index into the combined image sampler array.
@@ -4096,18 +4825,18 @@ string CompilerGLSL::to_combined_image_sampler(uint32_t image_id, uint32_t samp_
 		samp_id = samp->self;
 
 	auto image_itr = find_if(begin(args), end(args),
-	                         [image_id](const SPIRFunction::Parameter &param) { return param.id == image_id; });
+	                         [image_id](const SPIRFunction::Parameter &param) { return image_id == param.id; });
 
 	auto sampler_itr = find_if(begin(args), end(args),
-	                           [samp_id](const SPIRFunction::Parameter &param) { return param.id == samp_id; });
+	                           [samp_id](const SPIRFunction::Parameter &param) { return samp_id == param.id; });
 
 	if (image_itr != end(args) || sampler_itr != end(args))
 	{
 		// If any parameter originates from a parameter, we will find it in our argument list.
 		bool global_image = image_itr == end(args);
 		bool global_sampler = sampler_itr == end(args);
-		uint32_t iid = global_image ? image_id : uint32_t(image_itr - begin(args));
-		uint32_t sid = global_sampler ? samp_id : uint32_t(sampler_itr - begin(args));
+		VariableID iid = global_image ? image_id : VariableID(uint32_t(image_itr - begin(args)));
+		VariableID sid = global_sampler ? samp_id : VariableID(uint32_t(sampler_itr - begin(args)));
 
 		auto &combined = current_function->combined_parameters;
 		auto itr = find_if(begin(combined), end(combined), [=](const SPIRFunction::CombinedImageSamplerParameter &p) {
@@ -4148,15 +4877,16 @@ void CompilerGLSL::emit_sampled_image_op(uint32_t result_type, uint32_t result_i
 	{
 		emit_binary_func_op(result_type, result_id, image_id, samp_id,
 		                    type_to_glsl(get<SPIRType>(result_type), result_id).c_str());
-
-		// Make sure to suppress usage tracking. It is illegal to create temporaries of opaque types.
-		forwarded_temporaries.erase(result_id);
 	}
 	else
 	{
 		// Make sure to suppress usage tracking. It is illegal to create temporaries of opaque types.
 		emit_op(result_type, result_id, to_combined_image_sampler(image_id, samp_id), true, true);
 	}
+
+	// Make sure to suppress usage tracking and any expression invalidation.
+	// It is illegal to create temporaries of opaque types.
+	forwarded_temporaries.erase(result_id);
 }
 
 static inline bool image_opcode_is_sample_no_dref(Op op)
@@ -4186,13 +4916,41 @@ void CompilerGLSL::emit_texture_op(const Instruction &i)
 {
 	auto *ops = stream(i);
 	auto op = static_cast<Op>(i.op);
+
+	SmallVector<uint32_t> inherited_expressions;
+
+	uint32_t result_type_id = ops[0];
+	uint32_t id = ops[1];
+
+	bool forward = false;
+	string expr = to_texture_op(i, &forward, inherited_expressions);
+	emit_op(result_type_id, id, expr, forward);
+	for (auto &inherit : inherited_expressions)
+		inherit_expression_dependencies(id, inherit);
+
+	switch (op)
+	{
+	case OpImageSampleDrefImplicitLod:
+	case OpImageSampleImplicitLod:
+	case OpImageSampleProjImplicitLod:
+	case OpImageSampleProjDrefImplicitLod:
+		register_control_dependent_expression(id);
+		break;
+
+	default:
+		break;
+	}
+}
+
+std::string CompilerGLSL::to_texture_op(const Instruction &i, bool *forward,
+                                        SmallVector<uint32_t> &inherited_expressions)
+{
+	auto *ops = stream(i);
+	auto op = static_cast<Op>(i.op);
 	uint32_t length = i.length;
 
-	vector<uint32_t> inherited_expressions;
-
-	uint32_t result_type = ops[0];
-	uint32_t id = ops[1];
-	uint32_t img = ops[2];
+	uint32_t result_type_id = ops[0];
+	VariableID img = ops[2];
 	uint32_t coord = ops[3];
 	uint32_t dref = 0;
 	uint32_t comp = 0;
@@ -4201,7 +4959,13 @@ void CompilerGLSL::emit_texture_op(const Instruction &i)
 	bool fetch = false;
 	const uint32_t *opt = nullptr;
 
+	auto &result_type = get<SPIRType>(result_type_id);
+
 	inherited_expressions.push_back(coord);
+
+	// Make sure non-uniform decoration is back-propagated to where it needs to be.
+	if (has_decoration(img, DecorationNonUniformEXT))
+		propagate_nonuniform_qualifier(img);
 
 	switch (op)
 	{
@@ -4297,6 +5061,7 @@ void CompilerGLSL::emit_texture_op(const Instruction &i)
 	uint32_t offset = 0;
 	uint32_t coffsets = 0;
 	uint32_t sample = 0;
+	uint32_t minlod = 0;
 	uint32_t flags = 0;
 
 	if (length)
@@ -4322,14 +5087,14 @@ void CompilerGLSL::emit_texture_op(const Instruction &i)
 	test(offset, ImageOperandsOffsetMask);
 	test(coffsets, ImageOperandsConstOffsetsMask);
 	test(sample, ImageOperandsSampleMask);
+	test(minlod, ImageOperandsMinLodMask);
 
 	string expr;
-	bool forward = false;
 	expr += to_function_name(img, imgtype, !!fetch, !!gather, !!proj, !!coffsets, (!!coffset || !!offset),
-	                         (!!grad_x || !!grad_y), !!dref, lod);
+	                         (!!grad_x || !!grad_y), !!dref, lod, minlod);
 	expr += "(";
 	expr += to_function_args(img, imgtype, fetch, gather, proj, coord, coord_components, dref, grad_x, grad_y, lod,
-	                         coffset, offset, bias, comp, sample, &forward);
+	                         coffset, offset, bias, comp, sample, minlod, forward);
 	expr += ")";
 
 	// texture(samplerXShadow) returns float. shadowX() returns vec4. Swizzle here.
@@ -4338,38 +5103,40 @@ void CompilerGLSL::emit_texture_op(const Instruction &i)
 
 	// Sampling from a texture which was deduced to be a depth image, might actually return 1 component here.
 	// Remap back to 4 components as sampling opcodes expect.
-	bool image_is_depth;
-	const auto *combined = maybe_get<SPIRCombinedImageSampler>(img);
-	if (combined)
-		image_is_depth = image_is_comparison(imgtype, combined->image);
-	else
-		image_is_depth = image_is_comparison(imgtype, img);
-
-	if (image_is_depth && backend.comparison_image_samples_scalar && image_opcode_is_sample_no_dref(op))
+	if (backend.comparison_image_samples_scalar && image_opcode_is_sample_no_dref(op))
 	{
-		expr = remap_swizzle(get<SPIRType>(result_type), 1, expr);
+		bool image_is_depth = false;
+		const auto *combined = maybe_get<SPIRCombinedImageSampler>(img);
+		VariableID image_id = combined ? combined->image : img;
+
+		if (combined && image_is_comparison(imgtype, combined->image))
+			image_is_depth = true;
+		else if (image_is_comparison(imgtype, img))
+			image_is_depth = true;
+
+		// We must also check the backing variable for the image.
+		// We might have loaded an OpImage, and used that handle for two different purposes.
+		// Once with comparison, once without.
+		auto *image_variable = maybe_get_backing_variable(image_id);
+		if (image_variable && image_is_comparison(get<SPIRType>(image_variable->basetype), image_variable->self))
+			image_is_depth = true;
+
+		if (image_is_depth)
+			expr = remap_swizzle(result_type, 1, expr);
+	}
+
+	if (!backend.support_small_type_sampling_result && result_type.width < 32)
+	{
+		// Just value cast (narrowing) to expected type since we cannot rely on narrowing to work automatically.
+		// Hopefully compiler picks this up and converts the texturing instruction to the appropriate precision.
+		expr = join(type_to_glsl_constructor(result_type), "(", expr, ")");
 	}
 
 	// Deals with reads from MSL. We might need to downconvert to fewer components.
 	if (op == OpImageRead)
-		expr = remap_swizzle(get<SPIRType>(result_type), 4, expr);
+		expr = remap_swizzle(result_type, 4, expr);
 
-	emit_op(result_type, id, expr, forward);
-	for (auto &inherit : inherited_expressions)
-		inherit_expression_dependencies(id, inherit);
-
-	switch (op)
-	{
-	case OpImageSampleDrefImplicitLod:
-	case OpImageSampleImplicitLod:
-	case OpImageSampleProjImplicitLod:
-	case OpImageSampleProjDrefImplicitLod:
-		register_control_dependent_expression(id);
-		break;
-
-	default:
-		break;
-	}
+	return expr;
 }
 
 bool CompilerGLSL::expression_is_constant_null(uint32_t id) const
@@ -4382,10 +5149,13 @@ bool CompilerGLSL::expression_is_constant_null(uint32_t id) const
 
 // Returns the function name for a texture sampling function for the specified image and sampling characteristics.
 // For some subclasses, the function is a method on the specified image.
-string CompilerGLSL::to_function_name(uint32_t tex, const SPIRType &imgtype, bool is_fetch, bool is_gather,
+string CompilerGLSL::to_function_name(VariableID tex, const SPIRType &imgtype, bool is_fetch, bool is_gather,
                                       bool is_proj, bool has_array_offsets, bool has_offset, bool has_grad, bool,
-                                      uint32_t lod)
+                                      uint32_t lod, uint32_t minlod)
 {
+	if (minlod != 0)
+		SPIRV_CROSS_THROW("Sparse texturing not yet supported.");
+
 	string fname;
 
 	// textureLod on sampler2DArrayShadow and samplerCubeShadow does not exist in GLSL for some reason.
@@ -4441,10 +5211,19 @@ std::string CompilerGLSL::convert_separate_image_to_expression(uint32_t id)
 		{
 			if (options.vulkan_semantics)
 			{
-				// Newer glslang supports this extension to deal with texture2D as argument to texture functions.
 				if (dummy_sampler_id)
-					SPIRV_CROSS_THROW("Vulkan GLSL should not have a dummy sampler for combining.");
-				require_extension_internal("GL_EXT_samplerless_texture_functions");
+				{
+					// Don't need to consider Shadow state since the dummy sampler is always non-shadow.
+					auto sampled_type = type;
+					sampled_type.basetype = SPIRType::SampledImage;
+					return join(type_to_glsl(sampled_type), "(", to_expression(id), ", ",
+					            to_expression(dummy_sampler_id), ")");
+				}
+				else
+				{
+					// Newer glslang supports this extension to deal with texture2D as argument to texture functions.
+					require_extension_internal("GL_EXT_samplerless_texture_functions");
+				}
 			}
 			else
 			{
@@ -4461,10 +5240,11 @@ std::string CompilerGLSL::convert_separate_image_to_expression(uint32_t id)
 }
 
 // Returns the function args for a texture sampling function for the specified image and sampling characteristics.
-string CompilerGLSL::to_function_args(uint32_t img, const SPIRType &imgtype, bool is_fetch, bool is_gather,
+string CompilerGLSL::to_function_args(VariableID img, const SPIRType &imgtype, bool is_fetch, bool is_gather,
                                       bool is_proj, uint32_t coord, uint32_t coord_components, uint32_t dref,
                                       uint32_t grad_x, uint32_t grad_y, uint32_t lod, uint32_t coffset, uint32_t offset,
-                                      uint32_t bias, uint32_t comp, uint32_t sample, bool *p_forward)
+                                      uint32_t bias, uint32_t comp, uint32_t sample, uint32_t /*minlod*/,
+                                      bool *p_forward)
 {
 	string farg_str;
 	if (is_fetch)
@@ -4502,6 +5282,7 @@ string CompilerGLSL::to_function_args(uint32_t img, const SPIRType &imgtype, boo
 	if (coord_type.basetype == SPIRType::UInt)
 	{
 		auto expected_type = coord_type;
+		expected_type.vecsize = coord_components;
 		expected_type.basetype = SPIRType::Int;
 		coord_expr = bitcast_expression(expected_type, coord_type.basetype, coord_expr);
 	}
@@ -4602,7 +5383,19 @@ string CompilerGLSL::to_function_args(uint32_t img, const SPIRType &imgtype, boo
 			{
 				forward = forward && should_forward(lod);
 				farg_str += ", ";
-				farg_str += to_expression(lod);
+
+				auto &lod_expr_type = expression_type(lod);
+
+				// Lod expression for TexelFetch in GLSL must be int, and only int.
+				if (is_fetch && imgtype.image.dim != DimBuffer && !imgtype.image.ms &&
+				    lod_expr_type.basetype != SPIRType::Int)
+				{
+					farg_str += join("int(", to_expression(lod), ")");
+				}
+				else
+				{
+					farg_str += to_expression(lod);
+				}
 			}
 		}
 	}
@@ -4650,12 +5443,17 @@ string CompilerGLSL::to_function_args(uint32_t img, const SPIRType &imgtype, boo
 	return farg_str;
 }
 
-void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, const uint32_t *args, uint32_t)
+void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, const uint32_t *args, uint32_t length)
 {
 	auto op = static_cast<GLSLstd450>(eop);
 
 	if (is_legacy() && is_unsigned_glsl_opcode(op))
 		SPIRV_CROSS_THROW("Unsigned integers are not supported on legacy GLSL targets.");
+
+	// If we need to do implicit bitcasts, make sure we do it with the correct type.
+	uint32_t integer_width = get_integer_width_for_glsl_instruction(op, args, length);
+	auto int_type = to_signed_basetype(integer_width);
+	auto uint_type = to_unsigned_basetype(integer_width);
 
 	switch (op)
 	{
@@ -4675,10 +5473,14 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		emit_unary_func_op(result_type, id, args[0], "trunc");
 		break;
 	case GLSLstd450SAbs:
+		emit_unary_func_op_cast(result_type, id, args[0], "abs", int_type, int_type);
+		break;
 	case GLSLstd450FAbs:
 		emit_unary_func_op(result_type, id, args[0], "abs");
 		break;
 	case GLSLstd450SSign:
+		emit_unary_func_op_cast(result_type, id, args[0], "sign", int_type, int_type);
+		break;
 	case GLSLstd450FSign:
 		emit_unary_func_op(result_type, id, args[0], "sign");
 		break;
@@ -4698,7 +5500,18 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		emit_unary_func_op(result_type, id, args[0], "degrees");
 		break;
 	case GLSLstd450Fma:
-		emit_trinary_func_op(result_type, id, args[0], args[1], args[2], "fma");
+		if ((!options.es && options.version < 400) || (options.es && options.version < 320))
+		{
+			auto expr = join(to_enclosed_expression(args[0]), " * ", to_enclosed_expression(args[1]), " + ",
+			                 to_enclosed_expression(args[2]));
+
+			emit_op(result_type, id, expr,
+			        should_forward(args[0]) && should_forward(args[1]) && should_forward(args[2]));
+			for (uint32_t i = 0; i < 3; i++)
+				inherit_expression_dependencies(id, args[i]);
+		}
+		else
+			emit_trinary_func_op(result_type, id, args[0], args[1], args[2], "fma");
 		break;
 	case GLSLstd450Modf:
 		register_call_out_argument(args[1]);
@@ -4708,12 +5521,8 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 
 	case GLSLstd450ModfStruct:
 	{
-		forced_temporaries.insert(id);
 		auto &type = get<SPIRType>(result_type);
-		auto &flags = ir.meta[id].decoration.decoration_flags;
-		statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(id)), ";");
-		set<SPIRExpression>(id, to_name(id), result_type, true);
-
+		emit_uninitialized_temporary_expression(result_type, id);
 		statement(to_expression(id), ".", to_member_name(type, 0), " = ", "modf(", to_expression(args[0]), ", ",
 		          to_expression(id), ".", to_member_name(type, 1), ");");
 		break;
@@ -4721,19 +5530,39 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 
 	// Minmax
 	case GLSLstd450UMin:
-	case GLSLstd450FMin:
+		emit_binary_func_op_cast(result_type, id, args[0], args[1], "min", uint_type, false);
+		break;
+
 	case GLSLstd450SMin:
+		emit_binary_func_op_cast(result_type, id, args[0], args[1], "min", int_type, false);
+		break;
+
+	case GLSLstd450FMin:
 		emit_binary_func_op(result_type, id, args[0], args[1], "min");
 		break;
+
 	case GLSLstd450FMax:
-	case GLSLstd450UMax:
-	case GLSLstd450SMax:
 		emit_binary_func_op(result_type, id, args[0], args[1], "max");
 		break;
+
+	case GLSLstd450UMax:
+		emit_binary_func_op_cast(result_type, id, args[0], args[1], "max", uint_type, false);
+		break;
+
+	case GLSLstd450SMax:
+		emit_binary_func_op_cast(result_type, id, args[0], args[1], "max", int_type, false);
+		break;
+
 	case GLSLstd450FClamp:
-	case GLSLstd450UClamp:
-	case GLSLstd450SClamp:
 		emit_trinary_func_op(result_type, id, args[0], args[1], args[2], "clamp");
+		break;
+
+	case GLSLstd450UClamp:
+		emit_trinary_func_op_cast(result_type, id, args[0], args[1], args[2], "clamp", uint_type);
+		break;
+
+	case GLSLstd450SClamp:
+		emit_trinary_func_op_cast(result_type, id, args[0], args[1], args[2], "clamp", int_type);
 		break;
 
 	// Trig
@@ -4831,20 +5660,36 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 
 	case GLSLstd450FrexpStruct:
 	{
-		forced_temporaries.insert(id);
 		auto &type = get<SPIRType>(result_type);
-		auto &flags = ir.meta[id].decoration.decoration_flags;
-		statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(id)), ";");
-		set<SPIRExpression>(id, to_name(id), result_type, true);
-
+		emit_uninitialized_temporary_expression(result_type, id);
 		statement(to_expression(id), ".", to_member_name(type, 0), " = ", "frexp(", to_expression(args[0]), ", ",
 		          to_expression(id), ".", to_member_name(type, 1), ");");
 		break;
 	}
 
 	case GLSLstd450Ldexp:
-		emit_binary_func_op(result_type, id, args[0], args[1], "ldexp");
+	{
+		bool forward = should_forward(args[0]) && should_forward(args[1]);
+
+		auto op0 = to_unpacked_expression(args[0]);
+		auto op1 = to_unpacked_expression(args[1]);
+		auto &op1_type = expression_type(args[1]);
+		if (op1_type.basetype != SPIRType::Int)
+		{
+			// Need a value cast here.
+			auto target_type = op1_type;
+			target_type.basetype = SPIRType::Int;
+			op1 = join(type_to_glsl_constructor(target_type), "(", op1, ")");
+		}
+
+		auto expr = join("ldexp(", op0, ", ", op1, ")");
+
+		emit_op(result_type, id, expr, forward);
+		inherit_expression_dependencies(id, args[0]);
+		inherit_expression_dependencies(id, args[1]);
 		break;
+	}
+
 	case GLSLstd450PackSnorm4x8:
 		emit_unary_func_op(result_type, id, args[0], "packSnorm4x8");
 		break;
@@ -4908,11 +5753,17 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 
 	// Bit-fiddling
 	case GLSLstd450FindILsb:
-		emit_unary_func_op(result_type, id, args[0], "findLSB");
+		// findLSB always returns int.
+		emit_unary_func_op_cast(result_type, id, args[0], "findLSB", expression_type(args[0]).basetype, int_type);
 		break;
+
 	case GLSLstd450FindSMsb:
+		emit_unary_func_op_cast(result_type, id, args[0], "findMSB", int_type, int_type);
+		break;
+
 	case GLSLstd450FindUMsb:
-		emit_unary_func_op(result_type, id, args[0], "findMSB");
+		emit_unary_func_op_cast(result_type, id, args[0], "findMSB", uint_type,
+		                        int_type); // findMSB always returns int.
 		break;
 
 	// Multisampled varying
@@ -4927,19 +5778,61 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		break;
 
 	case GLSLstd450NMin:
-		emit_binary_func_op(result_type, id, args[0], args[1], "unsupported_glsl450_nmin");
-		break;
 	case GLSLstd450NMax:
-		emit_binary_func_op(result_type, id, args[0], args[1], "unsupported_glsl450_nmax");
+	{
+		emit_nminmax_op(result_type, id, args[0], args[1], op);
 		break;
+	}
+
 	case GLSLstd450NClamp:
-		emit_binary_func_op(result_type, id, args[0], args[1], "unsupported_glsl450_nclamp");
+	{
+		// Make sure we have a unique ID here to avoid aliasing the extra sub-expressions between clamp and NMin sub-op.
+		// IDs cannot exceed 24 bits, so we can make use of the higher bits for some unique flags.
+		uint32_t &max_id = extra_sub_expressions[id | 0x80000000u];
+		if (!max_id)
+			max_id = ir.increase_bound_by(1);
+
+		// Inherit precision qualifiers.
+		ir.meta[max_id] = ir.meta[id];
+
+		emit_nminmax_op(result_type, max_id, args[0], args[1], GLSLstd450NMax);
+		emit_nminmax_op(result_type, id, max_id, args[2], GLSLstd450NMin);
 		break;
+	}
 
 	default:
 		statement("// unimplemented GLSL op ", eop);
 		break;
 	}
+}
+
+void CompilerGLSL::emit_nminmax_op(uint32_t result_type, uint32_t id, uint32_t op0, uint32_t op1, GLSLstd450 op)
+{
+	// Need to emulate this call.
+	uint32_t &ids = extra_sub_expressions[id];
+	if (!ids)
+	{
+		ids = ir.increase_bound_by(5);
+		auto btype = get<SPIRType>(result_type);
+		btype.basetype = SPIRType::Boolean;
+		set<SPIRType>(ids, btype);
+	}
+
+	uint32_t btype_id = ids + 0;
+	uint32_t left_nan_id = ids + 1;
+	uint32_t right_nan_id = ids + 2;
+	uint32_t tmp_id = ids + 3;
+	uint32_t mixed_first_id = ids + 4;
+
+	// Inherit precision qualifiers.
+	ir.meta[tmp_id] = ir.meta[id];
+	ir.meta[mixed_first_id] = ir.meta[id];
+
+	emit_unary_func_op(btype_id, left_nan_id, op0, "isnan");
+	emit_unary_func_op(btype_id, right_nan_id, op1, "isnan");
+	emit_binary_func_op(result_type, tmp_id, op0, op1, op == GLSLstd450NMin ? "min" : "max");
+	emit_mix_op(result_type, mixed_first_id, tmp_id, op1, left_nan_id);
+	emit_mix_op(result_type, id, mixed_first_id, op0, right_nan_id);
 }
 
 void CompilerGLSL::emit_spv_amd_shader_ballot_op(uint32_t result_type, uint32_t id, uint32_t eop, const uint32_t *args,
@@ -5315,6 +6208,10 @@ case OpGroupNonUniform##op: \
 
 string CompilerGLSL::bitcast_glsl_op(const SPIRType &out_type, const SPIRType &in_type)
 {
+	// OpBitcast can deal with pointers.
+	if (out_type.pointer || in_type.pointer)
+		return type_to_glsl(out_type);
+
 	if (out_type.basetype == in_type.basetype)
 		return "";
 
@@ -5339,13 +6236,38 @@ string CompilerGLSL::bitcast_glsl_op(const SPIRType &out_type, const SPIRType &i
 	// Floating <-> Integer special casts. Just have to enumerate all cases. :(
 	// 16-bit, 32-bit and 64-bit floats.
 	if (out_type.basetype == SPIRType::UInt && in_type.basetype == SPIRType::Float)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Float -> Uint bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "floatBitsToUint";
+	}
 	else if (out_type.basetype == SPIRType::Int && in_type.basetype == SPIRType::Float)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Float -> Int bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "floatBitsToInt";
+	}
 	else if (out_type.basetype == SPIRType::Float && in_type.basetype == SPIRType::UInt)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Uint -> Float bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "uintBitsToFloat";
+	}
 	else if (out_type.basetype == SPIRType::Float && in_type.basetype == SPIRType::Int)
+	{
+		if (is_legacy_es())
+			SPIRV_CROSS_THROW("Int -> Float bitcast not supported on legacy ESSL.");
+		else if (!options.es && options.version < 330)
+			require_extension_internal("GL_ARB_shader_bit_encoding");
 		return "intBitsToFloat";
+	}
+
 	else if (out_type.basetype == SPIRType::Int64 && in_type.basetype == SPIRType::Double)
 		return "doubleBitsToInt64";
 	else if (out_type.basetype == SPIRType::UInt64 && in_type.basetype == SPIRType::Double)
@@ -5394,9 +6316,9 @@ string CompilerGLSL::bitcast_glsl(const SPIRType &result_type, uint32_t argument
 {
 	auto op = bitcast_glsl_op(result_type, expression_type(argument));
 	if (op.empty())
-		return to_enclosed_expression(argument);
+		return to_enclosed_unpacked_expression(argument);
 	else
-		return join(op, "(", to_expression(argument), ")");
+		return join(op, "(", to_unpacked_expression(argument), ")");
 }
 
 std::string CompilerGLSL::bitcast_expression(SPIRType::BaseType target_type, uint32_t arg)
@@ -5616,6 +6538,72 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		require_extension_internal("GL_KHR_shader_subgroup_ballot");
 		return "gl_SubgroupLtMask";
 
+	case BuiltInLaunchIdNV:
+		return "gl_LaunchIDNV";
+	case BuiltInLaunchSizeNV:
+		return "gl_LaunchSizeNV";
+	case BuiltInWorldRayOriginNV:
+		return "gl_WorldRayOriginNV";
+	case BuiltInWorldRayDirectionNV:
+		return "gl_WorldRayDirectionNV";
+	case BuiltInObjectRayOriginNV:
+		return "gl_ObjectRayOriginNV";
+	case BuiltInObjectRayDirectionNV:
+		return "gl_ObjectRayDirectionNV";
+	case BuiltInRayTminNV:
+		return "gl_RayTminNV";
+	case BuiltInRayTmaxNV:
+		return "gl_RayTmaxNV";
+	case BuiltInInstanceCustomIndexNV:
+		return "gl_InstanceCustomIndexNV";
+	case BuiltInObjectToWorldNV:
+		return "gl_ObjectToWorldNV";
+	case BuiltInWorldToObjectNV:
+		return "gl_WorldToObjectNV";
+	case BuiltInHitTNV:
+		return "gl_HitTNV";
+	case BuiltInHitKindNV:
+		return "gl_HitKindNV";
+	case BuiltInIncomingRayFlagsNV:
+		return "gl_IncomingRayFlagsNV";
+
+	case BuiltInBaryCoordNV:
+	{
+		if (options.es && options.version < 320)
+			SPIRV_CROSS_THROW("gl_BaryCoordNV requires ESSL 320.");
+		else if (!options.es && options.version < 450)
+			SPIRV_CROSS_THROW("gl_BaryCoordNV requires GLSL 450.");
+		require_extension_internal("GL_NV_fragment_shader_barycentric");
+		return "gl_BaryCoordNV";
+	}
+
+	case BuiltInBaryCoordNoPerspNV:
+	{
+		if (options.es && options.version < 320)
+			SPIRV_CROSS_THROW("gl_BaryCoordNoPerspNV requires ESSL 320.");
+		else if (!options.es && options.version < 450)
+			SPIRV_CROSS_THROW("gl_BaryCoordNoPerspNV requires GLSL 450.");
+		require_extension_internal("GL_NV_fragment_shader_barycentric");
+		return "gl_BaryCoordNoPerspNV";
+	}
+
+	case BuiltInFragStencilRefEXT:
+	{
+		if (!options.es)
+		{
+			require_extension_internal("GL_ARB_shader_stencil_export");
+			return "gl_FragStencilRefARB";
+		}
+		else
+			SPIRV_CROSS_THROW("Stencil export not supported in GLES.");
+	}
+
+	case BuiltInDeviceIndex:
+		if (!options.vulkan_semantics)
+			SPIRV_CROSS_THROW("Need Vulkan semantics for device group support.");
+		require_extension_internal("GL_EXT_device_group");
+		return "gl_DeviceIndex";
+
 	default:
 		return join("gl_BuiltIn_", convert_to_string(builtin));
 	}
@@ -5638,6 +6626,36 @@ const char *CompilerGLSL::index_to_swizzle(uint32_t index)
 	}
 }
 
+void CompilerGLSL::access_chain_internal_append_index(std::string &expr, uint32_t /*base*/, const SPIRType *type,
+                                                      AccessChainFlags flags, bool & /*access_chain_is_arrayed*/,
+                                                      uint32_t index)
+{
+	bool index_is_literal = (flags & ACCESS_CHAIN_INDEX_IS_LITERAL_BIT) != 0;
+	bool register_expression_read = (flags & ACCESS_CHAIN_SKIP_REGISTER_EXPRESSION_READ_BIT) == 0;
+
+	expr += "[";
+
+	// If we are indexing into an array of SSBOs or UBOs, we need to index it with a non-uniform qualifier.
+	bool nonuniform_index =
+	    has_decoration(index, DecorationNonUniformEXT) &&
+	    (has_decoration(type->self, DecorationBlock) || has_decoration(type->self, DecorationBufferBlock));
+	if (nonuniform_index)
+	{
+		expr += backend.nonuniform_qualifier;
+		expr += "(";
+	}
+
+	if (index_is_literal)
+		expr += convert_to_string(index);
+	else
+		expr += to_expression(index, register_expression_read);
+
+	if (nonuniform_index)
+		expr += ")";
+
+	expr += "]";
+}
+
 string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indices, uint32_t count,
                                            AccessChainFlags flags, AccessChainMeta *meta)
 {
@@ -5649,33 +6667,52 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 	bool register_expression_read = (flags & ACCESS_CHAIN_SKIP_REGISTER_EXPRESSION_READ_BIT) == 0;
 
 	if (!chain_only)
+	{
+		// We handle transpose explicitly, so don't resolve that here.
+		auto *e = maybe_get<SPIRExpression>(base);
+		bool old_transpose = e && e->need_transpose;
+		if (e)
+			e->need_transpose = false;
 		expr = to_enclosed_expression(base, register_expression_read);
+		if (e)
+			e->need_transpose = old_transpose;
+	}
 
 	// Start traversing type hierarchy at the proper non-pointer types,
 	// but keep type_id referencing the original pointer for use below.
 	uint32_t type_id = expression_type_id(base);
+
+	if (!backend.native_pointers)
+	{
+		if (ptr_chain)
+			SPIRV_CROSS_THROW("Backend does not support native pointers and does not support OpPtrAccessChain.");
+
+		// Wrapped buffer reference pointer types will need to poke into the internal "value" member before
+		// continuing the access chain.
+		if (should_dereference(base))
+		{
+			auto &type = get<SPIRType>(type_id);
+			expr = dereference_expression(type, expr);
+		}
+	}
+
 	const auto *type = &get_pointee_type(type_id);
 
 	bool access_chain_is_arrayed = expr.find_first_of('[') != string::npos;
 	bool row_major_matrix_needs_conversion = is_non_native_row_major_matrix(base);
-	bool is_packed = has_extended_decoration(base, SPIRVCrossDecorationPacked);
-	uint32_t packed_type = get_extended_decoration(base, SPIRVCrossDecorationPackedType);
+	bool is_packed = has_extended_decoration(base, SPIRVCrossDecorationPhysicalTypePacked);
+	uint32_t physical_type = get_extended_decoration(base, SPIRVCrossDecorationPhysicalTypeID);
 	bool is_invariant = has_decoration(base, DecorationInvariant);
 	bool pending_array_enclose = false;
 	bool dimension_flatten = false;
 
+	const auto append_index = [&](uint32_t index) {
+		access_chain_internal_append_index(expr, base, type, flags, access_chain_is_arrayed, index);
+	};
+
 	for (uint32_t i = 0; i < count; i++)
 	{
 		uint32_t index = indices[i];
-
-		const auto append_index = [&]() {
-			expr += "[";
-			if (index_is_literal)
-				expr += convert_to_string(index);
-			else
-				expr += to_expression(index, register_expression_read);
-			expr += "]";
-		};
 
 		// Pointer chains
 		if (ptr_chain && i == 0)
@@ -5714,7 +6751,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			}
 			else
 			{
-				append_index();
+				append_index(index);
 			}
 
 			if (type->basetype == SPIRType::ControlPointArray)
@@ -5761,11 +6798,11 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 					else if (var->storage == StorageClassOutput)
 						expr = join("gl_out[", to_expression(index, register_expression_read), "].", expr);
 					else
-						append_index();
+						append_index(index);
 					break;
 
 				default:
-					append_index();
+					append_index(index);
 					break;
 				}
 			}
@@ -5793,9 +6830,11 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				if (!pending_array_enclose)
 					expr += "]";
 			}
-			else
+			// Some builtins are arrays in SPIR-V but not in other languages, e.g. gl_SampleMask[] is an array in SPIR-V but not in Metal.
+			// By throwing away the index, we imply the index was 0, which it must be for gl_SampleMask.
+			else if (!builtin_translates_to_nonarray(BuiltIn(get_decoration(base, DecorationBuiltIn))))
 			{
-				append_index();
+				append_index(index);
 			}
 
 			type_id = type->parent_type;
@@ -5816,9 +6855,6 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			BuiltIn builtin;
 			if (is_member_builtin(*type, index, &builtin))
 			{
-				// FIXME: We rely here on OpName on gl_in/gl_out to make this work properly.
-				// To make this properly work by omitting all OpName opcodes,
-				// we need to infer gl_in or gl_out based on the builtin, and stage.
 				if (access_chain_is_arrayed)
 				{
 					expr += ".";
@@ -5840,11 +6876,11 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			if (has_member_decoration(type->self, index, DecorationInvariant))
 				is_invariant = true;
 
-			is_packed = member_is_packed_type(*type, index);
-			if (is_packed)
-				packed_type = get_extended_member_decoration(type->self, index, SPIRVCrossDecorationPackedType);
+			is_packed = member_is_packed_physical_type(*type, index);
+			if (member_is_remapped_physical_type(*type, index))
+				physical_type = get_extended_member_decoration(type->self, index, SPIRVCrossDecorationPhysicalTypeID);
 			else
-				packed_type = 0;
+				physical_type = 0;
 
 			row_major_matrix_needs_conversion = member_is_non_native_row_major_matrix(*type, index);
 			type = &get<SPIRType>(type->member_types[index]);
@@ -5852,13 +6888,9 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 		// Matrix -> Vector
 		else if (type->columns > 1)
 		{
-			if (row_major_matrix_needs_conversion)
-			{
-				expr = convert_row_major_matrix(expr, *type, is_packed);
-				row_major_matrix_needs_conversion = false;
-				is_packed = false;
-				packed_type = 0;
-			}
+			// If we have a row-major matrix here, we need to defer any transpose in case this access chain
+			// is used to store a column. We can resolve it right here and now if we access a scalar directly,
+			// by flipping indexing order of the matrix.
 
 			expr += "[";
 			if (index_is_literal)
@@ -5873,16 +6905,36 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 		// Vector -> Scalar
 		else if (type->vecsize > 1)
 		{
-			if (index_is_literal && !is_packed)
+			string deferred_index;
+			if (row_major_matrix_needs_conversion)
+			{
+				// Flip indexing order.
+				auto column_index = expr.find_last_of('[');
+				if (column_index != string::npos)
+				{
+					deferred_index = expr.substr(column_index);
+					expr.resize(column_index);
+				}
+			}
+
+			if (index_is_literal && !is_packed && !row_major_matrix_needs_conversion)
 			{
 				expr += ".";
 				expr += index_to_swizzle(index);
 			}
-			else if (ir.ids[index].get_type() == TypeConstant && !is_packed)
+			else if (ir.ids[index].get_type() == TypeConstant && !is_packed && !row_major_matrix_needs_conversion)
 			{
 				auto &c = get<SPIRConstant>(index);
-				expr += ".";
-				expr += index_to_swizzle(c.scalar());
+				if (c.specialization)
+				{
+					// If the index is a spec constant, we cannot turn extract into a swizzle.
+					expr += join("[", to_expression(index), "]");
+				}
+				else
+				{
+					expr += ".";
+					expr += index_to_swizzle(c.scalar());
+				}
 			}
 			else if (index_is_literal)
 			{
@@ -5896,8 +6948,11 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				expr += "]";
 			}
 
+			expr += deferred_index;
+			row_major_matrix_needs_conversion = false;
+
 			is_packed = false;
-			packed_type = 0;
+			physical_type = 0;
 			type_id = type->parent_type;
 			type = &get<SPIRType>(type_id);
 		}
@@ -5917,7 +6972,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 		meta->need_transpose = row_major_matrix_needs_conversion;
 		meta->storage_is_packed = is_packed;
 		meta->storage_is_invariant = is_invariant;
-		meta->storage_packed_type = packed_type;
+		meta->storage_physical_type = physical_type;
 	}
 
 	return expr;
@@ -6059,7 +7114,7 @@ std::string CompilerGLSL::flattened_access_chain_struct(uint32_t base, const uin
 
 		// Cannot forward transpositions, so resolve them here.
 		if (need_transpose)
-			expr += convert_row_major_matrix(tmp, member_type, false);
+			expr += convert_row_major_matrix(tmp, member_type, 0, false);
 		else
 			expr += tmp;
 	}
@@ -6375,7 +7430,7 @@ bool CompilerGLSL::should_dereference(uint32_t id)
 	return true;
 }
 
-bool CompilerGLSL::should_forward(uint32_t id)
+bool CompilerGLSL::should_forward(uint32_t id) const
 {
 	// If id is a variable we will try to forward it regardless of force_temporary check below
 	// This is important because otherwise we'll get local sampler copies (highp sampler2D foo = bar) that are invalid in OpenGL GLSL
@@ -6392,6 +7447,12 @@ bool CompilerGLSL::should_forward(uint32_t id)
 		return true;
 
 	return false;
+}
+
+bool CompilerGLSL::should_suppress_usage_tracking(uint32_t id) const
+{
+	// Used only by opcodes which don't do any real "work", they just swizzle data in some fashion.
+	return !expression_is_forwarded(id) || expression_suppresses_usage_tracking(id);
 }
 
 void CompilerGLSL::track_expression_read(uint32_t id)
@@ -6420,7 +7481,7 @@ void CompilerGLSL::track_expression_read(uint32_t id)
 
 	// If we try to read a forwarded temporary more than once we will stamp out possibly complex code twice.
 	// In this case, it's better to just bind the complex expression to the temporary and read that temporary twice.
-	if (expression_is_forwarded(id))
+	if (expression_is_forwarded(id) && !expression_suppresses_usage_tracking(id))
 	{
 		auto &v = expression_usage_counts[id];
 		v++;
@@ -6432,7 +7493,7 @@ void CompilerGLSL::track_expression_read(uint32_t id)
 
 			forced_temporaries.insert(id);
 			// Force a recompile after this pass to avoid forwarding this variable.
-			force_recompile = true;
+			force_recompile();
 		}
 	}
 }
@@ -6491,20 +7552,30 @@ string CompilerGLSL::variable_decl_function_local(SPIRVariable &var)
 	return expr;
 }
 
+void CompilerGLSL::emit_variable_temporary_copies(const SPIRVariable &var)
+{
+	// Ensure that we declare phi-variable copies even if the original declaration isn't deferred
+	if (var.allocate_temporary_copy && !flushed_phi_variables.count(var.self))
+	{
+		auto &type = get<SPIRType>(var.basetype);
+		auto &flags = get_decoration_bitset(var.self);
+		statement(flags_to_qualifiers_glsl(type, flags), variable_decl(type, join("_", var.self, "_copy")), ";");
+		flushed_phi_variables.insert(var.self);
+	}
+}
+
 void CompilerGLSL::flush_variable_declaration(uint32_t id)
 {
+	// Ensure that we declare phi-variable copies even if the original declaration isn't deferred
 	auto *var = maybe_get<SPIRVariable>(id);
 	if (var && var->deferred_declaration)
 	{
 		statement(variable_decl_function_local(*var), ";");
-		if (var->allocate_temporary_copy)
-		{
-			auto &type = get<SPIRType>(var->basetype);
-			auto &flags = ir.meta[id].decoration.decoration_flags;
-			statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, join("_", id, "_copy")),
-			          ";");
-		}
 		var->deferred_declaration = false;
+	}
+	if (var)
+	{
+		emit_variable_temporary_copies(*var);
 	}
 }
 
@@ -6613,7 +7684,7 @@ bool CompilerGLSL::remove_unity_swizzle(uint32_t base, string &op)
 
 string CompilerGLSL::build_composite_combiner(uint32_t return_type, const uint32_t *elems, uint32_t length)
 {
-	uint32_t base = 0;
+	ID base = 0;
 	string op;
 	string subop;
 
@@ -6671,10 +7742,10 @@ string CompilerGLSL::build_composite_combiner(uint32_t return_type, const uint32
 
 			if (i)
 				op += ", ";
-			subop = to_expression(elems[i]);
+			subop = to_composite_constructor_expression(elems[i]);
 		}
 
-		base = e ? e->base_expression : 0;
+		base = e ? e->base_expression : ID(0);
 	}
 
 	if (swizzle_optimization)
@@ -6758,14 +7829,19 @@ void CompilerGLSL::emit_block_instructions(SPIRBlock &block)
 
 void CompilerGLSL::disallow_forwarding_in_expression_chain(const SPIRExpression &expr)
 {
-	if (forwarded_temporaries.count(expr.self))
+	// Allow trivially forwarded expressions like OpLoad or trivial shuffles,
+	// these will be marked as having suppressed usage tracking.
+	// Our only concern is to make sure arithmetic operations are done in similar ways.
+	if (expression_is_forwarded(expr.self) && !expression_suppresses_usage_tracking(expr.self) &&
+	    forced_invariant_temporaries.count(expr.self) == 0)
 	{
 		forced_temporaries.insert(expr.self);
-		force_recompile = true;
-	}
+		forced_invariant_temporaries.insert(expr.self);
+		force_recompile();
 
-	for (auto &dependent : expr.expression_dependencies)
-		disallow_forwarding_in_expression_chain(get<SPIRExpression>(dependent));
+		for (auto &dependent : expr.expression_dependencies)
+			disallow_forwarding_in_expression_chain(get<SPIRExpression>(dependent));
+	}
 }
 
 void CompilerGLSL::handle_store_to_invariant_variable(uint32_t store_id, uint32_t value_id)
@@ -6820,12 +7896,20 @@ uint32_t CompilerGLSL::get_integer_width_for_instruction(const Instruction &inst
 
 	switch (instr.op)
 	{
+	case OpSConvert:
+	case OpConvertSToF:
+	case OpUConvert:
+	case OpConvertUToF:
 	case OpIEqual:
 	case OpINotEqual:
 	case OpSLessThan:
 	case OpSLessThanEqual:
 	case OpSGreaterThan:
 	case OpSGreaterThanEqual:
+	case OpULessThan:
+	case OpULessThanEqual:
+	case OpUGreaterThan:
+	case OpUGreaterThanEqual:
 		return expression_type(ops[2]).width;
 
 	default:
@@ -6836,6 +7920,33 @@ uint32_t CompilerGLSL::get_integer_width_for_instruction(const Instruction &inst
 			return type->width;
 		else
 			return 32;
+	}
+	}
+}
+
+uint32_t CompilerGLSL::get_integer_width_for_glsl_instruction(GLSLstd450 op, const uint32_t *ops, uint32_t length) const
+{
+	if (length < 1)
+		return 32;
+
+	switch (op)
+	{
+	case GLSLstd450SAbs:
+	case GLSLstd450SSign:
+	case GLSLstd450UMin:
+	case GLSLstd450SMin:
+	case GLSLstd450UMax:
+	case GLSLstd450SMax:
+	case GLSLstd450UClamp:
+	case GLSLstd450SClamp:
+	case GLSLstd450FindSMsb:
+	case GLSLstd450FindUMsb:
+		return expression_type(ops[0]).width;
+
+	default:
+	{
+		// We don't need to care about other opcodes, just return 32.
+		return 32;
 	}
 	}
 }
@@ -6884,48 +7995,102 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		bool old_need_transpose = false;
 
 		auto *ptr_expression = maybe_get<SPIRExpression>(ptr);
-		if (ptr_expression && ptr_expression->need_transpose)
+
+		if (forward)
 		{
-			old_need_transpose = true;
-			ptr_expression->need_transpose = false;
-			need_transpose = true;
+			// If we're forwarding the load, we're also going to forward transpose state, so don't transpose while
+			// taking the expression.
+			if (ptr_expression && ptr_expression->need_transpose)
+			{
+				old_need_transpose = true;
+				ptr_expression->need_transpose = false;
+				need_transpose = true;
+			}
+			else if (is_non_native_row_major_matrix(ptr))
+				need_transpose = true;
 		}
-		else if (is_non_native_row_major_matrix(ptr))
-			need_transpose = true;
 
 		// If we are forwarding this load,
 		// don't register the read to access chain here, defer that to when we actually use the expression,
 		// using the add_implied_read_expression mechanism.
-		auto expr = to_dereferenced_expression(ptr, !forward);
+		string expr;
+
+		bool is_packed = has_extended_decoration(ptr, SPIRVCrossDecorationPhysicalTypePacked);
+		bool is_remapped = has_extended_decoration(ptr, SPIRVCrossDecorationPhysicalTypeID);
+		if (forward || (!is_packed && !is_remapped))
+		{
+			// For the simple case, we do not need to deal with repacking.
+			expr = to_dereferenced_expression(ptr, false);
+		}
+		else
+		{
+			// If we are not forwarding the expression, we need to unpack and resolve any physical type remapping here before
+			// storing the expression to a temporary.
+			expr = to_unpacked_expression(ptr);
+		}
 
 		// We might need to bitcast in order to load from a builtin.
 		bitcast_from_builtin_load(ptr, expr, get<SPIRType>(result_type));
 
-		if (ptr_expression)
+		// We might be trying to load a gl_Position[N], where we should be
+		// doing float4[](gl_in[i].gl_Position, ...) instead.
+		// Similar workarounds are required for input arrays in tessellation.
+		unroll_array_from_complex_load(id, ptr, expr);
+
+		auto &type = get<SPIRType>(result_type);
+		// Shouldn't need to check for ID, but current glslang codegen requires it in some cases
+		// when loading Image/Sampler descriptors. It does not hurt to check ID as well.
+		if (has_decoration(id, DecorationNonUniformEXT) || has_decoration(ptr, DecorationNonUniformEXT))
+		{
+			propagate_nonuniform_qualifier(ptr);
+			convert_non_uniform_expression(type, expr);
+		}
+
+		if (forward && ptr_expression)
 			ptr_expression->need_transpose = old_need_transpose;
 
 		// By default, suppress usage tracking since using same expression multiple times does not imply any extra work.
 		// However, if we try to load a complex, composite object from a flattened buffer,
 		// we should avoid emitting the same code over and over and lower the result to a temporary.
-		auto &type = get<SPIRType>(result_type);
 		bool usage_tracking = ptr_expression && flattened_buffer_blocks.count(ptr_expression->loaded_from) != 0 &&
 		                      (type.basetype == SPIRType::Struct || (type.columns > 1));
 
-		auto &e = emit_op(result_type, id, expr, forward, !usage_tracking);
-		e.need_transpose = need_transpose;
+		SPIRExpression *e = nullptr;
+		if (!backend.array_is_value_type && !type.array.empty() && !forward)
+		{
+			// Complicated load case where we need to make a copy of ptr, but we cannot, because
+			// it is an array, and our backend does not support arrays as value types.
+			// Emit the temporary, and copy it explicitly.
+			e = &emit_uninitialized_temporary_expression(result_type, id);
+			emit_array_copy(to_expression(id), ptr, StorageClassFunction, get_backing_variable_storage(ptr));
+		}
+		else
+			e = &emit_op(result_type, id, expr, forward, !usage_tracking);
+
+		e->need_transpose = need_transpose;
 		register_read(id, ptr, forward);
 
-		// Pass through whether the result is of a packed type.
-		if (has_extended_decoration(ptr, SPIRVCrossDecorationPacked))
+		if (forward)
 		{
-			set_extended_decoration(id, SPIRVCrossDecorationPacked);
-			set_extended_decoration(id, SPIRVCrossDecorationPackedType,
-			                        get_extended_decoration(ptr, SPIRVCrossDecorationPackedType));
+			// Pass through whether the result is of a packed type and the physical type ID.
+			if (has_extended_decoration(ptr, SPIRVCrossDecorationPhysicalTypePacked))
+				set_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+			if (has_extended_decoration(ptr, SPIRVCrossDecorationPhysicalTypeID))
+			{
+				set_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID,
+				                        get_extended_decoration(ptr, SPIRVCrossDecorationPhysicalTypeID));
+			}
+		}
+		else
+		{
+			// This might have been set on an earlier compilation iteration, force it to be unset.
+			unset_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+			unset_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID);
 		}
 
 		inherit_expression_dependencies(id, ptr);
 		if (forward)
-			add_implied_read_expression(e, ptr);
+			add_implied_read_expression(*e, ptr);
 		break;
 	}
 
@@ -6946,17 +8111,24 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto &expr = set<SPIRExpression>(ops[1], move(e), ops[0], should_forward(ops[2]));
 
 		auto *backing_variable = maybe_get_backing_variable(ops[2]);
-		expr.loaded_from = backing_variable ? backing_variable->self : ops[2];
+		expr.loaded_from = backing_variable ? backing_variable->self : ID(ops[2]);
 		expr.need_transpose = meta.need_transpose;
 		expr.access_chain = true;
 
 		// Mark the result as being packed. Some platforms handled packed vectors differently than non-packed.
 		if (meta.storage_is_packed)
-			set_extended_decoration(ops[1], SPIRVCrossDecorationPacked);
-		if (meta.storage_packed_type != 0)
-			set_extended_decoration(ops[1], SPIRVCrossDecorationPackedType, meta.storage_packed_type);
+			set_extended_decoration(ops[1], SPIRVCrossDecorationPhysicalTypePacked);
+		if (meta.storage_physical_type != 0)
+			set_extended_decoration(ops[1], SPIRVCrossDecorationPhysicalTypeID, meta.storage_physical_type);
 		if (meta.storage_is_invariant)
 			set_decoration(ops[1], DecorationInvariant);
+
+		// If we have some expression dependencies in our access chain, this access chain is technically a forwarded
+		// temporary which could be subject to invalidation.
+		// Need to assume we're forwarded while calling inherit_expression_depdendencies.
+		forwarded_temporaries.insert(ops[1]);
+		// The access chain itself is never forced to a temporary, but its dependencies might.
+		suppressed_usage_tracking.insert(ops[1]);
 
 		for (uint32_t i = 2; i < length; i++)
 		{
@@ -6964,12 +8136,20 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			add_implied_read_expression(expr, ops[i]);
 		}
 
+		// If we have no dependencies after all, i.e., all indices in the access chain are immutable temporaries,
+		// we're not forwarded after all.
+		if (expr.expression_dependencies.empty())
+			forwarded_temporaries.erase(ops[1]);
+
 		break;
 	}
 
 	case OpStore:
 	{
 		auto *var = maybe_get<SPIRVariable>(ops[0]);
+
+		if (has_decoration(ops[0], DecorationNonUniformEXT))
+			propagate_nonuniform_qualifier(ops[0]);
 
 		if (var && var->statically_assigned)
 			var->static_expression = ops[1];
@@ -7001,7 +8181,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		auto e = access_chain_internal(ops[2], &ops[3], length - 3, ACCESS_CHAIN_INDEX_IS_LITERAL_BIT, nullptr);
-		set<SPIRExpression>(id, e + ".length()", result_type, true);
+		set<SPIRExpression>(id, join(type_to_glsl(get<SPIRType>(result_type)), "(", e, ".length())"), result_type,
+		                    true);
 		break;
 	}
 
@@ -7043,7 +8224,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			register_impure_function_call();
 
 		string funexpr;
-		vector<string> arglist;
+		SmallVector<string> arglist;
 		funexpr += to_name(func) + "(";
 
 		if (emit_return_value_as_argument)
@@ -7059,13 +8240,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (skip_argument(arg[i]))
 				continue;
 
-			arglist.push_back(to_func_call_arg(arg[i]));
+			arglist.push_back(to_func_call_arg(callee.arguments[i], arg[i]));
 		}
 
 		for (auto &combined : callee.combined_parameters)
 		{
-			uint32_t image_id = combined.global_image ? combined.image_id : arg[combined.image_id];
-			uint32_t sampler_id = combined.global_sampler ? combined.sampler_id : arg[combined.sampler_id];
+			auto image_id = combined.global_image ? combined.image_id : VariableID(arg[combined.image_id]);
+			auto sampler_id = combined.global_sampler ? combined.sampler_id : VariableID(arg[combined.sampler_id]);
 			arglist.push_back(to_combined_image_sampler(image_id, sampler_id));
 		}
 
@@ -7168,35 +8349,34 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			forward = false;
 
 		string constructor_op;
-		if (!backend.array_is_value_type && out_type.array.size() > 1)
+		if (backend.use_initializer_list && composite)
 		{
-			// We cannot construct array of arrays because we cannot treat the inputs
-			// as value types. Need to declare the array-of-arrays, and copy in elements one by one.
-			forced_temporaries.insert(id);
-			auto &flags = ir.meta[id].decoration.decoration_flags;
-			statement(flags_to_precision_qualifiers_glsl(out_type, flags), variable_decl(out_type, to_name(id)), ";");
-			set<SPIRExpression>(id, to_name(id), result_type, true);
-			for (uint32_t i = 0; i < length; i++)
-				emit_array_copy(join(to_expression(id), "[", i, "]"), elems[i]);
-		}
-		else if (backend.use_initializer_list && composite)
-		{
+			bool needs_trailing_tracket = false;
 			// Only use this path if we are building composites.
 			// This path cannot be used for arithmetic.
 			if (backend.use_typed_initializer_list && out_type.basetype == SPIRType::Struct && out_type.array.empty())
 				constructor_op += type_to_glsl_constructor(get<SPIRType>(result_type));
+			else if (backend.use_typed_initializer_list && !out_type.array.empty())
+			{
+				// MSL path. Array constructor is baked into type here, do not use _constructor variant.
+				constructor_op += type_to_glsl_constructor(get<SPIRType>(result_type)) + "(";
+				needs_trailing_tracket = true;
+			}
 			constructor_op += "{ ";
+
 			if (type_is_empty(out_type) && !backend.supports_empty_struct)
 				constructor_op += "0";
 			else if (splat)
-				constructor_op += to_expression(elems[0]);
+				constructor_op += to_unpacked_expression(elems[0]);
 			else
 				constructor_op += build_composite_combiner(result_type, elems, length);
 			constructor_op += " }";
+			if (needs_trailing_tracket)
+				constructor_op += ")";
 		}
 		else if (swizzle_splat && !composite)
 		{
-			constructor_op = remap_swizzle(get<SPIRType>(result_type), 1, to_expression(elems[0]));
+			constructor_op = remap_swizzle(get<SPIRType>(result_type), 1, to_unpacked_expression(elems[0]));
 		}
 		else
 		{
@@ -7204,7 +8384,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (type_is_empty(out_type) && !backend.supports_empty_struct)
 				constructor_op += "0";
 			else if (splat)
-				constructor_op += to_expression(elems[0]);
+				constructor_op += to_unpacked_expression(elems[0]);
 			else
 				constructor_op += build_composite_combiner(result_type, elems, length);
 			constructor_op += ")";
@@ -7266,7 +8446,12 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			allow_base_expression = false;
 
 		// Packed expressions cannot be split up.
-		if (has_extended_decoration(ops[2], SPIRVCrossDecorationPacked))
+		if (has_extended_decoration(ops[2], SPIRVCrossDecorationPhysicalTypePacked))
+			allow_base_expression = false;
+
+		// Cannot use base expression for row-major matrix row-extraction since we need to interleave access pattern
+		// into the base expression.
+		if (is_non_native_row_major_matrix(ops[2]))
 			allow_base_expression = false;
 
 		AccessChainMeta meta;
@@ -7289,14 +8474,14 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			// from expression causing it to be forced to an actual temporary in GLSL.
 			auto expr = access_chain_internal(ops[2], &ops[3], length,
 			                                  ACCESS_CHAIN_INDEX_IS_LITERAL_BIT | ACCESS_CHAIN_CHAIN_ONLY_BIT, &meta);
-			e = &emit_op(result_type, id, expr, true, !expression_is_forwarded(ops[2]));
+			e = &emit_op(result_type, id, expr, true, should_suppress_usage_tracking(ops[2]));
 			inherit_expression_dependencies(id, ops[2]);
 			e->base_expression = ops[2];
 		}
 		else
 		{
 			auto expr = access_chain_internal(ops[2], &ops[3], length, ACCESS_CHAIN_INDEX_IS_LITERAL_BIT, &meta);
-			e = &emit_op(result_type, id, expr, should_forward(ops[2]), !expression_is_forwarded(ops[2]));
+			e = &emit_op(result_type, id, expr, should_forward(ops[2]), should_suppress_usage_tracking(ops[2]));
 			inherit_expression_dependencies(id, ops[2]);
 		}
 
@@ -7305,9 +8490,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// instead of loading everything through an access chain.
 		e->need_transpose = meta.need_transpose;
 		if (meta.storage_is_packed)
-			set_extended_decoration(id, SPIRVCrossDecorationPacked);
-		if (meta.storage_packed_type != 0)
-			set_extended_decoration(id, SPIRVCrossDecorationPackedType, meta.storage_packed_type);
+			set_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
+		if (meta.storage_physical_type != 0)
+			set_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID, meta.storage_physical_type);
 		if (meta.storage_is_invariant)
 			set_decoration(id, DecorationInvariant);
 
@@ -7355,13 +8540,19 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t rhs = ops[2];
 		bool pointer = get<SPIRType>(result_type).pointer;
 
-		if (expression_is_lvalue(rhs) && !pointer)
+		auto *chain = maybe_get<SPIRAccessChain>(rhs);
+		if (chain)
+		{
+			// Cannot lower to a SPIRExpression, just copy the object.
+			auto &e = set<SPIRAccessChain>(id, *chain);
+			e.self = id;
+		}
+		else if (expression_is_lvalue(rhs) && !pointer)
 		{
 			// Need a copy.
 			// For pointer types, we copy the pointer itself.
-			statement(declare_temporary(result_type, id), to_expression(rhs), ";");
+			statement(declare_temporary(result_type, id), to_unpacked_expression(rhs), ";");
 			set<SPIRExpression>(id, to_name(id), result_type, true);
-			inherit_expression_dependencies(id, rhs);
 		}
 		else
 		{
@@ -7372,7 +8563,15 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (pointer)
 			{
 				auto *var = maybe_get_backing_variable(rhs);
-				e.loaded_from = var ? var->self : 0;
+				e.loaded_from = var ? var->self : ID(0);
+			}
+
+			// If we're copying an access chain, need to inherit the read expressions.
+			auto *rhs_expr = maybe_get<SPIRExpression>(rhs);
+			if (rhs_expr)
+			{
+				e.implied_read_expressions = rhs_expr->implied_read_expressions;
+				e.expression_dependencies = rhs_expr->expression_dependencies;
 			}
 		}
 		break;
@@ -7389,13 +8588,15 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		auto &type0 = expression_type(vec0);
 
+		// If we have the undefined swizzle index -1, we need to swizzle in undefined data,
+		// or in our case, T(0).
 		bool shuffle = false;
 		for (uint32_t i = 0; i < length; i++)
-			if (elems[i] >= type0.vecsize)
+			if (elems[i] >= type0.vecsize || elems[i] == 0xffffffffu)
 				shuffle = true;
 
 		// Cannot use swizzles with packed expressions, force shuffle path.
-		if (!shuffle && has_extended_decoration(vec0, SPIRVCrossDecorationPacked))
+		if (!shuffle && has_extended_decoration(vec0, SPIRVCrossDecorationPhysicalTypePacked))
 			shuffle = true;
 
 		string expr;
@@ -7404,13 +8605,23 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (shuffle)
 		{
 			should_fwd = should_forward(vec0) && should_forward(vec1);
-			trivial_forward = !expression_is_forwarded(vec0) && !expression_is_forwarded(vec1);
+			trivial_forward = should_suppress_usage_tracking(vec0) && should_suppress_usage_tracking(vec1);
 
 			// Constructor style and shuffling from two different vectors.
-			vector<string> args;
+			SmallVector<string> args;
 			for (uint32_t i = 0; i < length; i++)
 			{
-				if (elems[i] >= type0.vecsize)
+				if (elems[i] == 0xffffffffu)
+				{
+					// Use a constant 0 here.
+					// We could use the first component or similar, but then we risk propagating
+					// a value we might not need, and bog down codegen.
+					SPIRConstant c;
+					c.constant_type = type0.parent_type;
+					assert(type0.parent_type != ID(0));
+					args.push_back(constant_expression(c));
+				}
+				else if (elems[i] >= type0.vecsize)
 					args.push_back(to_extract_component_expression(vec1, elems[i] - type0.vecsize));
 				else
 					args.push_back(to_extract_component_expression(vec0, elems[i]));
@@ -7420,14 +8631,17 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		else
 		{
 			should_fwd = should_forward(vec0);
-			trivial_forward = !expression_is_forwarded(vec0);
+			trivial_forward = should_suppress_usage_tracking(vec0);
 
 			// We only source from first vector, so can use swizzle.
 			// If the vector is packed, unpack it before applying a swizzle (needed for MSL)
 			expr += to_enclosed_unpacked_expression(vec0);
 			expr += ".";
 			for (uint32_t i = 0; i < length; i++)
+			{
+				assert(elems[i] != 0xffffffffu);
 				expr += index_to_swizzle(elems[i]);
+			}
 
 			if (backend.swizzle_is_function && length > 1)
 				expr += "()";
@@ -7437,8 +8651,10 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// We inherit the forwardedness from our arguments to avoid flushing out to temporaries when it's not really needed.
 
 		emit_op(result_type, id, expr, should_fwd, trivial_forward);
+
 		inherit_expression_dependencies(id, vec0);
-		inherit_expression_dependencies(id, vec1);
+		if (vec0 != vec1)
+			inherit_expression_dependencies(id, vec1);
 		break;
 	}
 
@@ -7494,18 +8710,56 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (e && e->need_transpose)
 		{
 			e->need_transpose = false;
-			emit_binary_op(ops[0], ops[1], ops[3], ops[2], "*");
+			string expr;
+
+			if (opcode == OpMatrixTimesVector)
+				expr = join(to_enclosed_unpacked_expression(ops[3]), " * ",
+				            enclose_expression(to_unpacked_row_major_matrix_expression(ops[2])));
+			else
+				expr = join(enclose_expression(to_unpacked_row_major_matrix_expression(ops[3])), " * ",
+				            to_enclosed_unpacked_expression(ops[2]));
+
+			bool forward = should_forward(ops[2]) && should_forward(ops[3]);
+			emit_op(ops[0], ops[1], expr, forward);
 			e->need_transpose = true;
+			inherit_expression_dependencies(ops[1], ops[2]);
+			inherit_expression_dependencies(ops[1], ops[3]);
 		}
 		else
 			GLSL_BOP(*);
 		break;
 	}
 
+	case OpMatrixTimesMatrix:
+	{
+		auto *a = maybe_get<SPIRExpression>(ops[2]);
+		auto *b = maybe_get<SPIRExpression>(ops[3]);
+
+		// If both matrices need transpose, we can multiply in flipped order and tag the expression as transposed.
+		// a^T * b^T = (b * a)^T.
+		if (a && b && a->need_transpose && b->need_transpose)
+		{
+			a->need_transpose = false;
+			b->need_transpose = false;
+			auto expr = join(enclose_expression(to_unpacked_row_major_matrix_expression(ops[3])), " * ",
+			                 enclose_expression(to_unpacked_row_major_matrix_expression(ops[2])));
+			bool forward = should_forward(ops[2]) && should_forward(ops[3]);
+			auto &e = emit_op(ops[0], ops[1], expr, forward);
+			e.need_transpose = true;
+			a->need_transpose = true;
+			b->need_transpose = true;
+			inherit_expression_dependencies(ops[1], ops[2]);
+			inherit_expression_dependencies(ops[1], ops[3]);
+		}
+		else
+			GLSL_BOP(*);
+
+		break;
+	}
+
 	case OpFMul:
 	case OpMatrixTimesScalar:
 	case OpVectorTimesScalar:
-	case OpMatrixTimesMatrix:
 		GLSL_BOP(*);
 		break;
 
@@ -7559,12 +8813,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_id = ops[1];
 		uint32_t op0 = ops[2];
 		uint32_t op1 = ops[3];
-		forced_temporaries.insert(result_id);
 		auto &type = get<SPIRType>(result_type);
-		auto &flags = ir.meta[result_id].decoration.decoration_flags;
-		statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(result_id)), ";");
-		set<SPIRExpression>(result_id, to_name(result_id), result_type, true);
-
+		emit_uninitialized_temporary_expression(result_type, result_id);
 		const char *op = opcode == OpIAddCarry ? "uaddCarry" : "usubBorrow";
 
 		statement(to_expression(result_id), ".", to_member_name(type, 0), " = ", op, "(", to_expression(op0), ", ",
@@ -7584,12 +8834,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_id = ops[1];
 		uint32_t op0 = ops[2];
 		uint32_t op1 = ops[3];
-		forced_temporaries.insert(result_id);
 		auto &type = get<SPIRType>(result_type);
-		auto &flags = ir.meta[result_id].decoration.decoration_flags;
-		statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(result_id)), ";");
-		set<SPIRExpression>(result_id, to_name(result_id), result_type, true);
-
+		emit_uninitialized_temporary_expression(result_type, result_id);
 		const char *op = opcode == OpUMulExtended ? "umulExtended" : "imulExtended";
 
 		statement(op, "(", to_expression(op0), ", ", to_expression(op1), ", ", to_expression(result_id), ".",
@@ -7696,7 +8942,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto &type = get<SPIRType>(result_type);
 
 		if (type.vecsize > 1)
-			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "||");
+			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "||", false, SPIRType::Unknown);
 		else
 			GLSL_BOP(||);
 		break;
@@ -7710,7 +8956,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto &type = get<SPIRType>(result_type);
 
 		if (type.vecsize > 1)
-			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "&&");
+			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "&&", false, SPIRType::Unknown);
 		else
 			GLSL_BOP(&&);
 		break;
@@ -7767,7 +9013,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case OpUGreaterThan:
 	case OpSGreaterThan:
 	{
-		auto type = opcode == OpUGreaterThan ? SPIRType::UInt : SPIRType::Int;
+		auto type = opcode == OpUGreaterThan ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(greaterThan, type);
 		else
@@ -7787,7 +9033,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case OpUGreaterThanEqual:
 	case OpSGreaterThanEqual:
 	{
-		auto type = opcode == OpUGreaterThanEqual ? SPIRType::UInt : SPIRType::Int;
+		auto type = opcode == OpUGreaterThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(greaterThanEqual, type);
 		else
@@ -7807,7 +9053,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case OpULessThan:
 	case OpSLessThan:
 	{
-		auto type = opcode == OpULessThan ? SPIRType::UInt : SPIRType::Int;
+		auto type = opcode == OpULessThan ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(lessThan, type);
 		else
@@ -7827,7 +9073,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case OpULessThanEqual:
 	case OpSLessThanEqual:
 	{
-		auto type = opcode == OpULessThanEqual ? SPIRType::UInt : SPIRType::Int;
+		auto type = opcode == OpULessThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(lessThanEqual, type);
 		else
@@ -7845,12 +9091,45 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Conversion
+	case OpSConvert:
+	case OpConvertSToF:
+	case OpUConvert:
+	case OpConvertUToF:
+	{
+		auto input_type = opcode == OpSConvert || opcode == OpConvertSToF ? int_type : uint_type;
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+
+		auto &type = get<SPIRType>(result_type);
+		auto &arg_type = expression_type(ops[2]);
+		auto func = type_to_glsl_constructor(type);
+
+		// If we're sign-extending or zero-extending, we need to make sure we cast from the correct type.
+		// For truncation, it does not matter, so don't emit useless casts.
+		if (arg_type.width < type.width)
+			emit_unary_func_op_cast(result_type, id, ops[2], func.c_str(), input_type, type.basetype);
+		else
+			emit_unary_func_op(result_type, id, ops[2], func.c_str());
+		break;
+	}
+
 	case OpConvertFToU:
 	case OpConvertFToS:
-	case OpConvertSToF:
-	case OpConvertUToF:
-	case OpUConvert:
-	case OpSConvert:
+	{
+		// Cast to expected arithmetic type, then potentially bitcast away to desired signedness.
+		uint32_t result_type = ops[0];
+		uint32_t id = ops[1];
+		auto &type = get<SPIRType>(result_type);
+		auto expected_type = type;
+		auto &float_type = expression_type(ops[2]);
+		expected_type.basetype =
+		    opcode == OpConvertFToS ? to_signed_basetype(type.width) : to_unsigned_basetype(type.width);
+
+		auto func = type_to_glsl_constructor(expected_type);
+		emit_unary_func_op_cast(result_type, id, ops[2], func.c_str(), float_type.basetype, expected_type.basetype);
+		break;
+	}
+
 	case OpFConvert:
 	{
 		uint32_t result_type = ops[0];
@@ -8002,23 +9281,36 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 	// Bitfield
 	case OpBitFieldInsert:
-		// TODO: The signedness of inputs is strict in GLSL, but not in SPIR-V, bitcast if necessary.
-		GLSL_QFOP(bitfieldInsert);
+	{
+		emit_bitfield_insert_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], "bitfieldInsert", SPIRType::Int);
 		break;
+	}
 
 	case OpBitFieldSExtract:
-	case OpBitFieldUExtract:
-		// TODO: The signedness of inputs is strict in GLSL, but not in SPIR-V, bitcast if necessary.
-		GLSL_TFOP(bitfieldExtract);
+	{
+		emit_trinary_func_op_bitextract(ops[0], ops[1], ops[2], ops[3], ops[4], "bitfieldExtract", int_type, int_type,
+		                                SPIRType::Int, SPIRType::Int);
 		break;
+	}
+
+	case OpBitFieldUExtract:
+	{
+		emit_trinary_func_op_bitextract(ops[0], ops[1], ops[2], ops[3], ops[4], "bitfieldExtract", uint_type, uint_type,
+		                                SPIRType::Int, SPIRType::Int);
+		break;
+	}
 
 	case OpBitReverse:
+		// BitReverse does not have issues with sign since result type must match input type.
 		GLSL_UFOP(bitfieldReverse);
 		break;
 
 	case OpBitCount:
-		GLSL_UFOP(bitCount);
+	{
+		auto basetype = expression_type(ops[2]).basetype;
+		emit_unary_func_op_cast(ops[0], ops[1], ops[2], "bitCount", basetype, int_type);
 		break;
+	}
 
 	// Atomics
 	case OpAtomicExchange:
@@ -8054,8 +9346,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		flush_all_atomic_capable_variables();
 		// FIXME: Image?
 		// OpAtomicLoad seems to only be relevant for atomic counters.
+		forced_temporaries.insert(ops[1]);
 		GLSL_UFOP(atomicCounter);
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 
 	case OpAtomicStore:
@@ -8095,7 +9387,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		}
 
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8105,7 +9396,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8116,7 +9406,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto expr = join(op, "(", to_expression(ops[2]), ", -", to_enclosed_expression(ops[5]), ")");
 		emit_op(ops[0], ops[1], expr, should_forward(ops[2]) && should_forward(ops[5]));
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8127,7 +9416,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8138,7 +9426,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8148,7 +9435,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8158,7 +9444,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8168,7 +9453,6 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		forced_temporaries.insert(ops[1]);
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[5], op);
 		flush_all_atomic_capable_variables();
-		register_read(ops[1], ops[2], should_forward(ops[2]));
 		break;
 	}
 
@@ -8215,7 +9499,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		// When using the image, we need to know which variable it is actually loaded from.
 		auto *var = maybe_get_backing_variable(ops[2]);
-		e.loaded_from = var ? var->self : 0;
+		e.loaded_from = var ? var->self : ID(0);
 		break;
 	}
 
@@ -8275,6 +9559,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		emit_sampled_image_op(result_type, id, ops[2], ops[3]);
+		inherit_expression_dependencies(id, ops[2]);
+		inherit_expression_dependencies(id, ops[3]);
 		break;
 	}
 
@@ -8304,7 +9590,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (flags.get(DecorationNonReadable))
 			{
 				flags.clear(DecorationNonReadable);
-				force_recompile = true;
+				force_recompile();
 			}
 		}
 
@@ -8432,11 +9718,18 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
-		auto &e = set<SPIRExpression>(id, join(to_expression(ops[2]), ", ", to_expression(ops[3])), result_type, true);
+
+		auto coord_expr = to_expression(ops[3]);
+		auto target_coord_type = expression_type(ops[3]);
+		target_coord_type.basetype = SPIRType::Int;
+		coord_expr = bitcast_expression(target_coord_type, expression_type(ops[3]).basetype, coord_expr);
+
+		auto &e = set<SPIRExpression>(id, join(to_expression(ops[2]), ", ", coord_expr), result_type, true);
 
 		// When using the pointer, we need to know which variable it is actually loaded from.
 		auto *var = maybe_get_backing_variable(ops[2]);
-		e.loaded_from = var ? var->self : 0;
+		e.loaded_from = var ? var->self : ID(0);
+		inherit_expression_dependencies(id, ops[3]);
 		break;
 	}
 
@@ -8452,7 +9745,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (flags.get(DecorationNonWritable))
 			{
 				flags.clear(DecorationNonWritable);
-				force_recompile = true;
+				force_recompile();
 			}
 		}
 
@@ -8696,6 +9989,10 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		{
 			emit_spv_amd_gcn_shader_op(ops[0], ops[1], ops[3], &ops[4], length - 4);
 		}
+		else if (get<SPIRExtension>(extension_set).ext == SPIRExtension::SPV_debug_info)
+		{
+			break; // Ignore SPIR-V debug information extended instructions.
+		}
 		else
 		{
 			statement("// unimplemented ext op ", instruction.op);
@@ -8887,27 +10184,194 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		break;
 
 	case OpFUnordEqual:
-		GLSL_BFOP(unsupported_FUnordEqual);
-		break;
-
 	case OpFUnordNotEqual:
-		GLSL_BFOP(unsupported_FUnordNotEqual);
-		break;
-
 	case OpFUnordLessThan:
-		GLSL_BFOP(unsupported_FUnordLessThan);
-		break;
-
 	case OpFUnordGreaterThan:
-		GLSL_BFOP(unsupported_FUnordGreaterThan);
-		break;
-
 	case OpFUnordLessThanEqual:
-		GLSL_BFOP(unsupported_FUnordLessThanEqual);
+	case OpFUnordGreaterThanEqual:
+	{
+		// GLSL doesn't specify if floating point comparisons are ordered or unordered,
+		// but glslang always emits ordered floating point compares for GLSL.
+		// To get unordered compares, we can test the opposite thing and invert the result.
+		// This way, we force true when there is any NaN present.
+		uint32_t op0 = ops[2];
+		uint32_t op1 = ops[3];
+
+		string expr;
+		if (expression_type(op0).vecsize > 1)
+		{
+			const char *comp_op = nullptr;
+			switch (opcode)
+			{
+			case OpFUnordEqual:
+				comp_op = "notEqual";
+				break;
+
+			case OpFUnordNotEqual:
+				comp_op = "equal";
+				break;
+
+			case OpFUnordLessThan:
+				comp_op = "greaterThanEqual";
+				break;
+
+			case OpFUnordLessThanEqual:
+				comp_op = "greaterThan";
+				break;
+
+			case OpFUnordGreaterThan:
+				comp_op = "lessThanEqual";
+				break;
+
+			case OpFUnordGreaterThanEqual:
+				comp_op = "lessThan";
+				break;
+
+			default:
+				assert(0);
+				break;
+			}
+
+			expr = join("not(", comp_op, "(", to_unpacked_expression(op0), ", ", to_unpacked_expression(op1), "))");
+		}
+		else
+		{
+			const char *comp_op = nullptr;
+			switch (opcode)
+			{
+			case OpFUnordEqual:
+				comp_op = " != ";
+				break;
+
+			case OpFUnordNotEqual:
+				comp_op = " == ";
+				break;
+
+			case OpFUnordLessThan:
+				comp_op = " >= ";
+				break;
+
+			case OpFUnordLessThanEqual:
+				comp_op = " > ";
+				break;
+
+			case OpFUnordGreaterThan:
+				comp_op = " <= ";
+				break;
+
+			case OpFUnordGreaterThanEqual:
+				comp_op = " < ";
+				break;
+
+			default:
+				assert(0);
+				break;
+			}
+
+			expr = join("!(", to_enclosed_unpacked_expression(op0), comp_op, to_enclosed_unpacked_expression(op1), ")");
+		}
+
+		emit_op(ops[0], ops[1], expr, should_forward(op0) && should_forward(op1));
+		inherit_expression_dependencies(ops[1], op0);
+		inherit_expression_dependencies(ops[1], op1);
+		break;
+	}
+
+	case OpReportIntersectionNV:
+		statement("reportIntersectionNV(", to_expression(ops[0]), ", ", to_expression(ops[1]), ");");
+		break;
+	case OpIgnoreIntersectionNV:
+		statement("ignoreIntersectionNV();");
+		break;
+	case OpTerminateRayNV:
+		statement("terminateRayNV();");
+		break;
+	case OpTraceNV:
+		statement("traceNV(", to_expression(ops[0]), ", ", to_expression(ops[1]), ", ", to_expression(ops[2]), ", ",
+		          to_expression(ops[3]), ", ", to_expression(ops[4]), ", ", to_expression(ops[5]), ", ",
+		          to_expression(ops[6]), ", ", to_expression(ops[7]), ", ", to_expression(ops[8]), ", ",
+		          to_expression(ops[9]), ", ", to_expression(ops[10]), ");");
+		break;
+	case OpExecuteCallableNV:
+		statement("executeCallableNV(", to_expression(ops[0]), ", ", to_expression(ops[1]), ");");
 		break;
 
-	case OpFUnordGreaterThanEqual:
-		GLSL_BFOP(unsupported_FUnordGreaterThanEqual);
+	case OpConvertUToPtr:
+	{
+		auto &type = get<SPIRType>(ops[0]);
+		if (type.storage != StorageClassPhysicalStorageBufferEXT)
+			SPIRV_CROSS_THROW("Only StorageClassPhysicalStorageBufferEXT is supported by OpConvertUToPtr.");
+
+		auto op = type_to_glsl(type);
+		emit_unary_func_op(ops[0], ops[1], ops[2], op.c_str());
+		break;
+	}
+
+	case OpConvertPtrToU:
+	{
+		auto &type = get<SPIRType>(ops[0]);
+		auto &ptr_type = expression_type(ops[2]);
+		if (ptr_type.storage != StorageClassPhysicalStorageBufferEXT)
+			SPIRV_CROSS_THROW("Only StorageClassPhysicalStorageBufferEXT is supported by OpConvertPtrToU.");
+
+		auto op = type_to_glsl(type);
+		emit_unary_func_op(ops[0], ops[1], ops[2], op.c_str());
+		break;
+	}
+
+	case OpUndef:
+		// Undefined value has been declared.
+		break;
+
+	case OpLine:
+	{
+		emit_line_directive(ops[0], ops[1]);
+		break;
+	}
+
+	case OpNoLine:
+		break;
+
+	case OpDemoteToHelperInvocationEXT:
+		if (!options.vulkan_semantics)
+			SPIRV_CROSS_THROW("GL_EXT_demote_to_helper_invocation is only supported in Vulkan GLSL.");
+		require_extension_internal("GL_EXT_demote_to_helper_invocation");
+		statement(backend.demote_literal, ";");
+		break;
+
+	case OpIsHelperInvocationEXT:
+		if (!options.vulkan_semantics)
+			SPIRV_CROSS_THROW("GL_EXT_demote_to_helper_invocation is only supported in Vulkan GLSL.");
+		require_extension_internal("GL_EXT_demote_to_helper_invocation");
+		emit_op(ops[0], ops[1], "helperInvocationEXT()", false);
+		break;
+
+	case OpBeginInvocationInterlockEXT:
+		// If the interlock is complex, we emit this elsewhere.
+		if (!interlocked_is_complex)
+		{
+			if (options.es)
+				statement("beginInvocationInterlockNV();");
+			else
+				statement("beginInvocationInterlockARB();");
+
+			flush_all_active_variables();
+			// Make sure forwarding doesn't propagate outside interlock region.
+		}
+		break;
+
+	case OpEndInvocationInterlockEXT:
+		// If the interlock is complex, we emit this elsewhere.
+		if (!interlocked_is_complex)
+		{
+			if (options.es)
+				statement("endInvocationInterlockNV();");
+			else
+				statement("endInvocationInterlockARB();");
+
+			flush_all_active_variables();
+			// Make sure forwarding doesn't propagate outside interlock region.
+		}
 		break;
 
 	default:
@@ -8924,7 +10388,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 // access to shader input content from within a function (eg. Metal). Each additional
 // function args uses the name of the global variable. Function nesting will modify the
 // functions and function calls all the way up the nesting chain.
-void CompilerGLSL::append_global_func_args(const SPIRFunction &func, uint32_t index, vector<string> &arglist)
+void CompilerGLSL::append_global_func_args(const SPIRFunction &func, uint32_t index, SmallVector<string> &arglist)
 {
 	auto &args = func.arguments;
 	uint32_t arg_cnt = uint32_t(args.size());
@@ -8939,12 +10403,18 @@ void CompilerGLSL::append_global_func_args(const SPIRFunction &func, uint32_t in
 		if (var_id)
 			flush_variable_declaration(var_id);
 
-		arglist.push_back(to_func_call_arg(arg.id));
+		arglist.push_back(to_func_call_arg(arg, arg.id));
 	}
 }
 
 string CompilerGLSL::to_member_name(const SPIRType &type, uint32_t index)
 {
+	if (type.type_alias != TypeID(0) &&
+	    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
+	{
+		return to_member_name(get<SPIRType>(type.type_alias), index);
+	}
+
 	auto &memb = ir.meta[type.self].members;
 	if (index < memb.size() && !memb[index].alias.empty())
 		return memb[index].alias;
@@ -9020,21 +10490,50 @@ bool CompilerGLSL::member_is_non_native_row_major_matrix(const SPIRType &type, u
 	return true;
 }
 
-// Checks whether the member is in packed data type, that might need to be unpacked.
-// GLSL does not define packed data types, but certain subclasses do.
-bool CompilerGLSL::member_is_packed_type(const SPIRType &type, uint32_t index) const
+// Checks if we need to remap physical type IDs when declaring the type in a buffer.
+bool CompilerGLSL::member_is_remapped_physical_type(const SPIRType &type, uint32_t index) const
 {
-	return has_extended_member_decoration(type.self, index, SPIRVCrossDecorationPacked);
+	return has_extended_member_decoration(type.self, index, SPIRVCrossDecorationPhysicalTypeID);
+}
+
+// Checks whether the member is in packed data type, that might need to be unpacked.
+bool CompilerGLSL::member_is_packed_physical_type(const SPIRType &type, uint32_t index) const
+{
+	return has_extended_member_decoration(type.self, index, SPIRVCrossDecorationPhysicalTypePacked);
 }
 
 // Wraps the expression string in a function call that converts the
 // row_major matrix result of the expression to a column_major matrix.
 // Base implementation uses the standard library transpose() function.
 // Subclasses may override to use a different function.
-string CompilerGLSL::convert_row_major_matrix(string exp_str, const SPIRType & /*exp_type*/, bool /*is_packed*/)
+string CompilerGLSL::convert_row_major_matrix(string exp_str, const SPIRType &exp_type, uint32_t /* physical_type_id */,
+                                              bool /*is_packed*/)
 {
 	strip_enclosed_expression(exp_str);
-	return join("transpose(", exp_str, ")");
+	if (!is_matrix(exp_type))
+	{
+		auto column_index = exp_str.find_last_of('[');
+		if (column_index == string::npos)
+			return exp_str;
+
+		auto column_expr = exp_str.substr(column_index);
+		exp_str.resize(column_index);
+
+		auto transposed_expr = type_to_glsl_constructor(exp_type) + "(";
+
+		// Loading a column from a row-major matrix. Unroll the load.
+		for (uint32_t c = 0; c < exp_type.vecsize; c++)
+		{
+			transposed_expr += join(exp_str, '[', c, ']', column_expr);
+			if (c + 1 < exp_type.vecsize)
+				transposed_expr += ", ";
+		}
+
+		transposed_expr += ")";
+		return transposed_expr;
+	}
+	else
+		return join("transpose(", exp_str, ")");
 }
 
 string CompilerGLSL::variable_decl(const SPIRType &type, const string &name, uint32_t id)
@@ -9063,13 +10562,20 @@ void CompilerGLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 	if (is_block)
 		qualifiers = to_interpolation_qualifiers(memberflags);
 
-	statement(layout_for_member(type, index), qualifiers, qualifier,
-	          flags_to_precision_qualifiers_glsl(membertype, memberflags),
+	statement(layout_for_member(type, index), qualifiers, qualifier, flags_to_qualifiers_glsl(membertype, memberflags),
 	          variable_decl(membertype, to_member_name(type, index)), ";");
 }
 
-const char *CompilerGLSL::flags_to_precision_qualifiers_glsl(const SPIRType &type, const Bitset &flags)
+void CompilerGLSL::emit_struct_padding_target(const SPIRType &)
 {
+}
+
+const char *CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, const Bitset &flags)
+{
+	// GL_EXT_buffer_reference variables can be marked as restrict.
+	if (flags.get(DecorationRestrictPointerEXT))
+		return "restrict ";
+
 	// Structs do not have precision qualifiers, neither do doubles (desktop only anyways, so no mediump/highp).
 	if (type.basetype != SPIRType::Float && type.basetype != SPIRType::Int && type.basetype != SPIRType::UInt &&
 	    type.basetype != SPIRType::Image && type.basetype != SPIRType::SampledImage &&
@@ -9122,7 +10628,16 @@ const char *CompilerGLSL::flags_to_precision_qualifiers_glsl(const SPIRType &typ
 
 const char *CompilerGLSL::to_precision_qualifiers_glsl(uint32_t id)
 {
-	return flags_to_precision_qualifiers_glsl(expression_type(id), ir.meta[id].decoration.decoration_flags);
+	auto &type = expression_type(id);
+	bool use_precision_qualifiers = backend.allow_precision_qualifiers || options.es;
+	if (use_precision_qualifiers && (type.basetype == SPIRType::Image || type.basetype == SPIRType::SampledImage))
+	{
+		// Force mediump for the sampler type. We cannot declare 16-bit or smaller image types.
+		auto &result_type = get<SPIRType>(type.image.type);
+		if (result_type.width < 32)
+			return "mediump ";
+	}
+	return flags_to_qualifiers_glsl(type, ir.meta[id].decoration.decoration_flags);
 }
 
 string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
@@ -9260,8 +10775,10 @@ string CompilerGLSL::to_array_size(const SPIRType &type, uint32_t index)
 
 	// Tessellation control and evaluation shaders must have either gl_MaxPatchVertices or unsized arrays for input arrays.
 	// Opt for unsized as it's the more "correct" variant to use.
-	if (type.storage == StorageClassInput && (get_entry_point().model == ExecutionModelTessellationControl ||
-	                                          get_entry_point().model == ExecutionModelTessellationEvaluation))
+	if (type.storage == StorageClassInput &&
+	    (get_entry_point().model == ExecutionModelTessellationControl ||
+	     get_entry_point().model == ExecutionModelTessellationEvaluation) &&
+	    index == uint32_t(type.array.size() - 1))
 		return "";
 
 	auto &size = type.array[index];
@@ -9269,7 +10786,7 @@ string CompilerGLSL::to_array_size(const SPIRType &type, uint32_t index)
 		return to_expression(size);
 	else if (size)
 		return convert_to_string(size);
-	else if (!backend.flexible_member_array_supported)
+	else if (!backend.unsized_array_supported)
 	{
 		// For runtime-sized arrays, we can work around
 		// lack of standard support for this by simply having
@@ -9285,6 +10802,12 @@ string CompilerGLSL::to_array_size(const SPIRType &type, uint32_t index)
 
 string CompilerGLSL::type_to_array_glsl(const SPIRType &type)
 {
+	if (type.pointer && type.storage == StorageClassPhysicalStorageBufferEXT && type.basetype != SPIRType::Struct)
+	{
+		// We are using a wrapped pointer type, and we should not emit any array declarations here.
+		return "";
+	}
+
 	if (type.array.empty())
 		return "";
 
@@ -9332,14 +10855,21 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id)
 	switch (imagetype.basetype)
 	{
 	case SPIRType::Int:
+	case SPIRType::Short:
+	case SPIRType::SByte:
 		res = "i";
 		break;
 	case SPIRType::UInt:
+	case SPIRType::UShort:
+	case SPIRType::UByte:
 		res = "u";
 		break;
 	default:
 		break;
 	}
+
+	// For half image types, we will force mediump for the sampler, and cast to f16 after any sampling operation.
+	// We cannot express a true half texture type in GLSL. Neither for short integer formats for that matter.
 
 	if (type.basetype == SPIRType::Image && type.image.dim == DimSubpassData && options.vulkan_semantics)
 		return res + "subpassInput" + (type.image.ms ? "MS" : "");
@@ -9417,7 +10947,7 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id)
 
 string CompilerGLSL::type_to_glsl_constructor(const SPIRType &type)
 {
-	if (type.array.size() > 1)
+	if (backend.use_array_constructor && type.array.size() > 1)
 	{
 		if (options.flatten_multidimensional_arrays)
 			SPIRV_CROSS_THROW("Cannot flatten constructors of multidimensional array constructors, e.g. float[][]().");
@@ -9428,8 +10958,11 @@ string CompilerGLSL::type_to_glsl_constructor(const SPIRType &type)
 	}
 
 	auto e = type_to_glsl(type);
-	for (uint32_t i = 0; i < type.array.size(); i++)
-		e += "[]";
+	if (backend.use_array_constructor)
+	{
+		for (uint32_t i = 0; i < type.array.size(); i++)
+			e += "[]";
+	}
 	return e;
 }
 
@@ -9438,7 +10971,20 @@ string CompilerGLSL::type_to_glsl_constructor(const SPIRType &type)
 // depend on a specific object's use of that type.
 string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 {
-	// Ignore the pointer type since GLSL doesn't have pointers.
+	if (type.pointer && type.storage == StorageClassPhysicalStorageBufferEXT && type.basetype != SPIRType::Struct)
+	{
+		// Need to create a magic type name which compacts the entire type information.
+		string name = type_to_glsl(get_pointee_type(type));
+		for (size_t i = 0; i < type.array.size(); i++)
+		{
+			if (type.array_size_literal[i])
+				name += join(type.array[i], "_");
+			else
+				name += join("id", type.array[i], "_");
+		}
+		name += "Pointer";
+		return name;
+	}
 
 	switch (type.basetype)
 	{
@@ -9457,6 +11003,9 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		// The depth field is set by calling code based on the variable ID of the sampler, effectively reintroducing
 		// this distinction into the type system.
 		return comparison_ids.count(id) ? "samplerShadow" : "sampler";
+
+	case SPIRType::AccelerationStructureNV:
+		return "accelerationStructureNV";
 
 	case SPIRType::Void:
 		return "void";
@@ -9629,11 +11178,11 @@ void CompilerGLSL::require_extension_internal(const string &ext)
 	if (backend.supports_extensions && !has_extension(ext))
 	{
 		forced_extensions.push_back(ext);
-		force_recompile = true;
+		force_recompile();
 	}
 }
 
-void CompilerGLSL::flatten_buffer_block(uint32_t id)
+void CompilerGLSL::flatten_buffer_block(VariableID id)
 {
 	auto &var = get<SPIRVariable>(id);
 	auto &type = get<SPIRType>(var.basetype);
@@ -9652,6 +11201,11 @@ void CompilerGLSL::flatten_buffer_block(uint32_t id)
 	flattened_buffer_blocks.insert(id);
 }
 
+bool CompilerGLSL::builtin_translates_to_nonarray(spv::BuiltIn /*builtin*/) const
+{
+	return false; // GLSL itself does not need to translate array builtin types to non-array builtin types
+}
+
 bool CompilerGLSL::check_atomic_image(uint32_t id)
 {
 	auto &type = expression_type(id);
@@ -9668,7 +11222,7 @@ bool CompilerGLSL::check_atomic_image(uint32_t id)
 			{
 				flags.clear(DecorationNonWritable);
 				flags.clear(DecorationNonReadable);
-				force_recompile = true;
+				force_recompile();
 			}
 		}
 		return true;
@@ -9742,21 +11296,27 @@ void CompilerGLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 	string decl;
 
 	auto &type = get<SPIRType>(func.return_type);
-	decl += flags_to_precision_qualifiers_glsl(type, return_flags);
+	decl += flags_to_qualifiers_glsl(type, return_flags);
 	decl += type_to_glsl(type);
 	decl += type_to_array_glsl(type);
 	decl += " ";
 
 	if (func.self == ir.default_entry_point)
 	{
-		decl += "main";
+		// If we need complex fallback in GLSL, we just wrap main() in a function
+		// and interlock the entire shader ...
+		if (interlocked_is_complex)
+			decl += "spvMainInterlockedBody";
+		else
+			decl += "main";
+
 		processing_entry_point = true;
 	}
 	else
 		decl += to_name(func.self);
 
 	decl += "(";
-	vector<string> arglist;
+	SmallVector<string> arglist;
 	for (auto &arg : func.arguments)
 	{
 		// Do not pass in separate images or samplers if we're remapping
@@ -9824,6 +11384,8 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 		}
 	}
 
+	if (func.entry_line.file_id != 0)
+		emit_line_directive(func.entry_line.file_id, func.entry_line.line_literal);
 	emit_function_prototype(func, return_flags);
 	begin_scope();
 
@@ -9833,17 +11395,11 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 	current_function = &func;
 	auto &entry_block = get<SPIRBlock>(func.entry_block);
 
-	sort(begin(func.constant_arrays_needed_on_stack), end(func.constant_arrays_needed_on_stack));
-	for (auto &array : func.constant_arrays_needed_on_stack)
-	{
-		auto &c = get<SPIRConstant>(array);
-		auto &type = get<SPIRType>(c.constant_type);
-		statement(variable_decl(type, join("_", array, "_array_copy")), " = ", constant_expression(c), ";");
-	}
-
 	for (auto &v : func.local_variables)
 	{
 		auto &var = get<SPIRVariable>(v);
+		var.deferred_declaration = false;
+
 		if (var.storage == StorageClassWorkgroup)
 		{
 			// Special variable type which cannot have initializer,
@@ -9903,15 +11459,29 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 			var.deferred_declaration = false;
 	}
 
+	// Enforce declaration order for regression testing purposes.
+	for (auto &block_id : func.blocks)
+	{
+		auto &block = get<SPIRBlock>(block_id);
+		sort(begin(block.dominated_variables), end(block.dominated_variables));
+	}
+
 	for (auto &line : current_function->fixup_hooks_in)
 		line();
 
-	entry_block.loop_dominator = SPIRBlock::NoDominator;
 	emit_block_chain(entry_block);
 
 	end_scope();
 	processing_entry_point = false;
 	statement("");
+
+	// Make sure deferred declaration state for local variables is cleared when we are done with function.
+	// We risk declaring Private/Workgroup variables in places we are not supposed to otherwise.
+	for (auto &v : func.local_variables)
+	{
+		auto &var = get<SPIRVariable>(v);
+		var.deferred_declaration = false;
+	}
 }
 
 void CompilerGLSL::emit_fixup()
@@ -9930,18 +11500,11 @@ void CompilerGLSL::emit_fixup()
 	}
 }
 
-bool CompilerGLSL::flush_phi_required(uint32_t from, uint32_t to)
+void CompilerGLSL::flush_phi(BlockID from, BlockID to)
 {
 	auto &child = get<SPIRBlock>(to);
-	for (auto &phi : child.phi_variables)
-		if (phi.parent == from)
-			return true;
-	return false;
-}
-
-void CompilerGLSL::flush_phi(uint32_t from, uint32_t to)
-{
-	auto &child = get<SPIRBlock>(to);
+	if (child.ignore_phi_from_block == from)
+		return;
 
 	unordered_set<uint32_t> temporary_phi_variables;
 
@@ -9966,7 +11529,7 @@ void CompilerGLSL::flush_phi(uint32_t from, uint32_t to)
 				// This is judged to be extremely rare, so deal with it here using a simple, but suboptimal algorithm.
 				bool need_saved_temporary =
 				    find_if(itr + 1, end(child.phi_variables), [&](const SPIRBlock::Phi &future_phi) -> bool {
-					    return future_phi.local_variable == phi.function_variable && future_phi.parent == from;
+					    return future_phi.local_variable == ID(phi.function_variable) && future_phi.parent == from;
 				    }) != end(child.phi_variables);
 
 				if (need_saved_temporary)
@@ -9976,7 +11539,7 @@ void CompilerGLSL::flush_phi(uint32_t from, uint32_t to)
 					if (!var.allocate_temporary_copy)
 					{
 						var.allocate_temporary_copy = true;
-						force_recompile = true;
+						force_recompile();
 					}
 					statement("_", phi.function_variable, "_copy", " = ", to_name(phi.function_variable), ";");
 					temporary_phi_variables.insert(phi.function_variable);
@@ -10001,7 +11564,7 @@ void CompilerGLSL::flush_phi(uint32_t from, uint32_t to)
 	}
 }
 
-void CompilerGLSL::branch_to_continue(uint32_t from, uint32_t to)
+void CompilerGLSL::branch_to_continue(BlockID from, BlockID to)
 {
 	auto &to_block = get<SPIRBlock>(to);
 	if (from == to)
@@ -10012,16 +11575,11 @@ void CompilerGLSL::branch_to_continue(uint32_t from, uint32_t to)
 	{
 		// Just emit the whole block chain as is.
 		auto usage_counts = expression_usage_counts;
-		auto invalid = invalid_expressions;
 
 		emit_block_chain(to_block);
 
-		// Expression usage counts and invalid expressions
-		// are moot after returning from the continue block.
-		// Since we emit the same block multiple times,
-		// we don't want to invalidate ourselves.
+		// Expression usage counts are moot after returning from the continue block.
 		expression_usage_counts = usage_counts;
-		invalid_expressions = invalid;
 	}
 	else
 	{
@@ -10036,23 +11594,23 @@ void CompilerGLSL::branch_to_continue(uint32_t from, uint32_t to)
 			// so just use "self" here.
 			loop_dominator = from;
 		}
-		else if (from_block.loop_dominator != SPIRBlock::NoDominator)
+		else if (from_block.loop_dominator != BlockID(SPIRBlock::NoDominator))
 		{
 			loop_dominator = from_block.loop_dominator;
 		}
 
 		if (loop_dominator != 0)
 		{
-			auto &dominator = get<SPIRBlock>(loop_dominator);
+			auto &cfg = get_cfg_for_current_function();
 
 			// For non-complex continue blocks, we implicitly branch to the continue block
 			// by having the continue block be part of the loop header in for (; ; continue-block).
-			outside_control_flow = block_is_outside_flow_control_from_block(dominator, from_block);
+			outside_control_flow = cfg.node_terminates_control_flow_in_sub_graph(loop_dominator, from);
 		}
 
 		// Some simplification for for-loops. We always end up with a useless continue;
 		// statement since we branch to a loop block.
-		// Walk the CFG, if we uncoditionally execute the block calling continue assuming we're in the loop block,
+		// Walk the CFG, if we unconditionally execute the block calling continue assuming we're in the loop block,
 		// we can avoid writing out an explicit continue statement.
 		// Similar optimization to return statements if we know we're outside flow control.
 		if (!outside_control_flow)
@@ -10060,11 +11618,12 @@ void CompilerGLSL::branch_to_continue(uint32_t from, uint32_t to)
 	}
 }
 
-void CompilerGLSL::branch(uint32_t from, uint32_t to)
+void CompilerGLSL::branch(BlockID from, BlockID to)
 {
 	flush_phi(from, to);
 	flush_control_dependent_expressions(from);
-	flush_all_active_variables();
+
+	bool to_is_continue = is_continue(to);
 
 	// This is only a continue if we branch to our loop dominator.
 	if ((ir.block_meta[to] & ParsedIR::BLOCK_META_LOOP_HEADER_BIT) != 0 && get<SPIRBlock>(from).loop_dominator == to)
@@ -10081,12 +11640,13 @@ void CompilerGLSL::branch(uint32_t from, uint32_t to)
 		// Only sensible solution is to make a ladder variable, which we declare at the top of the switch block,
 		// write to the ladder here, and defer the break.
 		// The loop we're breaking out of must dominate the switch block, or there is no ladder breaking case.
-		if (current_emitting_switch && is_loop_break(to) && current_emitting_switch->loop_dominator != ~0u &&
+		if (current_emitting_switch && is_loop_break(to) &&
+		    current_emitting_switch->loop_dominator != BlockID(SPIRBlock::NoDominator) &&
 		    get<SPIRBlock>(current_emitting_switch->loop_dominator).merge_block == to)
 		{
 			if (!current_emitting_switch->need_ladder_break)
 			{
-				force_recompile = true;
+				force_recompile();
 				current_emitting_switch->need_ladder_break = true;
 			}
 
@@ -10094,12 +11654,25 @@ void CompilerGLSL::branch(uint32_t from, uint32_t to)
 		}
 		statement("break;");
 	}
-	else if (is_continue(to) || (from == to))
+	else if (to_is_continue || from == to)
 	{
 		// For from == to case can happen for a do-while loop which branches into itself.
 		// We don't mark these cases as continue blocks, but the only possible way to branch into
 		// ourselves is through means of continue blocks.
-		branch_to_continue(from, to);
+
+		// If we are merging to a continue block, there is no need to emit the block chain for continue here.
+		// We can branch to the continue block after we merge execution.
+
+		// Here we make use of structured control flow rules from spec:
+		// 2.11: - the merge block declared by a header block cannot be a merge block declared by any other header block
+		//       - each header block must strictly dominate its merge block, unless the merge block is unreachable in the CFG
+		// If we are branching to a merge block, we must be inside a construct which dominates the merge block.
+		auto &block_meta = ir.block_meta[to];
+		bool branching_to_merge =
+		    (block_meta & (ParsedIR::BLOCK_META_SELECTION_MERGE_BIT | ParsedIR::BLOCK_META_MULTISELECT_MERGE_BIT |
+		                   ParsedIR::BLOCK_META_LOOP_MERGE_BIT)) != 0;
+		if (!to_is_continue || !branching_to_merge)
+			branch_to_continue(from, to);
 	}
 	else if (!is_conditional(to))
 		emit_block_chain(get<SPIRBlock>(to));
@@ -10110,11 +11683,18 @@ void CompilerGLSL::branch(uint32_t from, uint32_t to)
 	// Inner scope always takes precedence.
 }
 
-void CompilerGLSL::branch(uint32_t from, uint32_t cond, uint32_t true_block, uint32_t false_block)
+void CompilerGLSL::branch(BlockID from, uint32_t cond, BlockID true_block, BlockID false_block)
 {
-	// If we branch directly to a selection merge target, we don't really need a code path.
+	auto &from_block = get<SPIRBlock>(from);
+	BlockID merge_block = from_block.merge == SPIRBlock::MergeSelection ? from_block.next_block : BlockID(0);
+
+	// If we branch directly to a selection merge target, we don't need a code path.
+	// This covers both merge out of if () / else () as well as a break for switch blocks.
 	bool true_sub = !is_conditional(true_block);
 	bool false_sub = !is_conditional(false_block);
+
+	bool true_block_is_selection_merge = true_block == merge_block;
+	bool false_block_is_selection_merge = false_block == merge_block;
 
 	if (true_sub)
 	{
@@ -10124,7 +11704,11 @@ void CompilerGLSL::branch(uint32_t from, uint32_t cond, uint32_t true_block, uin
 		branch(from, true_block);
 		end_scope();
 
-		if (false_sub || is_continue(false_block) || is_break(false_block))
+		// If we merge to continue, we handle that explicitly in emit_block_chain(),
+		// so there is no need to branch to it directly here.
+		// break; is required to handle ladder fallthrough cases, so keep that in for now, even
+		// if we could potentially handle it in emit_block_chain().
+		if (false_sub || (!false_block_is_selection_merge && is_continue(false_block)) || is_break(false_block))
 		{
 			statement("else");
 			begin_scope();
@@ -10139,7 +11723,7 @@ void CompilerGLSL::branch(uint32_t from, uint32_t cond, uint32_t true_block, uin
 			end_scope();
 		}
 	}
-	else if (false_sub && !true_sub)
+	else if (false_sub)
 	{
 		// Only need false path, use negative conditional.
 		emit_block_hints(get<SPIRBlock>(from));
@@ -10148,7 +11732,7 @@ void CompilerGLSL::branch(uint32_t from, uint32_t cond, uint32_t true_block, uin
 		branch(from, false_block);
 		end_scope();
 
-		if (is_continue(true_block) || is_break(true_block))
+		if ((!true_block_is_selection_merge && is_continue(true_block)) || is_break(true_block))
 		{
 			statement("else");
 			begin_scope();
@@ -10165,48 +11749,10 @@ void CompilerGLSL::branch(uint32_t from, uint32_t cond, uint32_t true_block, uin
 	}
 }
 
-void CompilerGLSL::propagate_loop_dominators(const SPIRBlock &block)
-{
-	// Propagate down the loop dominator block, so that dominated blocks can back trace.
-	if (block.merge == SPIRBlock::MergeLoop || block.loop_dominator)
-	{
-		uint32_t dominator = block.merge == SPIRBlock::MergeLoop ? block.self : block.loop_dominator;
-
-		auto set_dominator = [this](uint32_t self, uint32_t new_dominator) {
-			auto &dominated_block = this->get<SPIRBlock>(self);
-
-			// If we already have a loop dominator, we're trying to break out to merge targets
-			// which should not update the loop dominator.
-			if (!dominated_block.loop_dominator)
-				dominated_block.loop_dominator = new_dominator;
-		};
-
-		// After merging a loop, we inherit the loop dominator always.
-		if (block.merge_block)
-			set_dominator(block.merge_block, block.loop_dominator);
-
-		if (block.true_block)
-			set_dominator(block.true_block, dominator);
-		if (block.false_block)
-			set_dominator(block.false_block, dominator);
-		if (block.next_block)
-			set_dominator(block.next_block, dominator);
-		if (block.default_block)
-			set_dominator(block.default_block, dominator);
-
-		for (auto &c : block.cases)
-			set_dominator(c.block, dominator);
-
-		// In older glslang output continue_block can be == loop header.
-		if (block.continue_block && block.continue_block != block.self)
-			set_dominator(block.continue_block, dominator);
-	}
-}
-
 // FIXME: This currently cannot handle complex continue blocks
 // as in do-while.
 // This should be seen as a "trivial" continue block.
-string CompilerGLSL::emit_continue_block(uint32_t continue_block)
+string CompilerGLSL::emit_continue_block(uint32_t continue_block, bool follow_true_block, bool follow_false_block)
 {
 	auto *block = &get<SPIRBlock>(continue_block);
 
@@ -10214,7 +11760,7 @@ string CompilerGLSL::emit_continue_block(uint32_t continue_block)
 	// if we have to emit temporaries.
 	current_continue_block = block;
 
-	vector<string> statements;
+	SmallVector<string> statements;
 
 	// Capture all statements into our list.
 	auto *old = redirect_statement;
@@ -10223,7 +11769,6 @@ string CompilerGLSL::emit_continue_block(uint32_t continue_block)
 	// Stamp out all blocks one after each other.
 	while ((ir.block_meta[block->self] & ParsedIR::BLOCK_META_LOOP_HEADER_BIT) == 0)
 	{
-		propagate_loop_dominators(*block);
 		// Write out all instructions we have in this block.
 		emit_block_instructions(*block);
 
@@ -10234,10 +11779,19 @@ string CompilerGLSL::emit_continue_block(uint32_t continue_block)
 			block = &get<SPIRBlock>(block->next_block);
 		}
 		// For do while blocks. The last block will be a select block.
-		else if (block->true_block)
+		else if (block->true_block && follow_true_block)
 		{
 			flush_phi(continue_block, block->true_block);
 			block = &get<SPIRBlock>(block->true_block);
+		}
+		else if (block->false_block && follow_false_block)
+		{
+			flush_phi(continue_block, block->false_block);
+			block = &get<SPIRBlock>(block->false_block);
+		}
+		else
+		{
+			SPIRV_CROSS_THROW("Invalid continue block detected!");
 		}
 	}
 
@@ -10393,10 +11947,15 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 				// emitting the continue block can invalidate the condition expression.
 				auto initializer = emit_for_loop_initializers(block);
 				auto condition = to_expression(block.condition);
+
+				// Condition might have to be inverted.
+				if (execution_is_noop(get<SPIRBlock>(block.true_block), get<SPIRBlock>(block.merge_block)))
+					condition = join("!", enclose_expression(condition));
+
 				emit_block_hints(block);
 				if (method != SPIRBlock::MergeToSelectContinueForLoop)
 				{
-					auto continue_block = emit_continue_block(block.continue_block);
+					auto continue_block = emit_continue_block(block.continue_block, false, false);
 					statement("for (", initializer, "; ", condition, "; ", continue_block, ")");
 				}
 				else
@@ -10405,15 +11964,26 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 			}
 
 			case SPIRBlock::WhileLoop:
+			{
 				// This block may be a dominating block, so make sure we flush undeclared variables before building the while loop header.
 				flush_undeclared_variables(block);
 				emit_while_loop_initializers(block);
 				emit_block_hints(block);
-				statement("while (", to_expression(block.condition), ")");
+
+				auto condition = to_expression(block.condition);
+				// Condition might have to be inverted.
+				if (execution_is_noop(get<SPIRBlock>(block.true_block), get<SPIRBlock>(block.merge_block)))
+					condition = join("!", enclose_expression(condition));
+
+				statement("while (", condition, ")");
 				break;
+			}
 
 			default:
-				SPIRV_CROSS_THROW("For/while loop detected, but need while/for loop semantics.");
+				block.disable_block_optimization = true;
+				force_recompile();
+				begin_scope(); // We'll see an end_scope() later.
+				return false;
 			}
 
 			begin_scope();
@@ -10422,7 +11992,7 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 		else
 		{
 			block.disable_block_optimization = true;
-			force_recompile = true;
+			force_recompile();
 			begin_scope(); // We'll see an end_scope() later.
 			return false;
 		}
@@ -10445,7 +12015,7 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 
 		if (current_count == statement_count && condition_is_temporary)
 		{
-			propagate_loop_dominators(child);
+			uint32_t target_block = child.true_block;
 
 			switch (continue_type)
 			{
@@ -10455,30 +12025,52 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 				// emitting the continue block can invalidate the condition expression.
 				auto initializer = emit_for_loop_initializers(block);
 				auto condition = to_expression(child.condition);
-				auto continue_block = emit_continue_block(block.continue_block);
+
+				// Condition might have to be inverted.
+				if (execution_is_noop(get<SPIRBlock>(child.true_block), get<SPIRBlock>(block.merge_block)))
+				{
+					condition = join("!", enclose_expression(condition));
+					target_block = child.false_block;
+				}
+
+				auto continue_block = emit_continue_block(block.continue_block, false, false);
 				emit_block_hints(block);
 				statement("for (", initializer, "; ", condition, "; ", continue_block, ")");
 				break;
 			}
 
 			case SPIRBlock::WhileLoop:
+			{
 				emit_while_loop_initializers(block);
 				emit_block_hints(block);
-				statement("while (", to_expression(child.condition), ")");
+
+				auto condition = to_expression(child.condition);
+				// Condition might have to be inverted.
+				if (execution_is_noop(get<SPIRBlock>(child.true_block), get<SPIRBlock>(block.merge_block)))
+				{
+					condition = join("!", enclose_expression(condition));
+					target_block = child.false_block;
+				}
+
+				statement("while (", condition, ")");
 				break;
+			}
 
 			default:
-				SPIRV_CROSS_THROW("For/while loop detected, but need while/for loop semantics.");
+				block.disable_block_optimization = true;
+				force_recompile();
+				begin_scope(); // We'll see an end_scope() later.
+				return false;
 			}
 
 			begin_scope();
-			branch(child.self, child.true_block);
+			branch(child.self, target_block);
 			return true;
 		}
 		else
 		{
 			block.disable_block_optimization = true;
-			force_recompile = true;
+			force_recompile();
 			begin_scope(); // We'll see an end_scope() later.
 			return false;
 		}
@@ -10489,25 +12081,23 @@ bool CompilerGLSL::attempt_emit_loop_header(SPIRBlock &block, SPIRBlock::Method 
 
 void CompilerGLSL::flush_undeclared_variables(SPIRBlock &block)
 {
-	// Enforce declaration order for regression testing purposes.
-	sort(begin(block.dominated_variables), end(block.dominated_variables));
 	for (auto &v : block.dominated_variables)
 		flush_variable_declaration(v);
 }
 
-void CompilerGLSL::emit_hoisted_temporaries(vector<pair<uint32_t, uint32_t>> &temporaries)
+void CompilerGLSL::emit_hoisted_temporaries(SmallVector<pair<TypeID, ID>> &temporaries)
 {
 	// If we need to force temporaries for certain IDs due to continue blocks, do it before starting loop header.
 	// Need to sort these to ensure that reference output is stable.
 	sort(begin(temporaries), end(temporaries),
-	     [](const pair<uint32_t, uint32_t> &a, const pair<uint32_t, uint32_t> &b) { return a.second < b.second; });
+	     [](const pair<TypeID, ID> &a, const pair<TypeID, ID> &b) { return a.second < b.second; });
 
 	for (auto &tmp : temporaries)
 	{
 		add_local_variable_name(tmp.second);
 		auto &flags = ir.meta[tmp.second].decoration.decoration_flags;
 		auto &type = get<SPIRType>(tmp.first);
-		statement(flags_to_precision_qualifiers_glsl(type, flags), variable_decl(type, to_name(tmp.second)), ";");
+		statement(flags_to_qualifiers_glsl(type, flags), variable_decl(type, to_name(tmp.second)), ";");
 
 		hoisted_temporaries.insert(tmp.second);
 		forced_temporaries.insert(tmp.second);
@@ -10519,11 +12109,10 @@ void CompilerGLSL::emit_hoisted_temporaries(vector<pair<uint32_t, uint32_t>> &te
 
 void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 {
-	propagate_loop_dominators(block);
-
 	bool select_branch_to_true_block = false;
+	bool select_branch_to_false_block = false;
 	bool skip_direct_branch = false;
-	bool emitted_for_loop_header = false;
+	bool emitted_loop_header_variables = false;
 	bool force_complex_continue_block = false;
 
 	emit_hoisted_temporaries(block.declare_temporary);
@@ -10533,8 +12122,22 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		continue_type = continue_block_type(get<SPIRBlock>(block.continue_block));
 
 	// If we have loop variables, stop masking out access to the variable now.
-	for (auto var : block.loop_variables)
-		get<SPIRVariable>(var).loop_variable_enable = true;
+	for (auto var_id : block.loop_variables)
+	{
+		auto &var = get<SPIRVariable>(var_id);
+		var.loop_variable_enable = true;
+		// We're not going to declare the variable directly, so emit a copy here.
+		emit_variable_temporary_copies(var);
+	}
+
+	// Remember deferred declaration state. We will restore it before returning.
+	SmallVector<bool, 64> rearm_dominated_variables(block.dominated_variables.size());
+	for (size_t i = 0; i < block.dominated_variables.size(); i++)
+	{
+		uint32_t var_id = block.dominated_variables[i];
+		auto &var = get<SPIRVariable>(var_id);
+		rearm_dominated_variables[i] = var.deferred_declaration;
+	}
 
 	// This is the method often used by spirv-opt to implement loops.
 	// The loop header goes straight into the continue block.
@@ -10545,8 +12148,12 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		flush_undeclared_variables(block);
 		if (attempt_emit_loop_header(block, SPIRBlock::MergeToSelectContinueForLoop))
 		{
-			select_branch_to_true_block = true;
-			emitted_for_loop_header = true;
+			if (execution_is_noop(get<SPIRBlock>(block.true_block), get<SPIRBlock>(block.merge_block)))
+				select_branch_to_false_block = true;
+			else
+				select_branch_to_true_block = true;
+
+			emitted_loop_header_variables = true;
 			force_complex_continue_block = true;
 		}
 	}
@@ -10556,9 +12163,13 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		flush_undeclared_variables(block);
 		if (attempt_emit_loop_header(block, SPIRBlock::MergeToSelectForLoop))
 		{
-			// The body of while, is actually just the true block, so always branch there unconditionally.
-			select_branch_to_true_block = true;
-			emitted_for_loop_header = true;
+			// The body of while, is actually just the true (or false) block, so always branch there unconditionally.
+			if (execution_is_noop(get<SPIRBlock>(block.true_block), get<SPIRBlock>(block.merge_block)))
+				select_branch_to_false_block = true;
+			else
+				select_branch_to_true_block = true;
+
+			emitted_loop_header_variables = true;
 		}
 	}
 	// This is the newer loop behavior in glslang which branches from Loop header directly to
@@ -10569,13 +12180,14 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		if (attempt_emit_loop_header(block, SPIRBlock::MergeToDirectForLoop))
 		{
 			skip_direct_branch = true;
-			emitted_for_loop_header = true;
+			emitted_loop_header_variables = true;
 		}
 	}
 	else if (continue_type == SPIRBlock::DoWhileLoop)
 	{
 		flush_undeclared_variables(block);
 		emit_while_loop_initializers(block);
+		emitted_loop_header_variables = true;
 		// We have some temporaries where the loop header is the dominator.
 		// We risk a case where we have code like:
 		// for (;;) { create-temporary; break; } consume-temporary;
@@ -10590,6 +12202,7 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 	{
 		flush_undeclared_variables(block);
 		emit_while_loop_initializers(block);
+		emitted_loop_header_variables = true;
 
 		// We have a generic loop without any distinguishable pattern like for, while or do while.
 		get<SPIRBlock>(block.continue_block).complex_continue = true;
@@ -10612,9 +12225,9 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 
 	// If we didn't successfully emit a loop header and we had loop variable candidates, we have a problem
 	// as writes to said loop variables might have been masked out, we need a recompile.
-	if (!emitted_for_loop_header && !block.loop_variables.empty())
+	if (!emitted_loop_header_variables && !block.loop_variables.empty())
 	{
-		force_recompile = true;
+		force_recompile();
 		for (auto var : block.loop_variables)
 			get<SPIRVariable>(var).loop_variable = false;
 		block.loop_variables.clear();
@@ -10661,6 +12274,22 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 			else
 				branch(block.self, block.true_block);
 		}
+		else if (select_branch_to_false_block)
+		{
+			if (force_complex_continue_block)
+			{
+				assert(block.false_block == block.continue_block);
+
+				// We're going to emit a continue block directly here, so make sure it's marked as complex.
+				auto &complex_continue = get<SPIRBlock>(block.continue_block).complex_continue;
+				bool old_complex = complex_continue;
+				complex_continue = true;
+				branch(block.self, block.false_block);
+				complex_continue = old_complex;
+			}
+			else
+				branch(block.self, block.false_block);
+		}
 		else
 			branch(block.self, block.condition, block.true_block, block.false_block);
 		break;
@@ -10668,7 +12297,11 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 	case SPIRBlock::MultiSelect:
 	{
 		auto &type = expression_type(block.condition);
-		bool unsigned_case = type.basetype == SPIRType::UInt || type.basetype == SPIRType::UShort;
+		bool unsigned_case =
+		    type.basetype == SPIRType::UInt || type.basetype == SPIRType::UShort || type.basetype == SPIRType::UByte;
+
+		if (block.merge == SPIRBlock::MergeNone)
+			SPIRV_CROSS_THROW("Switch statement is not structured");
 
 		if (type.basetype == SPIRType::UInt64 || type.basetype == SPIRType::Int64)
 		{
@@ -10690,61 +12323,182 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		if (block.need_ladder_break)
 			statement("bool _", block.self, "_ladder_break = false;");
 
+		// Find all unique case constructs.
+		unordered_map<uint32_t, SmallVector<uint32_t>> case_constructs;
+		SmallVector<uint32_t> block_declaration_order;
+		SmallVector<uint32_t> literals_to_merge;
+
+		// If a switch case branches to the default block for some reason, we can just remove that literal from consideration
+		// and let the default: block handle it.
+		// 2.11 in SPIR-V spec states that for fall-through cases, there is a very strict declaration order which we can take advantage of here.
+		// We only need to consider possible fallthrough if order[i] branches to order[i + 1].
+		for (auto &c : block.cases)
+		{
+			if (c.block != block.next_block && c.block != block.default_block)
+			{
+				if (!case_constructs.count(c.block))
+					block_declaration_order.push_back(c.block);
+				case_constructs[c.block].push_back(c.value);
+			}
+			else if (c.block == block.next_block && block.default_block != block.next_block)
+			{
+				// We might have to flush phi inside specific case labels.
+				// If we can piggyback on default:, do so instead.
+				literals_to_merge.push_back(c.value);
+			}
+		}
+
+		// Empty literal array -> default.
+		if (block.default_block != block.next_block)
+		{
+			auto &default_block = get<SPIRBlock>(block.default_block);
+
+			// We need to slide in the default block somewhere in this chain
+			// if there are fall-through scenarios since the default is declared separately in OpSwitch.
+			// Only consider trivial fall-through cases here.
+			size_t num_blocks = block_declaration_order.size();
+			bool injected_block = false;
+
+			for (size_t i = 0; i < num_blocks; i++)
+			{
+				auto &case_block = get<SPIRBlock>(block_declaration_order[i]);
+				if (execution_is_direct_branch(case_block, default_block))
+				{
+					// Fallthrough to default block, we must inject the default block here.
+					block_declaration_order.insert(begin(block_declaration_order) + i + 1, block.default_block);
+					injected_block = true;
+					break;
+				}
+				else if (execution_is_direct_branch(default_block, case_block))
+				{
+					// Default case is falling through to another case label, we must inject the default block here.
+					block_declaration_order.insert(begin(block_declaration_order) + i, block.default_block);
+					injected_block = true;
+					break;
+				}
+			}
+
+			// Order does not matter.
+			if (!injected_block)
+				block_declaration_order.push_back(block.default_block);
+
+			case_constructs[block.default_block] = {};
+		}
+
+		size_t num_blocks = block_declaration_order.size();
+
+		const auto to_case_label = [](uint32_t literal, bool is_unsigned_case) -> string {
+			return is_unsigned_case ? convert_to_string(literal) : convert_to_string(int32_t(literal));
+		};
+
+		// We need to deal with a complex scenario for OpPhi. If we have case-fallthrough and Phi in the picture,
+		// we need to flush phi nodes outside the switch block in a branch,
+		// and skip any Phi handling inside the case label to make fall-through work as expected.
+		// This kind of code-gen is super awkward and it's a last resort. Normally we would want to handle this
+		// inside the case label if at all possible.
+		for (size_t i = 1; i < num_blocks; i++)
+		{
+			if (flush_phi_required(block.self, block_declaration_order[i]) &&
+			    flush_phi_required(block_declaration_order[i - 1], block_declaration_order[i]))
+			{
+				uint32_t target_block = block_declaration_order[i];
+
+				// Make sure we flush Phi, it might have been marked to be ignored earlier.
+				get<SPIRBlock>(target_block).ignore_phi_from_block = 0;
+
+				auto &literals = case_constructs[target_block];
+
+				if (literals.empty())
+				{
+					// Oh boy, gotta make a complete negative test instead! o.o
+					// Find all possible literals that would *not* make us enter the default block.
+					// If none of those literals match, we flush Phi ...
+					SmallVector<string> conditions;
+					for (size_t j = 0; j < num_blocks; j++)
+					{
+						auto &negative_literals = case_constructs[block_declaration_order[j]];
+						for (auto &case_label : negative_literals)
+							conditions.push_back(join(to_enclosed_expression(block.condition),
+							                          " != ", to_case_label(case_label, unsigned_case)));
+					}
+
+					statement("if (", merge(conditions, " && "), ")");
+					begin_scope();
+					flush_phi(block.self, target_block);
+					end_scope();
+				}
+				else
+				{
+					SmallVector<string> conditions;
+					conditions.reserve(literals.size());
+					for (auto &case_label : literals)
+						conditions.push_back(join(to_enclosed_expression(block.condition),
+						                          " == ", to_case_label(case_label, unsigned_case)));
+					statement("if (", merge(conditions, " || "), ")");
+					begin_scope();
+					flush_phi(block.self, target_block);
+					end_scope();
+				}
+
+				// Mark the block so that we don't flush Phi from header to case label.
+				get<SPIRBlock>(target_block).ignore_phi_from_block = block.self;
+			}
+		}
+
 		emit_block_hints(block);
 		statement("switch (", to_expression(block.condition), ")");
 		begin_scope();
 
-		// Multiple case labels can branch to same block, so find all unique blocks.
-		bool emitted_default = false;
-		unordered_set<uint32_t> emitted_blocks;
-
-		for (auto &c : block.cases)
+		for (size_t i = 0; i < num_blocks; i++)
 		{
-			if (emitted_blocks.count(c.block) != 0)
-				continue;
+			uint32_t target_block = block_declaration_order[i];
+			auto &literals = case_constructs[target_block];
 
-			// Emit all case labels which branch to our target.
-			// FIXME: O(n^2), revisit if we hit shaders with 100++ case labels ...
-			for (auto &other_case : block.cases)
+			if (literals.empty())
 			{
-				if (other_case.block == c.block)
+				// Default case.
+				statement("default:");
+			}
+			else
+			{
+				for (auto &case_literal : literals)
 				{
 					// The case label value must be sign-extended properly in SPIR-V, so we can assume 32-bit values here.
-					auto case_value = unsigned_case ? convert_to_string(uint32_t(other_case.value)) :
-					                                  convert_to_string(int32_t(other_case.value));
-					statement("case ", case_value, label_suffix, ":");
+					statement("case ", to_case_label(case_literal, unsigned_case), label_suffix, ":");
 				}
 			}
 
-			// Maybe we share with default block?
-			if (block.default_block == c.block)
+			auto &case_block = get<SPIRBlock>(target_block);
+			if (backend.support_case_fallthrough && i + 1 < num_blocks &&
+			    execution_is_direct_branch(case_block, get<SPIRBlock>(block_declaration_order[i + 1])))
 			{
-				statement("default:");
-				emitted_default = true;
+				// We will fall through here, so just terminate the block chain early.
+				// We still need to deal with Phi potentially.
+				// No need for a stack-like thing here since we only do fall-through when there is a
+				// single trivial branch to fall-through target..
+				current_emitting_switch_fallthrough = true;
 			}
-
-			// Complete the target.
-			emitted_blocks.insert(c.block);
+			else
+				current_emitting_switch_fallthrough = false;
 
 			begin_scope();
-			branch(block.self, c.block);
+			branch(block.self, target_block);
 			end_scope();
+
+			current_emitting_switch_fallthrough = false;
 		}
 
-		if (!emitted_default)
+		// Might still have to flush phi variables if we branch from loop header directly to merge target.
+		if (flush_phi_required(block.self, block.next_block))
 		{
-			if (block.default_block != block.next_block)
+			if (block.default_block == block.next_block || !literals_to_merge.empty())
 			{
-				statement("default:");
-				begin_scope();
-				if (is_break(block.default_block))
-					SPIRV_CROSS_THROW("Cannot break; out of a switch statement and out of a loop at the same time ...");
-				branch(block.self, block.default_block);
-				end_scope();
-			}
-			else if (flush_phi_required(block.self, block.next_block))
-			{
-				statement("default:");
+				for (auto &case_literal : literals_to_merge)
+					statement("case ", to_case_label(case_literal, unsigned_case), label_suffix, ":");
+
+				if (block.default_block == block.next_block)
+					statement("default:");
+
 				begin_scope();
 				flush_phi(block.self, block.next_block);
 				statement("break;");
@@ -10767,11 +12521,14 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 	}
 
 	case SPIRBlock::Return:
+	{
 		for (auto &line : current_function->fixup_hooks_out)
 			line();
 
 		if (processing_entry_point)
 			emit_fixup();
+
+		auto &cfg = get_cfg_for_current_function();
 
 		if (block.return_value)
 		{
@@ -10781,10 +12538,13 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 				// If we cannot return arrays, we will have a special out argument we can write to instead.
 				// The backend is responsible for setting this up, and redirection the return values as appropriate.
 				if (ir.ids[block.return_value].get_type() != TypeUndef)
-					emit_array_copy("SPIRV_Cross_return_value", block.return_value);
+				{
+					emit_array_copy("SPIRV_Cross_return_value", block.return_value, StorageClassFunction,
+					                get_backing_variable_storage(block.return_value));
+				}
 
-				if (!block_is_outside_flow_control_from_block(get<SPIRBlock>(current_function->entry_block), block) ||
-				    block.loop_dominator != SPIRBlock::NoDominator)
+				if (!cfg.node_terminates_control_flow_in_sub_graph(current_function->entry_block, block.self) ||
+				    block.loop_dominator != BlockID(SPIRBlock::NoDominator))
 				{
 					statement("return;");
 				}
@@ -10796,16 +12556,17 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 					statement("return ", to_expression(block.return_value), ";");
 			}
 		}
-		// If this block is the very final block and not called from control flow,
-		// we do not need an explicit return which looks out of place. Just end the function here.
-		// In the very weird case of for(;;) { return; } executing return is unconditional,
-		// but we actually need a return here ...
-		else if (!block_is_outside_flow_control_from_block(get<SPIRBlock>(current_function->entry_block), block) ||
-		         block.loop_dominator != SPIRBlock::NoDominator)
+		else if (!cfg.node_terminates_control_flow_in_sub_graph(current_function->entry_block, block.self) ||
+		         block.loop_dominator != BlockID(SPIRBlock::NoDominator))
 		{
+			// If this block is the very final block and not called from control flow,
+			// we do not need an explicit return which looks out of place. Just end the function here.
+			// In the very weird case of for(;;) { return; } executing return is unconditional,
+			// but we actually need a return here ...
 			statement("return;");
 		}
 		break;
+	}
 
 	case SPIRBlock::Kill:
 		statement(backend.discard_literal, ";");
@@ -10826,22 +12587,26 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 		if (block.merge != SPIRBlock::MergeSelection)
 			flush_phi(block.self, block.next_block);
 
-		// For merge selects we might have ignored the fact that a merge target
-		// could have been a break; or continue;
-		// We will need to deal with it here.
-		if (is_loop_break(block.next_block))
+		// For switch fallthrough cases, we terminate the chain here, but we still need to handle Phi.
+		if (!current_emitting_switch_fallthrough)
 		{
-			// Cannot check for just break, because switch statements will also use break.
-			assert(block.merge == SPIRBlock::MergeSelection);
-			statement("break;");
+			// For merge selects we might have ignored the fact that a merge target
+			// could have been a break; or continue;
+			// We will need to deal with it here.
+			if (is_loop_break(block.next_block))
+			{
+				// Cannot check for just break, because switch statements will also use break.
+				assert(block.merge == SPIRBlock::MergeSelection);
+				statement("break;");
+			}
+			else if (is_continue(block.next_block))
+			{
+				assert(block.merge == SPIRBlock::MergeSelection);
+				branch_to_continue(block.self, block.next_block);
+			}
+			else if (BlockID(block.self) != block.next_block)
+				emit_block_chain(get<SPIRBlock>(block.next_block));
 		}
-		else if (is_continue(block.next_block))
-		{
-			assert(block.merge == SPIRBlock::MergeSelection);
-			branch_to_continue(block.self, block.next_block);
-		}
-		else
-			emit_block_chain(get<SPIRBlock>(block.next_block));
 	}
 
 	if (block.merge == SPIRBlock::MergeLoop)
@@ -10851,15 +12616,25 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 			// Make sure that we run the continue block to get the expressions set, but this
 			// should become an empty string.
 			// We have no fallbacks if we cannot forward everything to temporaries ...
-			auto statements = emit_continue_block(block.continue_block);
-			if (!statements.empty())
+			const auto &continue_block = get<SPIRBlock>(block.continue_block);
+			bool positive_test = execution_is_noop(get<SPIRBlock>(continue_block.true_block),
+			                                       get<SPIRBlock>(continue_block.loop_dominator));
+
+			uint32_t current_count = statement_count;
+			auto statements = emit_continue_block(block.continue_block, positive_test, !positive_test);
+			if (statement_count != current_count)
 			{
 				// The DoWhile block has side effects, force ComplexLoop pattern next pass.
 				get<SPIRBlock>(block.continue_block).complex_continue = true;
-				force_recompile = true;
+				force_recompile();
 			}
 
-			end_scope_decl(join("while (", to_expression(get<SPIRBlock>(block.continue_block).condition), ")"));
+			// Might have to invert the do-while test here.
+			auto condition = to_expression(continue_block.condition);
+			if (!positive_test)
+				condition = join("!", enclose_expression(condition));
+
+			end_scope_decl(join("while (", condition, ")"));
 		}
 		else
 			end_scope();
@@ -10875,6 +12650,20 @@ void CompilerGLSL::emit_block_chain(SPIRBlock &block)
 
 	// Forget about control dependent expressions now.
 	block.invalidate_expressions.clear();
+
+	// After we return, we must be out of scope, so if we somehow have to re-emit this function,
+	// re-declare variables if necessary.
+	assert(rearm_dominated_variables.size() == block.dominated_variables.size());
+	for (size_t i = 0; i < block.dominated_variables.size(); i++)
+	{
+		uint32_t var = block.dominated_variables[i];
+		get<SPIRVariable>(var).deferred_declaration = rearm_dominated_variables[i];
+	}
+
+	// Just like for deferred declaration, we need to forget about loop variable enable
+	// if our block chain is reinstantiated later.
+	for (auto &var_id : block.loop_variables)
+		get<SPIRVariable>(var_id).loop_variable_enable = false;
 }
 
 void CompilerGLSL::begin_scope()
@@ -10889,6 +12678,14 @@ void CompilerGLSL::end_scope()
 		SPIRV_CROSS_THROW("Popping empty indent stack.");
 	indent--;
 	statement("}");
+}
+
+void CompilerGLSL::end_scope(const string &trailer)
+{
+	if (!indent)
+		SPIRV_CROSS_THROW("Popping empty indent stack.");
+	indent--;
+	statement("}", trailer);
 }
 
 void CompilerGLSL::end_scope_decl()
@@ -10947,13 +12744,65 @@ uint32_t CompilerGLSL::mask_relevant_memory_semantics(uint32_t semantics)
 	                    MemorySemanticsCrossWorkgroupMemoryMask | MemorySemanticsSubgroupMemoryMask);
 }
 
-void CompilerGLSL::emit_array_copy(const string &lhs, uint32_t rhs_id)
+void CompilerGLSL::emit_array_copy(const string &lhs, uint32_t rhs_id, StorageClass, StorageClass)
 {
 	statement(lhs, " = ", to_expression(rhs_id), ";");
 }
 
-void CompilerGLSL::bitcast_from_builtin_load(uint32_t source_id, std::string &expr,
-                                             const spirv_cross::SPIRType &expr_type)
+void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t source_id, std::string &expr)
+{
+	if (!backend.force_gl_in_out_block)
+		return;
+	// This path is only relevant for GL backends.
+
+	auto *var = maybe_get<SPIRVariable>(source_id);
+	if (!var)
+		return;
+
+	if (var->storage != StorageClassInput)
+		return;
+
+	auto &type = get_variable_data_type(*var);
+	if (type.array.empty())
+		return;
+
+	auto builtin = BuiltIn(get_decoration(var->self, DecorationBuiltIn));
+	bool is_builtin = is_builtin_variable(*var) && (builtin == BuiltInPointSize || builtin == BuiltInPosition);
+	bool is_tess = is_tessellation_shader();
+
+	// Tessellation input arrays are special in that they are unsized, so we cannot directly copy from it.
+	// We must unroll the array load.
+	// For builtins, we couldn't catch this case normally,
+	// because this is resolved in the OpAccessChain in most cases.
+	// If we load the entire array, we have no choice but to unroll here.
+	if (is_builtin || is_tess)
+	{
+		auto new_expr = join("_", target_id, "_unrolled");
+		statement(variable_decl(type, new_expr, target_id), ";");
+		string array_expr;
+		if (type.array_size_literal.back())
+		{
+			array_expr = convert_to_string(type.array.back());
+			if (type.array.back() == 0)
+				SPIRV_CROSS_THROW("Cannot unroll an array copy from unsized array.");
+		}
+		else
+			array_expr = to_expression(type.array.back());
+
+		// The array size might be a specialization constant, so use a for-loop instead.
+		statement("for (int i = 0; i < int(", array_expr, "); i++)");
+		begin_scope();
+		if (is_builtin)
+			statement(new_expr, "[i] = gl_in[i].", expr, ";");
+		else
+			statement(new_expr, "[i] = ", expr, "[i];");
+		end_scope();
+
+		expr = move(new_expr);
+	}
+}
+
+void CompilerGLSL::bitcast_from_builtin_load(uint32_t source_id, std::string &expr, const SPIRType &expr_type)
 {
 	auto *var = maybe_get_backing_variable(source_id);
 	if (var)
@@ -10980,6 +12829,7 @@ void CompilerGLSL::bitcast_from_builtin_load(uint32_t source_id, std::string &ex
 	case BuiltInBaseVertex:
 	case BuiltInBaseInstance:
 	case BuiltInDrawIndex:
+	case BuiltInFragStencilRefEXT:
 		expected_type = SPIRType::Int;
 		break;
 
@@ -11000,8 +12850,7 @@ void CompilerGLSL::bitcast_from_builtin_load(uint32_t source_id, std::string &ex
 		expr = bitcast_expression(expr_type, expected_type, expr);
 }
 
-void CompilerGLSL::bitcast_to_builtin_store(uint32_t target_id, std::string &expr,
-                                            const spirv_cross::SPIRType &expr_type)
+void CompilerGLSL::bitcast_to_builtin_store(uint32_t target_id, std::string &expr, const SPIRType &expr_type)
 {
 	// Only interested in standalone builtin variables.
 	if (!has_decoration(target_id, DecorationBuiltIn))
@@ -11016,6 +12865,7 @@ void CompilerGLSL::bitcast_to_builtin_store(uint32_t target_id, std::string &exp
 	case BuiltInLayer:
 	case BuiltInPrimitiveId:
 	case BuiltInViewportIndex:
+	case BuiltInFragStencilRefEXT:
 		expected_type = SPIRType::Int;
 		break;
 
@@ -11028,6 +12878,38 @@ void CompilerGLSL::bitcast_to_builtin_store(uint32_t target_id, std::string &exp
 		auto type = expr_type;
 		type.basetype = expected_type;
 		expr = bitcast_expression(type, expr_type.basetype, expr);
+	}
+}
+
+void CompilerGLSL::convert_non_uniform_expression(const SPIRType &type, std::string &expr)
+{
+	if (*backend.nonuniform_qualifier == '\0')
+		return;
+
+	// Handle SPV_EXT_descriptor_indexing.
+	if (type.basetype == SPIRType::Sampler || type.basetype == SPIRType::SampledImage ||
+	    type.basetype == SPIRType::Image)
+	{
+		// The image/sampler ID must be declared as non-uniform.
+		// However, it is not legal GLSL to have
+		// nonuniformEXT(samplers[index]), so we must move the nonuniform qualifier
+		// to the array indexing, like
+		// samplers[nonuniformEXT(index)].
+		// While the access chain will generally be nonuniformEXT, it's not necessarily so,
+		// so we might have to fixup the OpLoad-ed expression late.
+
+		auto start_array_index = expr.find_first_of('[');
+		auto end_array_index = expr.find_last_of(']');
+		// Doesn't really make sense to declare a non-arrayed image with nonuniformEXT, but there's
+		// nothing we can do here to express that.
+		if (start_array_index == string::npos || end_array_index == string::npos || end_array_index < start_array_index)
+			return;
+
+		start_array_index++;
+
+		expr = join(expr.substr(0, start_array_index), backend.nonuniform_qualifier, "(",
+		            expr.substr(start_array_index, end_array_index - start_array_index), ")",
+		            expr.substr(end_array_index, string::npos));
 	}
 }
 
@@ -11053,4 +12935,125 @@ void CompilerGLSL::reset_name_caches()
 	block_ssbo_names.clear();
 	block_names.clear();
 	function_overloads.clear();
+}
+
+void CompilerGLSL::fixup_type_alias()
+{
+	// Due to how some backends work, the "master" type of type_alias must be a block-like type if it exists.
+	// FIXME: Multiple alias types which are both block-like will be awkward, for now, it's best to just drop the type
+	// alias if the slave type is a block type.
+	ir.for_each_typed_id<SPIRType>([&](uint32_t self, SPIRType &type) {
+		if (type.type_alias && type_is_block_like(type))
+		{
+			// Become the master.
+			ir.for_each_typed_id<SPIRType>([&](uint32_t other_id, SPIRType &other_type) {
+				if (other_id == type.self)
+					return;
+
+				if (other_type.type_alias == type.type_alias)
+					other_type.type_alias = type.self;
+			});
+
+			this->get<SPIRType>(type.type_alias).type_alias = self;
+			type.type_alias = 0;
+		}
+	});
+
+	ir.for_each_typed_id<SPIRType>([&](uint32_t, SPIRType &type) {
+		if (type.type_alias && type_is_block_like(type))
+		{
+			// This is not allowed, drop the type_alias.
+			type.type_alias = 0;
+		}
+		else if (type.type_alias && !type_is_block_like(this->get<SPIRType>(type.type_alias)))
+		{
+			// If the alias master is not a block-like type, there is no reason to use type aliasing.
+			// This case can happen if two structs are declared with the same name, but they are unrelated.
+			// Aliases are only used to deal with aliased types for structs which are used in different buffer types
+			// which all create a variant of the same struct with different DecorationOffset values.
+			type.type_alias = 0;
+		}
+	});
+}
+
+void CompilerGLSL::reorder_type_alias()
+{
+	// Reorder declaration of types so that the master of the type alias is always emitted first.
+	// We need this in case a type B depends on type A (A must come before in the vector), but A is an alias of a type Abuffer, which
+	// means declaration of A doesn't happen (yet), and order would be B, ABuffer and not ABuffer, B. Fix this up here.
+	auto loop_lock = ir.create_loop_hard_lock();
+
+	auto &type_ids = ir.ids_for_type[TypeType];
+	for (auto alias_itr = begin(type_ids); alias_itr != end(type_ids); ++alias_itr)
+	{
+		auto &type = get<SPIRType>(*alias_itr);
+		if (type.type_alias != TypeID(0) &&
+		    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
+		{
+			// We will skip declaring this type, so make sure the type_alias type comes before.
+			auto master_itr = find(begin(type_ids), end(type_ids), ID(type.type_alias));
+			assert(master_itr != end(type_ids));
+
+			if (alias_itr < master_itr)
+			{
+				// Must also swap the type order for the constant-type joined array.
+				auto &joined_types = ir.ids_for_constant_or_type;
+				auto alt_alias_itr = find(begin(joined_types), end(joined_types), *alias_itr);
+				auto alt_master_itr = find(begin(joined_types), end(joined_types), *master_itr);
+				assert(alt_alias_itr != end(joined_types));
+				assert(alt_master_itr != end(joined_types));
+
+				swap(*alias_itr, *master_itr);
+				swap(*alt_alias_itr, *alt_master_itr);
+			}
+		}
+	}
+}
+
+void CompilerGLSL::emit_line_directive(uint32_t file_id, uint32_t line_literal)
+{
+	// If we are redirecting statements, ignore the line directive.
+	// Common case here is continue blocks.
+	if (redirect_statement)
+		return;
+
+	if (options.emit_line_directives)
+	{
+		require_extension_internal("GL_GOOGLE_cpp_style_line_directive");
+		statement_no_indent("#line ", line_literal, " \"", get<SPIRString>(file_id).str, "\"");
+	}
+}
+
+void CompilerGLSL::propagate_nonuniform_qualifier(uint32_t id)
+{
+	// SPIR-V might only tag the very last ID with NonUniformEXT, but for codegen,
+	// we need to know NonUniformEXT a little earlier, when the resource is actually loaded.
+	// Back-propagate the qualifier based on the expression dependency chain.
+
+	if (!has_decoration(id, DecorationNonUniformEXT))
+	{
+		set_decoration(id, DecorationNonUniformEXT);
+		force_recompile();
+	}
+
+	auto *e = maybe_get<SPIRExpression>(id);
+	auto *combined = maybe_get<SPIRCombinedImageSampler>(id);
+	auto *chain = maybe_get<SPIRAccessChain>(id);
+	if (e)
+	{
+		for (auto &expr : e->expression_dependencies)
+			propagate_nonuniform_qualifier(expr);
+		for (auto &expr : e->implied_read_expressions)
+			propagate_nonuniform_qualifier(expr);
+	}
+	else if (combined)
+	{
+		propagate_nonuniform_qualifier(combined->image);
+		propagate_nonuniform_qualifier(combined->sampler);
+	}
+	else if (chain)
+	{
+		for (auto &expr : chain->implied_read_expressions)
+			propagate_nonuniform_qualifier(expr);
+	}
 }
