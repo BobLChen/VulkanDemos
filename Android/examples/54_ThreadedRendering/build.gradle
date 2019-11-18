@@ -62,15 +62,15 @@ task copyTask << {
     }
     
     copy {
-        from '../../../examples/assets/models/plane_z.obj'
-        into 'assets/assets/models/plane_z.obj'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'plane_z.obj'
     }
 
     copy {
-        from '../../../examples/assets/models/xiaonan/nvhai.fbx'
-        into 'assets/assets/models/xiaonan/nvhai.fbx'
-        include '*.*'
+        from '../../../examples/assets/models/xiaonan'
+        into 'assets/assets/models/xiaonan'
+        include 'nvhai.fbx'
     }
 
     copy {

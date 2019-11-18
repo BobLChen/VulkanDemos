@@ -62,9 +62,9 @@ task copyTask << {
     }
     
     copy {
-        from '../../../examples/assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx'
-        into 'assets/assets/models/simplify_BOTI_Dreamsong_Bridge1.fbx'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'simplify_BOTI_Dreamsong_Bridge1.fbx'
     }
 
     copy {

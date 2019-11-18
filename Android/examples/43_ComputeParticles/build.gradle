@@ -62,15 +62,15 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/textures/gradient.png'
-        into 'assets/assets/textures/gradient.png'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'gradient.png'
     }
 
     copy {
-        from '../../../examples/assets/textures/particle.png'
-        into 'assets/assets/textures/particle.png'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'particle.png'
     }
     
     copy {

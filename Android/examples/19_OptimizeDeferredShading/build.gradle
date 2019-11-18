@@ -62,9 +62,9 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/models/Room/miniHouse_FBX.FBX'
-        into 'assets/assets/models/Room/miniHouse_FBX.FBX'
-        include '*.*'
+        from '../../../examples/assets/models/Room'
+        into 'assets/assets/models/Room'
+        include 'miniHouse_FBX.FBX'
     }
     
     copy {

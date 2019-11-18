@@ -68,9 +68,9 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/models/sphere1.obj'
-        into 'assets/assets/models/sphere1.obj'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'sphere1.obj'
     }
         
     copy {

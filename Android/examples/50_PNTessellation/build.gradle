@@ -62,9 +62,9 @@ task copyTask << {
     }
     
     copy {
-        from '../../../examples/assets/models/LizardMage/LizardMage_Lowpoly.obj'
-        into 'assets/assets/models/LizardMage/LizardMage_Lowpoly.obj'
-        include '*.*'
+        from '../../../examples/assets/models/LizardMage'
+        into 'assets/assets/models/LizardMage'
+        include 'LizardMage_Lowpoly.obj'
     }
     
     copy {
