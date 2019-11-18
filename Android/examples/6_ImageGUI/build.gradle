@@ -1,0 +1,74 @@
+apply plugin: 'com.android.application'
+apply from: '../gradle/outputfilename.gradle'
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+def ndkDir = properties.getProperty('ndk.dir')
+def valLayerBinDir = "${ndkDir}/sources/third_party/vulkan/src/build-android/jniLibs"
+android {
+
+    compileSdkVersion 26
+
+    defaultConfig {
+        applicationId "com.monkey.sample.demo06"
+        minSdkVersion 19
+        targetSdkVersion 26
+        versionCode 1
+        versionName "1.0"
+        ndk {
+            abiFilters "armeabi-v7a"
+        }
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++11"
+                arguments "-DANDROID_STL=c++_shared", '-DANDROID_TOOLCHAIN=clang'
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs {
+                srcDirs = ["${valLayerBinDir}"]
+            }
+
+            assets {
+                srcDirs = ['assets']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            debuggable false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+}
+task copyTask << {
+    copy {
+        from '../../../examples/assets/shaders/2_Triangle'
+        into 'assets/assets/shaders/2_Triangle'
+        include '*.*'
+    }
+
+    copy {
+        from '../../../examples/assets/fonts/'
+        into 'assets/assets/fonts/'
+        include '*.*'
+    }
+}
+
+preBuild.dependsOn copyTask
+
+dependencies {
+}

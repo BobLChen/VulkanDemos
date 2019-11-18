@@ -56,7 +56,13 @@ set(ALL_LIBS
 	${Vulkan_LIBRARY}
 	imgui
 	assimp
-	SPIRV_Cross
+	spirv-cross-glsl
+	spirv-cross-hlsl
+	spirv-cross-cpp
+	spirv-cross-reflect
+	spirv-cross-msl
+	spirv-cross-util
+	spirv-cross-core
 	Monkey
 )
 
