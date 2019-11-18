@@ -282,7 +282,7 @@ namespace vk_demo
                 }
                 else if (attributes[j] == VertexAttribute::VA_UV0)
                 {
-					if (aiMesh->HasTextureCoords(i)) 
+					if (aiMesh->HasTextureCoords(0)) 
 					{
 						vertices.push_back(aiMesh->mTextureCoords[0][i].x);
 						vertices.push_back(aiMesh->mTextureCoords[0][i].y);
@@ -295,8 +295,16 @@ namespace vk_demo
                 }
                 else if (attributes[j] == VertexAttribute::VA_UV1)
                 {
-                    vertices.push_back(aiMesh->mTextureCoords[1][i].x);
-                    vertices.push_back(aiMesh->mTextureCoords[1][i].y);
+					if (aiMesh->HasTextureCoords(1))
+					{
+						vertices.push_back(aiMesh->mTextureCoords[1][i].x);
+						vertices.push_back(aiMesh->mTextureCoords[1][i].y);
+					}
+					else
+					{
+						vertices.push_back(0);
+						vertices.push_back(0);
+					}
                 }
                 else if (attributes[j] == VertexAttribute::VA_Normal)
                 {
