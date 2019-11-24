@@ -62,33 +62,33 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/models/head.obj'
-        into 'assets/assets/models/head.obj'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'head.obj'
     }
 
     copy {
-        from '../../../examples/assets/textures/head_diffuse.jpg'
-        into 'assets/assets/textures/head_diffuse.jpg'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'head_diffuse.jpg'
     }
 
     copy {
-        from '../../../examples/assets/textures/head_normal.jpg'
-        into 'assets/assets/textures/head_normal.jpg'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'head_normal.jpg'
     }
 
     copy {
-        from '../../../examples/assets/textures/curvatureLUT.png'
-        into 'assets/assets/textures/curvatureLUT.png'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'curvatureLUT.png'
     }
 
     copy {
-        from '../../../examples/assets/textures/preIntegratedLUT.png'
-        into 'assets/assets/textures/preIntegratedLUT.png'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'preIntegratedLUT.png'
     }
 
     copy {

@@ -62,15 +62,15 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/models/low_poly_tree.fbx'
-        into 'assets/assets/models/low_poly_tree.fbx'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'low_poly_tree.fbx'
     }
 
     copy {
-        from '../../../examples/assets/models/plane_circle.fbx'
-        into 'assets/assets/models/plane_circle.fbx'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'plane_circle.fbx'
     }
     
     copy {

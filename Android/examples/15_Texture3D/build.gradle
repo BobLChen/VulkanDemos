@@ -62,15 +62,15 @@ task copyTask << {
     }
 
     copy {
-        from '../../../examples/assets/models/plane_z.obj'
-        into 'assets/assets/models/plane_z.obj'
-        include '*.*'
+        from '../../../examples/assets/models'
+        into 'assets/assets/models'
+        include 'plane_z.obj'
     }
 
     copy {
-        from '../../../examples/assets/textures/game0.jpg'
-        into 'assets/assets/textures/game0.jpg'
-        include '*.*'
+        from '../../../examples/assets/textures'
+        into 'assets/assets/textures'
+        include 'game0.jpg'
     }
     
     copy {
