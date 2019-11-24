@@ -71,6 +71,11 @@ namespace vk_demo
 			m_World.SetPosition(Vector3(x, y, z));
 		}
 
+		FORCEINLINE void SetOrientation(const Vector3& dir)
+		{
+			m_World.SetOrientation(dir, &Vector3::UpVector, 1.0f);
+		}
+
 		FORCEINLINE void SetRotation(const Vector3& rotation)
 		{
 			m_World.SetRotation(rotation);
