@@ -276,3 +276,6 @@ Reduce 5 float per vertex
 
 ### [58_Imposter](https://github.com/BobLChen/VulkanDemos/tree/master/examples/58_Imposter)
 ![58_Imposter](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/58_Imposter.gif)
+
+### [59_MotionBlur](https://github.com/BobLChen/VulkanDemos/tree/master/examples/59_MotionBlur)
+![59_MotionBlur](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/59_MotionBlur.gif)
