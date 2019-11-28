@@ -7,9 +7,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DNOMINMAX=1")
 
-add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-add_definitions(-std=c++11)
-
 # res data
 add_definitions(-DDEMO_RES_PATH=\"${CMAKE_SOURCE_DIR}/examples/\")
 

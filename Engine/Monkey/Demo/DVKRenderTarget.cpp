@@ -273,5 +273,18 @@ namespace vk_demo
         
         return renderTarget;
     }
+
+	DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo, Vector4 clearColor)
+	{
+		VkDevice device = vulkanDevice->GetInstanceHandle();
+
+		DVKRenderTarget* renderTarget = new DVKRenderTarget(inRenderPassInfo, clearColor);
+		renderTarget->device          = device;
+		renderTarget->renderPass      = new DVKRenderPass(device, renderTarget->rtLayout);
+		renderTarget->frameBuffer     = new DVKFrameBuffer(device, renderTarget->rtLayout, *(renderTarget->renderPass), inRenderPassInfo);
+		renderTarget->extent2D        = renderTarget->frameBuffer->extent2D;
+
+		return renderTarget;
+	}
     
 };
