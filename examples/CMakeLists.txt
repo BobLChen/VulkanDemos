@@ -942,3 +942,18 @@ SETUP_SAMPLE_START(59_MotionBlur)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(59_MotionBlur)
+
+SETUP_SAMPLE_START(60_DepthPeeling)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/60_DepthPeeling/DepthPeelingDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/60_DepthPeeling/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(60_DepthPeeling)

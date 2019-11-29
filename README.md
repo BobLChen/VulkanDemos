@@ -279,3 +279,6 @@ Reduce 5 float per vertex
 
 ### [59_MotionBlur](https://github.com/BobLChen/VulkanDemos/tree/master/examples/59_MotionBlur)
 ![59_MotionBlur](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/59_MotionBlur.gif)
+
+### [60_DepthPeeling](https://github.com/BobLChen/VulkanDemos/tree/master/examples/60_DepthPeeling)
+![60_DepthPeeling](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/60_DepthPeeling.png)
