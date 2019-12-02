@@ -15,6 +15,10 @@
 #include <vector>
 #include <thread>
 
+#define WIDTH   1400
+#define HEIGHT  900
+#define EPSILON 0.0001
+
 class CPURayTracingDemo : public DemoBase
 {
 public:
@@ -64,39 +68,80 @@ public:
 
 private:
 
+	float HitSphere(const Vector3& center, float radius, const Vector3& start, const Vector3& ray)
+	{
+		Vector3 oc = start - center;
+		float b = 2.0f * Vector3::DotProduct(oc, ray);
+		float c = Vector3::DotProduct(oc, oc) - radius * radius;
+		float h = b * b - 4.0f * c;
+
+		if (h < 0.0f) {
+			return -1.0f;
+		}
+
+		float t = (-b - MMath::Sqrt(h)) / 2.0f;
+
+		return t;
+	}
+
 	void CPURayTracing()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
-		uint8 rgba[64 * 64 * 4];
-		for (int32 i = 0; i < 64; ++i)
+		vk_demo::DVKCamera camera;
+		camera.Perspective(PI / 4, WIDTH, HEIGHT, 1.0f, 500.0f);
+		
+		uint8* rgba = new uint8[WIDTH * HEIGHT * 4];
+
+		for (int32 h = 0; h < HEIGHT; ++h)
 		{
-			for (int32 j = 0; j < 64; ++j)
+			for (int32 w = 0; w < WIDTH; ++w)
 			{
-				int32 index = (i * 64 + j) * 4;
-				if ((j & 8) ^ (i & 8))
+				int32 index   = (h * WIDTH + w) * 4;
+				Vector4 color = Vector4(0.2f, 0.2f, 0.2f, 1.0f);
+
+				Vector2 clip = Vector2(float(w) / WIDTH, float(h) / HEIGHT);
+				Vector3 pos  = camera.GetTransform().GetOrigin();
+				Vector3 ray  = Vector3(clip.x * 2.0 - 1.0, -(clip.y * 2.0 - 1.0), 1.0);
+
+				Matrix4x4 invProj = camera.GetProjection();
+				invProj.SetInverse();
+				Matrix4x4 invView = camera.GetView();
+				invView.SetInverse();
+				// clip space to viewspace
+				ray = invProj.TransformPosition(ray);
+				ray.x = ray.x * ray.z;
+				ray.y = ray.y * ray.z;
+				// view space to world space
+				ray = invView.TransformVector(ray);
+				ray.Normalize();
+
+				float t = HitSphere(Vector3(0, 0, 50), 10.0f, pos, ray);
+				
+
+				if (t > EPSILON) 
 				{
-					rgba[index + 0] = 255;
-					rgba[index + 1] = 255;
-					rgba[index + 2] = 255;
-					rgba[index + 3] = 255;
+					Vector3 normal = (pos + ray * t) - Vector3(0, 0, 50);
+					normal /= 10.0f;
+					
+					color.Set(normal.x, normal.y, normal.z, 1.0f);
 				}
-				else
-				{
-					rgba[index + 0] = 0;
-					rgba[index + 1] = 0;
-					rgba[index + 2] = 0;
-					rgba[index + 3] = 255;
-				}
+
+				rgba[index + 0] = 255 * color.x;
+				rgba[index + 1] = 255 * color.y;
+				rgba[index + 2] = 255 * color.z;
+				rgba[index + 3] = 255 * color.w;
 			}
 		}
 
-		m_Texture = vk_demo::DVKTexture::Create2D(rgba, 64 * 64 * 4, VK_FORMAT_R8G8B8A8_UNORM, 64, 64, m_VulkanDevice, cmdBuffer);
+		m_Texture = vk_demo::DVKTexture::Create2D(rgba, WIDTH * HEIGHT * 4, VK_FORMAT_R8G8B8A8_UNORM, WIDTH, HEIGHT, m_VulkanDevice, cmdBuffer);
+		m_Texture->UpdateSampler(VK_FILTER_LINEAR, VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
 
+		delete[] rgba;
 		delete cmdBuffer;
 
 		// -------------------------------------
-		class MyTask : public ThreadTask
+		/*class MyTask : public ThreadTask
 		{
 		public:
 
@@ -125,9 +170,7 @@ private:
 		for (int32 i = 0; i < 20000; ++i) {
 			MyTask* myTask = new MyTask(i);
 			taskPool->AddTask(myTask);
-		}
-
-		
+		}*/
 	}
 
 	void Draw(float time, float delta)
@@ -257,5 +300,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<CPURayTracingDemo>(1400, 900, "CPURayTracingDemo", cmdLine);
+	return std::make_shared<CPURayTracingDemo>(WIDTH, HEIGHT, "CPURayTracingDemo", cmdLine);
 }
