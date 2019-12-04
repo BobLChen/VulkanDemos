@@ -975,6 +975,8 @@ SETUP_SAMPLE_START(61_CPURayTracing)
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadManager.h
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadManager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadTask.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/61_CPURayTracing/*.*")
 	foreach(file ${files})

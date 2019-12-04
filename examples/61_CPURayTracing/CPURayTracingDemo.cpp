@@ -11,6 +11,7 @@
 #include "TaskThread.h"
 #include "ThreadTask.h"
 #include "TaskThreadPool.h"
+#include "RayTracing.h"
 
 #include <vector>
 #include <thread>
@@ -84,54 +85,65 @@ private:
 		return t;
 	}
 
+	uint8 ToUint8(float f)
+	{
+		if (f < 0.0f) {
+			f = 0.0f;
+		}
+		if (f >= 1.0f) {
+			f = 1.0f;
+		}
+		return 255 * f;
+	}
+
 	void CPURayTracing()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
+		// camera
 		vk_demo::DVKCamera camera;
 		camera.Perspective(PI / 4, WIDTH, HEIGHT, 1.0f, 500.0f);
 		
-		uint8* rgba = new uint8[WIDTH * HEIGHT * 4];
+		// tracing
+		std::vector<Raytracing*> raytracings;
+		raytracings.resize(WIDTH * HEIGHT);
+		
+		// scene
+		Scene scene;
+		scene.spheres.push_back(Sphere(Vector3(0, 0, 50), 10));
 
+		// prepare work
 		for (int32 h = 0; h < HEIGHT; ++h)
 		{
 			for (int32 w = 0; w < WIDTH; ++w)
 			{
-				int32 index   = (h * WIDTH + w) * 4;
-				Vector4 color = Vector4(0.2f, 0.2f, 0.2f, 1.0f);
-
-				Vector2 clip = Vector2(float(w) / WIDTH, float(h) / HEIGHT);
-				Vector3 pos  = camera.GetTransform().GetOrigin();
-				Vector3 ray  = Vector3(clip.x * 2.0 - 1.0, -(clip.y * 2.0 - 1.0), 1.0);
-
-				Matrix4x4 invProj = camera.GetProjection();
-				invProj.SetInverse();
-				Matrix4x4 invView = camera.GetView();
-				invView.SetInverse();
-				// clip space to viewspace
-				ray = invProj.TransformPosition(ray);
-				ray.x = ray.x * ray.z;
-				ray.y = ray.y * ray.z;
-				// view space to world space
-				ray = invView.TransformVector(ray);
-				ray.Normalize();
-
-				float t = HitSphere(Vector3(0, 0, 50), 10.0f, pos, ray);
-				
-
-				if (t > EPSILON) 
-				{
-					Vector3 normal = (pos + ray * t) - Vector3(0, 0, 50);
-					normal /= 10.0f;
-					
-					color.Set(normal.x, normal.y, normal.z, 1.0f);
-				}
-
-				rgba[index + 0] = 255 * color.x;
-				rgba[index + 1] = 255 * color.y;
-				rgba[index + 2] = 255 * color.z;
-				rgba[index + 3] = 255 * color.w;
+				int32 index = (h * WIDTH + w);
+				raytracings[index] = new Raytracing(&scene, &camera, w, h, index * 4, WIDTH, HEIGHT);
 			}
+		}
+
+		// start work
+		TaskThreadPool* taskPool = new TaskThreadPool();
+		taskPool->Create(MMath::Max<int32>(std::thread::hardware_concurrency(), 8));
+		
+		for (int32 i = 0; i < raytracings.size(); ++i) {
+			taskPool->AddTask(raytracings[i]);
+		}
+
+		while (taskPool->GetNumQueuedJobs() != 0) {
+			// wait
+		}
+
+		// output color
+		uint8* rgba = new uint8[WIDTH * HEIGHT * 4];
+
+		for (int32 i = 0; i < raytracings.size(); ++i)
+		{
+			Raytracing* tracing = raytracings[i];
+			rgba[tracing->index + 0] = ToUint8(tracing->color.x);
+			rgba[tracing->index + 1] = ToUint8(tracing->color.y);
+			rgba[tracing->index + 2] = ToUint8(tracing->color.z);
+			rgba[tracing->index + 3] = ToUint8(tracing->color.w);
 		}
 
 		m_Texture = vk_demo::DVKTexture::Create2D(rgba, WIDTH * HEIGHT * 4, VK_FORMAT_R8G8B8A8_UNORM, WIDTH, HEIGHT, m_VulkanDevice, cmdBuffer);
@@ -139,38 +151,6 @@ private:
 
 		delete[] rgba;
 		delete cmdBuffer;
-
-		// -------------------------------------
-		/*class MyTask : public ThreadTask
-		{
-		public:
-
-			int32 num;
-
-			MyTask(int32 inNum)
-				: num(inNum)
-			{
-
-			}
-
-			virtual void DoThreadedWork() override
-			{
-				MLOG("DoWork => %d + %d = %d\n", num, num, num + num);
-			}
-
-			virtual void Abandon() override
-			{
-
-			}
-		};
-
-		TaskThreadPool* taskPool = new TaskThreadPool();
-		taskPool->Create(MMath::Max<int32>(std::thread::hardware_concurrency(), 8));
-		
-		for (int32 i = 0; i < 20000; ++i) {
-			MyTask* myTask = new MyTask(i);
-			taskPool->AddTask(myTask);
-		}*/
 	}
 
 	void Draw(float time, float delta)
