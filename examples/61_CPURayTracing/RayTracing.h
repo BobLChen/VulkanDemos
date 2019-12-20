@@ -4,31 +4,44 @@
 #include "Math/Vector3.h"
 #include "Demo/DVKCamera.h"
 #include "ThreadTask.h"
+#include "Material.h"
 
 #define EPSILON 0.0001
 
+struct HitInfo;
+struct Ray;
+
+struct Ray
+{
+	Vector3		start;
+	Vector3		direction;
+};
+
 struct HitInfo
 {
-	bool    hit = false;
-	Vector3 pos;
-	float   dist = -1;
-	Vector3 normal;
-	bool    inside = false;
+	bool		hit = false;
+	Vector3		pos;
+	float		dist = -1;
+	Vector3		normal;
+	bool		inside = false;
+	Material*	material = nullptr;
 };
 
 struct Sphere
 {
-	Vector3 center;
-	float   radius;
+	Vector3		center;
+	float		radius;
+	Material*	material = nullptr;
 
-	Sphere(const Vector3& inCenter, float inRadius)
+	Sphere(const Vector3& inCenter, float inRadius, Material* inMaterial)
 		: center(inCenter)
 		, radius(inRadius)
+		, material(inMaterial)
 	{
 
 	}
 
-	HitInfo HitTest(const Vector3& start, const Vector3& ray);
+	HitInfo HitTest(const Ray& ray);
 };
 
 struct Scene
@@ -71,9 +84,9 @@ public:
 
 private:
 
-	HitInfo IntersectScene(Scene* scene, const Vector3& start, const Vector3& ray);
+	HitInfo IntersectScene(Scene* scene, const Ray& ray);
 
-	Vector4 RayHitScene(const Vector3& start, const Vector3& ray);
+	Vector4 RayHitScene(const Ray& ray, int32 depth);
 
 public:
 
