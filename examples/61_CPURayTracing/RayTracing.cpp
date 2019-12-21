@@ -103,7 +103,7 @@ Vector4 Raytracing::RayHitScene(const Ray& ray, int32 depth)
 			return attenuation * RayHitScene(reflect, depth - 1);
 		}
 		else {
-			return Vector4(0, 0, 0, 1.0);
+			return Vector4(0.1, 0.1, 0.1, 1.0);
 		}
 	}
 	else 

@@ -282,3 +282,6 @@ Reduce 5 float per vertex
 
 ### [60_DepthPeeling](https://github.com/BobLChen/VulkanDemos/tree/master/examples/60_DepthPeeling)
 ![60_DepthPeeling](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/60_DepthPeeling.png)
+
+### [61_CPURayTracing](https://github.com/BobLChen/VulkanDemos/tree/master/examples/61_CPURayTracing)
+![61_CPURayTracing](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/61_CPURayTracing.png)

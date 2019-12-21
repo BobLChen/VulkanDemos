@@ -16,8 +16,8 @@
 #include <vector>
 #include <thread>
 
-#define WIDTH   800
-#define HEIGHT  600
+#define WIDTH   1400
+#define HEIGHT  900
 #define EPSILON 0.0001
 
 class CPURayTracingDemo : public DemoBase
