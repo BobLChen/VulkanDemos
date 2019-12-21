@@ -957,3 +957,35 @@ SETUP_SAMPLE_START(60_DepthPeeling)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(60_DepthPeeling)
+
+SETUP_SAMPLE_START(61_CPURayTracing)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/CPURayTracingDemo.cpp
+
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/Runnable.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RunnableThread.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RunnableThread.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/TaskThread.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/TaskThread.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/TaskThreadPool.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/TaskThreadPool.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadEvent.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadEvent.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadManager.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadManager.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadTask.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/Material.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/Material.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/61_CPURayTracing/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(61_CPURayTracing)
