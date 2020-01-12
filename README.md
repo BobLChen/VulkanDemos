@@ -285,3 +285,6 @@ Reduce 5 float per vertex
 
 ### [61_CPURayTracing](https://github.com/BobLChen/VulkanDemos/tree/master/examples/61_CPURayTracing)
 ![61_CPURayTracing](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/61_CPURayTracing.png)
+
+### [62_RTXRayTracing0](https://github.com/BobLChen/VulkanDemos/tree/master/examples/62_RTXRayTracing0)
+![62_RTXRayTracing0](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/62_RTXRayTracing0.png)
