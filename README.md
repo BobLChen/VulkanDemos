@@ -162,8 +162,10 @@ Vulkan Examples
 ![19_OptimizeDeferredShading](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/19_OptimizeDeferredShading_1.jpg)
 
 ### [20_Material](https://github.com/BobLChen/VulkanDemos/tree/master/examples/20_Material)
+[博客地址](http://xiaopengyou.fun/public/2019/09/20/20_Material/#more)
 
 ### [21_Stencil](https://github.com/BobLChen/VulkanDemos/tree/master/examples/21_Stencil)
+[博客地址](http://xiaopengyou.fun/public/2019/09/27/21_Stencil/#more)
 ![21_Stencil](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/21_Stencil.jpg)
 
 ### [22_RenderTarget(30 Filter)](https://github.com/BobLChen/VulkanDemos/tree/master/examples/21_Stencil)
