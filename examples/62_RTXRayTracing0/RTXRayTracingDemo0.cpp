@@ -400,7 +400,7 @@ private:
 		std::vector<uint16> indices = { 0, 1, 2 };
 
 		m_VertexBuffer = vk_demo::DVKVertexBuffer::Create(m_VulkanDevice, cmdBuffer, vertices, { VertexAttribute::VA_Position });
-		m_IndexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice, cmdBuffer, indices, VK_INDEX_TYPE_UINT16);
+		m_IndexBuffer  = vk_demo::DVKIndexBuffer::Create(m_VulkanDevice, cmdBuffer, indices);
 
 		// geometry info
 		VkGeometryNV geometryNV;
@@ -423,89 +423,15 @@ private:
 		geometryNV.geometry.triangles.transformOffset = 0;
 		
 		// bottom level
-		CreateBottomLevelAS(&geometryNV, 1);
+		CreateBottomLevelAS(cmdBuffer, &geometryNV, 1);
 
 		// top level
-		CreateTopLevelAS();
-
-		// scratch size
-		VkAccelerationStructureMemoryRequirementsInfoNV memoryRequirementsInfo;
-		ZeroVulkanStruct(memoryRequirementsInfo, VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV);
-		memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV;
-
-		VkMemoryRequirements2 bottomLevelASMemoryRequirements2;
-		memoryRequirementsInfo.accelerationStructure = m_BottomLevelAS;
-		vkGetAccelerationStructureMemoryRequirementsNV(device, &memoryRequirementsInfo, &bottomLevelASMemoryRequirements2);
-
-		VkMemoryRequirements2 topLevelASMemoryRequirements2;
-		memoryRequirementsInfo.accelerationStructure = m_TopLevelAS;
-		vkGetAccelerationStructureMemoryRequirementsNV(device, &memoryRequirementsInfo, &topLevelASMemoryRequirements2);
-
-		const VkDeviceSize scratchBufferSize = MMath::Max(bottomLevelASMemoryRequirements2.memoryRequirements.size, topLevelASMemoryRequirements2.memoryRequirements.size);
-		vk_demo::DVKBuffer* scratchBuffer = vk_demo::DVKBuffer::CreateBuffer(m_VulkanDevice, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, scratchBufferSize);
-
-		// begin cmd buffer
-		cmdBuffer->Begin();
-
-		// build bottom-level as
-		VkAccelerationStructureInfoNV accelerationStructureInfo;
-		ZeroVulkanStruct(accelerationStructureInfo, VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_INFO_NV);
-		accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_NV;
-		accelerationStructureInfo.geometryCount = 1;
-		accelerationStructureInfo.pGeometries = &geometryNV;
-
-		vkCmdBuildAccelerationStructureNV(cmdBuffer->cmdBuffer, &accelerationStructureInfo, VK_NULL_HANDLE, 0, VK_FALSE, m_BottomLevelAS, VK_NULL_HANDLE, scratchBuffer->buffer, 0);
-
-		// insert memory barrier
-		VkMemoryBarrier memoryBarrier;
-		ZeroVulkanStruct(memoryBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
-		memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-		memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
-		vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-
-		// build top-level as
-		
-		// geometry instance buffer
-		std::vector<float> transform = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-		};
-
-		VkGeometryInstance geometryInstance;
-		memcpy(geometryInstance.transform, transform.data(), sizeof(float) * 12);
-		geometryInstance.instanceId = 0;
-		geometryInstance.mask = 0xFF;
-		geometryInstance.instanceOffset = 0;
-		geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
-		geometryInstance.accelerationStructureHandle = m_BottomLevelHandle;
-
-		vk_demo::DVKBuffer* geometryInstanceBuffer = vk_demo::DVKBuffer::CreateBuffer(
-			m_VulkanDevice,
-			VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			sizeof(VkGeometryInstance),
-			&geometryInstance
-		);
-
-		// build top as
-		accelerationStructureInfo.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_NV;
-		accelerationStructureInfo.pGeometries = 0;
-		accelerationStructureInfo.geometryCount = 0;
-		accelerationStructureInfo.instanceCount = 1;
-
-		vkCmdBuildAccelerationStructureNV(cmdBuffer->cmdBuffer, &accelerationStructureInfo, geometryInstanceBuffer->buffer, 0, VK_FALSE, m_TopLevelAS, VK_NULL_HANDLE, scratchBuffer->buffer, 0);
-
-		vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
-
-		cmdBuffer->Submit();
+		CreateTopLevelAS(cmdBuffer);
 
 		delete cmdBuffer;
-		delete scratchBuffer;
-		delete geometryInstanceBuffer;
 	}
 
-	void CreateTopLevelAS()
+	void CreateTopLevelAS(vk_demo::DVKCommandBuffer* cmdBuffer)
 	{
 		VkDevice device = m_VulkanDevice->GetInstanceHandle();
 
@@ -543,9 +469,56 @@ private:
 		VERIFYVULKANRESULT(vkBindAccelerationStructureMemoryNV(device, 1, &accelerationStructureMemoryInfo));
 
 		VERIFYVULKANRESULT(vkGetAccelerationStructureHandleNV(device, m_TopLevelAS, sizeof(uint64_t), &m_TopLevelHandle));
+
+		// scratch size
+		memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV;
+		memoryRequirementsInfo.accelerationStructure = m_TopLevelAS;
+
+		VkMemoryRequirements2 topLevelASMemoryRequirements2;
+		vkGetAccelerationStructureMemoryRequirementsNV(device, &memoryRequirementsInfo, &topLevelASMemoryRequirements2);
+
+		vk_demo::DVKBuffer* scratchBuffer = vk_demo::DVKBuffer::CreateBuffer(m_VulkanDevice, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, topLevelASMemoryRequirements2.memoryRequirements.size);
+
+		// geometry instance buffer
+		cmdBuffer->Begin();
+
+		std::vector<float> transform = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+		};
+
+		VkGeometryInstance geometryInstance;
+		memcpy(geometryInstance.transform, transform.data(), sizeof(float) * 12);
+		geometryInstance.instanceId = 0;
+		geometryInstance.mask = 0xFF;
+		geometryInstance.instanceOffset = 0;
+		geometryInstance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_CULL_DISABLE_BIT_NV;
+		geometryInstance.accelerationStructureHandle = m_BottomLevelHandle;
+
+		vk_demo::DVKBuffer* geometryInstanceBuffer = vk_demo::DVKBuffer::CreateBuffer(
+			m_VulkanDevice,
+			VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			sizeof(VkGeometryInstance),
+			&geometryInstance
+		);
+
+		vkCmdBuildAccelerationStructureNV(cmdBuffer->cmdBuffer, &accelerationStructureInfo, geometryInstanceBuffer->buffer, 0, VK_FALSE, m_TopLevelAS, VK_NULL_HANDLE, scratchBuffer->buffer, 0);
+
+		VkMemoryBarrier memoryBarrier;
+		ZeroVulkanStruct(memoryBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+		memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+		memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+		vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+
+		cmdBuffer->Submit();
+
+		delete scratchBuffer;
+		delete geometryInstanceBuffer;
 	}
 
-	void CreateBottomLevelAS(const VkGeometryNV* geometries, int32 geometryCount)
+	void CreateBottomLevelAS(vk_demo::DVKCommandBuffer* cmdBuffer, const VkGeometryNV* geometries, int32 geometryCount)
 	{
 		VkDevice device = m_VulkanDevice->GetInstanceHandle();
 
@@ -585,6 +558,30 @@ private:
 		VERIFYVULKANRESULT(vkBindAccelerationStructureMemoryNV(device, 1, &accelerationStructureMemoryInfo));
 
 		VERIFYVULKANRESULT(vkGetAccelerationStructureHandleNV(device, m_BottomLevelAS, sizeof(uint64_t), &m_BottomLevelHandle));
+
+		// scratch size
+		memoryRequirementsInfo.type = VK_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_TYPE_BUILD_SCRATCH_NV;
+		memoryRequirementsInfo.accelerationStructure = m_BottomLevelAS;
+		VkMemoryRequirements2 bottomLevelASMemoryRequirements2;
+		vkGetAccelerationStructureMemoryRequirementsNV(device, &memoryRequirementsInfo, &bottomLevelASMemoryRequirements2);
+
+		vk_demo::DVKBuffer* scratchBuffer = vk_demo::DVKBuffer::CreateBuffer(m_VulkanDevice, VK_BUFFER_USAGE_RAY_TRACING_BIT_NV, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, bottomLevelASMemoryRequirements2.memoryRequirements.size);
+
+		// begin cmd buffer
+		cmdBuffer->Begin();
+
+		vkCmdBuildAccelerationStructureNV(cmdBuffer->cmdBuffer, &accelerationStructureInfo, VK_NULL_HANDLE, 0, VK_FALSE, m_BottomLevelAS, VK_NULL_HANDLE, scratchBuffer->buffer, 0);
+
+		// insert memory barrier
+		VkMemoryBarrier memoryBarrier;
+		ZeroVulkanStruct(memoryBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+		memoryBarrier.srcAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+		memoryBarrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV | VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV;
+		vkCmdPipelineBarrier(cmdBuffer->cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_NV, 0, 1, &memoryBarrier, 0, 0, 0, 0);
+
+		cmdBuffer->Submit();
+
+		delete scratchBuffer;
 	}
 
 	void DestroyAssets()
