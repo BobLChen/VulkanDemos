@@ -990,12 +990,12 @@ SETUP_SAMPLE_START(61_CPURayTracing)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(61_CPURayTracing)
 
-SETUP_SAMPLE_START(62_RTXRayTracing0)
+SETUP_SAMPLE_START(62_RTXRayTracingBasic)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/62_RTXRayTracing0/RTXRayTracingDemo0.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/62_RTXRayTracingBasic/RTXRayTracingStartBasic.cpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/62_RTXRayTracing0/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/62_RTXRayTracingBasic/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -1003,7 +1003,7 @@ SETUP_SAMPLE_START(62_RTXRayTracing0)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(62_RTXRayTracing0)
+SETUP_SAMPLE_END(62_RTXRayTracingBasic)
 
 SETUP_SAMPLE_START(63_RTXRayTracing1)
 	SET(SOURCE_FILES
