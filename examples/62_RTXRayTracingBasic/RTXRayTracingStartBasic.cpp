@@ -36,10 +36,10 @@ struct CameraParamBlock
 	Matrix4x4 invView;
 };
 
-class RTXRayTracingDemo0 : public DemoBase
+class RTXRayTracingStartBasic : public DemoBase
 {
 public:
-	RTXRayTracingDemo0(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	RTXRayTracingStartBasic(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
@@ -47,7 +47,7 @@ public:
 		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 	}
 
-	virtual ~RTXRayTracingDemo0()
+	virtual ~RTXRayTracingStartBasic()
 	{
 
 	}
@@ -247,9 +247,9 @@ private:
 		pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
-		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracing0/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracing0/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
-		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracing0/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracingBasic/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracingBasic/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
+		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/62_RTXRayTracingBasic/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(3);
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -351,8 +351,8 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/62_RTXRayTracing0/result.vert.spv",
-			"assets/shaders/62_RTXRayTracing0/result.frag.spv"
+			"assets/shaders/62_RTXRayTracingBasic/result.vert.spv",
+			"assets/shaders/62_RTXRayTracingBasic/result.frag.spv"
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(
@@ -613,6 +613,26 @@ private:
 
 	void SetupGfxCommand(int32 backBufferIndex)
 	{
+		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
+
+		VkCommandBufferBeginInfo cmdBeginInfo;
+		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
+
+		// raytracing
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_Pipeline);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, 0);
+
+		VkDeviceSize stride = m_RayTracingPropertiesNV.shaderGroupHandleSize;
+		
+		vkCmdTraceRaysNV(commandBuffer,
+			m_ShaderBindingTable->buffer, stride * 0,
+			m_ShaderBindingTable->buffer, stride * 1, stride,
+			m_ShaderBindingTable->buffer, stride * 2, stride,
+			VK_NULL_HANDLE, 0, 0,
+			m_FrameWidth, m_FrameHeight, 1
+		);
+
 		VkViewport viewport = {};
 		viewport.x = 0;
 		viewport.y = m_FrameHeight;
@@ -626,12 +646,6 @@ private:
 		scissor.extent.height = m_FrameHeight;
 		scissor.offset.x = 0;
 		scissor.offset.y = 0;
-
-		VkCommandBuffer commandBuffer = m_CommandBuffers[backBufferIndex];
-
-		VkCommandBufferBeginInfo cmdBeginInfo;
-		ZeroVulkanStruct(cmdBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-		VERIFYVULKANRESULT(vkBeginCommandBuffer(commandBuffer, &cmdBeginInfo));
 
 		VkClearValue clearValues[2];
 		clearValues[0].color        = { { 0.0f, 0.0f, 0.0f, 1.0f } };
@@ -651,20 +665,6 @@ private:
 
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
-
-		// raytracing
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_Pipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_PipelineLayout, 0, 1, &m_DescriptorSet, 0, 0);
-
-		VkDeviceSize stride = m_RayTracingPropertiesNV.shaderGroupHandleSize;
-		
-		vkCmdTraceRaysNV(commandBuffer,
-			m_ShaderBindingTable->buffer, stride * 0,
-			m_ShaderBindingTable->buffer, stride * 1, stride,
-			m_ShaderBindingTable->buffer, stride * 2, stride,
-			VK_NULL_HANDLE, 0, 0,
-			m_FrameWidth, m_FrameHeight, 1
-		);
 
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 		m_Material->BeginFrame();
@@ -724,5 +724,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RTXRayTracingDemo0>(1400, 900, "RTXRayTracingDemo0", cmdLine);
+	return std::make_shared<RTXRayTracingStartBasic>(1400, 900, "RTXRayTracingStartBasic", cmdLine);
 }
