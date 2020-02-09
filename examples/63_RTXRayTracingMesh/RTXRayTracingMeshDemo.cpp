@@ -512,9 +512,9 @@ private:
 		pipelineLayoutCreateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
-		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracing1/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracing1/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
-		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracing1/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracingMesh/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracingMesh/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
+		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/63_RTXRayTracingMesh/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(3);
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -921,8 +921,8 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/63_RTXRayTracing1/result.vert.spv",
-			"assets/shaders/63_RTXRayTracing1/result.frag.spv"
+			"assets/shaders/63_RTXRayTracingMesh/result.vert.spv",
+			"assets/shaders/63_RTXRayTracingMesh/result.frag.spv"
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(
@@ -1305,5 +1305,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RTXRayTracingDemo0>(1400, 900, "RTXRayTracingDemo1", cmdLine);
+	return std::make_shared<RTXRayTracingDemo0>(1400, 900, "RTXRayTracingMeshDemo", cmdLine);
 }

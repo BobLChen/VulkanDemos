@@ -1005,14 +1005,14 @@ SETUP_SAMPLE_START(62_RTXRayTracingBasic)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(62_RTXRayTracingBasic)
 
-SETUP_SAMPLE_START(63_RTXRayTracing1)
+SETUP_SAMPLE_START(63_RTXRayTracingMesh)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracing1/RTXRayTracingDemo1.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracing1/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracing1/json.hpp
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/RTXRayTracingMeshDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/json.hpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/63_RTXRayTracing1/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/63_RTXRayTracingMesh/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -1020,4 +1020,4 @@ SETUP_SAMPLE_START(63_RTXRayTracing1)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(63_RTXRayTracing1)
+SETUP_SAMPLE_END(63_RTXRayTracingMesh)

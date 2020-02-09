@@ -293,5 +293,5 @@ Reduce 5 float per vertex
 ### [62_RTXRayTracingBasic](https://github.com/BobLChen/VulkanDemos/tree/master/examples/62_RTXRayTracingBasic)
 ![62_RTXRayTracingBasic](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/62_RTXRayTracingBasic.png)
 
-### [63_RTXRayTracing1](https://github.com/BobLChen/VulkanDemos/tree/master/examples/63_RTXRayTracing1)
-![63_RTXRayTracing1](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/63_RTXRayTracing1.png)
+### [63_RTXRayTracingMesh](https://github.com/BobLChen/VulkanDemos/tree/master/examples/63_RTXRayTracingMesh)
+![63_RTXRayTracingMesh](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/63_RTXRayTracingMesh.png)
