@@ -80,6 +80,11 @@ public:
 		m_AppInstanceExtensions.push_back(name);
 	}
 
+	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	{
+		m_PhysicalDeviceFeatures2 = deviceFeatures;
+	}
+
 protected:
 
 	void CreateInstance();
@@ -111,6 +116,7 @@ protected:
     std::vector<const char*>			m_InstanceExtensions;
 	std::vector<const char*>			m_AppDeviceExtensions;
 	std::vector<const char*>			m_AppInstanceExtensions;
+	VkPhysicalDeviceFeatures2*			m_PhysicalDeviceFeatures2 = nullptr;
 
     std::shared_ptr<VulkanDevice>		m_Device;
 

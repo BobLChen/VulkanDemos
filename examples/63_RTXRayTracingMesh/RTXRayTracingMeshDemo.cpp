@@ -144,6 +144,15 @@ public:
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+		ZeroVulkanStruct(m_IndexingFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
+		m_IndexingFeatures.pNext = nullptr;
+		m_IndexingFeatures.runtimeDescriptorArray = true;
+
+		ZeroVulkanStruct(m_EnabledFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+		m_EnabledFeatures2.pNext = &m_IndexingFeatures;
+
+		physicalDeviceFeatures = &m_EnabledFeatures2;
 	}
 
 	virtual ~RTXRayTracingDemo0()
@@ -1272,6 +1281,8 @@ private:
 	PFN_vkGetRayTracingShaderGroupHandlesNV				vkGetRayTracingShaderGroupHandlesNV;
 	PFN_vkCmdTraceRaysNV								vkCmdTraceRaysNV;
 
+	VkPhysicalDeviceDescriptorIndexingFeatures			m_IndexingFeatures;
+	VkPhysicalDeviceFeatures2							m_EnabledFeatures2;
 	VkPhysicalDeviceRayTracingPropertiesNV				m_RayTracingPropertiesNV;
 
 	std::vector<AccelerationStructureInstance>			m_BottomLevelsAS;

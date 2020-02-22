@@ -36,6 +36,8 @@ int32 EnginePreInit(const std::vector<std::string>& cmdLine)
 		g_GameEngine->AddAppDeviceExtensions(extension);
 	}
 
+	g_GameEngine->SetPhysicalDeviceFeatures(g_AppModule->physicalDeviceFeatures);
+
     int32 errorLevel = g_GameEngine->PreInit(cmdLine, width, height, title);
 	if (errorLevel) {
 		return errorLevel;
