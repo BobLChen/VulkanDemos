@@ -105,7 +105,7 @@ void main()
     Triangle triangle = FetchTriangle(gl_InstanceID, gl_PrimitiveID);
     Material material = FetchMaterial(gl_InstanceID);
     
-    vec3 lightDir = normalize(vec3(0, -1, 1));
+    vec3 lightDir = normalize(vec3(0, 1, 1));
     vec3 normal = FetchNormal(triangle, attribs.xy);
     float NdotL = max(dot(lightDir, normal), 0);
     vec2 uv = FetchUV(triangle, attribs.xy);
@@ -116,4 +116,6 @@ void main()
     else {
         hitValue = material.albedo.xyz;
     }
+
+    hitValue *= NdotL;
 }

@@ -572,7 +572,7 @@ private:
 		pipelineCreateInfo.pStages = shaderStages.data();
 		pipelineCreateInfo.groupCount = shaderGroups.size();
 		pipelineCreateInfo.pGroups = shaderGroups.data();
-		pipelineCreateInfo.maxRecursionDepth = 1;
+		pipelineCreateInfo.maxRecursionDepth = 8;
 		pipelineCreateInfo.layout = m_PipelineLayout;
 		VERIFYVULKANRESULT(vkCreateRayTracingPipelinesNV(device, VK_NULL_HANDLE, 1, &pipelineCreateInfo, VULKAN_CPU_ALLOCATOR, &m_Pipeline));
 
