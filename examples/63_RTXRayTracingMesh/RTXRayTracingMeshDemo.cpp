@@ -135,10 +135,10 @@ struct Scene
 	}
 };
 
-class RTXRayTracingDemo0 : public DemoBase
+class RTXRayTracingMeshDemo : public DemoBase
 {
 public:
-	RTXRayTracingDemo0(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	RTXRayTracingMeshDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
@@ -155,7 +155,7 @@ public:
 		physicalDeviceFeatures = &m_EnabledFeatures2;
 	}
 
-	virtual ~RTXRayTracingDemo0()
+	virtual ~RTXRayTracingMeshDemo()
 	{
 
 	}
@@ -1316,5 +1316,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RTXRayTracingDemo0>(1400, 900, "RTXRayTracingMeshDemo", cmdLine);
+	return std::make_shared<RTXRayTracingMeshDemo>(1400, 900, "RTXRayTracingMeshDemo", cmdLine);
 }
