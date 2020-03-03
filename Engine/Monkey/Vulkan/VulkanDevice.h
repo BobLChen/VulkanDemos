@@ -100,6 +100,11 @@ public:
 		m_AppDeviceExtensions.push_back(name);
 	}
 
+	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	{
+		m_PhysicalDeviceFeatures2 = deviceFeatures;
+	}
+
 private:
     
     void MapFormatSupport(PixelFormat format, VkFormat vkFormat);
@@ -135,4 +140,5 @@ private:
     VulkanDeviceMemoryManager*              m_MemoryManager;
 
 	std::vector<const char*>				m_AppDeviceExtensions;
+	VkPhysicalDeviceFeatures2*				m_PhysicalDeviceFeatures2;
 };

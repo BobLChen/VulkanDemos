@@ -10,6 +10,7 @@ Engine* Engine::g_Instance = nullptr;
 Engine::Engine()
     : m_VulkanRHI(nullptr)
 	, m_IsRequestingExit(false)
+	, m_PhysicalDeviceFeatures2(nullptr)
 {
 	Engine::g_Instance = this;
 }
@@ -68,6 +69,8 @@ int32 Engine::PreInit(const std::vector<std::string>& cmdLine, int32 width, int3
 	{
 		m_VulkanRHI->AddAppDeviceExtensions(m_AppDeviceExtensions[i]);
 	}
+
+	m_VulkanRHI->SetPhysicalDeviceFeatures(m_PhysicalDeviceFeatures2);
 
 	m_VulkanRHI->Init();
     

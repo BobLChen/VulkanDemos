@@ -72,6 +72,11 @@ public:
 		m_AppInstanceExtensions.push_back(name);
 	}
 
+	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	{
+		m_PhysicalDeviceFeatures2 = deviceFeatures;
+	}
+
 protected:
     
     void ParseAppPath(const std::vector<std::string>& cmdLine);
@@ -81,7 +86,7 @@ protected:
 	static Engine*						g_Instance;
 
 	std::shared_ptr<VulkanRHI>			m_VulkanRHI;
-	std::shared_ptr<Application>	m_Application;
+	std::shared_ptr<Application>		m_Application;
     
     std::string                         m_AppTitle;
 	std::string							m_AppPath;
@@ -89,4 +94,6 @@ protected:
 
 	std::vector<const char*>			m_AppDeviceExtensions;
 	std::vector<const char*>			m_AppInstanceExtensions;
+	VkPhysicalDeviceFeatures2*			m_PhysicalDeviceFeatures2;
+	
 };

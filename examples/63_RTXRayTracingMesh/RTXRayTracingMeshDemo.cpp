@@ -135,18 +135,27 @@ struct Scene
 	}
 };
 
-class RTXRayTracingDemo0 : public DemoBase
+class RTXRayTracingMeshDemo : public DemoBase
 {
 public:
-	RTXRayTracingDemo0(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	RTXRayTracingMeshDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
 		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+		ZeroVulkanStruct(m_IndexingFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
+		m_IndexingFeatures.pNext = nullptr;
+		m_IndexingFeatures.runtimeDescriptorArray = true;
+
+		ZeroVulkanStruct(m_EnabledFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+		m_EnabledFeatures2.pNext = &m_IndexingFeatures;
+
+		physicalDeviceFeatures = &m_EnabledFeatures2;
 	}
 
-	virtual ~RTXRayTracingDemo0()
+	virtual ~RTXRayTracingMeshDemo()
 	{
 
 	}
@@ -1272,6 +1281,8 @@ private:
 	PFN_vkGetRayTracingShaderGroupHandlesNV				vkGetRayTracingShaderGroupHandlesNV;
 	PFN_vkCmdTraceRaysNV								vkCmdTraceRaysNV;
 
+	VkPhysicalDeviceDescriptorIndexingFeatures			m_IndexingFeatures;
+	VkPhysicalDeviceFeatures2							m_EnabledFeatures2;
 	VkPhysicalDeviceRayTracingPropertiesNV				m_RayTracingPropertiesNV;
 
 	std::vector<AccelerationStructureInstance>			m_BottomLevelsAS;
@@ -1305,5 +1316,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RTXRayTracingDemo0>(1400, 900, "RTXRayTracingMeshDemo", cmdLine);
+	return std::make_shared<RTXRayTracingMeshDemo>(1400, 900, "RTXRayTracingMeshDemo", cmdLine);
 }

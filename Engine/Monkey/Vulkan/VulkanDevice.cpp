@@ -13,6 +13,7 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
     , m_PresentQueue(nullptr)
     , m_FenceManager(nullptr)
     , m_MemoryManager(nullptr)
+	, m_PhysicalDeviceFeatures2(nullptr)
 {
     
 }
@@ -49,6 +50,11 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
+	deviceInfo.pEnabledFeatures        = nullptr;
+	deviceInfo.pNext                   = m_PhysicalDeviceFeatures2;
+	{
+		m_PhysicalDeviceFeatures2->features = m_PhysicalDeviceFeatures;
+	}
 
     MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
     
