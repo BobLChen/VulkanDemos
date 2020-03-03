@@ -281,6 +281,7 @@ protected:
 public:
 	std::vector<const char*>	deviceExtensions;
 	std::vector<const char*>	instanceExtensions;
+	VkPhysicalDeviceFeatures2*	physicalDeviceFeatures = nullptr;
 
 protected:
 

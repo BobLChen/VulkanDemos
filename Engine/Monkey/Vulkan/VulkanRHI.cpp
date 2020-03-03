@@ -260,5 +260,7 @@ void VulkanRHI::SelectAndInitDevice()
 		m_Device->AddAppDeviceExtensions(m_AppDeviceExtensions[i]);
 	}
 
+	m_Device->SetPhysicalDeviceFeatures(m_PhysicalDeviceFeatures2);
+
     m_Device->InitGPU(deviceIndex);
 }

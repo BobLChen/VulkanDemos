@@ -23,24 +23,9 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-// SHADERC_EXPORT tags symbol that will be exposed by the shared library.
-#if defined(SHADERC_SHAREDLIB)
-    #if defined(_WIN32)
-        #if defined(SHADERC_IMPLEMENTATION)
-            #define SHADERC_EXPORT __declspec(dllexport)
-        #else
-            #define SHADERC_EXPORT __declspec(dllimport)
-        #endif
-    #else
-        #if defined(SHADERC_IMPLEMENTATION)
-            #define SHADERC_EXPORT __attribute__((visibility("default")))
-        #else
-            #define SHADERC_EXPORT
-        #endif
-    #endif
-#else
-    #define SHADERC_EXPORT
-#endif
+#include "shaderc/env.h"
+#include "shaderc/status.h"
+#include "shaderc/visibility.h"
 
 // Source language kind.
 typedef enum {
@@ -107,45 +92,12 @@ typedef enum {
 } shaderc_shader_kind;
 
 typedef enum {
-  shaderc_target_env_vulkan,  // create SPIR-V under Vulkan semantics
-  shaderc_target_env_opengl,  // create SPIR-V under OpenGL semantics
-  // NOTE: SPIR-V code generation is not supported for shaders under OpenGL
-  // compatibility profile.
-  shaderc_target_env_opengl_compat,  // create SPIR-V under OpenGL semantics,
-                                     // including compatibility profile
-                                     // functions
-  shaderc_target_env_default = shaderc_target_env_vulkan
-} shaderc_target_env;
-
-typedef enum {
-  // For Vulkan, use Vulkan's mapping of version numbers to integers.
-  // See vulkan.h
-  shaderc_env_version_vulkan_1_0 = (((uint32_t)1 << 22)),
-  shaderc_env_version_vulkan_1_1 = (((uint32_t)1 << 22) | (1 << 12)),
-  // For OpenGL, use the number from #version in shaders.
-  // TODO(dneto): Currently no difference between OpenGL 4.5 and 4.6.
-  // See glslang/Standalone/Standalone.cpp
-  // TODO(dneto): Glslang doesn't accept a OpenGL client version of 460.
-  shaderc_env_version_opengl_4_5 = 450,
-} shaderc_env_version;
-
-typedef enum {
   shaderc_profile_none,  // Used if and only if GLSL version did not specify
                          // profiles.
   shaderc_profile_core,
   shaderc_profile_compatibility,
   shaderc_profile_es,
 } shaderc_profile;
-
-// Indicate the status of a compilation.
-typedef enum {
-  shaderc_compilation_status_success = 0,
-  shaderc_compilation_status_invalid_stage,  // error stage deduction
-  shaderc_compilation_status_compilation_error,
-  shaderc_compilation_status_internal_error,  // unexpected failure
-  shaderc_compilation_status_null_result_object,
-  shaderc_compilation_status_invalid_assembly,
-} shaderc_compilation_status;
 
 // Optimization level.
 typedef enum {
@@ -433,6 +385,14 @@ SHADERC_EXPORT void shaderc_compile_options_set_target_env(
     shaderc_target_env target,
     uint32_t version);
 
+// Sets the target SPIR-V version. The generated module will use this version
+// of SPIR-V.  Each target environment determines what versions of SPIR-V
+// it can consume.  Defaults to the highest version of SPIR-V 1.0 which is
+// required to be supported by the target environment.  E.g. Default to SPIR-V
+// 1.0 for Vulkan 1.0 and SPIR-V 1.3 for Vulkan 1.1.
+SHADERC_EXPORT void shaderc_compile_options_set_target_spirv(
+    shaderc_compile_options_t options, shaderc_spirv_version version);
+
 // Sets the compiler mode to treat all warnings as errors. Note the
 // suppress-warnings mode overrides this option, i.e. if both
 // warning-as-errors and suppress-warnings modes are set, warnings will not
@@ -496,6 +456,17 @@ SHADERC_EXPORT void shaderc_compile_options_set_hlsl_register_set_and_binding(
 // Sets whether the compiler should enable extension
 // SPV_GOOGLE_hlsl_functionality1.
 SHADERC_EXPORT void shaderc_compile_options_set_hlsl_functionality1(
+    shaderc_compile_options_t options, bool enable);
+
+// Sets whether the compiler should invert position.Y output in vertex shader.
+SHADERC_EXPORT void shaderc_compile_options_set_invert_y(
+    shaderc_compile_options_t options, bool enable);
+
+// Sets whether the compiler generates code for max and min builtins which,
+// if given a NaN operand, will return the other operand. Similarly, the clamp
+// builtin will favour the non-NaN operands, as if clamp were implemented
+// as a composition of max and min.
+SHADERC_EXPORT void shaderc_compile_options_set_nan_clamp(
     shaderc_compile_options_t options, bool enable);
 
 // An opaque handle to the results of a call to any shaderc_compile_into_*()

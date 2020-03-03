@@ -69,22 +69,6 @@ public:
 
 private:
 
-	float HitSphere(const Vector3& center, float radius, const Vector3& start, const Vector3& ray)
-	{
-		Vector3 oc = start - center;
-		float b = 2.0f * Vector3::DotProduct(oc, ray);
-		float c = Vector3::DotProduct(oc, oc) - radius * radius;
-		float h = b * b - 4.0f * c;
-
-		if (h < 0.0f) {
-			return -1.0f;
-		}
-
-		float t = (-b - MMath::Sqrt(h)) / 2.0f;
-
-		return t;
-	}
-
 	uint8 ToUint8(float f)
 	{
 		if (f < 0.0f) {
@@ -96,13 +80,23 @@ private:
 		return 255 * f;
 	}
 
+	Vector4 ToGammaSpace(Vector4 color)
+	{
+		Vector4 ret;
+		ret.x = MMath::Pow(color.x, 1.0f / 2.2f);
+		ret.y = MMath::Pow(color.y, 1.0f / 2.2f);
+		ret.z = MMath::Pow(color.z, 1.0f / 2.2f);
+		ret.w = MMath::Pow(color.w, 1.0f / 2.2f);
+		return ret;
+	}
+
 	void CPURayTracing()
 	{
 		vk_demo::DVKCommandBuffer* cmdBuffer = vk_demo::DVKCommandBuffer::Create(m_VulkanDevice, m_CommandPool);
 
 		// camera
 		vk_demo::DVKCamera camera;
-		camera.Perspective(PI / 4, WIDTH, HEIGHT, 1.0f, 500.0f);
+		camera.Perspective(PI / 4, WIDTH, HEIGHT, 0.01f, 100.0f);
 		
 		// tracing
 		std::vector<Raytracing*> raytracings;
@@ -110,7 +104,10 @@ private:
 		
 		// scene
 		Scene scene;
-		scene.spheres.push_back(Sphere(Vector3(0, 0, 50), 10));
+		scene.spheres.push_back(Sphere(Vector3(0, 0, 5), 0.5f, new DiffuseMaterial(Vector4(0.8f, 0.3f, 0.3f, 1.0f))));
+		scene.spheres.push_back(Sphere(Vector3(0, -100.5f, 5), 100.0f, new MetalMaterial(Vector4(0.8f, 0.8f, 0.0f, 1.0f), 0.0f)));
+		scene.spheres.push_back(Sphere(Vector3(-1, 0, 5), 0.5f, new MetalMaterial(Vector4(0.8f, 0.8f, 0.8f, 1.0f), 0.2f)));
+		scene.spheres.push_back(Sphere(Vector3(1, 0, 5), 0.5f, new MetalMaterial(Vector4(0.8f, 0.6f, 0.2f, 1.0f), 0.2f)));
 
 		// prepare work
 		for (int32 h = 0; h < HEIGHT; ++h)
@@ -140,10 +137,14 @@ private:
 		for (int32 i = 0; i < raytracings.size(); ++i)
 		{
 			Raytracing* tracing = raytracings[i];
+			tracing->color = ToGammaSpace(tracing->color);
+
 			rgba[tracing->index + 0] = ToUint8(tracing->color.x);
 			rgba[tracing->index + 1] = ToUint8(tracing->color.y);
 			rgba[tracing->index + 2] = ToUint8(tracing->color.z);
 			rgba[tracing->index + 3] = ToUint8(tracing->color.w);
+
+			delete tracing;
 		}
 
 		m_Texture = vk_demo::DVKTexture::Create2D(rgba, WIDTH * HEIGHT * 4, VK_FORMAT_R8G8B8A8_UNORM, WIDTH, HEIGHT, m_VulkanDevice, cmdBuffer);

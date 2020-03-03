@@ -202,14 +202,14 @@ class CompileOptions {
         options_,
         [](void* user_data, const char* requested_source, int type,
            const char* requesting_source, size_t include_depth) {
-          auto* includer = static_cast<IncluderInterface*>(user_data);
-          return includer->GetInclude(requested_source,
+          auto* sub_includer = static_cast<IncluderInterface*>(user_data);
+          return sub_includer->GetInclude(requested_source,
                                       (shaderc_include_type)type,
                                       requesting_source, include_depth);
         },
         [](void* user_data, shaderc_include_result* include_result) {
-          auto* includer = static_cast<IncluderInterface*>(user_data);
-          return includer->ReleaseInclude(include_result);
+          auto* sub_includer = static_cast<IncluderInterface*>(user_data);
+          return sub_includer->ReleaseInclude(include_result);
         },
         includer_.get());
   }
@@ -244,6 +244,15 @@ class CompileOptions {
   // if |target| is Vulkan, and it maps to OpenGL 4.5 if |target| is OpenGL.
   void SetTargetEnvironment(shaderc_target_env target, uint32_t version) {
     shaderc_compile_options_set_target_env(options_, target, version);
+  }
+
+  // Sets the target SPIR-V version.  The generated module will use this version
+  // of SPIR-V.  Each target environment determines what versions of SPIR-V
+  // it can consume.  Defaults to the highest version of SPIR-V 1.0 which is
+  // required to be supported by the target environment.  E.g. Default to SPIR-V
+  // 1.0 for Vulkan 1.0 and SPIR-V 1.3 for Vulkan 1.1.
+  void SetTargetSpirv(shaderc_spirv_version version) {
+    shaderc_compile_options_set_target_spirv(options_, version);
   }
 
   // Sets the compiler mode to make all warnings into errors. Note the
@@ -324,6 +333,19 @@ class CompileOptions {
   // SPV_GOOGLE_hlsl_functionality1.
   void SetHlslFunctionality1(bool enable) {
     shaderc_compile_options_set_hlsl_functionality1(options_, enable);
+  }
+
+  // Sets whether the compiler should invert position.Y output in vertex shader.
+  void SetInvertY(bool enable) {
+    shaderc_compile_options_set_invert_y(options_, enable);
+  }
+
+  // Sets whether the compiler should generates code for max an min which,
+  // if given a NaN operand, will return the other operand. Similarly, the
+  // clamp builtin will favour the non-NaN operands, as if clamp were
+  // implemented as a composition of max and min.
+  void SetNanClamp(bool enable) {
+    shaderc_compile_options_set_nan_clamp(options_, enable);
   }
 
  private:

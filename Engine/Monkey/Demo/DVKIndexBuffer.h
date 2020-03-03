@@ -39,7 +39,9 @@ namespace vk_demo
 			vkCmdBindIndexBuffer(cmdBuffer, dvkBuffer->buffer, 0, indexType);
 		}
 
-		static DVKIndexBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<uint16> indices, VkIndexType type = VK_INDEX_TYPE_UINT16);
+		static DVKIndexBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<uint16> indices);
+
+		static DVKIndexBuffer* Create(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, std::vector<uint32> indices);
 
 	public:
 		VkDevice		device = VK_NULL_HANDLE;

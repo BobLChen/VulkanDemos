@@ -977,6 +977,8 @@ SETUP_SAMPLE_START(61_CPURayTracing)
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/ThreadTask.h
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.h
 		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/RayTracing.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/Material.h
+		${CMAKE_CURRENT_SOURCE_DIR}/61_CPURayTracing/Material.cpp
 	)
 	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/61_CPURayTracing/*.*")
 	foreach(file ${files})
@@ -987,3 +989,35 @@ SETUP_SAMPLE_START(61_CPURayTracing)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(61_CPURayTracing)
+
+SETUP_SAMPLE_START(62_RTXRayTracingBasic)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/62_RTXRayTracingBasic/RTXRayTracingStartBasic.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/62_RTXRayTracingBasic/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(62_RTXRayTracingBasic)
+
+SETUP_SAMPLE_START(63_RTXRayTracingMesh)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/RTXRayTracingMeshDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/json.hpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/63_RTXRayTracingMesh/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(63_RTXRayTracingMesh)
