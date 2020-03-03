@@ -58,7 +58,7 @@ void TaskThreadPool::Destroy()
 	{
 		std::lock_guard<std::mutex> lock(m_SynchMutex);
 
-		if (m_AllThreads.size() == m_QueuedTask.size()) {
+		if (m_AllThreads.size() == m_QueuedThreads.size()) {
 			break;
 		}
 	}

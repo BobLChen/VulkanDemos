@@ -1,7 +1,7 @@
 ﻿#include "ThreadEvent.h"
 
 ThreadEvent::ThreadEvent(bool isManualReset)
-	: m_Initialized(false)
+	: m_Initialized(true)
 	, m_IsManualReset(isManualReset)
 	, m_Triggered(TRIGGERED_NONE)
 	, m_WaitingThreads(0)
