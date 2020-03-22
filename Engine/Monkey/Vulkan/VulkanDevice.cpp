@@ -50,10 +50,14 @@ void VulkanDevice::CreateDevice()
 	deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 	deviceInfo.enabledLayerCount       = uint32_t(validationLayers.size());
 	deviceInfo.ppEnabledLayerNames     = validationLayers.data();
-	deviceInfo.pEnabledFeatures        = nullptr;
-	deviceInfo.pNext                   = m_PhysicalDeviceFeatures2;
-	{
+
+	if (m_PhysicalDeviceFeatures2) {
+		deviceInfo.pNext            = m_PhysicalDeviceFeatures2;
+		deviceInfo.pEnabledFeatures = nullptr;
 		m_PhysicalDeviceFeatures2->features = m_PhysicalDeviceFeatures;
+	}
+	else {
+		deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
 	}
 
     MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
@@ -144,8 +148,7 @@ void VulkanDevice::CreateDevice()
 
 	deviceInfo.queueCreateInfoCount = uint32_t(queueFamilyInfos.size());
 	deviceInfo.pQueueCreateInfos    = queueFamilyInfos.data();
-	deviceInfo.pEnabledFeatures     = &m_PhysicalDeviceFeatures;
-
+	
 	VkResult result = vkCreateDevice(m_PhysicalDevice, &deviceInfo, VULKAN_CPU_ALLOCATOR, &m_Device);
 	if (result == VK_ERROR_INITIALIZATION_FAILED)
 	{
