@@ -1038,3 +1038,20 @@ SETUP_SAMPLE_START(64_RTXRayTracingSimple)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(64_RTXRayTracingSimple)
+
+SETUP_SAMPLE_START(65_RTXRayTracingReflection)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/RTXRayTracingReflectionDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/json.hpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/65_RTXRayTracingReflection/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(65_RTXRayTracingReflection)
