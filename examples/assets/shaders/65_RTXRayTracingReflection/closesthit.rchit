@@ -103,6 +103,13 @@ Material FetchMaterial(uint geometryIndex)
     return materials.datas[object.x];
 }
 
+float Schlick(const float cosine, const float refractionIndex)
+{
+	float r0 = (1 - refractionIndex) / (1 + refractionIndex);
+	r0 *= r0;
+	return r0 + (1 - r0) * pow(1 - cosine, 5);
+}
+
 RayPayloadInfo Scatter(const vec3 color, float roughness, const vec3 direction, const vec3 normal, const float t, inout uint seed)
 {
     const vec3 reflected = reflect(direction, normal);
@@ -114,8 +121,30 @@ RayPayloadInfo Scatter(const vec3 color, float roughness, const vec3 direction, 
     rayInfo.colorAndDistance = colorAndDistance;
     rayInfo.scatterDirection = scatter;
     rayInfo.randomSeed = seed;
-    
+
     return rayInfo;
+
+    // const float RefractionIndex = 5.0;
+    // const float NdotL = dot(direction, normal);
+	// const vec3 outwardNormal = NdotL > 0 ? -normal : normal;
+	// const float niOverNt = NdotL > 0 ? RefractionIndex : 1 / RefractionIndex;
+	// const float cosine = NdotL > 0 ? RefractionIndex * NdotL : -NdotL;
+	// const vec3 refracted = refract(direction, outwardNormal, niOverNt);
+	// const float reflectProb = refracted != vec3(0, 0, 0) ? Schlick(cosine, RefractionIndex) : 1;
+    
+    // RayPayloadInfo rayInfo;
+    // if (RandomFloat(seed) < reflectProb) {
+    //     rayInfo.colorAndDistance = vec4(color.rgb, t);
+    //     rayInfo.scatterDirection = vec4(reflect(direction, normal), 1);
+    //     rayInfo.randomSeed = seed;
+    // }
+    // else {
+    //     rayInfo.colorAndDistance = vec4(color.rgb, t);
+    //     rayInfo.scatterDirection = vec4(refracted, 1);
+    //     rayInfo.randomSeed = seed;
+    // }
+
+    // return rayInfo;
 }
 
 void main()
