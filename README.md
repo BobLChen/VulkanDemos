@@ -301,3 +301,6 @@ Reduce 5 float per vertex
 
 ### [65_RTXRayTracingReflection](https://github.com/BobLChen/VulkanDemos/tree/master/examples/65_RTXRayTracingReflection)
 ![65_RTXRayTracingReflection](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/65_RTXRayTracingReflection.png)
+
+### [66_RTXRayTracingHitGroup](https://github.com/BobLChen/VulkanDemos/tree/master/examples/66_RTXRayTracingHitGroup)
+![66_RTXRayTracingHitGroup](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/66_RTXRayTracingHitGroup.png)
