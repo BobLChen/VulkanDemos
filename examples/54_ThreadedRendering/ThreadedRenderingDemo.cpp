@@ -6,6 +6,7 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
+#include <functional>
 #include <vector>
 #include <thread>
 #include <mutex>

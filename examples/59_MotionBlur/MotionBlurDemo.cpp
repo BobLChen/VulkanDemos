@@ -6,6 +6,10 @@
 #include "Math/Vector4.h"
 #include "Math/Matrix4x4.h"
 
+#if PLATFORM_LINUX
+	#include <unistd.h>
+#endif
+
 #include <vector>
 
 #define MESH_SIZE 11
@@ -92,7 +96,13 @@ private:
 			m_PreviousMVP[i].proj  = m_ViewCamera.GetProjection();
 		}
 
-		Sleep(14);
+		#if PLATFORM_LINUX
+			usleep(1400);
+		#endif
+
+		#if PLATFORM_WINDOWS
+			Sleep(14);
+		#endif
 	}
 
 	bool UpdateUI(float time, float delta)
