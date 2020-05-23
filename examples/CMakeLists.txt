@@ -1072,3 +1072,20 @@ SETUP_SAMPLE_START(66_RTXRayTracingHitGroup)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(66_RTXRayTracingHitGroup)
+
+SETUP_SAMPLE_START(67_RTXRayTracingDirectLighting)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingDirectLighting/RTXRayTracingDirectLightingDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingDirectLighting/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingDirectLighting/json.hpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/67_RTXRayTracingDirectLighting/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(67_RTXRayTracingDirectLighting)
