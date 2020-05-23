@@ -3,6 +3,7 @@
 #include "Common/Common.h"
 #include "ThreadEvent.h"
 
+#include <thread>
 #include <string>
 
 class Runnable;
