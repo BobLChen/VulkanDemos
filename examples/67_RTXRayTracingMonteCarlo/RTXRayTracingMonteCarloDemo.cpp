@@ -551,9 +551,9 @@ private:
 		pipelineLayoutCreateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
-		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
-		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingMonteCarlo/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingMonteCarlo/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
+		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingMonteCarlo/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(3);
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1030,8 +1030,8 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/66_RTXRayTracingMonteCarlo/result.vert.spv",
-			"assets/shaders/66_RTXRayTracingMonteCarlo/result.frag.spv"
+			"assets/shaders/67_RTXRayTracingMonteCarlo/result.vert.spv",
+			"assets/shaders/67_RTXRayTracingMonteCarlo/result.frag.spv"
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(

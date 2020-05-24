@@ -1077,14 +1077,14 @@ SETUP_SAMPLE_START(66_RTXRayTracingHitGroup)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(66_RTXRayTracingHitGroup)
 
-SETUP_SAMPLE_START(66_RTXRayTracingMonteCarlo)
+SETUP_SAMPLE_START(67_RTXRayTracingMonteCarlo)
 	SET(SOURCE_FILES
 		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/RTXRayTracingMonteCarloDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/json.hpp
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/RTXRayTracingMonteCarloDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/json.hpp
 	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/66_RTXRayTracingMonteCarlo/*.*")
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/67_RTXRayTracingMonteCarlo/*.*")
 	foreach(file ${files})
 		SET(ASSETS
 			${ASSETS}
@@ -1092,4 +1092,4 @@ SETUP_SAMPLE_START(66_RTXRayTracingMonteCarlo)
 		)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(66_RTXRayTracingMonteCarlo)
+SETUP_SAMPLE_END(67_RTXRayTracingMonteCarlo)
