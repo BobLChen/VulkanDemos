@@ -1076,3 +1076,20 @@ SETUP_SAMPLE_START(66_RTXRayTracingHitGroup)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(66_RTXRayTracingHitGroup)
+
+SETUP_SAMPLE_START(66_RTXRayTracingMonteCarlo)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/RTXRayTracingMonteCarloDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/tiny_gltf.h
+		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingMonteCarlo/json.hpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/66_RTXRayTracingMonteCarlo/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(66_RTXRayTracingMonteCarlo)

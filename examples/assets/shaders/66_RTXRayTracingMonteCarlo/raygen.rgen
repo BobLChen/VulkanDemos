@@ -1,0 +1,85 @@
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#extension GL_NV_ray_tracing : require
+
+#include "common.glsl"
+
+layout(binding = 0, set = 0) uniform accelerationStructureNV topLevelAS;
+layout(binding = 1, set = 0, rgba32f) uniform image2D image;
+
+layout(binding = 2, set = 0) uniform CameraProperties 
+{
+	vec4 lens;
+	vec4 pos;
+	vec4 samplesAndSeed;
+	vec4 param;
+	mat4 invProj;
+	mat4 invView;
+} cameraParam;
+
+layout(location = 0) rayPayloadNV RayPayloadInfo rayInfo;
+
+void main() 
+{
+	uint NumberOfSamples = uint(cameraParam.samplesAndSeed.x);
+	uint NumberOfBounces = uint(cameraParam.samplesAndSeed.y);
+	
+	rayInfo.seedAndRandom.xy = gl_LaunchIDNV.xy;
+	rayInfo.seedAndRandom.zw = cameraParam.samplesAndSeed.zw;
+
+	vec3 pixelColor = vec3(0, 0, 0);
+
+	for (uint s = 0; s < NumberOfSamples; ++s)
+	{
+		const vec2 pixel = vec2(gl_LaunchIDNV.x + Rand(rayInfo), gl_LaunchIDNV.y + Rand(rayInfo));
+		const vec2 uv = (pixel / gl_LaunchSizeNV.xy);
+
+		vec3 origin = cameraParam.pos.xyz;
+		vec3 direction = vec3(uv.x * 2.0 - 1.0, -(uv.y * 2.0 - 1.0), 1.0); // flip Y
+
+		// clip to view space
+		direction = (cameraParam.invProj * vec4(direction, 1.0)).xyz;
+		direction.x = direction.x * direction.z;
+		direction.y = direction.y * direction.z;
+
+		// view space to world space
+		direction.xyz = (cameraParam.invView * vec4(direction, 0.0)).xyz;
+		direction.xyz = normalize(direction.xyz);
+
+		// ray color
+		vec3 rayColor = vec3(1, 1, 1);
+		
+		for (uint b = 0; b < NumberOfBounces; ++b)
+		{
+			const float tMin = 0.0001;
+			const float tMax = 999999;
+
+			traceNV(topLevelAS, gl_RayFlagsOpaqueNV, 0xFF, 0, 0, 0, origin, tMin, direction, tMax, 0);
+
+			const vec3 hitColor = rayInfo.colorAndDistance.rgb;
+			const float t = rayInfo.colorAndDistance.w;
+			const bool isScattered = rayInfo.scatterDirection.w > 0;
+
+			rayColor *= hitColor;
+
+			if (t < 0 || !isScattered) {
+				break;
+			}
+
+			origin = origin + t * direction;
+			direction = rayInfo.scatterDirection.xyz;
+		}
+
+		pixelColor += rayColor;	
+	}
+
+	pixelColor = pixelColor / NumberOfSamples;
+	pixelColor = pow(pixelColor, vec3(1.0 / 2.2));
+	
+	vec3 prevColor = imageLoad(image, ivec2(gl_LaunchIDNV)).rgb;
+	if (cameraParam.param.x < 1) {
+		pixelColor = prevColor + pixelColor;
+	}
+
+	imageStore(image, ivec2(gl_LaunchIDNV.xy), vec4(pixelColor, 0.0));
+}
