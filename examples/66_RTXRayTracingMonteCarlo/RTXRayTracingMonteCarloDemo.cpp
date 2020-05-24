@@ -37,7 +37,8 @@ struct CameraParamBlock
 {
 	Vector4 lens;
 	Vector4 pos;
-	IntVector4 samplesAndSeed;
+	Vector4 samplesAndSeed;
+	Vector4 param;
 	Matrix4x4 invProj;
 	Matrix4x4 invView;
 };
@@ -144,10 +145,10 @@ struct Scene
 	}
 };
 
-class RTXRayTracingDirectLightingDemo : public DemoBase
+class RTXRayTracingMonteCarloDemo : public DemoBase
 {
 public:
-	RTXRayTracingDirectLightingDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
+	RTXRayTracingMonteCarloDemo(int32 width, int32 height, const char* title, const std::vector<std::string>& cmdLine)
 		: DemoBase(width, height, title, cmdLine)
 	{
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
@@ -164,7 +165,7 @@ public:
 		physicalDeviceFeatures = &m_EnabledFeatures2;
 	}
 
-	virtual ~RTXRayTracingDirectLightingDemo()
+	virtual ~RTXRayTracingMonteCarloDemo()
 	{
 
 	}
@@ -221,6 +222,16 @@ private:
 			m_ViewCamera.Update(time, delta);
 		}
 
+		if (InputManager::IsMouseDown(MouseType::MOUSE_BUTTON_LEFT) || InputManager::GetMouseDelta() > 0 || InputManager::IsKeyDown(KeyboardType::KEY_SPACE))
+		{
+			m_FrameCount.x = 0;
+			m_CameraParam.param.x = 1;
+		}
+		else
+		{
+			m_CameraParam.param.x = 0;
+		}
+		
 		UpdateUniformBuffer();
 		SetupGfxCommand(bufferIndex);
 
@@ -236,9 +247,12 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("RTXRaytracing", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::SliderInt("NumberOfSamples", &m_CameraParam.samplesAndSeed.x, 1, 128);
-			ImGui::SliderInt("NumberOfBounces", &m_CameraParam.samplesAndSeed.y, 1, 128);
-			ImGui::SliderInt("Seed", &m_CameraParam.samplesAndSeed.z, 1, 65535);
+			int samples = m_CameraParam.samplesAndSeed.x;
+			int bounces = m_CameraParam.samplesAndSeed.y;
+			ImGui::SliderInt("NumberOfSamples", &samples, 1, 128);
+			ImGui::SliderInt("NumberOfBounces", &bounces, 1, 128);
+			m_CameraParam.samplesAndSeed.x = samples;
+			m_CameraParam.samplesAndSeed.y = bounces;
 
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
@@ -264,7 +278,8 @@ private:
 
 		m_CameraParam.pos = m_ViewCamera.GetTransform().GetOrigin();
 
-		m_CameraParam.samplesAndSeed.w += 1;
+		m_CameraParam.samplesAndSeed.z = MMath::RandRange(0.0f, 1.0f);
+		m_CameraParam.samplesAndSeed.w = MMath::RandRange(0.0f, 1.0f);
 		
 		m_CameraParam.invProj = m_ViewCamera.GetProjection();
 		m_CameraParam.invProj.SetInverse();
@@ -536,9 +551,9 @@ private:
 		pipelineLayoutCreateInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, VULKAN_CPU_ALLOCATOR, &m_PipelineLayout));
 
-		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingDirectLighting/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
-		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingDirectLighting/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
-		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/67_RTXRayTracingDirectLighting/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+		auto rayGenShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/raygen.rgen.spv", VK_SHADER_STAGE_RAYGEN_BIT_NV);
+		auto rayMisShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/miss.rmiss.spv", VK_SHADER_STAGE_MISS_BIT_NV);
+		auto rayHitShaderModule = vk_demo::DVKShaderModule::Create(m_VulkanDevice, "assets/shaders/66_RTXRayTracingMonteCarlo/closesthit.rchit.spv", VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
 
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages(3);
 		shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -607,10 +622,10 @@ private:
 
 	void PrepareUniformBuffers()
 	{
-		m_CameraParam.samplesAndSeed.x = 16;
-		m_CameraParam.samplesAndSeed.y = 16;
-		m_CameraParam.samplesAndSeed.z = MMath::RandRange(0, 65535);
-		m_CameraParam.samplesAndSeed.w = 0;
+		m_CameraParam.samplesAndSeed.x = 1;
+		m_CameraParam.samplesAndSeed.y = 8;
+		m_CameraParam.samplesAndSeed.z = MMath::RandRange(0.0f, 1.0f);
+		m_CameraParam.samplesAndSeed.w = MMath::RandRange(0.0f, 1.0f);
 
 		m_UniformBuffer = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice, 
@@ -1004,7 +1019,7 @@ private:
 		m_StorageImage = vk_demo::DVKTexture::Create2D(
 			m_VulkanDevice,
 			cmdBuffer,
-			m_SwapChain->GetColorFormat(),
+			VK_FORMAT_R32G32B32A32_SFLOAT,
 			VK_IMAGE_ASPECT_COLOR_BIT,
 			m_FrameWidth, m_FrameHeight,
 			VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
@@ -1015,8 +1030,8 @@ private:
 		m_Shader = vk_demo::DVKShader::Create(
 			m_VulkanDevice,
 			true,
-			"assets/shaders/67_RTXRayTracingDirectLighting/result.vert.spv",
-			"assets/shaders/67_RTXRayTracingDirectLighting/result.frag.spv"
+			"assets/shaders/66_RTXRayTracingMonteCarlo/result.vert.spv",
+			"assets/shaders/66_RTXRayTracingMonteCarlo/result.frag.spv"
 		);
 
 		m_Material = vk_demo::DVKMaterial::Create(
@@ -1413,11 +1428,16 @@ private:
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
+		m_FrameCount.x += 1;
+
 		m_Material->BeginFrame();
+		m_Material->BeginObject();
+		m_Material->SetLocalUniform("uboParam", &m_FrameCount, sizeof(Vector4));
+		m_Material->EndObject();
+		m_Material->EndFrame();
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Material->GetPipeline());
 		m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
 		m_Quad->meshes[0]->BindDrawCmd(commandBuffer);
-		m_Material->EndFrame();
 
 		// ui pass
 		m_GUI->BindDrawCmd(commandBuffer, m_RenderPass);
@@ -1463,6 +1483,7 @@ private:
 	vk_demo::DVKCamera									m_ViewCamera;
 
 	vk_demo::DVKTexture*								m_StorageImage = nullptr;
+	Vector4												m_FrameCount;
 
 	VkPipeline											m_Pipeline = VK_NULL_HANDLE;
 	VkPipelineLayout									m_PipelineLayout = VK_NULL_HANDLE;
@@ -1487,5 +1508,5 @@ private:
 
 std::shared_ptr<AppModuleBase> CreateAppMode(const std::vector<std::string>& cmdLine)
 {
-	return std::make_shared<RTXRayTracingDirectLightingDemo>(1400, 900, "RTXRayTracingDirectLightingDemo", cmdLine);
+	return std::make_shared<RTXRayTracingMonteCarloDemo>(1400, 900, "RTXRayTracingMonteCarloDemo", cmdLine);
 }

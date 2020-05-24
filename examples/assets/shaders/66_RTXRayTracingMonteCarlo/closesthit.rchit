@@ -105,26 +105,154 @@ Material FetchMaterial(uint geometryIndex)
     return materials.datas[object.x];
 }
 
-float Schlick(const float cosine, const float refractionIndex)
+vec3 GammaToLinearSpace(vec3 sRGB)
 {
-	float r0 = (1 - refractionIndex) / (1 + refractionIndex);
-	r0 *= r0;
-	return r0 + (1 - r0) * pow(1 - cosine, 5);
+    // Approximate version from http://chilliant.blogspot.com.au/2012/08/srgb-approximations-for-hlsl.html?m=1
+    return sRGB * (sRGB * (sRGB * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
-RayPayloadInfo Scatter(const vec3 color, float roughness, const vec3 direction, const vec3 normal, const float t, inout uint seed)
+vec3 CosineSampleHemisphere(float u1, float u2)
 {
-    const vec3 reflected = reflect(direction, normal);
-	const bool isScattered = dot(reflected, normal) > 0;
-	const vec4 colorAndDistance = isScattered ? vec4(color, t) : vec4(1, 1, 1, -1);
-	const vec4 scatter = vec4(reflected + roughness * RandomInUnitSphere(seed), isScattered ? 1 : 0);
+	vec3 dir;
+	float r = sqrt(u1);
+	float phi = 2.0 * PI * u2;
+	dir.x = r * cos(phi);
+	dir.y = r * sin(phi);
+	dir.z = sqrt(max(0.0, 1.0 - dir.x * dir.x - dir.y * dir.y));
+	return dir;
+}
+
+float GTR2(float NDotH, float a)
+{
+	float a2 = a * a;
+	float t  = 1.0 + (a2 - 1.0) * NDotH * NDotH;
+	return a2 / (PI * t * t);
+}
+
+float SchlickFresnel(float u)
+{
+	float m = clamp(1.0 - u, 0.0, 1.0);
+	float m2 = m * m;
+	return m2 * m2 * m;
+}
+
+float SmithG_GGX(float NDotv, float alphaG)
+{
+	float a = alphaG * alphaG;
+	float b = NDotv * NDotv;
+	return 1.0 / (NDotv + sqrt(a + b - a * b));
+}
+
+// http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Reflection_Functions.html
+float Sample_Pdf(inout RayPayloadInfo rayInfo, float roughness, float metallic, vec3 V, vec3 N, vec3 L)
+{
+	float specularAlpha = max(0.0001, roughness);
+	float diffuseRatio  = 0.5 * (1.0 - metallic);
+	float specularRatio = 1.0 - diffuseRatio;
+
+	vec3 halfVec   = normalize(L + V);
+	float cosTheta = abs(dot(halfVec, N));
+	float pdfGTR2  = GTR2(cosTheta, specularAlpha) * cosTheta;
+
+	float pdfSpec = pdfGTR2 / (4.0 * abs(dot(L, halfVec)));
+	float pdfDiff = abs(dot(L, N)) * (1.0 / PI);
+
+	return diffuseRatio * pdfDiff + specularRatio * pdfSpec;
+}
+
+// http://www.pbr-book.org/3ed-2018/Light_Transport_I_Surface_Reflection/Sampling_Reflection_Functions.html
+vec3 Sample_Wi(inout RayPayloadInfo rayInfo, float roughness, float metallic, vec3 V, vec3 N)
+{
+	vec3 dir = vec3(0, 0, 1);
+
+	float probability  = Rand(rayInfo);
+	float diffuseRatio = 0.5 * (1.0 - metallic);
+
+	float r1 = Rand(rayInfo);
+	float r2 = Rand(rayInfo);
+
+	vec3 UpVector = abs(N.z) < 0.999 ? vec3(0, 0, 1) : vec3(1, 0, 0);
+	vec3 TangentX = normalize(cross(UpVector, N));
+	vec3 TangentY = cross(N, TangentX);
+
+	if (probability < diffuseRatio)
+	{
+		dir = CosineSampleHemisphere(r1, r2);
+		dir = TangentX * dir.x + TangentY * dir.y + N * dir.z;
+	}
+	else
+	{
+		float a = max(0.001, roughness);
+
+		float phi = r1 * 2.0 * PI;
+
+		float cosTheta = sqrt((1.0 - r2) / (1.0 + (a * a - 1.0) * r2));
+		float sinTheta = clamp(sqrt(1.0 - (cosTheta * cosTheta)), 0.0, 1.0);
+
+		float sinPhi = sin(phi);
+		float cosPhi = cos(phi);
+
+		vec3 halfVec = vec3(sinTheta * cosPhi, sinTheta * sinPhi, cosTheta);
+		halfVec = TangentX * halfVec.x + TangentY * halfVec.y + N * halfVec.z;
+
+		dir = 2.0 * dot(V, halfVec) * halfVec - V;
+	}
+
+	return dir;
+}
+
+vec3 BRDF(inout RayPayloadInfo rayInfo, vec3 albedo, float roughness, float metallic, vec3 V, vec3 N, vec3 L)
+{
+	float NDotL = dot(N, L);
+	float NDotV = dot(N, V);
+
+	if (NDotL <= 0.0 || NDotV <= 0.0) {
+        return vec3(0.0);
+    }
+
+	vec3 H = normalize(L + V);
+
+	float NDotH = dot(N, H);
+	float LDotH = dot(L, H);
+
+	// specular	
+	float specular = 0.5;
+	vec3 specularCol = mix(vec3(1.0) * 0.08 * specular, albedo.xyz, metallic);
+
+	float a  = max(0.001, roughness);
+	float Ds = GTR2(NDotH, a);
+	float FH = SchlickFresnel(LDotH);
+	vec3 Fs  = mix(specularCol, vec3(1.0), FH);
+	float roughg = (roughness * 0.5 + 0.5);
+	roughg = roughg * roughg;
+	float Gs = SmithG_GGX(NDotL, roughg) * SmithG_GGX(NDotV, roughg);
+
+	return (albedo.xyz / PI) * (1.0 - metallic) + Gs * Fs * Ds;
+}
+
+RayPayloadInfo Scatter(const vec3 albedo, float roughness, float metallic, const vec3 direction, const vec3 normal, const float t)
+{
+    vec3 wi = Sample_Wi(rayInfo, roughness, metallic, -direction, normal);
+    float pdf = Sample_Pdf(rayInfo, roughness, metallic, -direction, normal, wi);
+
+    RayPayloadInfo retInfo;
+
+    if (pdf > 0.0) 
+    {
+        // http://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/The_Monte_Carlo_Estimator.html
+        vec3 color = BRDF(rayInfo, albedo, roughness, metallic, -direction, normal, wi) * abs(dot(wi, normal)) / pdf;
+        retInfo.colorAndDistance = vec4(color, t);
+        retInfo.scatterDirection = vec4(wi, 1);
+    }
+    else
+    {
+        retInfo.colorAndDistance = vec4(0, 0, 0, -1);
+        retInfo.scatterDirection = vec4(0, 0, 1, 0);
+    }
     
-    RayPayloadInfo rayInfo;
-    rayInfo.colorAndDistance = colorAndDistance;
-    rayInfo.scatterDirection = scatter;
-    rayInfo.randomSeed = seed;
+    retInfo.seedAndRandom = rayInfo.seedAndRandom;
     
-    return rayInfo;
+    return retInfo;
 }
 
 void main()
@@ -135,15 +263,25 @@ void main()
     vec3 normal = FetchNormal(triangle, attribs.xy);
     vec2 uv = FetchUV(triangle, attribs.xy);
 
-    vec3 diffuse = vec3(0, 0, 0);
+    vec3 albedo = vec3(0, 0, 0);
     if (material.textureIDs.x >= 0) {
-        diffuse = texture(textures[material.textureIDs.x], uv).xyz;
+        albedo = GammaToLinearSpace(texture(textures[material.textureIDs.x], uv).xyz);
     }
     else {
-        diffuse = material.albedo.xyz;
+        albedo = material.albedo.xyz;
     }
 
-    rayInfo = Scatter(diffuse, material.params.x, gl_WorldRayDirectionNV, normal, gl_HitTNV, rayInfo.randomSeed);
+    float roughness = material.params.x;
+    if (material.textureIDs.y >= 0) {
+        roughness = texture(textures[material.textureIDs.y], uv).x;
+    }
+
+    float metallic  = material.params.y;
+    if (material.textureIDs.z >= 0) {
+        roughness = texture(textures[material.textureIDs.z], uv).x;
+    }
+
+    rayInfo = Scatter(albedo, roughness, metallic, gl_WorldRayDirectionNV, normal, gl_HitTNV);
 }
 
 // accelerationStructureNV type -> OpTypeAccelerationStructureNV instruction

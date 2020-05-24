@@ -10,6 +10,6 @@ layout(location = 0) rayPayloadInNV RayPayloadInfo rayInfo;
 void main()
 {
     const float t = 0.5 * (normalize(gl_WorldRayDirectionNV).y + 1);
-    const vec3 skyColor = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t);
+    const vec3 skyColor = mix(vec3(1.0), vec3(0.5, 0.7, 1.0), t) * 15.0;
     rayInfo.colorAndDistance = vec4(skyColor, -1);
 }
