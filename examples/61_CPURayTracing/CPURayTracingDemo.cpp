@@ -152,6 +152,7 @@ private:
 
 		delete[] rgba;
 		delete cmdBuffer;
+		delete taskPool;
 	}
 
 	void Draw(float time, float delta)
