@@ -199,6 +199,7 @@ Reduce 5 float per vertex
 ![28_SkeletonDualQuat](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/28_SkeletonDualQuat.gif)
 
 ### [29_VertexTextureSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_SkinInTexture)
+[博客地址](http://xiaopengyou.fun/public/2019/12/12/29_SkinInTexture/#more)
 - Store skeleton datas in texture and used in vertex shader.
 
 ### [30_InstanceSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/30_SkinInstance)
