@@ -171,7 +171,7 @@ Vulkan Examples
 ### [22_RenderTarget(30 Filter)](https://github.com/BobLChen/VulkanDemos/tree/master/examples/21_Stencil)
 ![22_RenderTarget](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/22_RenderTarget.gif)
 
-### [23_RenderTarget](https://github.com/BobLChen/VulkanDemos/tree/master/examples/22_RenderTarget)
+### [23_OptimizeRenderTarget](https://github.com/BobLChen/VulkanDemos/tree/master/examples/23_OptimizeRenderTarget)
 
 ### [24_EdgeDetect](https://github.com/BobLChen/VulkanDemos/tree/master/examples/24_EdgeDetect)
 ![24_EdgeDetect](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/24_NormalEdge.jpg)
