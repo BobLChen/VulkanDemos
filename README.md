@@ -194,8 +194,8 @@ Vulkan Examples
 Reduce 5 float per vertex
 
 ### [28_SkeletonQuat](https://github.com/BobLChen/VulkanDemos/tree/master/examples/28_SkeletonQuat)
+[博客地址](http://xiaopengyou.fun/public/2019/11/29/28_SkeletonQuat/#more)
 - Dual quat animation, reduce 8 float per bone. From matrix4x4 to 2 vector.
-
 ![28_SkeletonDualQuat](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/28_SkeletonDualQuat.gif)
 
 ### [29_VertexTextureSkin](https://github.com/BobLChen/VulkanDemos/tree/master/examples/29_SkinInTexture)
