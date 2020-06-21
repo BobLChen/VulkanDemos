@@ -1111,3 +1111,18 @@ SETUP_SAMPLE_START(68_RTXPathTracing)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(68_RTXPathTracing)
+
+SETUP_SAMPLE_START(69_TileBasedForwardRendering)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/69_TileBasedForwardRendering/TileBasedForwardRenderingDemo.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/69_TileBasedForwardRendering/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(69_TileBasedForwardRendering)
