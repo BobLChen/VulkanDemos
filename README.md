@@ -5,6 +5,9 @@ Vulkan Samples
 ## 码云
 [码云地址](https://gitee.com/BobLChen/VulkanDemos)
 
+## 说明
+按照序号的顺序开始看，例如从**2_Triangle**、**3_DemoBase**一直到最后一个。Demo一步一步的展示了如何对Vulkan进行简单的封装以使得更加易用，如果从较高的序号开始阅读可能出现由于封装过度从而导致阅读理解困难。每一个Demo都会尽量配一个粗浅的文档，文档里面会大致说明该Demo的意图。
+
 ## 环境要求
 
 ### Windows
