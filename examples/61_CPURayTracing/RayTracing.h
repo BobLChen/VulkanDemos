@@ -61,6 +61,7 @@ public:
 		, camera(inCamera)
 		, width(inWidth)
 		, height(inHeight)
+		, complete(false)
 	{
 
 	}
@@ -75,6 +76,8 @@ public:
 	virtual void DoThreadedWork() override
 	{
 		HitScene();
+
+		complete = true;
 	}
 
 	virtual void Abandon() override
@@ -98,4 +101,6 @@ public:
 	int32 width;
 	int32 height;
 	Vector4 color;
+
+	bool complete;
 };
