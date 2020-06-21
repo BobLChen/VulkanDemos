@@ -127,8 +127,19 @@ private:
 			taskPool->AddTask(raytracings[i]);
 		}
 
-		while (taskPool->GetNumQueuedJobs() != 0) {
-			// wait
+		while (true) 
+		{
+			bool complete = true;
+			for (int32 i = 0; i < raytracings.size(); ++i)
+			{
+				if (!raytracings[i]->complete) {
+					complete = false;
+					break;
+				}
+			}
+			if (complete) {
+				break;
+			}
 		}
 
 		// output color
