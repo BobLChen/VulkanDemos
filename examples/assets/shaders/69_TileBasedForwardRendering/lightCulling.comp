@@ -1,0 +1,239 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+
+#define LIGHT_SIZE 512
+#define TILE_SIZE 16
+#define LIGHT_SIZE_PER_TILE 63
+
+struct PointLight 
+{
+	vec3 pos;
+	float radius;
+
+	vec3 intensity;
+    float padding;
+};
+
+struct LightVisiblity
+{
+	uint count;
+	uint lightIndices[LIGHT_SIZE_PER_TILE];
+};
+
+layout(binding = 0) buffer writeonly LightsCullingBuffer
+{
+    LightVisiblity lightVisiblities[];
+} lightsCullingBuffer;
+
+layout (binding = 1) uniform CullingBlock 
+{
+    mat4 invViewProj;
+    vec4 frameSize;
+    vec4 tileNum;
+    vec4 pos;
+} uboCulling;
+
+layout (binding = 2) uniform LightsBlock 
+{
+    vec4 lightCount;
+	PointLight lights[LIGHT_SIZE];
+} uboLights;
+
+layout(binding = 3) uniform sampler2D depthTexture;
+
+struct ViewFrustum
+{
+	vec4 planes[6];
+	vec3 points[8];
+};
+
+layout (local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+shared ViewFrustum frustum;
+shared uint lightCountForTile;
+shared float minDepth;
+shared float maxDepth;
+
+ViewFrustum CreateFrustum(ivec2 tileID)
+{
+	const vec2 ndcUpperLeft  = vec2(-1.0, -1.0);
+	const float ndcNearPlane = 0.0;
+	const float ndcFarPlane  = 1.0;
+
+	mat4 invViewProj = uboCulling.invViewProj;
+	vec2 ndcSizePerTile = 2.0 * vec2(TILE_SIZE, TILE_SIZE) / uboCulling.frameSize.xy;
+
+	vec2 ndcPoints[4];
+	ndcPoints[0] = ndcUpperLeft + tileID * ndcSizePerTile;
+	ndcPoints[1] = vec2(ndcPoints[0].x + ndcSizePerTile.x, ndcPoints[0].y);
+	ndcPoints[2] = ndcPoints[0] + ndcSizePerTile;
+	ndcPoints[3] = vec2(ndcPoints[0].x, ndcPoints[0].y + ndcSizePerTile.y);
+
+	ViewFrustum frustum;
+
+	vec4 temp;
+	for (int i = 0; i < 4; ++i)
+	{
+		temp = invViewProj * vec4(ndcPoints[i], minDepth, 1.0);
+		frustum.points[i + 0] = temp.xyz / temp.w;
+		temp = invViewProj * vec4(ndcPoints[i], maxDepth, 1.0);
+		frustum.points[i + 4] = temp.xyz / temp.w;
+	}
+
+	vec3 tempNormal;
+	for (int i = 0; i < 4; ++i)
+	{
+		tempNormal = cross(frustum.points[i] - uboCulling.pos.xyz, frustum.points[i + 1] - uboCulling.pos.xyz);
+		tempNormal = normalize(tempNormal);
+		frustum.planes[i] = vec4(tempNormal, -dot(tempNormal, frustum.points[i]));
+	}
+    
+	tempNormal = cross(frustum.points[1] - frustum.points[0], frustum.points[3] - frustum.points[0]);
+    tempNormal = normalize(tempNormal);
+    frustum.planes[4] = vec4(tempNormal, -dot(tempNormal, frustum.points[0]));
+
+	tempNormal = cross(frustum.points[7] - frustum.points[4], frustum.points[5] - frustum.points[4]);
+    tempNormal = normalize(tempNormal);
+    frustum.planes[5] = vec4(tempNormal, -dot(tempNormal, frustum.points[4]));
+
+	return frustum;
+}
+
+bool IsCollided(PointLight light, ViewFrustum frustum)
+{
+	bool result = true;
+
+	for (int i = 0; i < 6; ++i)
+	{
+		if (dot(light.pos, frustum.planes[i].xyz) + frustum.planes[i].w < -light.radius)
+		{
+			result = false;
+			break;
+		}
+	}
+
+    if (!result)
+    {
+        return false;
+    }
+
+    vec3 lightBoxMax = light.pos + vec3(light.radius);
+    vec3 lightBoxMin = light.pos - vec3(light.radius);
+
+    int probe;
+    probe = 0; 
+    for (int i = 0; i < 8; ++i)
+    {
+        probe += ((frustum.points[i].x > lightBoxMax.x) ? 1 : 0); 
+        if (probe == 8) 
+        {
+            return false;
+        }
+    }
+
+    probe = 0; 
+    for (int i = 0; i < 8; ++i) 
+    {
+        probe += ((frustum.points[i].x < lightBoxMin.x) ? 1 : 0); 
+        if (probe == 8) 
+        {
+            return false;
+        }
+    }
+
+    probe = 0; 
+    for (int i = 0; i < 8; ++i) 
+    {
+        probe += ((frustum.points[i].y > lightBoxMax.y) ? 1 : 0); 
+        if (probe == 8) 
+        {
+            return false;
+        }
+    }
+
+    probe=0; 
+    for (int i = 0; i < 8; ++i) 
+    {
+        probe += ((frustum.points[i].y < lightBoxMin.y) ? 1 : 0); 
+        if (probe == 8) 
+        {
+            return false;
+        }
+    }
+
+    probe = 0; 
+    for (int i = 0; i < 8; ++i) 
+    {
+        probe += ((frustum.points[i].z > lightBoxMax.z) ? 1 : 0);
+        if (probe == 8) 
+        {
+            return false;
+        }
+    }
+
+    probe = 0; 
+    for (int i = 0; i < 8; ++i) 
+    {
+        probe += ((frustum.points[i].z < lightBoxMin.z) ? 1 : 0); 
+        if (probe == 8)
+        {
+            return false;
+        }
+    }
+
+	return true;
+}
+
+void main()
+{
+	ivec2 tileID = ivec2(gl_WorkGroupID.xy);
+	uint tileIndex = tileID.y * uint(uboCulling.tileNum.x) + tileID.x;
+
+	if (gl_LocalInvocationIndex == 0)
+	{
+		minDepth = 1.0;
+		maxDepth = 0.0;
+
+		for (int y = 0; y < TILE_SIZE; ++y)
+		{
+			for (int x = 0; x < TILE_SIZE; ++x)
+			{
+				vec2 uv = (vec2(TILE_SIZE, TILE_SIZE) * tileID + vec2(x, y)) / uboCulling.frameSize.xy;
+				uv.y = 1.0 - uv.y; // flip y, rtt fliped
+				float depth = texture(depthTexture, uv).x;
+				minDepth = min(minDepth, depth);
+				maxDepth = max(maxDepth, depth);
+			}
+		}
+
+		if (minDepth >= maxDepth)
+		{
+			minDepth = maxDepth;
+		}
+
+		frustum = CreateFrustum(tileID);
+		lightCountForTile = 0;
+	}
+
+	barrier();
+
+	for (uint i = gl_LocalInvocationIndex; i < uint(uboLights.lightCount.x) && lightCountForTile < LIGHT_SIZE_PER_TILE; i += gl_WorkGroupSize.x)
+	{
+		if (IsCollided(uboLights.lights[i], frustum))
+		{
+			uint slot = atomicAdd(lightCountForTile, 1);
+			if (slot >= LIGHT_SIZE_PER_TILE) 
+            {
+                break;
+            }
+			lightsCullingBuffer.lightVisiblities[tileIndex].lightIndices[slot] = i;
+		}
+	}
+
+	barrier();
+
+	if (gl_LocalInvocationIndex == 0)
+	{
+		lightsCullingBuffer.lightVisiblities[tileIndex].count = min(LIGHT_SIZE_PER_TILE, lightCountForTile);
+	}
+}
