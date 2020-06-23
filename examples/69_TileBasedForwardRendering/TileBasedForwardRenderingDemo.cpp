@@ -166,6 +166,10 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("TileBasedForwardRenderingDemo", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
+			int index = m_Debug.x;
+			ImGui::Combo("Debug", &index, "None\0Normal\0\Tile\0");
+			m_Debug.x = index;
+
 			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
@@ -407,6 +411,7 @@ private:
 			m_Material->SetLocalUniform("uboMVP",		&m_MVPParam,		sizeof(ModelViewProjectionBlock));
 			m_Material->SetLocalUniform("uboLights",	&m_LightParam,		sizeof(LightsParamBlock));
 			m_Material->SetLocalUniform("uboCulling",   &m_CullingParam,	sizeof(CullingParamBlock));
+			m_Material->SetLocalUniform("uboDebug",     &m_Debug,           sizeof(Vector4));
 			m_Material->EndObject();
 
 			m_Material->BindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0);
@@ -519,6 +524,8 @@ private:
 	vk_demo::DVKBuffer*			m_LightsCullingBuffer = nullptr;
 
 	vk_demo::DVKCamera		    m_ViewCamera;
+
+	Vector4						m_Debug;
 
 	LightsInfo					m_LightInfo;
 	LightsParamBlock			m_LightParam;
