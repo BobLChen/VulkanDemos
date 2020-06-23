@@ -46,6 +46,11 @@ layout (binding = 3) uniform CullingBlock
     vec4 pos;
 } uboCulling;
 
+layout (binding = 4) uniform DebugBlock 
+{
+    vec4 param;
+} uboDebug;
+
 layout (location = 0) out vec4 outFragColor;
 
 float NormalDistributionGGX(vec3 N, vec3 H, float roughness)
@@ -130,6 +135,17 @@ void main()
     vec3 diffuse = vec3(1.0, 1.0, 1.0);
 
     uint lightNum = lightsCullingBuffer.lightVisiblities[tileIndex].count;
+    if (uboDebug.param.x == 1) 
+    {
+        outFragColor = vec4((inNormal + 1.0) * 0.5, 1.0);
+        return;
+    }
+    else if (uboDebug.param.x == 2) 
+    {
+        outFragColor = vec4(float(lightNum) / float(LIGHT_SIZE_PER_TILE));
+        return;
+    }
+
     for (int i = 0; i < lightNum; ++i)
 	{
         PointLight light = uboLights.lights[lightsCullingBuffer.lightVisiblities[tileIndex].lightIndices[i]];
