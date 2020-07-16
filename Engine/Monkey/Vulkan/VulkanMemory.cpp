@@ -1,4 +1,4 @@
-﻿#include "Common/Log.h"
+#include "Common/Log.h"
 #include "Math/Math.h"
 #include "Utils/Alignment.h"
 #include "VulkanDevice.h"
@@ -138,7 +138,7 @@ void VulkanDeviceMemoryManager::Destory()
     {
         if (m_HeapInfos[index].allocations.size() > 0)
         {
-            MLOG("Found %u unfreed allocations!", m_HeapInfos[index].allocations.size());
+            MLOG("Found %lu freed allocations!", m_HeapInfos[index].allocations.size());
 #if MONKEY_DEBUG
             DumpMemory();
 #endif
