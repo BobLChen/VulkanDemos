@@ -579,20 +579,22 @@ SETUP_SAMPLE_START(35_PCFShadow)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(35_PCFShadow)
 
-SETUP_SAMPLE_START(36_OmniShadow)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/36_OmniShadow/OmniShadowDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/36_OmniShadow/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(36_OmniShadow)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/36_OmniShadow/OmniShadowDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(36_OmniShadow)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/36_OmniShadow/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(36_OmniShadow)
+endif()
 
 SETUP_SAMPLE_START(37_CascadedShadow)
 	SET(SOURCE_FILES
@@ -624,35 +626,40 @@ SETUP_SAMPLE_START(38_IndirectDraw)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(38_IndirectDraw)
 
-SETUP_SAMPLE_START(39_OcclusionQueries)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/39_OcclusionQueries/OcclusionQueryDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/39_OcclusionQueries/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
-		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(39_OcclusionQueries)
 
-SETUP_SAMPLE_START(40_QueryStatistics)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/40_QueryStatistics/QueryStatisticsDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/40_QueryStatistics/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(39_OcclusionQueries)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/39_OcclusionQueries/OcclusionQueryDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(40_QueryStatistics)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/39_OcclusionQueries/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(39_OcclusionQueries)
+endif()
+
+if (NOT APPLE)
+	SETUP_SAMPLE_START(40_QueryStatistics)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/40_QueryStatistics/QueryStatisticsDemo.cpp
+		)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/40_QueryStatistics/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(40_QueryStatistics)
+endif()
 
 SETUP_SAMPLE_START(41_ComputeShader)
 	SET(SOURCE_FILES
@@ -699,20 +706,22 @@ SETUP_SAMPLE_START(43_ComputeParticles)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(43_ComputeParticles)
 
-SETUP_SAMPLE_START(44_ComputeRaytracing)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/44_ComputeRaytracing/ComputeRaytracingDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/44_ComputeRaytracing/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(44_ComputeRaytracing)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/44_ComputeRaytracing/ComputeRaytracingDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(44_ComputeRaytracing)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/44_ComputeRaytracing/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(44_ComputeRaytracing)
+endif()
 
 SETUP_SAMPLE_START(45_ComputeFrustum)
 	SET(SOURCE_FILES
@@ -729,80 +738,90 @@ SETUP_SAMPLE_START(45_ComputeFrustum)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(45_ComputeFrustum) 
 
-SETUP_SAMPLE_START(46_GeometryHouse)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/46_GeometryHouse/GeometryHouseDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/46_GeometryHouse/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(46_GeometryHouse)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/46_GeometryHouse/GeometryHouseDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(46_GeometryHouse) 
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/46_GeometryHouse/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(46_GeometryHouse) 
+endif()
 
-SETUP_SAMPLE_START(47_DebugNormal)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/47_DebugNormal/DebugNormalDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/47_DebugNormal/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(47_DebugNormal)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/47_DebugNormal/DebugNormalDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(47_DebugNormal)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/47_DebugNormal/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(47_DebugNormal)
+endif()
 
-SETUP_SAMPLE_START(48_GeometryOmniShadow)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/48_GeometryOmniShadow/GeometryOmniShadowDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/48_GeometryOmniShadow/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(48_GeometryOmniShadow)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/48_GeometryOmniShadow/GeometryOmniShadowDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(48_GeometryOmniShadow)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/48_GeometryOmniShadow/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(48_GeometryOmniShadow)
+endif()
 
-SETUP_SAMPLE_START(49_SimpleTessellation)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/49_SimpleTessellation/SimpleTessellationDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/49_SimpleTessellation/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(49_SimpleTessellation)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/49_SimpleTessellation/SimpleTessellationDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(49_SimpleTessellation)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/49_SimpleTessellation/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(49_SimpleTessellation)
+endif()
 
-SETUP_SAMPLE_START(50_PNTessellation)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/50_PNTessellation/PNTessellationDemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/50_PNTessellation/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(50_PNTessellation)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/50_PNTessellation/PNTessellationDemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(50_PNTessellation)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/50_PNTessellation/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(50_PNTessellation)
+endif()
 
 SETUP_SAMPLE_START(51_Pick)
 	SET(SOURCE_FILES
@@ -834,20 +853,22 @@ SETUP_SAMPLE_START(52_HDRPipeline)
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(52_HDRPipeline)
 
-SETUP_SAMPLE_START(53_SSAO)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/53_SSAO/SSAODemo.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/53_SSAO/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(53_SSAO)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/53_SSAO/SSAODemo.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(53_SSAO)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/53_SSAO/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(53_SSAO)
+endif()
 
 SETUP_SAMPLE_START(54_ThreadedRendering)
 	SET(SOURCE_FILES
@@ -994,123 +1015,125 @@ if (NOT WIN32)
 	TARGET_LINK_LIBRARIES(61_CPURayTracing pthread)
 endif()
 
-SETUP_SAMPLE_START(62_RTXRayTracingBasic)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/62_RTXRayTracingBasic/RTXRayTracingStartBasic.cpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/62_RTXRayTracingBasic/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+if (NOT APPLE)
+	SETUP_SAMPLE_START(62_RTXRayTracingBasic)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/62_RTXRayTracingBasic/RTXRayTracingStartBasic.cpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(62_RTXRayTracingBasic)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/62_RTXRayTracingBasic/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(62_RTXRayTracingBasic)
 
-SETUP_SAMPLE_START(63_RTXRayTracingMesh)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/RTXRayTracingMeshDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/json.hpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/63_RTXRayTracingMesh/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(63_RTXRayTracingMesh)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/RTXRayTracingMeshDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/63_RTXRayTracingMesh/json.hpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(63_RTXRayTracingMesh)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/63_RTXRayTracingMesh/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(63_RTXRayTracingMesh)
 
-SETUP_SAMPLE_START(64_RTXRayTracingSimple)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/RTXRayTracingSimpleDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/json.hpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/64_RTXRayTracingSimple/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(64_RTXRayTracingSimple)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/RTXRayTracingSimpleDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/64_RTXRayTracingSimple/json.hpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(64_RTXRayTracingSimple)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/64_RTXRayTracingSimple/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(64_RTXRayTracingSimple)
 
-SETUP_SAMPLE_START(65_RTXRayTracingReflection)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/RTXRayTracingReflectionDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/json.hpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/65_RTXRayTracingReflection/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(65_RTXRayTracingReflection)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/RTXRayTracingReflectionDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/65_RTXRayTracingReflection/json.hpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(65_RTXRayTracingReflection)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/65_RTXRayTracingReflection/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(65_RTXRayTracingReflection)
 
-SETUP_SAMPLE_START(66_RTXRayTracingHitGroup)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/RTXRayTracingHitGroupDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/json.hpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/66_RTXRayTracingHitGroup/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(66_RTXRayTracingHitGroup)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/RTXRayTracingHitGroupDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/66_RTXRayTracingHitGroup/json.hpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(66_RTXRayTracingHitGroup)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/66_RTXRayTracingHitGroup/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(66_RTXRayTracingHitGroup)
 
-SETUP_SAMPLE_START(67_RTXRayTracingMonteCarlo)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/RTXRayTracingMonteCarloDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/json.hpp
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/67_RTXRayTracingMonteCarlo/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(67_RTXRayTracingMonteCarlo)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/RTXRayTracingMonteCarloDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/67_RTXRayTracingMonteCarlo/json.hpp
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(67_RTXRayTracingMonteCarlo)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/67_RTXRayTracingMonteCarlo/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(67_RTXRayTracingMonteCarlo)
 
-SETUP_SAMPLE_START(68_RTXPathTracing)
-	SET(SOURCE_FILES
-		${MainLaunch}
-		${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/RTXPathTracingDemo.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/tiny_gltf.h
-		${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/json.hpp
-		${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/LightData.h
-	)
-	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/68_RTXPathTracing/*.*")
-	foreach(file ${files})
-		SET(ASSETS
-			${ASSETS}
-			${file}
+	SETUP_SAMPLE_START(68_RTXPathTracing)
+		SET(SOURCE_FILES
+			${MainLaunch}
+			${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/RTXPathTracingDemo.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/tiny_gltf.h
+			${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/json.hpp
+			${CMAKE_CURRENT_SOURCE_DIR}/68_RTXPathTracing/LightData.h
 		)
-	endforeach()
-	SET(RESOURCE_FILES ${ASSETS})
-SETUP_SAMPLE_END(68_RTXPathTracing)
+		file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/68_RTXPathTracing/*.*")
+		foreach(file ${files})
+			SET(ASSETS
+				${ASSETS}
+				${file}
+			)
+		endforeach()
+		SET(RESOURCE_FILES ${ASSETS})
+	SETUP_SAMPLE_END(68_RTXPathTracing)
+endif()
 
 SETUP_SAMPLE_START(69_TileBasedForwardRendering)
 	SET(SOURCE_FILES
