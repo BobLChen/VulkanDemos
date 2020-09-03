@@ -1179,3 +1179,34 @@ SETUP_SAMPLE_START(71_ShuffleIntrinsics)
 	endforeach()
 	SET(RESOURCE_FILES ${ASSETS})
 SETUP_SAMPLE_END(71_ShuffleIntrinsics)
+
+SETUP_SAMPLE_START(72_MeshLOD)
+	SET(SOURCE_FILES
+		${MainLaunch}
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/MeshLodDemo.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/meshoptimizer.h
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/allocator.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/clusterizer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/indexcodec.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/indexgenerator.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/overdrawanalyzer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/overdrawoptimizer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/simplifier.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/spatialorder.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/stripifier.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vcacheanalyzer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vcacheoptimizer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vertexcodec.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vertexfilter.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vfetchanalyzer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/72_MeshLOD/vfetchoptimizer.cpp
+	)
+	file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/72_MeshLOD/*.*")
+	foreach(file ${files})
+		SET(ASSETS
+			${ASSETS}
+			${file}
+		)
+	endforeach()
+	SET(RESOURCE_FILES ${ASSETS})
+SETUP_SAMPLE_END(72_MeshLOD)

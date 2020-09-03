@@ -329,3 +329,6 @@ Reduce 5 float per vertex
 
 ### [71_ShuffleIntrinsics](https://github.com/BobLChen/VulkanDemos/tree/master/examples/71_ShuffleIntrinsics)
 ![71_ShuffleIntrinsics](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/71_ShuffleIntrinsics.gif)
+
+### [72_MeshLOD](https://github.com/BobLChen/VulkanDemos/tree/master/examples/72_MeshLOD)
+![72_MeshLOD](https://raw.githubusercontent.com/BobLChen/VulkanDemos/master/preview/72_MeshLOD.gif)
