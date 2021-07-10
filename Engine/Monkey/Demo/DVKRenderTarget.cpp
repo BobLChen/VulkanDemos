@@ -119,15 +119,20 @@ namespace vk_demo
         
 		if (rtLayout.extent3D.depth > 1 && rtLayout.multiview)
 		{
-			const uint32 viewMask        = (1 << rtLayout.extent3D.depth) - 1;
-			const uint32 correlationMask = (1 << rtLayout.extent3D.depth) - 1;
+			uint32 MultiviewMask = (0b1 << rtLayout.extent3D.depth) - 1;
+
+			const uint32_t ViewMask[2]     = { MultiviewMask, MultiviewMask };
+			const uint32_t CorrelationMask = MultiviewMask;
 
 			VkRenderPassMultiviewCreateInfo multiviewCreateInfo;
 			ZeroVulkanStruct(multiviewCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
+			multiviewCreateInfo.pNext                = nullptr;
 			multiviewCreateInfo.subpassCount         = numSubpasses;
-			multiviewCreateInfo.pViewMasks           = &viewMask;
+			multiviewCreateInfo.pViewMasks           = ViewMask;
+			multiviewCreateInfo.dependencyCount      = 0;
+			multiviewCreateInfo.pViewOffsets         = nullptr;
 			multiviewCreateInfo.correlationMaskCount = 1;
-			multiviewCreateInfo.pCorrelationMasks    = &correlationMask;
+			multiviewCreateInfo.pCorrelationMasks    = &CorrelationMask;
 
 			renderPassCreateInfo.pNext = &multiviewCreateInfo;
 		}
@@ -161,11 +166,11 @@ namespace vk_demo
         VkFramebufferCreateInfo frameBufferCreateInfo;
         ZeroVulkanStruct(frameBufferCreateInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
         frameBufferCreateInfo.renderPass      = renderPass.renderPass;
-        frameBufferCreateInfo.attachmentCount = attachmentTextureViews.size();
+        frameBufferCreateInfo.attachmentCount = (uint32_t)attachmentTextureViews.size();
         frameBufferCreateInfo.pAttachments    = attachmentTextureViews.data();
         frameBufferCreateInfo.width           = rtLayout.extent3D.width;
         frameBufferCreateInfo.height          = rtLayout.extent3D.height;
-        frameBufferCreateInfo.layers          = rtLayout.extent3D.depth;
+        frameBufferCreateInfo.layers          = rtLayout.multiview ? 1 : rtLayout.extent3D.depth;
         VERIFYVULKANRESULT(vkCreateFramebuffer(device, &frameBufferCreateInfo, VULKAN_CPU_ALLOCATOR, &frameBuffer));
 
         extent2D.width  = rtLayout.extent3D.width;
@@ -202,8 +207,8 @@ namespace vk_demo
 
         VkViewport viewport = {};
         viewport.x        = 0;
-        viewport.y        = extent2D.height;
-        viewport.width    = extent2D.width;
+        viewport.y        = (float)extent2D.height;
+        viewport.width    = (float)extent2D.width;
         viewport.height   = -(float)extent2D.height;    // flip y axis
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
@@ -222,7 +227,7 @@ namespace vk_demo
         renderPassBeginInfo.renderArea.offset.y      = 0;
         renderPassBeginInfo.renderArea.extent.width  = extent2D.width;
         renderPassBeginInfo.renderArea.extent.height = extent2D.height;
-        renderPassBeginInfo.clearValueCount          = clearValues.size();
+        renderPassBeginInfo.clearValueCount          = (uint32_t)clearValues.size();
         renderPassBeginInfo.pClearValues             = clearValues.data();
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         

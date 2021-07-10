@@ -16,135 +16,135 @@ namespace vk_demo
 
 		DVKCamera();
 
-		FORCEINLINE void TranslateX(float distance)
+		FORCE_INLINE void TranslateX(float distance)
 		{
 			m_World.TranslateX(distance);
 		}
 
-		FORCEINLINE void TranslateY(float distance)
+		FORCE_INLINE void TranslateY(float distance)
 		{
 			m_World.TranslateY(distance);
 		}
 
-		FORCEINLINE void TranslateZ(float distance)
+		FORCE_INLINE void TranslateZ(float distance)
 		{
 			m_World.TranslateZ(distance);
 		}
 
-		FORCEINLINE void RotateX(float angle)
+		FORCE_INLINE void RotateX(float angle)
 		{
 			m_World.RotateX(angle);
 		}
 
-		FORCEINLINE void RotateY(float angle)
+		FORCE_INLINE void RotateY(float angle)
 		{
 			m_World.RotateY(angle);
 		}
 
-		FORCEINLINE void RotateZ(float angle)
+		FORCE_INLINE void RotateZ(float angle)
 		{
 			m_World.RotateZ(angle);
 		}
 
-		FORCEINLINE void LookAt(float x, float y, float z, float smooth = 1.0f)
+		FORCE_INLINE void LookAt(float x, float y, float z, float smooth = 1.0f)
 		{
 			LookAt(Vector3(x, y, z), smooth);
 		}
 
-		FORCEINLINE void LookAt(const Vector3& target, float smooth = 1.0f)
+		FORCE_INLINE void LookAt(const Vector3& target, float smooth = 1.0f)
 		{
 			m_World.LookAt(target, nullptr, smooth);
 		}
 
-		FORCEINLINE void LookAt(const Vector3& target, const Vector3& up, float smooth = 1.0f)
+		FORCE_INLINE void LookAt(const Vector3& target, const Vector3& up, float smooth = 1.0f)
 		{
 			m_World.LookAt(target, &up, smooth);
 		}
 
-		FORCEINLINE void SetPosition(const Vector3& pos)
+		FORCE_INLINE void SetPosition(const Vector3& pos)
 		{
 			m_World.SetPosition(pos);
 		}
 
-		FORCEINLINE void SetPosition(float x, float y, float z)
+		FORCE_INLINE void SetPosition(float x, float y, float z)
 		{
 			m_World.SetPosition(Vector3(x, y, z));
 		}
 
-		FORCEINLINE void SetOrientation(const Vector3& dir)
+		FORCE_INLINE void SetOrientation(const Vector3& dir)
 		{
 			m_World.SetOrientation(dir, &Vector3::UpVector, 1.0f);
 		}
 
-		FORCEINLINE void SetRotation(const Vector3& rotation)
+		FORCE_INLINE void SetRotation(const Vector3& rotation)
 		{
 			m_World.SetRotation(rotation);
 		}
 
-		FORCEINLINE void SetRotation(float eulerX, float eulerY, float eulerZ)
+		FORCE_INLINE void SetRotation(float eulerX, float eulerY, float eulerZ)
 		{
 			m_World.SetRotation(Vector3(eulerX, eulerY, eulerZ));
 		}
 
-		FORCEINLINE Vector3 GetRightVec() const
+		FORCE_INLINE Vector3 GetRightVec() const
 		{
 			return m_World.GetRight();
 		}
 
-		FORCEINLINE Vector3 GetUpVec() const
+		FORCE_INLINE Vector3 GetUpVec() const
 		{
 			return m_World.GetUp();
 		}
 
-		FORCEINLINE Vector3 GetForwardVec() const
+		FORCE_INLINE Vector3 GetForwardVec() const
 		{
 			return m_World.GetForward();
 		}
 
-		FORCEINLINE Vector3 GetLeftVec() const
+		FORCE_INLINE Vector3 GetLeftVec() const
 		{
 			return m_World.GetLeft();
 		}
 
-		FORCEINLINE Vector3 GetBackwardVec() const
+		FORCE_INLINE Vector3 GetBackwardVec() const
 		{
 			return m_World.GetBackward();
 		}
 
-		FORCEINLINE Vector3 GetDownVec() const
+		FORCE_INLINE Vector3 GetDownVec() const
 		{
 			return m_World.GetDown();
 		}
 
-		FORCEINLINE const Matrix4x4& GetView()
+		FORCE_INLINE const Matrix4x4& GetView()
 		{
 			m_View = m_World.Inverse();
 			return m_View;
 		}
 
-		FORCEINLINE const Matrix4x4& GetProjection()
+		FORCE_INLINE const Matrix4x4& GetProjection()
 		{
 			return m_Projection;
 		}
 
-		FORCEINLINE const Matrix4x4& GetViewProjection()
+		FORCE_INLINE const Matrix4x4& GetViewProjection()
 		{
 			m_View = m_World.Inverse();
 			m_ViewProjection = m_View * m_Projection;
 			return m_ViewProjection;
 		}
 
-		FORCEINLINE void SetTransform(const Matrix4x4& world)
+		FORCE_INLINE void SetTransform(const Matrix4x4& world)
 		{
 			m_World = world;
 		}
 
-		FORCEINLINE const Matrix4x4& GetTransform()
+		FORCE_INLINE const Matrix4x4& GetTransform()
 		{
 			return m_World;
 		}
 
-		FORCEINLINE void Perspective(float fovy, float width, float height, float zNear, float zFar)
+		FORCE_INLINE void Perspective(float fovy, float width, float height, float zNear, float zFar)
 		{
 			m_Fov    = fovy;
 			m_Near   = zNear;
@@ -154,7 +154,7 @@ namespace vk_demo
 			m_Projection.Perspective(fovy, width, height, zNear, zFar);
 		}
 
-		FORCEINLINE void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ)
+		FORCE_INLINE void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ)
 		{
 			m_Near   = minZ;
 			m_Far    = maxZ;
@@ -166,42 +166,42 @@ namespace vk_demo
 			m_Projection.Orthographic(left, right, bottom, top, minZ, maxZ);
 		}
 
-		FORCEINLINE float GetNear() const
+		FORCE_INLINE float GetNear() const
 		{
 			return m_Near;
 		}
 
-		FORCEINLINE float GetFar() const
+		FORCE_INLINE float GetFar() const
 		{
 			return m_Far;
 		}
 
-		FORCEINLINE float GetFov() const
+		FORCE_INLINE float GetFov() const
 		{
 			return m_Fov;
 		}
 
-		FORCEINLINE float GetAspect() const
+		FORCE_INLINE float GetAspect() const
 		{
 			return m_Aspect;
 		}
 
-		FORCEINLINE float GetLeft() const
+		FORCE_INLINE float GetLeft() const
 		{
 			return m_Left;
 		}
 
-		FORCEINLINE float GetRight() const
+		FORCE_INLINE float GetRight() const
 		{
 			return m_Right;
 		}
 
-		FORCEINLINE float GetBottom() const
+		FORCE_INLINE float GetBottom() const
 		{
 			return m_Bottom;
 		}
 
-		FORCEINLINE float GetTop() const
+		FORCE_INLINE float GetTop() const
 		{
 			return m_Top;
 		}

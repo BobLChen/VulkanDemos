@@ -12,6 +12,12 @@ layout (binding = 0) uniform MVPBlock
 
 layout (location = 0) out vec3 outColor;
 
+in gl_PerVertex 
+{
+    vec4  gl_Position;
+	float gl_PointSize;
+} gl_in[];
+
 void main(void)
 {	
     gl_PointSize = 1.0;

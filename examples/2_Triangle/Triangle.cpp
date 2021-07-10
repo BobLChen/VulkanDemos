@@ -190,7 +190,7 @@ private:
             
 			VkViewport viewport = {};
 			viewport.x        = 0;
-			viewport.y        = fheight;
+			viewport.y        = (float)fheight;
             viewport.width    = (float)fwidth;
             viewport.height   = -(float)fheight;    // flip y axis
 			viewport.minDepth = 0.0f;

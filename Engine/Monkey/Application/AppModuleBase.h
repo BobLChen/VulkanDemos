@@ -35,28 +35,28 @@ public:
 
 	}
     
-	inline void SetSize(int32 width, int32 height)
+	FORCE_INLINE void SetSize(int32 width, int32 height)
 	{
 		m_Width  = width;
 		m_Height = height;
 	}
 
-	inline std::shared_ptr<VulkanRHI> GetVulkanRHI() const
+	FORCE_INLINE std::shared_ptr<VulkanRHI> GetVulkanRHI() const
 	{
 		return Engine::Get()->GetVulkanRHI();
 	}
 
-	inline int32 GetWidth() const
+	FORCE_INLINE int32 GetWidth() const
 	{
 		return m_Width;
 	}
     
-	inline int32 GetHeight() const
+	FORCE_INLINE int32 GetHeight() const
 	{
 		return m_Height;
 	}
     
-	inline const std::string& GetTitle()
+	FORCE_INLINE const std::string& GetTitle()
 	{
 		return m_Title;
 	}

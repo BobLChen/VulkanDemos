@@ -10,7 +10,7 @@ public:
 
     static double InitTiming();
 
-	static FORCEINLINE double Seconds()
+	static FORCE_INLINE double Seconds()
 	{
 		struct timeval tv;
 		gettimeofday(&tv, 0);

@@ -350,8 +350,8 @@ namespace vk_demo
 		DVKBoundingBox GetBounds()
 		{
 			DVKBoundingBox bounds;
-			bounds.min.Set( MAX_int32,  MAX_int32,  MAX_int32);
-			bounds.max.Set(-MAX_int32, -MAX_int32, -MAX_int32);
+			bounds.min.Set( MAX_FLT,  MAX_FLT,  MAX_FLT);
+			bounds.max.Set(-MAX_FLT, -MAX_FLT, -MAX_FLT);
 			CalcBounds(bounds);
 			bounds.UpdateCorners();
 			return bounds;

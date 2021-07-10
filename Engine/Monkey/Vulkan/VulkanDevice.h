@@ -35,72 +35,72 @@ public:
     
     void SetupPresentQueue(VkSurfaceKHR surface);
     
-    inline std::shared_ptr<VulkanQueue> GetGraphicsQueue()
+    FORCE_INLINE std::shared_ptr<VulkanQueue> GetGraphicsQueue()
     {
         return m_GfxQueue;
     }
     
-    inline std::shared_ptr<VulkanQueue> GetComputeQueue()
+    FORCE_INLINE std::shared_ptr<VulkanQueue> GetComputeQueue()
     {
         return m_ComputeQueue;
     }
     
-    inline std::shared_ptr<VulkanQueue> GetTransferQueue()
+    FORCE_INLINE std::shared_ptr<VulkanQueue> GetTransferQueue()
     {
         return m_TransferQueue;
     }
     
-    inline std::shared_ptr<VulkanQueue> GetPresentQueue()
+    FORCE_INLINE std::shared_ptr<VulkanQueue> GetPresentQueue()
     {
         return m_PresentQueue;
     }
     
-    inline VkPhysicalDevice GetPhysicalHandle() const
+    FORCE_INLINE VkPhysicalDevice GetPhysicalHandle() const
     {
         return m_PhysicalDevice;
     }
     
-    inline const VkPhysicalDeviceProperties& GetDeviceProperties() const
+    FORCE_INLINE const VkPhysicalDeviceProperties& GetDeviceProperties() const
     {
         return m_PhysicalDeviceProperties;
     }
     
-    inline const VkPhysicalDeviceLimits& GetLimits() const
+    FORCE_INLINE const VkPhysicalDeviceLimits& GetLimits() const
     {
         return m_PhysicalDeviceProperties.limits;
     }
     
-    inline const VkPhysicalDeviceFeatures& GetPhysicalFeatures() const
+    FORCE_INLINE const VkPhysicalDeviceFeatures& GetPhysicalFeatures() const
     {
         return m_PhysicalDeviceFeatures;
     }
     
-    inline VkDevice GetInstanceHandle() const
+    FORCE_INLINE VkDevice GetInstanceHandle() const
     {
         return m_Device;
     }
     
-    inline const VkFormatProperties* GetFormatProperties() const
+    FORCE_INLINE const VkFormatProperties* GetFormatProperties() const
     {
         return m_FormatProperties;
     }
     
-	inline VulkanFenceManager& GetFenceManager()
+	FORCE_INLINE VulkanFenceManager& GetFenceManager()
 	{
 		return *m_FenceManager;
 	}
     
-    inline VulkanDeviceMemoryManager& GetMemoryManager()
+    FORCE_INLINE VulkanDeviceMemoryManager& GetMemoryManager()
     {
         return *m_MemoryManager;
     }
     
-	inline void AddAppDeviceExtensions(const char* name)
+	FORCE_INLINE void AddAppDeviceExtensions(const char* name)
 	{
 		m_AppDeviceExtensions.push_back(name);
 	}
 
-	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	FORCE_INLINE void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
 	{
 		m_PhysicalDeviceFeatures2 = deviceFeatures;
 	}
@@ -127,7 +127,7 @@ private:
     VkPhysicalDeviceFeatures                m_PhysicalDeviceFeatures;
     std::vector<VkQueueFamilyProperties>    m_QueueFamilyProps;
     
-    VkFormatProperties                      m_FormatProperties[VK_FORMAT_RANGE_SIZE];
+    VkFormatProperties                      m_FormatProperties[PF_MAX];
     std::map<VkFormat, VkFormatProperties>  m_ExtensionFormatProperties;
 	VkComponentMapping                      m_PixelFormatComponentMapping[PF_MAX];
 

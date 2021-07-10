@@ -138,7 +138,7 @@ void VulkanDeviceMemoryManager::Destory()
     {
         if (m_HeapInfos[index].allocations.size() > 0)
         {
-            MLOG("Found %lu freed allocations!", m_HeapInfos[index].allocations.size());
+            MLOG("Found %d freed allocations!", (int32)m_HeapInfos[index].allocations.size());
 #if MONKEY_DEBUG
             DumpMemory();
 #endif
@@ -241,11 +241,11 @@ void VulkanDeviceMemoryManager::Free(VulkanDeviceMemoryAllocation*& allocation)
 void VulkanDeviceMemoryManager::DumpMemory()
 {
     SetupAndPrintMemInfo();
-    MLOG("Device Memory: %d allocations on %lu heaps", m_NumAllocations, m_HeapInfos.size());
+    MLOG("Device Memory: %d allocations on %lu heaps", m_NumAllocations, (uint32)m_HeapInfos.size());
     for (int32 index = 0; index < m_HeapInfos.size(); ++index)
     {
         HeapInfo& heapInfo = m_HeapInfos[index];
-        MLOG("\tHeap %d, %lu allocations", index, heapInfo.allocations.size());
+        MLOG("\tHeap %d, %lu allocations", index, (uint32)heapInfo.allocations.size());
         uint64 totalSize = 0;
         for (int32 subIndex = 0; subIndex < heapInfo.allocations.size(); ++subIndex)
         {

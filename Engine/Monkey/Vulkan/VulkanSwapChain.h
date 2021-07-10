@@ -29,37 +29,37 @@ public:
 
 	int32 AcquireImageIndex(VkSemaphore* outSemaphore);
 
-	inline int8 DoesLockToVsync() 
+	FORCE_INLINE int8 DoesLockToVsync() 
 	{ 
 		return m_LockToVsync;
 	}
 
-	inline VkSwapchainKHR GetInstanceHandle()
+	FORCE_INLINE VkSwapchainKHR GetInstanceHandle()
 	{
 		return m_SwapChain;
 	}
     
-    inline int32 GetWidth() const
+    FORCE_INLINE int32 GetWidth() const
     {
         return m_SwapChainInfo.imageExtent.width;
     }
 
-    inline int32 GetHeight() const
+    FORCE_INLINE int32 GetHeight() const
     {
         return m_SwapChainInfo.imageExtent.height;
     }
     
-    inline int32 GetBackBufferCount() const
+    FORCE_INLINE int32 GetBackBufferCount() const
     {
         return m_BackBufferCount;
     }
     
-    inline const VkSwapchainCreateInfoKHR& GetInfo() const
+    FORCE_INLINE const VkSwapchainCreateInfoKHR& GetInfo() const
     {
         return m_SwapChainInfo;
     }
 
-	inline VkFormat GetColorFormat() const
+	FORCE_INLINE VkFormat GetColorFormat() const
 	{
 		return m_ColorFormat;
 	}

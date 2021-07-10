@@ -47,17 +47,17 @@ namespace vk_demo
 
 		void SetStorageBuffer(const std::string& name, DVKBuffer* buffer);
         
-        inline VkPipeline GetPipeline() const
+        FORCE_INLINE VkPipeline GetPipeline() const
         {
             return pipeline;
         }
         
-        inline VkPipelineLayout GetPipelineLayout() const
+        FORCE_INLINE VkPipelineLayout GetPipelineLayout() const
         {
             return shader->pipelineLayout;
         }
         
-        inline std::vector<VkDescriptorSet>& GetDescriptorSets() const
+        FORCE_INLINE std::vector<VkDescriptorSet>& GetDescriptorSets() const
         {
             return descriptorSet->descriptorSets;
         }

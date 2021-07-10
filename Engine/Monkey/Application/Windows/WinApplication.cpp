@@ -100,7 +100,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 			const int x = GET_X_LPARAM(lParam);
 			const int y = GET_Y_LPARAM(lParam);
 
-			Vector2 pos(x, y);
+			Vector2 pos((float)x, (float)y);
 
 			if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP) {
 				button = MouseType::MOUSE_BUTTON_LEFT;
@@ -146,7 +146,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		{
 			const int x = GET_X_LPARAM(lParam);
 			const int y = GET_Y_LPARAM(lParam);
-			Vector2 pos(x, y);
+			Vector2 pos((float)x, (float)y);
 			m_MessageHandler->OnMouseMove(pos);
 			return 0;
 		}
@@ -154,7 +154,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		{
 			const int x = GET_X_LPARAM(lParam);
 			const int y = GET_Y_LPARAM(lParam);
-			Vector2 pos(x, y);
+			Vector2 pos((float)x, (float)y);
 			m_MessageHandler->OnMouseWheel((float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA, pos);
 			return 0;
 		}
@@ -162,7 +162,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		{
 			const int x = GET_X_LPARAM(lParam);
 			const int y = GET_Y_LPARAM(lParam);
-			Vector2 pos(x, y);
+			Vector2 pos((float)x, (float)y);
 			m_MessageHandler->OnMouseWheel((float)GET_WHEEL_DELTA_WPARAM(wParam) / (float)WHEEL_DELTA, pos);
 			return 0;
 		}
@@ -188,7 +188,7 @@ int32 WinApplication::ProcessMessage(HWND hwnd, uint32 msg, WPARAM wParam, LPARA
 		}
 	}
 
-	return DefWindowProc(hwnd, msg, wParam, lParam);
+	return (int32)DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
 void WinApplication::SetMessageHandler(GenericApplicationMessageHandler* messageHandler)

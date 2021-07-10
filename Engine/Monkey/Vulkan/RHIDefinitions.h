@@ -98,7 +98,7 @@ enum CubeFace
     CubeFace_MAX
 };
 
-FORCEINLINE VertexAttribute StringToVertexAttribute(const char* name)
+FORCE_INLINE VertexAttribute StringToVertexAttribute(const char* name)
 {
 	if (strcmp(name, "inPosition") == 0) {
 		return VertexAttribute::VA_Position;

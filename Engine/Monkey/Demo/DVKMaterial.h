@@ -126,17 +126,17 @@ namespace vk_demo
 
 		void SetInputAttachment(const std::string& name, DVKTexture* texture);
 
-		inline VkPipeline GetPipeline() const
+		FORCE_INLINE VkPipeline GetPipeline() const
 		{
 			return pipeline->pipeline;
 		}
 
-		inline VkPipelineLayout GetPipelineLayout() const
+		FORCE_INLINE VkPipelineLayout GetPipelineLayout() const
 		{
 			return pipeline->pipelineLayout;
 		}
 
-		inline std::vector<VkDescriptorSet>& GetDescriptorSets() const
+		FORCE_INLINE std::vector<VkDescriptorSet>& GetDescriptorSets() const
 		{
 			return descriptorSet->descriptorSets;
 		}

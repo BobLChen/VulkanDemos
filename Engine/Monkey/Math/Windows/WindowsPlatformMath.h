@@ -8,57 +8,57 @@
 struct WindowsPlatformMath : public GenericPlatformMath
 {
 
-	static FORCEINLINE int32 TruncToInt(float f)
+	static FORCE_INLINE int32 TruncToInt(float f)
 	{
 		return _mm_cvtt_ss2si(_mm_set_ss(f));
 	}
 
-	static FORCEINLINE float TruncToFloat(float f)
+	static FORCE_INLINE float TruncToFloat(float f)
 	{
 		return (float)TruncToInt(f);
 	}
 
-	static FORCEINLINE int32 RoundToInt(float f)
+	static FORCE_INLINE int32 RoundToInt(float f)
 	{
 		return _mm_cvt_ss2si(_mm_set_ss(f + f + 0.5f)) >> 1;
 	}
 
-	static FORCEINLINE float RoundToFloat(float f)
+	static FORCE_INLINE float RoundToFloat(float f)
 	{
 		return (float)RoundToInt(f);
 	}
 
-	static FORCEINLINE int32 FloorToInt(float f)
+	static FORCE_INLINE int32 FloorToInt(float f)
 	{
 		return _mm_cvt_ss2si(_mm_set_ss(f + f - 0.5f)) >> 1;
 	}
 
-	static FORCEINLINE float FloorToFloat(float f)
+	static FORCE_INLINE float FloorToFloat(float f)
 	{
 		return (float)FloorToInt(f);
 	}
 
-	static FORCEINLINE int32 CeilToInt(float f)
+	static FORCE_INLINE int32 CeilToInt(float f)
 	{
 		return -(_mm_cvt_ss2si(_mm_set_ss(-0.5f - (f + f))) >> 1);
 	}
 
-	static FORCEINLINE float CeilToFloat(float f)
+	static FORCE_INLINE float CeilToFloat(float f)
 	{
 		return (float)CeilToInt(f);
 	}
 
-	static FORCEINLINE bool IsNaN(float f)
+	static FORCE_INLINE bool IsNaN(float f)
 	{ 
 		return _isnan(f) != 0;
 	}
 
-	static FORCEINLINE bool IsFinite(float f)
+	static FORCE_INLINE bool IsFinite(float f)
 	{ 
 		return _finite(f) != 0;
 	}
 
-	static FORCEINLINE float InvSqrt(float f)
+	static FORCE_INLINE float InvSqrt(float f)
 	{
 		const __m128 fOneHalf = _mm_set_ss(0.5f);
 		__m128 y0, x0, x1, x2, fOver2;
@@ -80,7 +80,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return temp;
 	}
 
-	static FORCEINLINE float InvSqrtEst(float f)
+	static FORCE_INLINE float InvSqrtEst(float f)
 	{
 		const __m128 fOneHalf = _mm_set_ss(0.5f);
 		__m128 y0, x0, x1, fOver2;
@@ -99,7 +99,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 	}
 
 #pragma intrinsic(_BitScanReverse)
-	static FORCEINLINE uint32 FloorLog2(uint32 value)
+	static FORCE_INLINE uint32 FloorLog2(uint32 value)
 	{
 		unsigned long log2;
 		if (_BitScanReverse(&log2, value) != 0)
@@ -110,7 +110,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return 0;
 	}
 
-	static FORCEINLINE uint32 CountLeadingZeros(uint32 value)
+	static FORCE_INLINE uint32 CountLeadingZeros(uint32 value)
 	{
 		unsigned long log2;
 		if (_BitScanReverse(&log2, value) != 0)
@@ -121,7 +121,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return 32;
 	}
 
-	static FORCEINLINE uint32 CountTrailingZeros(uint32 value)
+	static FORCE_INLINE uint32 CountTrailingZeros(uint32 value)
 	{
 		if (value == 0)
 		{
@@ -133,31 +133,31 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return bitIndex;
 	}
 
-	static FORCEINLINE uint32 CeilLogTwo(uint32 value)
+	static FORCE_INLINE uint32 CeilLogTwo(uint32 value)
 	{
 		int32 bitmask = ((int32)(CountLeadingZeros(value) << 26)) >> 31;
 		return (32 - CountLeadingZeros(value - 1)) & (~bitmask);
 	}
 
-	static FORCEINLINE uint32 RoundUpToPowerOfTwo(uint32 value)
+	static FORCE_INLINE uint32 RoundUpToPowerOfTwo(uint32 value)
 	{
 		return 1 << CeilLogTwo(value);
 	}
 
-	static FORCEINLINE uint64 RoundUpToPowerOfTwo64(uint64 value)
+	static FORCE_INLINE uint64 RoundUpToPowerOfTwo64(uint64 value)
 	{
 		return uint64(1) << CeilLogTwo64(value);
 	}
 
 #if PLATFORM_64BITS
 
-	static FORCEINLINE uint64 CeilLogTwo64(uint64 value)
+	static FORCE_INLINE uint64 CeilLogTwo64(uint64 value)
 	{
 		int64 bitmask = ((int64)(CountLeadingZeros64(value) << 57)) >> 63;
 		return (64 - CountLeadingZeros64(value - 1)) & (~bitmask);
 	}
 
-	static FORCEINLINE uint64 CountLeadingZeros64(uint64 value)
+	static FORCE_INLINE uint64 CountLeadingZeros64(uint64 value)
 	{
 		unsigned long log2;
 		if (_BitScanReverse64(&log2, value) != 0)
@@ -168,7 +168,7 @@ struct WindowsPlatformMath : public GenericPlatformMath
 		return 64;
 	}
 
-	static FORCEINLINE uint64 CountTrailingZeros64(uint64 value)
+	static FORCE_INLINE uint64 CountTrailingZeros64(uint64 value)
 	{
 		if (value == 0)
 		{

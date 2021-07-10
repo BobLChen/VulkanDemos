@@ -105,7 +105,7 @@ public:
 
     void BindDrawCmd(const VkCommandBuffer& commandBuffer, const VkRenderPass& renderPass, int32 subpass = 0, VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
     
-	inline float GetScale() const
+	FORCE_INLINE float GetScale() const
 	{
 		return m_Scale;
 	}

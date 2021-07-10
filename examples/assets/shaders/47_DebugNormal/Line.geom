@@ -13,6 +13,11 @@ layout (binding = 0) uniform MVPBlock
 layout (location = 0) in vec3 inNormal[];
 layout (location = 0) out vec3 outColor;
 
+in gl_PerVertex 
+{
+    vec4  gl_Position;
+} gl_in[];
+
 void main(void)
 {	
     float normalLength = 1;

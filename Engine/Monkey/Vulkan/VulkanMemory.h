@@ -32,13 +32,13 @@ public:
 		}
 	}
 	
-	inline int32 AddRef()
+	FORCE_INLINE int32 AddRef()
 	{
 		int32 newValue = m_Counter.Increment();
 		return newValue;
 	}
 
-	inline int32 Release()
+	FORCE_INLINE int32 Release()
 	{
 		int32 newValue = m_Counter.Decrement();
 		if (newValue == 0) {
@@ -47,7 +47,7 @@ public:
 		return newValue;
 	}
 
-	inline int32 GetRefCount() const
+	FORCE_INLINE int32 GetRefCount() const
 	{
 		int32 value = m_Counter.GetValue();
 		return value;
@@ -64,7 +64,7 @@ struct VulkanRange
     
     static void JoinConsecutiveRanges(std::vector<VulkanRange>& ranges);
     
-    inline bool operator<(const VulkanRange& vulkanRange) const
+    FORCE_INLINE bool operator<(const VulkanRange& vulkanRange) const
     {
         return offset < vulkanRange.offset;
     }
@@ -83,37 +83,37 @@ public:
 
 	void InvalidateMappedMemory(VkDeviceSize offset, VkDeviceSize size);
 
-	inline bool CanBeMapped() const
+	FORCE_INLINE bool CanBeMapped() const
 	{
 		return m_CanBeMapped;
 	}
 
-	inline bool IsMapped() const
+	FORCE_INLINE bool IsMapped() const
 	{
 		return m_MappedPointer != nullptr;
 	}
 	
-	inline void* GetMappedPointer()
+	FORCE_INLINE void* GetMappedPointer()
 	{
 		return m_MappedPointer;
 	}
 
-	inline bool IsCoherent() const
+	FORCE_INLINE bool IsCoherent() const
 	{
 		return m_IsCoherent;
 	}
 
-	inline VkDeviceMemory GetHandle() const
+	FORCE_INLINE VkDeviceMemory GetHandle() const
 	{
 		return m_Handle;
 	}
 
-	inline VkDeviceSize GetSize() const
+	FORCE_INLINE VkDeviceSize GetSize() const
 	{
 		return m_Size;
 	}
 
-	inline uint32 GetMemoryTypeIndex() const
+	FORCE_INLINE uint32 GetMemoryTypeIndex() const
 	{
 		return m_MemoryTypeIndex;
 	}
@@ -157,17 +157,17 @@ public:
     
     uint64 GetTotalMemory(bool gpu) const;
     
-    inline bool HasUnifiedMemory() const
+    FORCE_INLINE bool HasUnifiedMemory() const
     {
         return m_HasUnifiedMemory;
     }
     
-    inline uint32 GetNumMemoryTypes() const
+    FORCE_INLINE uint32 GetNumMemoryTypes() const
     {
         return m_MemoryProperties.memoryTypeCount;
     }
     
-    inline VkResult GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties, uint32* outTypeIndex)
+    FORCE_INLINE VkResult GetMemoryTypeFromProperties(uint32 typeBits, VkMemoryPropertyFlags properties, uint32* outTypeIndex)
     {
         for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; ++i)
         {
@@ -185,7 +185,7 @@ public:
         return VK_ERROR_FEATURE_NOT_PRESENT;
     }
     
-    inline VkResult GetMemoryTypeFromPropertiesExcluding(uint32 typeBits, VkMemoryPropertyFlags properties, uint32 excludeTypeIndex, uint32* outTypeIndex)
+    FORCE_INLINE VkResult GetMemoryTypeFromPropertiesExcluding(uint32 typeBits, VkMemoryPropertyFlags properties, uint32 excludeTypeIndex, uint32* outTypeIndex)
     {
         for (uint32 i = 0; i < m_MemoryProperties.memoryTypeCount && typeBits; ++i)
         {
@@ -203,12 +203,12 @@ public:
         return VK_ERROR_FEATURE_NOT_PRESENT;
     }
     
-    inline const VkPhysicalDeviceMemoryProperties& GetMemoryProperties() const
+    FORCE_INLINE const VkPhysicalDeviceMemoryProperties& GetMemoryProperties() const
     {
         return m_MemoryProperties;
     }
     
-    inline VulkanDeviceMemoryAllocation* Alloc(bool canFail, VkDeviceSize allocationSize, uint32 memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, void* dedicatedAllocateInfo, const char* file, uint32 line)
+    FORCE_INLINE VulkanDeviceMemoryAllocation* Alloc(bool canFail, VkDeviceSize allocationSize, uint32 memoryTypeBits, VkMemoryPropertyFlags memoryPropertyFlags, void* dedicatedAllocateInfo, const char* file, uint32 line)
     {
         uint32 memoryTypeIndex = ~0;
         VERIFYVULKANRESULT(this->GetMemoryTypeFromProperties(memoryTypeBits, memoryPropertyFlags, &memoryTypeIndex));
@@ -256,42 +256,42 @@ public:
     
     void BindImage(VulkanDevice* device, VkImage image);
     
-    inline uint32 GetSize() const
+    FORCE_INLINE uint32 GetSize() const
     {
         return m_RequestedSize;
     }
     
-    inline uint32 GetAllocationSize()
+    FORCE_INLINE uint32 GetAllocationSize()
     {
         return m_AllocationSize;
     }
     
-    inline uint32 GetOffset() const
+    FORCE_INLINE uint32 GetOffset() const
     {
         return m_AlignedOffset;
     }
     
-    inline VkDeviceMemory GetHandle() const
+    FORCE_INLINE VkDeviceMemory GetHandle() const
     {
         return m_DeviceMemoryAllocation->GetHandle();
     }
     
-    inline void* GetMappedPointer()
+    FORCE_INLINE void* GetMappedPointer()
     {
         return (uint8*)m_DeviceMemoryAllocation->GetMappedPointer() + m_AlignedOffset;
     }
     
-    inline uint32 GetMemoryTypeIndex() const
+    FORCE_INLINE uint32 GetMemoryTypeIndex() const
     {
         return m_DeviceMemoryAllocation->GetMemoryTypeIndex();
     }
     
-    inline void FlushMappedMemory()
+    FORCE_INLINE void FlushMappedMemory()
     {
         m_DeviceMemoryAllocation->FlushMappedMemory(m_AllocationOffset, m_AllocationSize);
     }
     
-    inline void InvalidateMappedMemory()
+    FORCE_INLINE void InvalidateMappedMemory()
     {
         m_DeviceMemoryAllocation->InvalidateMappedMemory(m_AllocationOffset, m_AllocationSize);
     }
@@ -325,12 +325,12 @@ public:
         return resourceAllocation;
     }
     
-    inline VulkanResourceHeap* GetOwner()
+    FORCE_INLINE VulkanResourceHeap* GetOwner()
     {
         return m_Owner;
     }
     
-    inline uint32 GetID() const
+    FORCE_INLINE uint32 GetID() const
     {
         return m_ID;
     }
@@ -360,12 +360,12 @@ public:
     
     virtual ~VulkanResourceSubAllocation();
     
-    inline uint32 GetOffset() const
+    FORCE_INLINE uint32 GetOffset() const
     {
         return m_AlignedOffset;
     }
     
-    inline uint32 GetSize() const
+    FORCE_INLINE uint32 GetSize() const
     {
         return m_RequestedSize;
     }
@@ -386,12 +386,12 @@ public:
     
     void* GetMappedPointer();
     
-    inline VkBuffer GetHandle() const
+    FORCE_INLINE VkBuffer GetHandle() const
     {
         return m_Handle;
     }
     
-    inline VulkanSubBufferAllocator* GetBufferAllocator() const
+    FORCE_INLINE VulkanSubBufferAllocator* GetBufferAllocator() const
     {
         return m_Owner;
     }
@@ -417,17 +417,17 @@ public:
     
     VulkanResourceSubAllocation* TryAllocateNoLocking(uint32 size, uint32 alignment, const char* file, uint32 line);
     
-    inline VulkanResourceSubAllocation* TryAllocateLocking(uint32 size, uint32 alignment, const char* file, uint32 line)
+    FORCE_INLINE VulkanResourceSubAllocation* TryAllocateLocking(uint32 size, uint32 alignment, const char* file, uint32 line)
     {
         return TryAllocateNoLocking(size, alignment, file, line);
     }
     
-    inline uint32 GetAlignment() const
+    FORCE_INLINE uint32 GetAlignment() const
     {
         return m_Alignment;
     }
     
-    inline void* GetMappedPointer()
+    FORCE_INLINE void* GetMappedPointer()
     {
         return m_DeviceMemoryAllocation->GetMappedPointer();
     }
@@ -461,7 +461,7 @@ public:
     
     void Release(VulkanBufferSubAllocation* subAllocation);
     
-    inline VkBuffer GetHandle() const
+    FORCE_INLINE VkBuffer GetHandle() const
     {
         return m_Buffer;
     }
@@ -492,22 +492,22 @@ public:
     
     void ReleaseFreedPages(bool immediately);
     
-    inline VulkanResourceHeapManager* GetOwner()
+    FORCE_INLINE VulkanResourceHeapManager* GetOwner()
     {
         return m_Owner;
     }
     
-    inline bool IsHostCachedSupported() const
+    FORCE_INLINE bool IsHostCachedSupported() const
     {
         return m_IsHostCachedSupported;
     }
     
-    inline bool IsLazilyAllocatedSupported() const
+    FORCE_INLINE bool IsLazilyAllocatedSupported() const
     {
         return m_IsLazilyAllocatedSupported;
     }
     
-    inline uint32 GetMemoryTypeIndex() const
+    FORCE_INLINE uint32 GetMemoryTypeIndex() const
     {
         return m_MemoryTypeIndex;
     }

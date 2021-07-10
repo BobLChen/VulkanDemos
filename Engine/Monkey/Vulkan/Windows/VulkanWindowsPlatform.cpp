@@ -29,7 +29,7 @@ void VulkanWindowsPlatform::GetInstanceExtensions(std::vector<const char*>& outE
 {
 	uint32_t count;
     const char** extensions = Engine::Get()->GetApplication()->GetPlatformApplication()->GetWindow()->GetRequiredInstanceExtensions(&count);
-    for (int32 i = 0; i < count; ++i)
+    for (int32 i = 0; i < (int32)count; ++i)
     {
         outExtensions.push_back(extensions[i]);
     }

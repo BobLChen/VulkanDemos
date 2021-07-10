@@ -78,7 +78,7 @@ namespace vk_demo
 				}
 			}
 			
-			return VK_DESCRIPTOR_TYPE_END_RANGE;
+			return VK_DESCRIPTOR_TYPE_MAX_ENUM;
 		}
 
 		void AddDescriptorSetLayoutBinding(const std::string& varName, int32 set, VkDescriptorSetLayoutBinding binding)
@@ -242,7 +242,7 @@ namespace vk_demo
 
 			VkDescriptorPoolCreateInfo descriptorPoolInfo;
 			ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-			descriptorPoolInfo.poolSizeCount = poolSizes.size();
+			descriptorPoolInfo.poolSizeCount = (uint32_t)poolSizes.size();
 			descriptorPoolInfo.pPoolSizes    = poolSizes.data();
 			descriptorPoolInfo.maxSets       = maxSet;
 			VERIFYVULKANRESULT(vkCreateDescriptorPool(inDevice, &descriptorPoolInfo, VULKAN_CPU_ALLOCATOR, &descriptorPool));
@@ -268,12 +268,12 @@ namespace vk_demo
 				return false;
 			}
 
-			usedSet += descriptorSetLayouts.size();
+			usedSet += (int32)descriptorSetLayouts.size();
 
 			VkDescriptorSetAllocateInfo allocInfo;
 			ZeroVulkanStruct(allocInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
 			allocInfo.descriptorPool     = descriptorPool;
-			allocInfo.descriptorSetCount = descriptorSetLayouts.size();
+			allocInfo.descriptorSetCount = (uint32_t)descriptorSetLayouts.size();
 			allocInfo.pSetLayouts        = descriptorSetLayouts.data();
 			VERIFYVULKANRESULT(vkAllocateDescriptorSets(device, &allocInfo, descriptorSet));
 
@@ -427,7 +427,7 @@ namespace vk_demo
 			dvkSet->setLayoutsInfo = setLayoutsInfo;
 			dvkSet->descriptorSets.resize(setLayoutsInfo.setLayouts.size());
 
-			for (int32 i = descriptorSetPools.size() - 1; i >= 0; --i)
+			for (int32 i = (int32)descriptorSetPools.size() - 1; i >= 0; --i)
 			{
 				if (descriptorSetPools[i]->AllocateDescriptorSet(dvkSet->descriptorSets.data())) {
 					return dvkSet;

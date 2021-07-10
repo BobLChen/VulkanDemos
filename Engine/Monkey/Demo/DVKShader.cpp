@@ -119,7 +119,7 @@ namespace vk_demo
             spirv_cross::SPIRType base_type = compiler.get_type(res.base_type_id);
             const std::string &varName      = compiler.get_name(res.id);
             const std::string &typeName     = compiler.get_name(res.base_type_id);
-            uint32 uniformBufferStructSize  = compiler.get_declared_struct_size(type);
+            uint32 uniformBufferStructSize  = (uint32)compiler.get_declared_struct_size(type);
             
             int32 set     = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
             int32 binding = compiler.get_decoration(res.id, spv::DecorationBinding);
@@ -461,7 +461,7 @@ namespace vk_demo
 			
 			VkDescriptorSetLayoutCreateInfo descSetLayoutInfo;
 			ZeroVulkanStruct(descSetLayoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-			descSetLayoutInfo.bindingCount = setLayoutInfo.bindings.size();
+			descSetLayoutInfo.bindingCount = (uint32_t)setLayoutInfo.bindings.size();
 			descSetLayoutInfo.pBindings    = setLayoutInfo.bindings.data();
 			VERIFYVULKANRESULT(vkCreateDescriptorSetLayout(device, &descSetLayoutInfo, VULKAN_CPU_ALLOCATOR, &descriptorSetLayout));
 
@@ -470,7 +470,7 @@ namespace vk_demo
 
 		VkPipelineLayoutCreateInfo pipeLayoutInfo;
 		ZeroVulkanStruct(pipeLayoutInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-		pipeLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
+		pipeLayoutInfo.setLayoutCount = (uint32_t)descriptorSetLayouts.size();
 		pipeLayoutInfo.pSetLayouts    = descriptorSetLayouts.data();
 		VERIFYVULKANRESULT(vkCreatePipelineLayout(device, &pipeLayoutInfo, VULKAN_CPU_ALLOCATOR, &pipelineLayout));
 	}

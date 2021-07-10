@@ -8,6 +8,16 @@ layout (binding = 0) uniform TessParam
 
 layout (vertices = 4) out;
 
+in gl_PerVertex 
+{
+    vec4  gl_Position;
+} gl_in[];
+
+out gl_PerVertex 
+{
+    vec4 gl_Position;
+} gl_out[];
+
 void main()
 {
 	if (gl_InvocationID == 0)

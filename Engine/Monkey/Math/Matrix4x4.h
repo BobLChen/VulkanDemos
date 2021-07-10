@@ -35,205 +35,205 @@ public:
 
 	Matrix4x4(const Rotator& rot, const Vector3& origin);
 
-	FORCEINLINE void Perspective(float halfFOV, float width, float height, float minZ, float maxZ);
+	FORCE_INLINE void Perspective(float halfFOV, float width, float height, float minZ, float maxZ);
 
-	FORCEINLINE void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ);
+	FORCE_INLINE void Orthographic(float left, float right, float bottom, float top, float minZ, float maxZ);
 
-	FORCEINLINE void SetIdentity();
+	FORCE_INLINE void SetIdentity();
 
-	FORCEINLINE void Prepend(const Matrix4x4& other);
+	FORCE_INLINE void Prepend(const Matrix4x4& other);
 
-	FORCEINLINE void Append(const Matrix4x4& other);
+	FORCE_INLINE void Append(const Matrix4x4& other);
 
-	FORCEINLINE void PrependRotation(const Rotator& rotator, const Vector3& pivot);
+	FORCE_INLINE void PrependRotation(const Rotator& rotator, const Vector3& pivot);
 
-	FORCEINLINE void AppendRotation(const Rotator& rotator, const Vector3& pivot);
+	FORCE_INLINE void AppendRotation(const Rotator& rotator, const Vector3& pivot);
 
-	FORCEINLINE void PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
+	FORCE_INLINE void PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
 
-	FORCEINLINE void AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
+	FORCE_INLINE void AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot = nullptr);
 	
-	FORCEINLINE void AppendTranslation(const Vector3& translation);
+	FORCE_INLINE void AppendTranslation(const Vector3& translation);
 
-	FORCEINLINE void PrependTranslation(const Vector3& translation);
+	FORCE_INLINE void PrependTranslation(const Vector3& translation);
 
-	FORCEINLINE void TranslateAxis(const Vector3& axis, float distance);
+	FORCE_INLINE void TranslateAxis(const Vector3& axis, float distance);
 
-	FORCEINLINE void TranslateX(float distance);
+	FORCE_INLINE void TranslateX(float distance);
 
-	FORCEINLINE void TranslateY(float distance);
+	FORCE_INLINE void TranslateY(float distance);
 
-	FORCEINLINE void TranslateZ(float distance);
+	FORCE_INLINE void TranslateZ(float distance);
 
-	FORCEINLINE void RotateAxis(const Vector3& axis, float angle, const Vector3* pivot);
+	FORCE_INLINE void RotateAxis(const Vector3& axis, float angle, const Vector3* pivot);
 
-	FORCEINLINE void RotateX(float angle, bool local = true, const Vector3* pivot = nullptr);
+	FORCE_INLINE void RotateX(float angle, bool local = true, const Vector3* pivot = nullptr);
 
-	FORCEINLINE void RotateY(float angle, bool local = true, const Vector3* pivot = nullptr);
+	FORCE_INLINE void RotateY(float angle, bool local = true, const Vector3* pivot = nullptr);
 
-	FORCEINLINE void RotateZ(float angle, bool local = true, const Vector3* pivot = nullptr);
+	FORCE_INLINE void RotateZ(float angle, bool local = true, const Vector3* pivot = nullptr);
 	
-	FORCEINLINE void AppendScale(const Vector3& scale);
+	FORCE_INLINE void AppendScale(const Vector3& scale);
 
-	FORCEINLINE void PrependScale(const Vector3& scale);
+	FORCE_INLINE void PrependScale(const Vector3& scale);
 	
-	FORCEINLINE void CopyColumnFrom(int32 column, const Vector4 &vec);
+	FORCE_INLINE void CopyColumnFrom(int32 column, const Vector4 &vec);
 
-	FORCEINLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
+	FORCE_INLINE void CopyColumnTo(int32 column, Vector4 &vec) const;
 
-	FORCEINLINE void Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const;
+	FORCE_INLINE void Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const;
 
-	FORCEINLINE void Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot);
+	FORCE_INLINE void Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot);
 
-	FORCEINLINE Vector4 DeltaTransformVector(const Vector4& v) const;
+	FORCE_INLINE Vector4 DeltaTransformVector(const Vector4& v) const;
 
-	FORCEINLINE void CopyRawDataTo(float* rawData) const;
+	FORCE_INLINE void CopyRawDataTo(float* rawData) const;
 
-	FORCEINLINE void CopyRawDataFrom(float* rawData);
+	FORCE_INLINE void CopyRawDataFrom(float* rawData);
 
-	FORCEINLINE void SetOrientation(const Vector3& dir, const Vector3* up, float smooth);
+	FORCE_INLINE void SetOrientation(const Vector3& dir, const Vector3* up, float smooth);
 
-	FORCEINLINE void LookAt(float x, float y, float z, const Vector3* up = nullptr, float smooth = 1.0f);
+	FORCE_INLINE void LookAt(float x, float y, float z, const Vector3* up = nullptr, float smooth = 1.0f);
 
-	FORCEINLINE void LookAt(Vector3 target, const Vector3* up = nullptr, float smooth = 1.0f);
+	FORCE_INLINE void LookAt(Vector3 target, const Vector3* up = nullptr, float smooth = 1.0f);
 
-	FORCEINLINE void CopyRawFrom(int32 column, const Vector4 &vec);
+	FORCE_INLINE void CopyRawFrom(int32 column, const Vector4 &vec);
 
-	FORCEINLINE void CopyRawTo(int32 column, Vector4 &vec) const;
+	FORCE_INLINE void CopyRawTo(int32 column, Vector4 &vec) const;
 	
-	FORCEINLINE Matrix4x4 operator* (const Matrix4x4& other) const;
+	FORCE_INLINE Matrix4x4 operator* (const Matrix4x4& other) const;
 
-	FORCEINLINE void operator*=(const Matrix4x4& other);
+	FORCE_INLINE void operator*=(const Matrix4x4& other);
 
-	FORCEINLINE Matrix4x4 operator+ (const Matrix4x4& other) const;
+	FORCE_INLINE Matrix4x4 operator+ (const Matrix4x4& other) const;
 
-	FORCEINLINE void operator+=(const Matrix4x4& other);
+	FORCE_INLINE void operator+=(const Matrix4x4& other);
 
-	FORCEINLINE Matrix4x4 operator* (float other) const;
+	FORCE_INLINE Matrix4x4 operator* (float other) const;
 
-	FORCEINLINE void operator*=(float other);
+	FORCE_INLINE void operator*=(float other);
 
-	FORCEINLINE bool operator==(const Matrix4x4& other) const;
+	FORCE_INLINE bool operator==(const Matrix4x4& other) const;
 
-	FORCEINLINE bool Equals(const Matrix4x4& other, float tolerance = KINDA_SMALL_NUMBER) const;
+	FORCE_INLINE bool Equals(const Matrix4x4& other, float tolerance = KINDA_SMALL_NUMBER) const;
 
-	FORCEINLINE bool operator!=(const Matrix4x4& other) const;
+	FORCE_INLINE bool operator!=(const Matrix4x4& other) const;
 
-	FORCEINLINE Vector4 TransformVector4(const Vector4& v) const;
+	FORCE_INLINE Vector4 TransformVector4(const Vector4& v) const;
 
-	FORCEINLINE Vector4 TransformPosition(const Vector3 &v) const;
+	FORCE_INLINE Vector4 TransformPosition(const Vector3 &v) const;
 
-	FORCEINLINE Vector3 InverseTransformPosition(const Vector3 &v) const;
+	FORCE_INLINE Vector3 InverseTransformPosition(const Vector3 &v) const;
 
-	FORCEINLINE Vector4 TransformVector(const Vector3& v) const;
+	FORCE_INLINE Vector4 TransformVector(const Vector3& v) const;
 
-	FORCEINLINE Vector3 InverseTransformVector(const Vector3 &v) const;
+	FORCE_INLINE Vector3 InverseTransformVector(const Vector3 &v) const;
 
-	FORCEINLINE Matrix4x4 GetTransposed() const;
+	FORCE_INLINE Matrix4x4 GetTransposed() const;
 
-	FORCEINLINE void SetTransposed();
+	FORCE_INLINE void SetTransposed();
 
-	FORCEINLINE float Determinant() const;
+	FORCE_INLINE float Determinant() const;
 
-	FORCEINLINE float RotDeterminant() const;
+	FORCE_INLINE float RotDeterminant() const;
 
-	FORCEINLINE Matrix4x4 InverseFast() const;
+	FORCE_INLINE Matrix4x4 InverseFast() const;
 
-	FORCEINLINE void SetInverseFast();
+	FORCE_INLINE void SetInverseFast();
 
-	FORCEINLINE Matrix4x4 Inverse() const;
+	FORCE_INLINE Matrix4x4 Inverse() const;
 
-	FORCEINLINE void SetInverse();
+	FORCE_INLINE void SetInverse();
 
-	FORCEINLINE Matrix4x4 TransposeAdjoint() const;
+	FORCE_INLINE Matrix4x4 TransposeAdjoint() const;
 
-	FORCEINLINE void RemoveScaling(float tolerance = SMALL_NUMBER);
+	FORCE_INLINE void RemoveScaling(float tolerance = SMALL_NUMBER);
 
-	FORCEINLINE Matrix4x4 GetMatrixWithoutScale(float tolerance = SMALL_NUMBER) const;
+	FORCE_INLINE Matrix4x4 GetMatrixWithoutScale(float tolerance = SMALL_NUMBER) const;
 
-	FORCEINLINE Vector3 ExtractScaling(float tolerance = SMALL_NUMBER);
+	FORCE_INLINE Vector3 ExtractScaling(float tolerance = SMALL_NUMBER);
 
-	FORCEINLINE Vector3 GetScaleVector(float tolerance = SMALL_NUMBER) const;
+	FORCE_INLINE Vector3 GetScaleVector(float tolerance = SMALL_NUMBER) const;
 
-	FORCEINLINE Vector3 GetRotation() const;
+	FORCE_INLINE Vector3 GetRotation() const;
 
-	FORCEINLINE void SetRotation(const Vector3& rotation);
+	FORCE_INLINE void SetRotation(const Vector3& rotation);
 
-	FORCEINLINE Vector3 GetScale() const;
+	FORCE_INLINE Vector3 GetScale() const;
 
-	FORCEINLINE void ScaleX(float scale);
+	FORCE_INLINE void ScaleX(float scale);
 
-	FORCEINLINE void ScaleY(float scale);
+	FORCE_INLINE void ScaleY(float scale);
 
-	FORCEINLINE void ScaleZ(float scale);
+	FORCE_INLINE void ScaleZ(float scale);
 
-	FORCEINLINE void SetScale(const Vector3& scale, float smooth);
+	FORCE_INLINE void SetScale(const Vector3& scale, float smooth);
 
-	FORCEINLINE Matrix4x4 RemoveTranslation() const;
+	FORCE_INLINE Matrix4x4 RemoveTranslation() const;
 
-	FORCEINLINE Matrix4x4 ConcatTranslation(const Vector3& translation) const;
+	FORCE_INLINE Matrix4x4 ConcatTranslation(const Vector3& translation) const;
 
-	FORCEINLINE bool ContainsNaN() const;
+	FORCE_INLINE bool ContainsNaN() const;
 
-	FORCEINLINE void ScaleTranslation(const Vector3& scale3D);
+	FORCE_INLINE void ScaleTranslation(const Vector3& scale3D);
 
-	FORCEINLINE float GetMaximumAxisScale() const;
+	FORCE_INLINE float GetMaximumAxisScale() const;
 
-	FORCEINLINE Vector3 GetOrigin() const;
+	FORCE_INLINE Vector3 GetOrigin() const;
 
-	FORCEINLINE Vector3 GetScaledAxis(Axis::Type axis) const;
+	FORCE_INLINE Vector3 GetScaledAxis(Axis::Type axis) const;
 
-	FORCEINLINE void GetScaledAxes(Vector3& x, Vector3& y, Vector3& z) const;
+	FORCE_INLINE void GetScaledAxes(Vector3& x, Vector3& y, Vector3& z) const;
 
-	FORCEINLINE Vector3 GetUnitAxis(Axis::Type axis) const;
+	FORCE_INLINE Vector3 GetUnitAxis(Axis::Type axis) const;
 
-	FORCEINLINE void GetUnitAxes(Vector3& x, Vector3& y, Vector3& z) const;
+	FORCE_INLINE void GetUnitAxes(Vector3& x, Vector3& y, Vector3& z) const;
 
-	FORCEINLINE void SetAxis(int32 i, const Vector3& axis);
+	FORCE_INLINE void SetAxis(int32 i, const Vector3& axis);
 
-	FORCEINLINE void SetOrigin(const Vector3& newOrigin);
+	FORCE_INLINE void SetOrigin(const Vector3& newOrigin);
 
-	FORCEINLINE void SetPosition(const Vector3& pos);
+	FORCE_INLINE void SetPosition(const Vector3& pos);
 
-	FORCEINLINE void SetAxes(Vector3* axis0 = nullptr, Vector3* axis1 = nullptr, Vector3* axis2 = nullptr, Vector3* origin = nullptr);
+	FORCE_INLINE void SetAxes(Vector3* axis0 = nullptr, Vector3* axis1 = nullptr, Vector3* axis2 = nullptr, Vector3* origin = nullptr);
 
-	FORCEINLINE Vector3 GetColumn(int32 col) const;
+	FORCE_INLINE Vector3 GetColumn(int32 col) const;
 
-	FORCEINLINE Vector3 GetRight() const;
+	FORCE_INLINE Vector3 GetRight() const;
 
-	FORCEINLINE Vector3 GetUp() const;
+	FORCE_INLINE Vector3 GetUp() const;
 
-	FORCEINLINE Vector3 GetForward() const;
+	FORCE_INLINE Vector3 GetForward() const;
 
-	FORCEINLINE Vector3 GetLeft() const;
+	FORCE_INLINE Vector3 GetLeft() const;
 
-	FORCEINLINE Vector3 GetBackward() const;
+	FORCE_INLINE Vector3 GetBackward() const;
 
-	FORCEINLINE Vector3 GetDown() const;
+	FORCE_INLINE Vector3 GetDown() const;
 
-	FORCEINLINE bool GetFrustumNearPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumNearPlane(Plane& outPlane) const;
 
-	FORCEINLINE bool GetFrustumFarPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumFarPlane(Plane& outPlane) const;
 
-	FORCEINLINE bool GetFrustumLeftPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumLeftPlane(Plane& outPlane) const;
 
-	FORCEINLINE bool GetFrustumRightPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumRightPlane(Plane& outPlane) const;
 
-	FORCEINLINE bool GetFrustumTopPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumTopPlane(Plane& outPlane) const;
 
-	FORCEINLINE bool GetFrustumBottomPlane(Plane& outPlane) const;
+	FORCE_INLINE bool GetFrustumBottomPlane(Plane& outPlane) const;
 
-	FORCEINLINE void Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis);
+	FORCE_INLINE void Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis);
 
-	FORCEINLINE void To3x4MatrixTranspose(float* Out) const;
+	FORCE_INLINE void To3x4MatrixTranspose(float* Out) const;
 
 	Rotator ToRotator() const;
 
 	Quat ToQuat() const;
 
-	FORCEINLINE std::string ToString() const;
+	FORCE_INLINE std::string ToString() const;
 
-	FORCEINLINE static void GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m);
+	FORCE_INLINE static void GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m);
 };
 
 template<uint32 NumRows, uint32 NumColumns>
@@ -249,13 +249,13 @@ public:
 };
 
 template<uint32 NumRows, uint32 NumColumns>
-FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix() 
+FORCE_INLINE TMatrix<NumRows, NumColumns>::TMatrix() 
 { 
 
 }
 
 template<uint32 NumRows, uint32 NumColumns>
-FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
+FORCE_INLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
 {
 	for (uint32 RowIndex = 0; (RowIndex < NumRows) && (RowIndex < 4); RowIndex++)
 	{
@@ -265,7 +265,7 @@ FORCEINLINE TMatrix<NumRows, NumColumns>::TMatrix(const Matrix4x4& InMatrix)
 	}
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4()
+FORCE_INLINE Matrix4x4::Matrix4x4()
 {
 	m[0][0] = 1; m[0][1] = 0;  m[0][2] = 0;  m[0][3] = 0;
 	m[1][0] = 0; m[1][1] = 1;  m[1][2] = 0;  m[1][3] = 0;
@@ -273,7 +273,7 @@ FORCEINLINE Matrix4x4::Matrix4x4()
 	m[3][0] = 0; m[3][1] = 0;  m[3][2] = 0;  m[3][3] = 1;
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW)
+FORCE_INLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane& inZ, const Plane& inW)
 {
 	m[0][0] = inX.x; m[0][1] = inX.y;  m[0][2] = inX.z;  m[0][3] = inX.w;
 	m[1][0] = inY.x; m[1][1] = inY.y;  m[1][2] = inY.z;  m[1][3] = inY.w;
@@ -281,7 +281,7 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Plane& inX, const Plane& inY, const Plane
 	m[3][0] = inW.x; m[3][1] = inW.y;  m[3][2] = inW.z;  m[3][3] = inW.w;
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector3& origin)
+FORCE_INLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector3& origin)
 {
 	float sp, sy, sr;
 	float cp, cy, cr;
@@ -294,7 +294,7 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Rotator& rot, const Vector3& origin)
 	m[3][0] = origin.x;						m[3][1] = origin.y;					m[3][2] = origin.z;		m[3][3] = 1.f;
 }
 
-FORCEINLINE Matrix4x4::Matrix4x4(const Vector3& inX, const Vector3& inY, const Vector3& inZ, const Vector3& inW)
+FORCE_INLINE Matrix4x4::Matrix4x4(const Vector3& inX, const Vector3& inY, const Vector3& inZ, const Vector3& inW)
 {
 	m[0][0] = inX.x; m[0][1] = inX.y;  m[0][2] = inX.z;  m[0][3] = 0.0f;
 	m[1][0] = inY.x; m[1][1] = inY.y;  m[1][2] = inY.z;  m[1][3] = 0.0f;
@@ -302,7 +302,7 @@ FORCEINLINE Matrix4x4::Matrix4x4(const Vector3& inX, const Vector3& inY, const V
 	m[3][0] = inW.x; m[3][1] = inW.y;  m[3][2] = inW.z;  m[3][3] = 1.0f;
 }
 
-FORCEINLINE void Matrix4x4::To3x4MatrixTranspose(float* out) const
+FORCE_INLINE void Matrix4x4::To3x4MatrixTranspose(float* out) const
 {
 	const float* src = &(m[0][0]);
 	float* dest = out;
@@ -323,7 +323,7 @@ FORCEINLINE void Matrix4x4::To3x4MatrixTranspose(float* out) const
 	dest[11] = src[14]; // [3][2]
 }
 
-FORCEINLINE std::string Matrix4x4::ToString() const
+FORCE_INLINE std::string Matrix4x4::ToString() const
 {
 	std::string output;
 
@@ -335,7 +335,7 @@ FORCEINLINE std::string Matrix4x4::ToString() const
 	return output;
 }
 
-FORCEINLINE void Matrix4x4::SetIdentity()
+FORCE_INLINE void Matrix4x4::SetIdentity()
 {
 	m[0][0] = 1; m[0][1] = 0;  m[0][2] = 0;  m[0][3] = 0;
 	m[1][0] = 0; m[1][1] = 1;  m[1][2] = 0;  m[1][3] = 0;
@@ -343,19 +343,19 @@ FORCEINLINE void Matrix4x4::SetIdentity()
 	m[3][0] = 0; m[3][1] = 0;  m[3][2] = 0;  m[3][3] = 1;
 }
 
-FORCEINLINE void Matrix4x4::PrependRotation(const Rotator& rotator, const Vector3& pivot)
+FORCE_INLINE void Matrix4x4::PrependRotation(const Rotator& rotator, const Vector3& pivot)
 {
 	Matrix4x4 rotMatrix(rotator, pivot);
 	MMath::VectorMatrixMultiply(this, &rotMatrix, this);
 }
 
-FORCEINLINE void Matrix4x4::AppendRotation(const Rotator& rotator, const Vector3& pivot)
+FORCE_INLINE void Matrix4x4::AppendRotation(const Rotator& rotator, const Vector3& pivot)
 {
 	Matrix4x4 rotMatrix(rotator, pivot);
 	MMath::VectorMatrixMultiply(this, this, &rotMatrix);
 }
 
-FORCEINLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
 {
 	Matrix4x4 matrix;
 	if (pivot) {
@@ -367,7 +367,7 @@ FORCEINLINE void Matrix4x4::PrependRotation(const float degrees, const Vector3& 
 	Prepend(matrix);
 }
 
-FORCEINLINE void Matrix4x4::AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::AppendRotation(const float degrees, const Vector3& axis, const Vector3* pivot)
 {
 	Matrix4x4 matrix;
 	if (pivot) {
@@ -379,14 +379,14 @@ FORCEINLINE void Matrix4x4::AppendRotation(const float degrees, const Vector3& a
 	Append(matrix);
 }
 
-FORCEINLINE void Matrix4x4::AppendTranslation(const Vector3& translation)
+FORCE_INLINE void Matrix4x4::AppendTranslation(const Vector3& translation)
 {
 	m[3][0] += translation.x; 
 	m[3][1] += translation.y;
 	m[3][2] += translation.z;
 }
 
-FORCEINLINE void Matrix4x4::TranslateY(float distance)
+FORCE_INLINE void Matrix4x4::TranslateY(float distance)
 {
 	Vector4 pos;
 	Vector4 up;
@@ -398,7 +398,7 @@ FORCEINLINE void Matrix4x4::TranslateY(float distance)
 	CopyRawFrom(3, pos);
 }
 
-FORCEINLINE void Matrix4x4::TranslateZ(float distance)
+FORCE_INLINE void Matrix4x4::TranslateZ(float distance)
 {
 	Vector4 pos;
 	Vector4 dir;
@@ -410,7 +410,7 @@ FORCEINLINE void Matrix4x4::TranslateZ(float distance)
 	CopyRawFrom(3, pos);
 }
 
-FORCEINLINE void Matrix4x4::TranslateAxis(const Vector3& axis, float distance)
+FORCE_INLINE void Matrix4x4::TranslateAxis(const Vector3& axis, float distance)
 {
 	Vector4 pos;
 	CopyRawTo(3, pos);
@@ -420,7 +420,7 @@ FORCEINLINE void Matrix4x4::TranslateAxis(const Vector3& axis, float distance)
 	CopyRawFrom(3, pos);
 }
 
-FORCEINLINE void Matrix4x4::TranslateX(float distance)
+FORCE_INLINE void Matrix4x4::TranslateX(float distance)
 {
 	Vector4 pos;
 	Vector4 right;
@@ -432,7 +432,7 @@ FORCEINLINE void Matrix4x4::TranslateX(float distance)
 	CopyRawFrom(3, pos);
 }
 
-FORCEINLINE void Matrix4x4::GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m)
+FORCE_INLINE void Matrix4x4::GetAxisRotation(float u, float v, float w, const float a, const float b, const float c, const float degress, Matrix4x4& m)
 {
 	float rad = degress / 180.0f * PI;
 
@@ -473,7 +473,7 @@ FORCEINLINE void Matrix4x4::GetAxisRotation(float u, float v, float w, const flo
 	m.m[3][3] = 1;
 }
 
-FORCEINLINE void Matrix4x4::RotateX(float angle, bool local, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::RotateX(float angle, bool local, const Vector3* pivot)
 {
 	if (local) {
 		Vector3 vec = GetRight();
@@ -484,7 +484,7 @@ FORCEINLINE void Matrix4x4::RotateX(float angle, bool local, const Vector3* pivo
 	}
 }
 
-FORCEINLINE void Matrix4x4::RotateY(float angle, bool local, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::RotateY(float angle, bool local, const Vector3* pivot)
 {
 	if (local) {
 		Vector3 vec = GetUp();
@@ -495,7 +495,7 @@ FORCEINLINE void Matrix4x4::RotateY(float angle, bool local, const Vector3* pivo
 	}
 }
 
-FORCEINLINE void Matrix4x4::RotateZ(float angle, bool local, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::RotateZ(float angle, bool local, const Vector3* pivot)
 {
 	if (local) {
 		Vector3 vec = GetForward();
@@ -506,7 +506,7 @@ FORCEINLINE void Matrix4x4::RotateZ(float angle, bool local, const Vector3* pivo
 	}
 }
 
-FORCEINLINE void Matrix4x4::RotateAxis(const Vector3& axis, float angle, const Vector3* pivot)
+FORCE_INLINE void Matrix4x4::RotateAxis(const Vector3& axis, float angle, const Vector3* pivot)
 {
 	Vector3 vec;
 	vec.x = axis.x;
@@ -525,14 +525,14 @@ FORCEINLINE void Matrix4x4::RotateAxis(const Vector3& axis, float angle, const V
 	}
 }
 
-FORCEINLINE void Matrix4x4::PrependTranslation(const Vector3& translation)
+FORCE_INLINE void Matrix4x4::PrependTranslation(const Vector3& translation)
 {
 	Matrix4x4 matrix;
 	matrix.SetOrigin(translation);
 	Prepend(matrix);
 }
 
-FORCEINLINE void Matrix4x4::AppendScale(const Vector3& scale)
+FORCE_INLINE void Matrix4x4::AppendScale(const Vector3& scale)
 {
 	Matrix4x4 matrix;
 	matrix.SetIdentity();
@@ -542,7 +542,7 @@ FORCEINLINE void Matrix4x4::AppendScale(const Vector3& scale)
 	Append(matrix);
 }
 
-FORCEINLINE void Matrix4x4::PrependScale(const Vector3& scale)
+FORCE_INLINE void Matrix4x4::PrependScale(const Vector3& scale)
 {
 	Matrix4x4 matrix;
 	matrix.SetIdentity();
@@ -552,17 +552,17 @@ FORCEINLINE void Matrix4x4::PrependScale(const Vector3& scale)
 	Prepend(matrix);
 }
 
-FORCEINLINE void Matrix4x4::Prepend(const Matrix4x4& other)
+FORCE_INLINE void Matrix4x4::Prepend(const Matrix4x4& other)
 {
 	MMath::VectorMatrixMultiply(this, &other, this);
 }
 
-FORCEINLINE void Matrix4x4::Append(const Matrix4x4& other)
+FORCE_INLINE void Matrix4x4::Append(const Matrix4x4& other)
 {
 	MMath::VectorMatrixMultiply(this, this, &other);
 }
 
-FORCEINLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
+FORCE_INLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
 {
 	m[0][column] = vec.x; 
 	m[1][column] = vec.y; 
@@ -570,7 +570,7 @@ FORCEINLINE void Matrix4x4::CopyColumnFrom(int32 column, const Vector4 &vec)
 	m[3][column] = vec.w;
 }
 
-FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
+FORCE_INLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
 {
 	vec.x = m[0][column];
 	vec.y = m[1][column];
@@ -578,7 +578,7 @@ FORCEINLINE void Matrix4x4::CopyColumnTo(int32 column, Vector4 &vec) const
 	vec.w = m[3][column];
 }
 
-FORCEINLINE void Matrix4x4::CopyRawDataFrom(float* rawData)
+FORCE_INLINE void Matrix4x4::CopyRawDataFrom(float* rawData)
 {
 	m[0][0] = rawData[0];	m[0][1] = rawData[1];	m[0][2] = rawData[2];	m[0][3] = rawData[3];
 	m[1][0] = rawData[4];	m[1][1] = rawData[5];	m[1][2] = rawData[6];	m[1][3] = rawData[7];
@@ -586,7 +586,7 @@ FORCEINLINE void Matrix4x4::CopyRawDataFrom(float* rawData)
 	m[3][0] = rawData[12];	m[3][1] = rawData[13];	m[3][2] = rawData[14];	m[3][3] = rawData[15];
 }
 
-FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData) const
+FORCE_INLINE void Matrix4x4::CopyRawDataTo(float* rawData) const
 {
 	rawData[0] = m[0][0];
 	rawData[1] = m[0][1];
@@ -609,7 +609,7 @@ FORCEINLINE void Matrix4x4::CopyRawDataTo(float* rawData) const
 	rawData[15] = m[3][3];
 }
 
-FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v) const
+FORCE_INLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v) const
 {
 	float x = v.x;
 	float y = v.y;
@@ -622,7 +622,7 @@ FORCEINLINE Vector4 Matrix4x4::DeltaTransformVector(const Vector4& v) const
 	);
 }
 
-FORCEINLINE void Matrix4x4::Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot)
+FORCE_INLINE void Matrix4x4::Recompose(const Vector4& pos, const Vector4& scale, const Vector4& rot)
 {
 	SetIdentity();
 	AppendScale(scale);
@@ -648,7 +648,7 @@ FORCEINLINE void Matrix4x4::Recompose(const Vector4& pos, const Vector4& scale, 
 	m[3][3] = 1.0f;
 }
 
-FORCEINLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const
+FORCE_INLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& outScale, Vector4& outRot) const
 {
 	float mr[16] = { 0.0f };
 	CopyRawDataTo(mr);
@@ -729,18 +729,18 @@ FORCEINLINE void Matrix4x4::Decompose(Style style, Vector4& outPos, Vector4& out
 	}
 }
 
-FORCEINLINE void Matrix4x4::LookAt(float x, float y, float z, const Vector3* up, float smooth)
+FORCE_INLINE void Matrix4x4::LookAt(float x, float y, float z, const Vector3* up, float smooth)
 {
 	Vector3 vector(x - m[3][0], y - m[3][1], z - m[3][2]);
 	SetOrientation(vector, up, smooth);
 }
 
-FORCEINLINE void Matrix4x4::LookAt(Vector3 target, const Vector3* up, float smooth)
+FORCE_INLINE void Matrix4x4::LookAt(Vector3 target, const Vector3* up, float smooth)
 {
 	LookAt(target.x, target.y, target.z, up, smooth);
 }
 
-FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up, float smooth)
+FORCE_INLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up, float smooth)
 {
 	Vector3 scale;
 
@@ -802,7 +802,7 @@ FORCEINLINE void Matrix4x4::SetOrientation(const Vector3& dir, const Vector3* up
 	CopyRawFrom(2, Vector4(tempDir, 0.0f));
 }
 
-FORCEINLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
+FORCE_INLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
 {
 	m[raw][0] = vec.x;
     m[raw][1] = vec.y;
@@ -810,7 +810,7 @@ FORCEINLINE void Matrix4x4::CopyRawFrom(int32 raw, const Vector4 &vec)
     m[raw][3] = vec.w;
 }
 
-FORCEINLINE void Matrix4x4::CopyRawTo(int32 raw, Vector4 &vec) const
+FORCE_INLINE void Matrix4x4::CopyRawTo(int32 raw, Vector4 &vec) const
 {
 	vec.x = m[raw][0];
 	vec.y = m[raw][1];
@@ -818,19 +818,19 @@ FORCEINLINE void Matrix4x4::CopyRawTo(int32 raw, Vector4 &vec) const
 	vec.w = m[raw][3];
 }
 
-FORCEINLINE void Matrix4x4::operator*=(const Matrix4x4& other)
+FORCE_INLINE void Matrix4x4::operator*=(const Matrix4x4& other)
 {
     MMath::VectorMatrixMultiply(this, this, &other);
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::operator*(const Matrix4x4& other) const
+FORCE_INLINE Matrix4x4 Matrix4x4::operator*(const Matrix4x4& other) const
 {
 	Matrix4x4 result;
 	MMath::VectorMatrixMultiply(&result, this, &other);
 	return result;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::operator+(const Matrix4x4& other) const
+FORCE_INLINE Matrix4x4 Matrix4x4::operator+(const Matrix4x4& other) const
 {
 	Matrix4x4 resultMat;
 
@@ -844,12 +844,12 @@ FORCEINLINE Matrix4x4 Matrix4x4::operator+(const Matrix4x4& other) const
 	return resultMat;
 }
 
-FORCEINLINE void Matrix4x4::operator+=(const Matrix4x4& other)
+FORCE_INLINE void Matrix4x4::operator+=(const Matrix4x4& other)
 {
 	*this = *this + other;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::operator*(float other) const
+FORCE_INLINE Matrix4x4 Matrix4x4::operator*(float other) const
 {
 	Matrix4x4 resultMat;
 
@@ -863,12 +863,12 @@ FORCEINLINE Matrix4x4 Matrix4x4::operator*(float other) const
 	return resultMat;
 }
 
-FORCEINLINE void Matrix4x4::operator*=(float other)
+FORCE_INLINE void Matrix4x4::operator*=(float other)
 {
 	*this = *this * other;
 }
 
-FORCEINLINE bool Matrix4x4::operator==(const Matrix4x4& other) const
+FORCE_INLINE bool Matrix4x4::operator==(const Matrix4x4& other) const
 {
 	for (int32 x = 0; x < 4; x++)
 	{
@@ -883,7 +883,7 @@ FORCEINLINE bool Matrix4x4::operator==(const Matrix4x4& other) const
 	return true;
 }
 
-FORCEINLINE bool Matrix4x4::Equals(const Matrix4x4& other, float tolerance) const
+FORCE_INLINE bool Matrix4x4::Equals(const Matrix4x4& other, float tolerance) const
 {
 	for (int32 x = 0; x < 4; x++)
 	{
@@ -898,30 +898,30 @@ FORCEINLINE bool Matrix4x4::Equals(const Matrix4x4& other, float tolerance) cons
 	return true;
 }
 
-FORCEINLINE bool Matrix4x4::operator!=(const Matrix4x4& other) const
+FORCE_INLINE bool Matrix4x4::operator!=(const Matrix4x4& other) const
 {
 	return !(*this == other);
 }
 
-FORCEINLINE Vector4 Matrix4x4::TransformVector4(const Vector4 &v) const
+FORCE_INLINE Vector4 Matrix4x4::TransformVector4(const Vector4 &v) const
 {
     Vector4 result;
     MMath::VectorTransformVector(&result, &v, this);
 	return result;
 }
 
-FORCEINLINE Vector4 Matrix4x4::TransformPosition(const Vector3 &v) const
+FORCE_INLINE Vector4 Matrix4x4::TransformPosition(const Vector3 &v) const
 {
 	return TransformVector4(Vector4(v.x, v.y, v.z, 1.0f));
 }
 
-FORCEINLINE Vector3 Matrix4x4::InverseTransformPosition(const Vector3 &v) const
+FORCE_INLINE Vector3 Matrix4x4::InverseTransformPosition(const Vector3 &v) const
 {
 	Matrix4x4 invSelf = this->InverseFast();
 	return invSelf.TransformPosition(v);
 }
 
-FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
+FORCE_INLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
 {
 	Vector4 col0;
 	Vector4 col1;
@@ -941,18 +941,18 @@ FORCEINLINE Vector4 Matrix4x4::TransformVector(const Vector3& v) const
 	return temp;
 }
 
-FORCEINLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
+FORCE_INLINE Vector3 Matrix4x4::InverseTransformVector(const Vector3 &v) const
 {
 	Matrix4x4 invSelf = this->InverseFast();
 	return invSelf.TransformVector(v);
 }
 
-FORCEINLINE void Matrix4x4::SetTransposed()
+FORCE_INLINE void Matrix4x4::SetTransposed()
 {
 	*this = GetTransposed();
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::GetTransposed() const
+FORCE_INLINE Matrix4x4 Matrix4x4::GetTransposed() const
 {
 	Matrix4x4 result;
 
@@ -979,7 +979,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::GetTransposed() const
 	return result;
 }
 
-FORCEINLINE float Matrix4x4::Determinant() const
+FORCE_INLINE float Matrix4x4::Determinant() const
 {
 	return	m[0][0] * 
 		(
@@ -1007,7 +1007,7 @@ FORCEINLINE float Matrix4x4::Determinant() const
 		);
 }
 
-FORCEINLINE float Matrix4x4::RotDeterminant() const
+FORCE_INLINE float Matrix4x4::RotDeterminant() const
 {
 	return
 		m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
@@ -1015,24 +1015,24 @@ FORCEINLINE float Matrix4x4::RotDeterminant() const
 		m[2][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1]);
 }
 
-FORCEINLINE void Matrix4x4::SetInverseFast()
+FORCE_INLINE void Matrix4x4::SetInverseFast()
 {
 	*this = InverseFast();
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::InverseFast() const
+FORCE_INLINE Matrix4x4 Matrix4x4::InverseFast() const
 {
 	Matrix4x4 result;
     MMath::VectorMatrixInverse(&result, this);
 	return result;
 }
 
-FORCEINLINE void Matrix4x4::SetInverse()
+FORCE_INLINE void Matrix4x4::SetInverse()
 {
 	*this = Inverse();
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::Inverse() const
+FORCE_INLINE Matrix4x4 Matrix4x4::Inverse() const
 {
 	Matrix4x4 result;
 
@@ -1057,7 +1057,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::Inverse() const
 	return result;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::TransposeAdjoint() const
+FORCE_INLINE Matrix4x4 Matrix4x4::TransposeAdjoint() const
 {
 	Matrix4x4 ta;
 
@@ -1084,7 +1084,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::TransposeAdjoint() const
 	return ta;
 }
 
-FORCEINLINE void Matrix4x4::RemoveScaling(float tolerance)
+FORCE_INLINE void Matrix4x4::RemoveScaling(float tolerance)
 {
 	const float squareSum0 = (m[0][0] * m[0][0]) + (m[0][1] * m[0][1]) + (m[0][2] * m[0][2]);
 	const float squareSum1 = (m[1][0] * m[1][0]) + (m[1][1] * m[1][1]) + (m[1][2] * m[1][2]);
@@ -1103,14 +1103,14 @@ FORCEINLINE void Matrix4x4::RemoveScaling(float tolerance)
 	m[2][2] *= scale2;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::GetMatrixWithoutScale(float tolerance) const
+FORCE_INLINE Matrix4x4 Matrix4x4::GetMatrixWithoutScale(float tolerance) const
 {
 	Matrix4x4 result = *this;
 	result.RemoveScaling(tolerance);
 	return result;
 }
 
-FORCEINLINE Vector3 Matrix4x4::ExtractScaling(float tolerance)
+FORCE_INLINE Vector3 Matrix4x4::ExtractScaling(float tolerance)
 {
 	Vector3 scale3D(0, 0, 0);
 
@@ -1163,7 +1163,7 @@ FORCEINLINE Vector3 Matrix4x4::ExtractScaling(float tolerance)
 	return scale3D;
 }
 
-FORCEINLINE void Matrix4x4::ScaleX(float scale)
+FORCE_INLINE void Matrix4x4::ScaleX(float scale)
 {
 	Vector4 right;
 	CopyRawTo(0, right);
@@ -1176,7 +1176,7 @@ FORCEINLINE void Matrix4x4::ScaleX(float scale)
 	CopyRawFrom(0, right);
 }
 
-FORCEINLINE void Matrix4x4::ScaleY(float scale)
+FORCE_INLINE void Matrix4x4::ScaleY(float scale)
 {
 	Vector4 up;
 	CopyRawTo(1, up);
@@ -1189,7 +1189,7 @@ FORCEINLINE void Matrix4x4::ScaleY(float scale)
 	CopyRawFrom(1, up);
 }
 
-FORCEINLINE void Matrix4x4::ScaleZ(float scale)
+FORCE_INLINE void Matrix4x4::ScaleZ(float scale)
 {
 	Vector4 dir;
 	CopyRawTo(2, dir);
@@ -1202,7 +1202,7 @@ FORCEINLINE void Matrix4x4::ScaleZ(float scale)
 	CopyRawFrom(2, dir);
 }
 
-FORCEINLINE void Matrix4x4::SetScale(const Vector3& scale, float smooth)
+FORCE_INLINE void Matrix4x4::SetScale(const Vector3& scale, float smooth)
 {
 	Vector4 right;
 	CopyRawTo(0, right);
@@ -1240,7 +1240,7 @@ FORCEINLINE void Matrix4x4::SetScale(const Vector3& scale, float smooth)
 	CopyRawFrom(2, dir);
 }
 
-FORCEINLINE void Matrix4x4::SetRotation(const Vector3& rotation)
+FORCE_INLINE void Matrix4x4::SetRotation(const Vector3& rotation)
 {
 	Vector4 pos;
 	Vector4 rot;
@@ -1255,7 +1255,7 @@ FORCEINLINE void Matrix4x4::SetRotation(const Vector3& rotation)
 	Recompose(pos, scale, rot);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetRotation() const
+FORCE_INLINE Vector3 Matrix4x4::GetRotation() const
 {
 	Vector4 pos;
 	Vector4 rot;
@@ -1266,7 +1266,7 @@ FORCEINLINE Vector3 Matrix4x4::GetRotation() const
 	return Vector3(MMath::RadiansToDegrees(rot.x), MMath::RadiansToDegrees(rot.y), MMath::RadiansToDegrees(rot.z));
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetScale() const
+FORCE_INLINE Vector3 Matrix4x4::GetScale() const
 {
 	Vector4 temp;
 	
@@ -1282,7 +1282,7 @@ FORCEINLINE Vector3 Matrix4x4::GetScale() const
 	return Vector3(scaleX, scaleY, scaleZ);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
+FORCE_INLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
 {
 	Vector3 scale3D(1, 1, 1);
 
@@ -1300,7 +1300,7 @@ FORCEINLINE Vector3 Matrix4x4::GetScaleVector(float tolerance) const
 	return scale3D;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::RemoveTranslation() const
+FORCE_INLINE Matrix4x4 Matrix4x4::RemoveTranslation() const
 {
 	Matrix4x4 result = *this;
 	result.m[3][0] = 0.0f;
@@ -1309,7 +1309,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::RemoveTranslation() const
 	return result;
 }
 
-FORCEINLINE Matrix4x4 Matrix4x4::ConcatTranslation(const Vector3& translation) const
+FORCE_INLINE Matrix4x4 Matrix4x4::ConcatTranslation(const Vector3& translation) const
 {
 	Matrix4x4 result;
 
@@ -1337,7 +1337,7 @@ FORCEINLINE Matrix4x4 Matrix4x4::ConcatTranslation(const Vector3& translation) c
 	return result;
 }
 
-FORCEINLINE bool Matrix4x4::ContainsNaN() const
+FORCE_INLINE bool Matrix4x4::ContainsNaN() const
 {
 	for (int32 i = 0; i < 4; i++)
 	{
@@ -1352,7 +1352,7 @@ FORCEINLINE bool Matrix4x4::ContainsNaN() const
 	return false;
 }
 
-FORCEINLINE float Matrix4x4::GetMaximumAxisScale() const
+FORCE_INLINE float Matrix4x4::GetMaximumAxisScale() const
 {
 	const float maxRowScaleSquared = MMath::Max(
 		GetScaledAxis(Axis::X).SizeSquared(),
@@ -1364,19 +1364,19 @@ FORCEINLINE float Matrix4x4::GetMaximumAxisScale() const
 	return MMath::Sqrt(maxRowScaleSquared);
 }
 
-FORCEINLINE void Matrix4x4::ScaleTranslation(const Vector3& inScale3D)
+FORCE_INLINE void Matrix4x4::ScaleTranslation(const Vector3& inScale3D)
 {
 	m[3][0] *= inScale3D.x;
 	m[3][1] *= inScale3D.y;
 	m[3][2] *= inScale3D.z;
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetOrigin() const
+FORCE_INLINE Vector3 Matrix4x4::GetOrigin() const
 {
 	return Vector3(m[3][0], m[3][1], m[3][2]);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetScaledAxis(Axis::Type inAxis) const
+FORCE_INLINE Vector3 Matrix4x4::GetScaledAxis(Axis::Type inAxis) const
 {
 	switch (inAxis)
 	{
@@ -1394,19 +1394,19 @@ FORCEINLINE Vector3 Matrix4x4::GetScaledAxis(Axis::Type inAxis) const
 	}
 }
 
-FORCEINLINE void Matrix4x4::GetScaledAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
+FORCE_INLINE void Matrix4x4::GetScaledAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
 {
 	x.x = m[0][0]; x.y = m[0][1]; x.z = m[0][2];
 	y.x = m[1][0]; y.y = m[1][1]; y.z = m[1][2];
 	z.x = m[2][0]; z.y = m[2][1]; z.z = m[2][2];
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetUnitAxis(Axis::Type inAxis) const
+FORCE_INLINE Vector3 Matrix4x4::GetUnitAxis(Axis::Type inAxis) const
 {
 	return GetScaledAxis(inAxis).GetSafeNormal();
 }
 
-FORCEINLINE void Matrix4x4::GetUnitAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
+FORCE_INLINE void Matrix4x4::GetUnitAxes(Vector3 &x, Vector3 &y, Vector3 &z) const
 {
 	GetScaledAxes(x, y, z);
 	x.Normalize();
@@ -1414,28 +1414,28 @@ FORCEINLINE void Matrix4x4::GetUnitAxes(Vector3 &x, Vector3 &y, Vector3 &z) cons
 	z.Normalize();
 }
 
-FORCEINLINE void Matrix4x4::SetAxis(int32 i, const Vector3& axis)
+FORCE_INLINE void Matrix4x4::SetAxis(int32 i, const Vector3& axis)
 {
 	m[i][0] = axis.x;
 	m[i][1] = axis.y;
 	m[i][2] = axis.z;
 }
 
-FORCEINLINE void Matrix4x4::SetOrigin(const Vector3& newOrigin)
+FORCE_INLINE void Matrix4x4::SetOrigin(const Vector3& newOrigin)
 {
 	m[3][0] = newOrigin.x;
 	m[3][1] = newOrigin.y;
 	m[3][2] = newOrigin.z;
 }
 
-FORCEINLINE void Matrix4x4::SetPosition(const Vector3& pos)
+FORCE_INLINE void Matrix4x4::SetPosition(const Vector3& pos)
 {
 	m[3][0] = pos.x;
 	m[3][1] = pos.y;
 	m[3][2] = pos.z;
 }
 
-FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axis2, Vector3* origin)
+FORCE_INLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axis2, Vector3* origin)
 {
 	if (axis0 != NULL)
 	{
@@ -1463,54 +1463,54 @@ FORCEINLINE void Matrix4x4::SetAxes(Vector3* axis0, Vector3* axis1, Vector3* axi
 	}
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetRight() const
+FORCE_INLINE Vector3 Matrix4x4::GetRight() const
 {
 	Vector4 right;
 	CopyRawTo(0, right);
 	return Vector3(right.x, right.y, right.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetUp() const
+FORCE_INLINE Vector3 Matrix4x4::GetUp() const
 {
 	Vector4 up;
 	CopyRawTo(1, up);
 	return Vector3(up.x, up.y, up.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetForward() const
+FORCE_INLINE Vector3 Matrix4x4::GetForward() const
 {
 	Vector4 forward;
 	CopyRawTo(2, forward);
 	return Vector3(forward.x, forward.y, forward.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetLeft() const
+FORCE_INLINE Vector3 Matrix4x4::GetLeft() const
 {
 	Vector4 right;
 	CopyRawTo(0, right);
 	return Vector3(-right.x, -right.y, -right.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetBackward() const
+FORCE_INLINE Vector3 Matrix4x4::GetBackward() const
 {
 	Vector4 forward;
 	CopyRawTo(2, forward);
 	return Vector3(-forward.x, -forward.y, -forward.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetDown() const
+FORCE_INLINE Vector3 Matrix4x4::GetDown() const
 {
 	Vector4 up;
 	CopyRawTo(1, up);
 	return Vector3(-up.x, -up.y, -up.z);
 }
 
-FORCEINLINE Vector3 Matrix4x4::GetColumn(int32 i) const
+FORCE_INLINE Vector3 Matrix4x4::GetColumn(int32 i) const
 {
 	return Vector3(m[0][i], m[1][i], m[2][i]);
 }
 
-FORCEINLINE bool MakeFrustumPlane(float a, float b, float c, float d, Plane& outPlane)
+FORCE_INLINE bool MakeFrustumPlane(float a, float b, float c, float d, Plane& outPlane)
 {
 	const float	lengthSquared = a * a + b * b + c * c;
 	if (lengthSquared > DELTA * DELTA)
@@ -1525,7 +1525,7 @@ FORCEINLINE bool MakeFrustumPlane(float a, float b, float c, float d, Plane& out
 	}
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumNearPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumNearPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][2],
@@ -1536,7 +1536,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumNearPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumFarPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumFarPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][3] - m[0][2],
@@ -1547,7 +1547,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumFarPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumLeftPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumLeftPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][3] + m[0][0],
@@ -1558,7 +1558,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumLeftPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumRightPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumRightPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][3] - m[0][0],
@@ -1569,7 +1569,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumRightPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumTopPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumTopPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][3] - m[0][1],
@@ -1580,7 +1580,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumTopPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE bool Matrix4x4::GetFrustumBottomPlane(Plane& outPlane) const
+FORCE_INLINE bool Matrix4x4::GetFrustumBottomPlane(Plane& outPlane) const
 {
 	return MakeFrustumPlane(
 		m[0][3] + m[0][1],
@@ -1591,7 +1591,7 @@ FORCEINLINE bool Matrix4x4::GetFrustumBottomPlane(Plane& outPlane) const
 	);
 }
 
-FORCEINLINE void Matrix4x4::Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis)
+FORCE_INLINE void Matrix4x4::Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis)
 {
 	if (mirrorAxis == Axis::X)
 	{
@@ -1635,7 +1635,7 @@ FORCEINLINE void Matrix4x4::Mirror(Axis::Type mirrorAxis, Axis::Type flipAxis)
 	}
 }
 
-FORCEINLINE void Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
+FORCE_INLINE void Matrix4x4::Perspective(float fovy, float width, float height, float zNear, float zFar)
 {
 	float aspect = width / height;
 	float tanHalfFovy = MMath::Tan(fovy / 2);
@@ -1646,7 +1646,7 @@ FORCEINLINE void Matrix4x4::Perspective(float fovy, float width, float height, f
 	m[3][0] = 0.0f;							m[3][1] = 0.0f;					m[3][2] = zFar * zNear / (zNear - zFar);		m[3][3] = 0.0f;
 }
 
-FORCEINLINE void Matrix4x4::Orthographic(float left, float right, float bottom, float top, float zNear, float zFar)
+FORCE_INLINE void Matrix4x4::Orthographic(float left, float right, float bottom, float top, float zNear, float zFar)
 {
 	m[0][0] = 2.0f / (right - left);			m[0][1] = 0.0f;								m[0][2] = 0.0f;						m[0][3] = 0.0f;
 	m[1][0] = 0.0f;								m[1][1] = 2.0f / (top - bottom);			m[1][2] = 0.0f;						m[1][3] = 0.0f;

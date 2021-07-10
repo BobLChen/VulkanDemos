@@ -111,8 +111,8 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
     bool foundPresentModeImmediate = false;
     bool foundPresentModeFIFO      = false;
     
-    MLOG("Found %d present mode.", numFoundPresentModes);
-    for (int32 index = 0; index < numFoundPresentModes; ++index)
+    MLOG("Found %d present mode.", (int32)numFoundPresentModes);
+    for (int32 index = 0; index < (int32)numFoundPresentModes; ++index)
     {
         switch (foundPresentModes[index])
         {
@@ -222,7 +222,7 @@ VulkanSwapChain::VulkanSwapChain(VkInstance instance, std::shared_ptr<VulkanDevi
 
 	// 创建Fence
 	m_ImageAcquiredSemaphore.resize(numSwapChainImages);
-	for (int32 index = 0; index < numSwapChainImages; ++index)
+	for (int32 index = 0; index < (int32)numSwapChainImages; ++index)
 	{
 		VkSemaphoreCreateInfo createInfo;
 		ZeroVulkanStruct(createInfo, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);

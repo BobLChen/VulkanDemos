@@ -13,7 +13,7 @@ namespace vk_demo
 		ringBuffer->device		 = vulkanDevice->GetInstanceHandle();
 		ringBuffer->bufferSize   = 32 * 1024 * 1024; // 32MB
 		ringBuffer->bufferOffset = ringBuffer->bufferSize;
-		ringBuffer->minAlignment = vulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+		ringBuffer->minAlignment = (uint32)vulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
 		ringBuffer->realBuffer   = vk_demo::DVKBuffer::CreateBuffer(
 			vulkanDevice,
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -212,7 +212,7 @@ namespace vk_demo
 			// 拷贝数据
 			memcpy(ringCPUData + ringOffset, it->second.dataContent.data(), bufferSize);
 			// 记录Offset
-			globalOffsets[it->second.dynamicIndex] = ringOffset;
+			globalOffsets[it->second.dynamicIndex] = (uint32)ringOffset;
 		}
 	}
 
@@ -223,20 +223,20 @@ namespace vk_demo
     
 	void DVKMaterial::BeginObject()
 	{
-		int32 index = perObjectIndexes.size();
+		int32 index = (int32)perObjectIndexes.size();
 		perObjectIndexes.push_back(index);
 
 		int32 offsetStart = index * dynamicOffsetCount;
 		
 		// 扩充dynamicOffsets尺寸以便能够保持每个Object的参数
 		if (offsetStart + dynamicOffsetCount > dynamicOffsets.size()) {
-			for (int32 i = 0; i < dynamicOffsetCount; ++i) {
+			for (uint32 i = 0; i < dynamicOffsetCount; ++i) {
 				dynamicOffsets.push_back(0);
 			}
 		}
 		
 		// 拷贝GlobalOffsets
-		for (int32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
+		for (uint32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
 			dynamicOffsets[offsetIndex] = globalOffsets[offsetIndex - offsetStart];
 		}
 	}
@@ -247,7 +247,7 @@ namespace vk_demo
 		for (int32 i = 0; i < perObjectIndexes.size(); ++i) 
 		{
 			int32 offsetStart = i * dynamicOffsetCount;
-			for (int32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
+			for (uint32 offsetIndex = offsetStart; offsetIndex < dynamicOffsetCount; ++offsetIndex) {
 				if (dynamicOffsets[offsetIndex] == MAX_uint32) {
 					MLOGE("Uniform not set\n");
 				}
@@ -256,7 +256,7 @@ namespace vk_demo
 
 		if (perObjectIndexes.size() == 0)
 		{
-			for (int32 i = 0; i < dynamicOffsetCount; ++i) {
+			for (uint32 i = 0; i < dynamicOffsetCount; ++i) {
 				if (globalOffsets[i] == MAX_uint32) {
 					MLOGE("Uniform not set\n");
 				}
@@ -280,7 +280,7 @@ namespace vk_demo
 			commandBuffer, 
 			bindPoint, 
 			GetPipelineLayout(), 
-			0, GetDescriptorSets().size(), GetDescriptorSets().data(), 
+			0, (uint32_t)GetDescriptorSets().size(), GetDescriptorSets().data(), 
 			dynamicOffsetCount, dynOffsets
 		);
 	}
@@ -314,7 +314,7 @@ namespace vk_demo
 		memcpy(ringCPUData + ringOffset, dataPtr, bufferSize);
 
 		// 记录Offset
-		dynOffsets[it->second.dynamicIndex] = ringOffset;
+		dynOffsets[it->second.dynamicIndex] = (uint32)ringOffset;
     }
 
 	void DVKMaterial::SetGlobalUniform(const std::string& name, void* dataPtr, uint32 size)
@@ -384,7 +384,7 @@ namespace vk_demo
 
 		if (it->second.bufferInfo.buffer != buffer->buffer) 
 		{
-			it->second.dataSize          = buffer->size;
+			it->second.dataSize          = (uint32)buffer->size;
 			it->second.bufferInfo.buffer = buffer->buffer;
 			it->second.bufferInfo.offset = 0;
 			it->second.bufferInfo.range  = buffer->size;

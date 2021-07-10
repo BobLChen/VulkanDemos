@@ -40,6 +40,11 @@ layout (location = 0) out vec3 outNormal;
 layout (location = 1) out vec2 outUV0;
 layout (location = 2) out vec3 outColor;
 
+in gl_PerVertex 
+{
+    vec4 gl_Position;
+} gl_in[];
+
 void main()
 {
 	vec3 uvwSquared = gl_TessCoord * gl_TessCoord;

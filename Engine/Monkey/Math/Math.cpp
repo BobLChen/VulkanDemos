@@ -329,15 +329,16 @@ float MMath::RoundHalfToEven(float value)
 
 double MMath::RoundHalfToEven(double value)
 {
-	value = MMath::TruncateToHalfIfClose(value);
+	float fValue = (float)value;
+	fValue = MMath::TruncateToHalfIfClose(fValue);
 
-	const bool bIsNegative = value < 0.0f;
-	const bool bValueIsEven = static_cast<uint32>(FloorToFloat(((bIsNegative) ? -value : value))) % 2 == 0;
+	const bool bIsNegative = fValue < 0.0f;
+	const bool bValueIsEven = static_cast<uint32>(FloorToFloat(((bIsNegative) ? -fValue : fValue))) % 2 == 0;
 	if (bValueIsEven) {
-		return (bIsNegative) ? FloorToFloat(value + 0.5f) : CeilToFloat(value - 0.5f);
+		return (bIsNegative) ? FloorToFloat(fValue + 0.5f) : CeilToFloat(fValue - 0.5f);
 	}
 	else {
-		return (bIsNegative) ? CeilToFloat(value - 0.5f) : FloorToFloat(value + 0.5f);
+		return (bIsNegative) ? CeilToFloat(fValue - 0.5f) : FloorToFloat(fValue + 0.5f);
 	}
 }
 
@@ -406,8 +407,8 @@ float MMath::PerlinNoise1D(const float value)
 	const int32 bx0 = ((int32)t) & bm;
 	const int32 bx1 = (bx0 + 1) & bm;
 	const float rx0 = t - (int32)t;
-	const float rx1 = rx0 - 1.;
-	const float sx = (rx0 * rx0 * (3. - 2. * rx0));
+	const float rx1 = rx0 - 1.0f;
+	const float sx = (rx0 * rx0 * (3.0f - 2.0f * rx0));
 	const float u = rx0 * g[p[bx0]];
 	const float v = rx1 * g[p[bx1]];
 

@@ -81,16 +81,16 @@ private:
 			m_ViewCamera.Update(time, delta);
 		}
 
+		SetupCommandBuffers(bufferIndex);
+
+		DemoBase::Present(bufferIndex);
+
 		vkGetQueryPoolResults(
 			m_Device, 
 			m_QueryPool, 
 			0, OBJECT_COUNT, sizeof(uint64) * OBJECT_COUNT, m_QuerySamples, sizeof(uint64), 
 			VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
 		);
-
-		SetupCommandBuffers(bufferIndex);
-
-		DemoBase::Present(bufferIndex);
 	}
 
 	bool UpdateUI(float time, float delta)
@@ -104,7 +104,7 @@ private:
 
 			ImGui::Checkbox("EnableQuery", &m_EnableQuery);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

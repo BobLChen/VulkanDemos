@@ -9,7 +9,7 @@
 
 namespace vk_demo
 {
-    inline VkShaderModule LoadSPIPVShader(VkDevice device, const std::string& filepath)
+    FORCE_INLINE VkShaderModule LoadSPIPVShader(VkDevice device, const std::string& filepath)
     {
         uint8* dataPtr  = nullptr;
         uint32 dataSize = 0;
@@ -27,7 +27,7 @@ namespace vk_demo
         return shaderModule;
     }
 
-	inline VkImageLayout GetImageLayout(ImageLayoutBarrier target)
+	FORCE_INLINE VkImageLayout GetImageLayout(ImageLayoutBarrier target)
 	{
 		VkImageLayout layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -103,7 +103,7 @@ namespace vk_demo
 		return layout;
 	}
     
-    inline VkPipelineStageFlags GetImageBarrierFlags(ImageLayoutBarrier target, VkAccessFlags& accessFlags, VkImageLayout& layout)
+    FORCE_INLINE VkPipelineStageFlags GetImageBarrierFlags(ImageLayoutBarrier target, VkAccessFlags& accessFlags, VkImageLayout& layout)
     {
         VkPipelineStageFlags stageFlags = (VkPipelineStageFlags)0;
         switch (target)
@@ -198,13 +198,13 @@ namespace vk_demo
         return stageFlags;
     }
     
-    inline void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
+    FORCE_INLINE void SetImageBarrierInfo(ImageLayoutBarrier source, ImageLayoutBarrier dest, VkImageMemoryBarrier& inOutBarrier, VkPipelineStageFlags& inOutSourceStage, VkPipelineStageFlags& inOutDestStage)
     {
         inOutSourceStage |= GetImageBarrierFlags(source, inOutBarrier.srcAccessMask, inOutBarrier.oldLayout);
         inOutDestStage   |= GetImageBarrierFlags(dest,   inOutBarrier.dstAccessMask, inOutBarrier.newLayout);
     }
     
-    inline void ImagePipelineBarrier(VkCommandBuffer cmdBuffer, VkImage image, ImageLayoutBarrier source, ImageLayoutBarrier dest, const VkImageSubresourceRange& subresourceRange)
+    FORCE_INLINE void ImagePipelineBarrier(VkCommandBuffer cmdBuffer, VkImage image, ImageLayoutBarrier source, ImageLayoutBarrier dest, const VkImageSubresourceRange& subresourceRange)
     {
         VkImageMemoryBarrier imageBarrier;
         ZeroVulkanStruct(imageBarrier, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);

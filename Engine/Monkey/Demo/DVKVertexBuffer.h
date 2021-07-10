@@ -17,7 +17,7 @@
 namespace vk_demo
 {
 	
-	inline int32 VertexAttributeToSize(VertexAttribute attribute)
+	FORCE_INLINE int32 VertexAttributeToSize(VertexAttribute attribute)
 	{
 		// count * sizeof(float)
 		if (attribute == VertexAttribute::VA_Position) {
@@ -71,7 +71,7 @@ namespace vk_demo
 		return 0;
 	}
     
-	inline VkFormat VertexAttributeToVkFormat(VertexAttribute attribute)
+	FORCE_INLINE VkFormat VertexAttributeToVkFormat(VertexAttribute attribute)
 	{
 		VkFormat format = VK_FORMAT_R32G32B32_SFLOAT;
 		if (attribute == VertexAttribute::VA_Position) {

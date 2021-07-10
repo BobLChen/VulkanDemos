@@ -11,7 +11,7 @@
 
 #define STARTING_BUFFER_SIZE 512
 
-static FORCEINLINE int32 GetVarArgs(char* dest, SIZE_T destSize, int32 count, const char*& fmt, va_list argPtr)
+static FORCE_INLINE int32 GetVarArgs(char* dest, SIZE_T destSize, int32 count, const char*& fmt, va_list argPtr)
 {
 	int32 Result = vsnprintf(dest, count, fmt, argPtr);
 	va_end(argPtr);

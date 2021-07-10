@@ -11,6 +11,11 @@ layout (binding = 0) uniform MVPBlock
 	vec4 position;
 } uboMVP;
 
+in gl_PerVertex 
+{
+    vec4  gl_Position;
+} gl_in[];
+
 out gl_PerVertex
 {
     vec4 gl_Position;

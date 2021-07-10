@@ -3,25 +3,20 @@
 import os
 import sys
 
-path = os.getcwd()
-path = path.replace("\\", "/")
-path = path[0:path.find("VulkanTutorials")]
-path = path + "/VulkanTutorials/"
+def IsExe(path):
+    return os.path.isfile(path) and os.access(path, os.X_OK)
 
-exepath = path
+def FindGlslang():
+    exeName = "glslangvalidator"
+    if os.name == "nt":
+        exeName += ".exe"
+    
+    for exeDir in os.environ["PATH"].split(os.pathsep):
+        fullPath = os.path.join(exeDir, exeName)
+        if IsExe(fullPath):
+            return fullPath
 
-if "win32" == sys.platform:
-	exepath = exepath + "external/vulkan/windows/bin/x86/glslangvalidator.exe"
-	pass
-elif "linux" == sys.platform:
-	exepath = exepath + "external/vulkan/linux/bin/glslangValidator"
-	pass
-elif "linux2" == sys.platform:
-	exepath = exepath + "external/vulkan/linux/bin/glslangValidator"
-	pass
-elif "darwin" == sys.platform:
-	exepath = exepath + "external/vulkan/macos/bin/glslangValidator"
-	pass
+    sys.exit("Could not find glslangvalidator on PATH.")
 
 files = []
 
@@ -31,8 +26,9 @@ for parentDir, _, fileNames in os.walk(os.getcwd()):
 		files.append(filepath)
 pass
 
-shaders = [".vert", ".frag", ".comp", ".tese", ".tesc", ".geom", ".rchit", ".rmiss", ".rgen", ".rahit", ".rint"]
+shaders = [".vert", ".frag", ".comp", ".tese", ".tesc", ".geom", ".rgen", ".rchit", ".rmiss", ".rahit"]
 shaderFiles = []
+glslangPath = FindGlslang()
 
 for file in files:
 	_, ext = os.path.splitext(file)
@@ -42,5 +38,5 @@ for file in files:
 	pass
 
 for shader in shaderFiles:
-	os.system(exepath + " -V " + shader + " -o " + shader + ".spv")
+	os.system(glslangPath + " -V " + shader + " -o " + shader + ".spv")
 	pass

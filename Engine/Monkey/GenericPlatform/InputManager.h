@@ -28,7 +28,7 @@ public:
     
     static void Init();
     
-    FORCEINLINE static KeyboardType GetKeyFromKeyCode(int32 keyCode)
+    FORCE_INLINE static KeyboardType GetKeyFromKeyCode(int32 keyCode)
     {
         auto it = s_KeyboardTypesMap.find(keyCode);
         if (it == s_KeyboardTypesMap.end()) {
@@ -37,13 +37,13 @@ public:
         return it->second;
     }
     
-    FORCEINLINE static void Reset()
+    FORCE_INLINE static void Reset()
     {
         s_MouseDelta = 0;
         s_IsMouseMoveing = false;
     }
     
-    FORCEINLINE static bool IsMouseDown(MouseType type)
+    FORCE_INLINE static bool IsMouseDown(MouseType type)
     {
         auto it = s_MouseActions.find((int32)type);
         if (it == s_MouseActions.end()) {
@@ -52,7 +52,7 @@ public:
         return it->second == true;
     }
     
-    FORCEINLINE static bool IsMouseUp(MouseType type)
+    FORCE_INLINE static bool IsMouseUp(MouseType type)
     {
         auto it = s_MouseActions.find((int32)type);
         if (it == s_MouseActions.end()) {
@@ -61,7 +61,7 @@ public:
         return it->second == false;
     }
     
-    FORCEINLINE static bool IsKeyDown(KeyboardType key)
+    FORCE_INLINE static bool IsKeyDown(KeyboardType key)
     {
         auto it = s_KeyActions.find((int32)key);
         if (it == s_KeyActions.end()) {
@@ -70,7 +70,7 @@ public:
         return it->second == true;
     }
     
-    FORCEINLINE static bool IsKeyUp(KeyboardType key)
+    FORCE_INLINE static bool IsKeyUp(KeyboardType key)
     {
         auto it = s_KeyActions.find((int32)key);
         if (it == s_KeyActions.end()) {
@@ -79,17 +79,17 @@ public:
         return it->second == false;
     }
     
-    FORCEINLINE static const Vector2& GetMousePosition()
+    FORCE_INLINE static const Vector2& GetMousePosition()
     {
         return s_MouseLocation;
     }
     
-    FORCEINLINE static float GetMouseDelta()
+    FORCE_INLINE static float GetMouseDelta()
     {
         return s_MouseDelta;
     }
     
-    FORCEINLINE static bool IsMouseMoving()
+    FORCE_INLINE static bool IsMouseMoving()
     {
         return s_IsMouseMoveing;
     }

@@ -23,9 +23,9 @@ typedef long				SSIZE_T;
 #define ENGINE_NAME     "MONKEY"
 
 #if PLATFORM_WINDOWS
-	#define FORCEINLINE __inline
+	#define FORCE_INLINE __inline
 	#define CONSTEXPR   constexpr
 #else
-	#define FORCEINLINE inline
+	#define FORCE_INLINE inline
 	#define CONSTEXPR   constexpr
 #endif

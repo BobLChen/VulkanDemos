@@ -113,7 +113,7 @@ public:
 		std::memset(hash, 0, sizeof(hash));
 	}
 
-	inline std::string ToString() const
+	FORCE_INLINE std::string ToString() const
 	{
 		return StringUtils::BytesToHex((const uint8*)hash, sizeof(hash));
 	}

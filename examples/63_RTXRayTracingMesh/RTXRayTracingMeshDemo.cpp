@@ -143,6 +143,7 @@ public:
 	{
 		deviceExtensions.push_back(VK_NV_RAY_TRACING_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+		deviceExtensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
 		instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
 		ZeroVulkanStruct(m_IndexingFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
@@ -227,7 +228,7 @@ private:
 			ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiSetCond_FirstUseEver);
 			ImGui::Begin("RTXRaytracing", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
@@ -427,15 +428,19 @@ private:
 	{
 		VkDevice device = m_VulkanDevice->GetInstanceHandle();
 
-		const uint32 shaderGroupHandleSize = m_RayTracingPropertiesNV.shaderGroupHandleSize * 3;
-		std::vector<uint8> shaderGroupHandleData(shaderGroupHandleSize);
-		VERIFYVULKANRESULT(vkGetRayTracingShaderGroupHandlesNV(device, m_Pipeline, 0, 3, shaderGroupHandleSize, shaderGroupHandleData.data()));
+		const uint32 shaderGroupHandleSize = Align(m_RayTracingPropertiesNV.shaderGroupHandleSize, m_RayTracingPropertiesNV.shaderGroupBaseAlignment);
+		const uint32 shaderGroupTotalSize  = shaderGroupHandleSize * 3;
+		std::vector<uint8> shaderGroupHandleData(shaderGroupTotalSize);
+
+		VERIFYVULKANRESULT(vkGetRayTracingShaderGroupHandlesNV(device, m_Pipeline, 0, 1, shaderGroupHandleSize, shaderGroupHandleData.data() + shaderGroupHandleSize * 0));
+		VERIFYVULKANRESULT(vkGetRayTracingShaderGroupHandlesNV(device, m_Pipeline, 1, 1, shaderGroupHandleSize, shaderGroupHandleData.data() + shaderGroupHandleSize * 1));
+		VERIFYVULKANRESULT(vkGetRayTracingShaderGroupHandlesNV(device, m_Pipeline, 2, 1, shaderGroupHandleSize, shaderGroupHandleData.data() + shaderGroupHandleSize * 2));
 
 		m_ShaderBindingTable = vk_demo::DVKBuffer::CreateBuffer(
 			m_VulkanDevice,
 			VK_BUFFER_USAGE_RAY_TRACING_BIT_NV,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			shaderGroupHandleSize,
+			shaderGroupTotalSize,
 			shaderGroupHandleData.data()
 		);
 	}
@@ -1200,7 +1205,7 @@ private:
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_Pipeline);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_RAY_TRACING_NV, m_PipelineLayout, 0, m_DescriptorSets.size(), m_DescriptorSets.data(), 0, 0);
 
-		VkDeviceSize stride = m_RayTracingPropertiesNV.shaderGroupHandleSize;
+		VkDeviceSize stride = Align(m_RayTracingPropertiesNV.shaderGroupHandleSize, m_RayTracingPropertiesNV.shaderGroupBaseAlignment);
 		
 		vkCmdTraceRaysNV(commandBuffer,
 			m_ShaderBindingTable->buffer, stride * 0,

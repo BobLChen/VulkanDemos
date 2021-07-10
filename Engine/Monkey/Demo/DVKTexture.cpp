@@ -11,7 +11,7 @@ namespace vk_demo
     
 	DVKTexture* DVKTexture::Create2D(const uint8* rgbaData, uint32 size, VkFormat format, int32 width, int32 height, std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer, VkImageUsageFlags imageUsageFlags, ImageLayoutBarrier imageLayout)
 	{
-        int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
+        int32 mipLevels = MMath::FloorToInt(MMath::Log2((float)MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
         
         DVKBuffer* stagingBuffer = DVKBuffer::CreateBuffer(vulkanDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, size);
@@ -91,7 +91,7 @@ namespace vk_demo
 		vk_demo::ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, subresourceRange);
         
         // Generate the mip chain
-        for (uint32_t i = 1; i < mipLevels; i++)
+        for (uint32_t i = 1; i < (uint32_t)mipLevels; i++)
 		{
             VkImageBlit imageBlit = {};
             
@@ -153,7 +153,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
 		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 		
@@ -233,7 +233,7 @@ namespace vk_demo
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 		int32 mipLevels = 1;
 		if (mipmaps) {
-			mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
+			mipLevels = MMath::FloorToInt(MMath::Log2((float)MMath::Max(width, height))) + 1;
 		}
 
 		uint32 memoryTypeIndex = 0;
@@ -284,7 +284,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
 		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
@@ -426,7 +426,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
 		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
@@ -539,7 +539,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
 		samplerInfo.minLod           = 0.0f;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
@@ -670,9 +670,9 @@ namespace vk_demo
 		// 图片信息，TextureArray要求尺寸一致
 		int32 width     = images[0].width;
 		int32 height    = images[0].height;
-		int32 numArray  = images.size();
+		int32 numArray  = (int32)images.size();
 		VkFormat format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
+		int32 mipLevels = MMath::FloorToInt(MMath::Log2((float)MMath::Max(width, height))) + 1;
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
 		uint32 memoryTypeIndex = 0;
@@ -757,12 +757,12 @@ namespace vk_demo
 			bufferCopyRegions.push_back(bufferCopyRegion);
 		}
 
-		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
+		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)bufferCopyRegions.size(), bufferCopyRegions.data());
 
 		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, subresourceRange);
 
 		// Generate the mip chain
-		for (uint32_t i = 1; i < mipLevels; i++) 
+		for (int32 i = 1; i < mipLevels; i++) 
 		{
 			VkImageBlit imageBlit = {};
 
@@ -818,7 +818,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
 		samplerInfo.minLod           = 0;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
 
@@ -895,9 +895,9 @@ namespace vk_demo
 		// 图片信息，TextureArray要求尺寸一致
         int32 width     = images[0].width;
         int32 height    = images[0].height;
-		int32 numArray  = images.size();
+		int32 numArray  = (int32)images.size();
 		VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
-        int32 mipLevels = MMath::FloorToInt(MMath::Log2(MMath::Max(width, height))) + 1;
+        int32 mipLevels = MMath::FloorToInt(MMath::Log2((float)MMath::Max(width, height))) + 1;
         VkDevice device = vulkanDevice->GetInstanceHandle();
         
 		uint32 memoryTypeIndex = 0;
@@ -981,12 +981,12 @@ namespace vk_demo
 			bufferCopyRegions.push_back(bufferCopyRegion);
 		}
 		
-		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, bufferCopyRegions.size(), bufferCopyRegions.data());
+		vkCmdCopyBufferToImage(cmdBuffer->cmdBuffer, stagingBuffer->buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)bufferCopyRegions.size(), bufferCopyRegions.data());
         
 		ImagePipelineBarrier(cmdBuffer->cmdBuffer, image, ImageLayoutBarrier::TransferDest, ImageLayoutBarrier::TransferSource, subresourceRange);
         
         // Generate the mip chain
-        for (uint32_t i = 1; i < mipLevels; i++) 
+        for (int32 i = 1; i < mipLevels; i++) 
 		{
             VkImageBlit imageBlit = {};
             
@@ -1042,7 +1042,7 @@ namespace vk_demo
 		samplerInfo.borderColor      = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 		samplerInfo.maxAnisotropy    = 1.0;
 		samplerInfo.anisotropyEnable = VK_FALSE;
-		samplerInfo.maxLod           = mipLevels;
+		samplerInfo.maxLod           = (float)mipLevels;
         samplerInfo.minLod           = 0;
 		VERIFYVULKANRESULT(vkCreateSampler(device, &samplerInfo, VULKAN_CPU_ALLOCATOR, &imageSampler));
         
