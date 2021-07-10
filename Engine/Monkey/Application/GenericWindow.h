@@ -15,7 +15,7 @@ namespace WindowMode
 		NumWindowModes
 	};
 
-	static FORCEINLINE Type ConvertIntToWindowMode(int32 windowMode)
+	static FORCE_INLINE Type ConvertIntToWindowMode(int32 windowMode)
 	{
 		Type mode = Windowed;
 		switch (windowMode)
@@ -40,7 +40,7 @@ namespace WindowMode
 		return mode;
 	}
 	
-	FORCEINLINE const char* LexToString(Type windowMode)
+	FORCE_INLINE const char* LexToString(Type windowMode)
 	{
 		switch (windowMode)
 		{

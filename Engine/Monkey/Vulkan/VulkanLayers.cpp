@@ -18,7 +18,7 @@ struct VulkanLayerExtension
 static const char* G_ValidationLayersInstance[] =
 {
 #if PLATFORM_WINDOWS
-	"VK_LAYER_LUNARG_standard_validation",
+	"VK_LAYER_KHRONOS_validation",
 #elif PLATFORM_MAC
 	"VK_LAYER_LUNARG_standard_validation",
     "VK_LAYER_GOOGLE_unique_objects",
@@ -50,7 +50,7 @@ static const char* G_ValidationLayersInstance[] =
 static const char* G_ValidationLayersDevice[] =
 {
 #if PLATFORM_WINDOWS
-	"VK_LAYER_LUNARG_standard_validation",
+	"VK_LAYER_KHRONOS_validation",
 #elif PLATFORM_IOS
     "MoltenVK",
 #elif PLATFORM_MAC
@@ -99,7 +99,7 @@ static const char* G_DeviceExtensions[] =
 {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
-	"VK_KHR_maintenance1",
+	VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 
 #if PLATFORM_WINDOWS
 
@@ -116,7 +116,7 @@ static const char* G_DeviceExtensions[] =
 	nullptr
 };
 
-static inline void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
+static FORCE_INLINE void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
 {
 	uint32 count = 0;
 	vkEnumerateInstanceExtensionProperties(layerName, &count, nullptr);
@@ -124,7 +124,7 @@ static inline void EnumerateInstanceExtensionProperties(const char* layerName, V
 	vkEnumerateInstanceExtensionProperties(layerName, &count, outLayer.extensionProps.data());
 }
 
-static inline void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const char* layerName, VulkanLayerExtension& outLayer)
+static FORCE_INLINE void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const char* layerName, VulkanLayerExtension& outLayer)
 {
 	uint32 count = 0;
 	vkEnumerateDeviceExtensionProperties(device, layerName, &count, nullptr);
@@ -132,7 +132,7 @@ static inline void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, c
 	vkEnumerateDeviceExtensionProperties(device, layerName, &count, outLayer.extensionProps.data());
 }
 
-static inline int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
+static FORCE_INLINE int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
 {
 	for (int32 i = 0; i < layers.size(); ++i) 
 	{
@@ -143,12 +143,12 @@ static inline int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>
 	return -1;
 }
 
-static inline bool FindLayerInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
+static FORCE_INLINE bool FindLayerInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
 {
 	return FindLayerIndexInList(layers, layerName) != -1;
 }
 
-static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName, const char*& foundLayer)
+static FORCE_INLINE bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName, const char*& foundLayer)
 {
 	for (int32 i = 0; i < layers.size(); ++i) 
 	{
@@ -164,13 +164,13 @@ static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtensi
 	return false;
 }
 
-static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName)
+static FORCE_INLINE bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName)
 {
 	const char* dummy = nullptr;
 	return FindLayerExtensionInList(layers, extensionName, dummy);
 }
 
-static inline void TrimDuplicates(std::vector<const char*>& arr)
+static FORCE_INLINE void TrimDuplicates(std::vector<const char*>& arr)
 {
 	for (int32 i = (int32)arr.size() - 1; i >= 0; --i)
 	{

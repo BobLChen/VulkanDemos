@@ -25,7 +25,7 @@ const Color Color::Turquoise(26, 188, 156);
 const Color Color::Silver(189, 195, 199);
 const Color Color::Emerald(46, 204, 113);
 
-float LinearColor::pow22OneOver255Table[256] =
+double LinearColor::pow22OneOver255Table[256] =
 {
 	0, 5.07705190066176E-06, 2.33280046660989E-05, 5.69217657121931E-05, 0.000107187362341244, 0.000175123977503027, 0.000261543754548491, 0.000367136269815943, 0.000492503787191433,
 	0.000638182842167022, 0.000804658499513058, 0.000992374304074325, 0.0012017395224384, 0.00143313458967186, 0.00168691531678928, 0.00196341621339647, 0.00226295316070643,
@@ -58,7 +58,7 @@ float LinearColor::pow22OneOver255Table[256] =
 	0.948964938178195, 0.957369576199527, 0.96581465350313, 0.974300202388861, 0.982826255053791, 0.99139284359294, 1
 };
 
-float LinearColor::sRGBToLinearTable[256] =
+double LinearColor::sRGBToLinearTable[256] =
 {
 	0,
 	0.000303526983548838, 0.000607053967097675, 0.000910580950646512, 0.00121410793419535, 0.00151763491774419,
@@ -118,18 +118,18 @@ static const float OneOver255 = 1.0f / 255.0f;
 
 LinearColor::LinearColor(const Color& Color)
 {
-	r = sRGBToLinearTable[Color.r];
-	g = sRGBToLinearTable[Color.g];
-	b = sRGBToLinearTable[Color.b];
+	r = (float)sRGBToLinearTable[Color.r];
+	g = (float)sRGBToLinearTable[Color.g];
+	b = (float)sRGBToLinearTable[Color.b];
 	a = float(Color.a) * OneOver255;
 }
 
 LinearColor LinearColor::FromSRGBColor(const Color& color)
 {
 	LinearColor result;
-	result.r = sRGBToLinearTable[color.r];
-	result.g = sRGBToLinearTable[color.g];
-	result.b = sRGBToLinearTable[color.b];
+	result.r = (float)sRGBToLinearTable[color.r];
+	result.g = (float)sRGBToLinearTable[color.g];
+	result.b = (float)sRGBToLinearTable[color.b];
 	result.a = float(color.a) * OneOver255;
 	return result;
 }
@@ -137,9 +137,9 @@ LinearColor LinearColor::FromSRGBColor(const Color& color)
 LinearColor LinearColor::FromPow22Color(const Color& color)
 {
 	LinearColor result;
-	result.r = pow22OneOver255Table[color.r];
-	result.g = pow22OneOver255Table[color.g];
-	result.b = pow22OneOver255Table[color.b];
+	result.r = (float)pow22OneOver255Table[color.r];
+	result.g = (float)pow22OneOver255Table[color.g];
+	result.b = (float)pow22OneOver255Table[color.b];
 	result.a = float(color.a) * OneOver255;
 	return result;
 }
@@ -160,7 +160,7 @@ Color LinearColor::ToRGBE() const
 		result.r = MMath::Clamp(MMath::TruncToInt(r * scale), 0, 255);
 		result.g = MMath::Clamp(MMath::TruncToInt(g * scale), 0, 255);
 		result.b = MMath::Clamp(MMath::TruncToInt(b * scale), 0, 255);
-		result.a = MMath::Clamp(MMath::TruncToInt(exponent), -128, 127) + 128;
+		result.a = MMath::Clamp(MMath::TruncToInt((float)exponent), -128, 127) + 128;
 	}
 
 	return result;
@@ -224,7 +224,7 @@ LinearColor Color::FromRGBE() const
 	}
 	else
 	{
-		const float scale = ldexp(1 / 255.0, a - 128);
+		const float scale = (float)ldexp(1 / 255.0, a - 128);
 		return LinearColor(r * scale, g * scale, b * scale, 1.0f);
 	}
 }

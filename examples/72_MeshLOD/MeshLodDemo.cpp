@@ -106,7 +106,7 @@ private:
 			ImGui::SliderInt("LOD", &m_LodIndex, 0, LOD_GROUP_SIZE - 1);
 			ImGui::Text("Tri:%d\n", m_LodGroups[m_LodIndex].count / 3);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

@@ -25,47 +25,47 @@ public:
 
 	void Shutdown();;
 
-	inline const std::vector<const char*>& GetInstanceExtensions() const
+	FORCE_INLINE const std::vector<const char*>& GetInstanceExtensions() const
 	{
 		return m_InstanceExtensions;
 	}
 
-	inline const std::vector<const char*>& GetInstanceLayers() const
+	FORCE_INLINE const std::vector<const char*>& GetInstanceLayers() const
 	{
 		return m_InstanceLayers;
 	}
 
-	inline const VkInstance& GetInstance() const
+	FORCE_INLINE const VkInstance& GetInstance() const
 	{
 		return m_Instance;
 	}
 
-	inline std::shared_ptr<VulkanDevice> GetDevice() const
+	FORCE_INLINE std::shared_ptr<VulkanDevice> GetDevice() const
 	{
 		return m_Device;
 	}
 
-	inline std::shared_ptr<VulkanSwapChain> GetSwapChain() const
+	FORCE_INLINE std::shared_ptr<VulkanSwapChain> GetSwapChain() const
 	{
 		return m_SwapChain;
 	}
 
-	inline const std::vector<VkImage>& GetBackbufferImages() const
+	FORCE_INLINE const std::vector<VkImage>& GetBackbufferImages() const
 	{
 		return m_BackbufferImages;
 	}
 
-	inline const std::vector<VkImageView>& GetBackbufferViews() const
+	FORCE_INLINE const std::vector<VkImageView>& GetBackbufferViews() const
 	{
 		return m_BackbufferViews;
 	}
 
-	inline const PixelFormat& GetPixelFormat() const
+	FORCE_INLINE const PixelFormat& GetPixelFormat() const
 	{
 		return m_PixelFormat;
 	}
 
-	inline const char* GetName()
+	FORCE_INLINE const char* GetName()
 	{ 
 		return "Vulkan";
 	}
@@ -80,7 +80,7 @@ public:
 		m_AppInstanceExtensions.push_back(name);
 	}
 
-	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	FORCE_INLINE void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
 	{
 		m_PhysicalDeviceFeatures2 = deviceFeatures;
 	}
@@ -108,7 +108,7 @@ protected:
 protected:
 
 #if MONKEY_DEBUG
-	VkDebugReportCallbackEXT			m_MsgCallback = VK_NULL_HANDLE;
+	VkDebugUtilsMessengerEXT			m_MsgCallback = VK_NULL_HANDLE;
 #endif
     
 	VkInstance							m_Instance;
@@ -127,7 +127,7 @@ protected:
 };
 
 
-inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
+FORCE_INLINE VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 {
 	VkFormat result = (VkFormat)G_PixelFormats[format].platformFormat;
 	if (bIsSRGB)
@@ -172,7 +172,7 @@ inline VkFormat PixelFormatToVkFormat(PixelFormat format, const bool bIsSRGB)
 	return result;
 }
 
-static inline VkFormat VEToVkFormat(VertexElementType Type)
+static FORCE_INLINE VkFormat VEToVkFormat(VertexElementType Type)
 {
 	switch (Type)
 	{
@@ -221,7 +221,7 @@ static inline VkFormat VEToVkFormat(VertexElementType Type)
 	return VK_FORMAT_UNDEFINED;
 }
 
-static inline uint32 ElementTypeToSize(VertexElementType type)
+static FORCE_INLINE uint32 ElementTypeToSize(VertexElementType type)
 {
 	switch (type)
 	{
@@ -268,7 +268,7 @@ static inline uint32 ElementTypeToSize(VertexElementType type)
 	};
 }
 
-static inline uint32 IndexTypeToSize(VkIndexType type)
+static FORCE_INLINE uint32 IndexTypeToSize(VkIndexType type)
 {
 	switch (type)
 	{

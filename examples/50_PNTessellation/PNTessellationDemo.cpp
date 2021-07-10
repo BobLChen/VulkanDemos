@@ -99,7 +99,7 @@ private:
 			ImGui::SliderFloat("Level0:", &m_TessParam.level.x, 0.1f, 5.0f);
 			ImGui::SliderFloat("Level1:", &m_TessParam.level.y, 0.1f, 5.0f);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

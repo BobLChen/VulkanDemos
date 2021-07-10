@@ -29,52 +29,52 @@ public:
 
 	explicit IntVector(Vector3 v);
 
-	FORCEINLINE const int32& operator()(int32 index) const;
+	FORCE_INLINE const int32& operator()(int32 index) const;
 
-	FORCEINLINE int32& operator()(int32 index);
+	FORCE_INLINE int32& operator()(int32 index);
 
-	FORCEINLINE const int32& operator[](int32 index) const;
+	FORCE_INLINE const int32& operator[](int32 index) const;
 
-	FORCEINLINE int32& operator[](int32 index);
+	FORCE_INLINE int32& operator[](int32 index);
 
-	FORCEINLINE bool operator==(const IntVector& other) const;
+	FORCE_INLINE bool operator==(const IntVector& other) const;
 
-	FORCEINLINE bool operator!=(const IntVector& other) const;
+	FORCE_INLINE bool operator!=(const IntVector& other) const;
 
-	FORCEINLINE IntVector& operator*=(int32 scale);
+	FORCE_INLINE IntVector& operator*=(int32 scale);
 
-	FORCEINLINE IntVector& operator/=(int32 divisor);
+	FORCE_INLINE IntVector& operator/=(int32 divisor);
 
-	FORCEINLINE IntVector& operator+=(const IntVector& other);
+	FORCE_INLINE IntVector& operator+=(const IntVector& other);
 
-	FORCEINLINE IntVector& operator-=(const IntVector& other);
+	FORCE_INLINE IntVector& operator-=(const IntVector& other);
 
-	FORCEINLINE IntVector& operator=(const IntVector& other);
+	FORCE_INLINE IntVector& operator=(const IntVector& other);
 
-	FORCEINLINE IntVector operator*(int32 scale) const;
+	FORCE_INLINE IntVector operator*(int32 scale) const;
 
-	FORCEINLINE IntVector operator/(int32 divisor) const;
+	FORCE_INLINE IntVector operator/(int32 divisor) const;
 
-	FORCEINLINE IntVector operator+(const IntVector& other) const;
+	FORCE_INLINE IntVector operator+(const IntVector& other) const;
 
-	FORCEINLINE IntVector operator-(const IntVector& other) const;
+	FORCE_INLINE IntVector operator-(const IntVector& other) const;
 
-	FORCEINLINE bool IsZero() const;
+	FORCE_INLINE bool IsZero() const;
 
-	FORCEINLINE int32 GetMax() const;
+	FORCE_INLINE int32 GetMax() const;
 
-	FORCEINLINE int32 GetMin() const;
+	FORCE_INLINE int32 GetMin() const;
 
-	FORCEINLINE int32 Size() const;
+	FORCE_INLINE int32 Size() const;
 
-	FORCEINLINE std::string ToString() const;
+	FORCE_INLINE std::string ToString() const;
 
-	FORCEINLINE static IntVector DivideAndRoundUp(IntVector lhs, int32 divisor);
+	FORCE_INLINE static IntVector DivideAndRoundUp(IntVector lhs, int32 divisor);
 
-	FORCEINLINE static int32 Num();
+	FORCE_INLINE static int32 Num();
 };
 
-FORCEINLINE IntVector::IntVector()
+FORCE_INLINE IntVector::IntVector()
 	: x(0)
 	, y(0)
 	, z(0)
@@ -82,7 +82,7 @@ FORCEINLINE IntVector::IntVector()
 
 }
 
-FORCEINLINE IntVector::IntVector(int32 inX, int32 inY, int32 inZ)
+FORCE_INLINE IntVector::IntVector(int32 inX, int32 inY, int32 inZ)
 	: x(inX)
 	, y(inY)
 	, z(inZ)
@@ -90,7 +90,7 @@ FORCEINLINE IntVector::IntVector(int32 inX, int32 inY, int32 inZ)
 
 }
 
-FORCEINLINE IntVector::IntVector(int32 inValue)
+FORCE_INLINE IntVector::IntVector(int32 inValue)
 	: x(inValue)
 	, y(inValue)
 	, z(inValue)
@@ -98,37 +98,37 @@ FORCEINLINE IntVector::IntVector(int32 inValue)
 
 }
 
-FORCEINLINE const int32& IntVector::operator()(int32 index) const
+FORCE_INLINE const int32& IntVector::operator()(int32 index) const
 {
 	return (&x)[index];
 }
 
-FORCEINLINE int32& IntVector::operator()(int32 index)
+FORCE_INLINE int32& IntVector::operator()(int32 index)
 {
 	return (&x)[index];
 }
 
-FORCEINLINE const int32& IntVector::operator[](int32 index) const
+FORCE_INLINE const int32& IntVector::operator[](int32 index) const
 {
 	return (&x)[index];
 }
 
-FORCEINLINE int32& IntVector::operator[](int32 index)
+FORCE_INLINE int32& IntVector::operator[](int32 index)
 {
 	return (&x)[index];
 }
 
-FORCEINLINE bool IntVector::operator==(const IntVector& other) const
+FORCE_INLINE bool IntVector::operator==(const IntVector& other) const
 {
 	return x == other.x && y == other.y && z == other.z;
 }
 
-FORCEINLINE bool IntVector::operator!=(const IntVector& other) const
+FORCE_INLINE bool IntVector::operator!=(const IntVector& other) const
 {
 	return x != other.x || y != other.y || z != other.z;
 }
 
-FORCEINLINE IntVector& IntVector::operator*=(int32 scale)
+FORCE_INLINE IntVector& IntVector::operator*=(int32 scale)
 {
 	x *= scale;
 	y *= scale;
@@ -136,7 +136,7 @@ FORCEINLINE IntVector& IntVector::operator*=(int32 scale)
 	return *this;
 }
 
-FORCEINLINE IntVector& IntVector::operator/=(int32 divisor)
+FORCE_INLINE IntVector& IntVector::operator/=(int32 divisor)
 {
 	x /= divisor;
 	y /= divisor;
@@ -144,7 +144,7 @@ FORCEINLINE IntVector& IntVector::operator/=(int32 divisor)
 	return *this;
 }
 
-FORCEINLINE IntVector& IntVector::operator+=(const IntVector& other)
+FORCE_INLINE IntVector& IntVector::operator+=(const IntVector& other)
 {
 	x += other.x;
 	y += other.y;
@@ -152,7 +152,7 @@ FORCEINLINE IntVector& IntVector::operator+=(const IntVector& other)
 	return *this;
 }
 
-FORCEINLINE IntVector& IntVector::operator-=(const IntVector& other)
+FORCE_INLINE IntVector& IntVector::operator-=(const IntVector& other)
 {
 	x -= other.x;
 	y -= other.y;
@@ -160,7 +160,7 @@ FORCEINLINE IntVector& IntVector::operator-=(const IntVector& other)
 	return *this;
 }
 
-FORCEINLINE IntVector& IntVector::operator=(const IntVector& other)
+FORCE_INLINE IntVector& IntVector::operator=(const IntVector& other)
 {
 	x = other.x;
 	y = other.y;
@@ -168,60 +168,60 @@ FORCEINLINE IntVector& IntVector::operator=(const IntVector& other)
 	return *this;
 }
 
-FORCEINLINE IntVector IntVector::operator*(int32 scale) const
+FORCE_INLINE IntVector IntVector::operator*(int32 scale) const
 {
 	return IntVector(*this) *= scale;
 }
 
-FORCEINLINE IntVector IntVector::operator/(int32 divisor) const
+FORCE_INLINE IntVector IntVector::operator/(int32 divisor) const
 {
 	return IntVector(*this) /= divisor;
 }
 
-FORCEINLINE IntVector IntVector::operator+(const IntVector& other) const
+FORCE_INLINE IntVector IntVector::operator+(const IntVector& other) const
 {
 	return IntVector(*this) += other;
 }
 
-FORCEINLINE IntVector IntVector::operator-(const IntVector& other) const
+FORCE_INLINE IntVector IntVector::operator-(const IntVector& other) const
 {
 	return IntVector(*this) -= other;
 }
 
-FORCEINLINE IntVector IntVector::DivideAndRoundUp(IntVector lhs, int32 divisor)
+FORCE_INLINE IntVector IntVector::DivideAndRoundUp(IntVector lhs, int32 divisor)
 {
 	return IntVector(MMath::DivideAndRoundUp(lhs.x, divisor), MMath::DivideAndRoundUp(lhs.y, divisor), MMath::DivideAndRoundUp(lhs.z, divisor));
 }
 
-FORCEINLINE int32 IntVector::GetMax() const
+FORCE_INLINE int32 IntVector::GetMax() const
 {
 	return MMath::Max<int32>(MMath::Max<int32>(x, y), z);
 }
 
-FORCEINLINE int32 IntVector::GetMin() const
+FORCE_INLINE int32 IntVector::GetMin() const
 {
 	return MMath::Min<int32>(MMath::Min<int32>(x, y), z);
 }
 
-FORCEINLINE int32 IntVector::Num()
+FORCE_INLINE int32 IntVector::Num()
 {
 	return 3;
 }
 
-FORCEINLINE int32 IntVector::Size() const
+FORCE_INLINE int32 IntVector::Size() const
 {
-	int64 x64 = (int64)x;
-	int64 y64 = (int64)y;
-	int64 z64 = (int64)z;
-	return int32(MMath::Sqrt(x64 * x64 + y64 * y64 + z64 * z64));
+	float xx = (float)(x * x);
+	float yy = (float)(y * y);
+	float zz = (float)(z * z);
+	return int32(MMath::Sqrt(xx + yy + zz));
 }
 
-FORCEINLINE bool IntVector::IsZero() const
+FORCE_INLINE bool IntVector::IsZero() const
 {
 	return *this == ZeroValue;
 }
 
-FORCEINLINE std::string IntVector::ToString() const
+FORCE_INLINE std::string IntVector::ToString() const
 {
 	return StringUtils::Printf("x=%d y=%d z=%d", x, y, z);
 }
@@ -235,12 +235,12 @@ public:
 	int32 w;
 
 public:
-	FORCEINLINE IntVector4()
+	FORCE_INLINE IntVector4()
 	{
 
 	}
 
-	FORCEINLINE IntVector4(int32 inX, int32 inY, int32 inZ, int32 InW)
+	FORCE_INLINE IntVector4(int32 inX, int32 inY, int32 inZ, int32 InW)
 		: x(inX)
 		, y(inY)
 		, z(inZ)
@@ -249,7 +249,7 @@ public:
 
 	}
 
-	FORCEINLINE explicit IntVector4(int32 inValue)
+	FORCE_INLINE explicit IntVector4(int32 inValue)
 		: x(inValue)
 		, y(inValue)
 		, z(inValue)
@@ -258,22 +258,22 @@ public:
 
 	}
 
-	FORCEINLINE const int32& operator[](int32 index) const
+	FORCE_INLINE const int32& operator[](int32 index) const
 	{
 		return (&x)[index];
 	}
 
-	FORCEINLINE int32& operator[](int32 index)
+	FORCE_INLINE int32& operator[](int32 index)
 	{
 		return (&x)[index];
 	}
 
-	FORCEINLINE bool operator==(const IntVector4& other) const
+	FORCE_INLINE bool operator==(const IntVector4& other) const
 	{
 		return x == other.x && y == other.y && z == other.z && w == other.w;
 	}
 
-	FORCEINLINE bool operator!=(const IntVector4& other) const
+	FORCE_INLINE bool operator!=(const IntVector4& other) const
 	{
 		return x != other.x || y != other.y || z != other.z || w != other.w;
 	}
@@ -288,12 +288,12 @@ public:
 	uint32 w;
 
 public:
-	FORCEINLINE UintVector4()
+	FORCE_INLINE UintVector4()
 	{
 
 	}
 
-	FORCEINLINE UintVector4(uint32 inX, uint32 inY, uint32 inZ, uint32 InW)
+	FORCE_INLINE UintVector4(uint32 inX, uint32 inY, uint32 inZ, uint32 InW)
 		: x(inX)
 		, y(inY)
 		, z(inZ)
@@ -302,7 +302,7 @@ public:
 
 	}
 
-	FORCEINLINE explicit UintVector4(uint32 inValue)
+	FORCE_INLINE explicit UintVector4(uint32 inValue)
 		: x(inValue)
 		, y(inValue)
 		, z(inValue)
@@ -311,22 +311,22 @@ public:
 
 	}
 
-	FORCEINLINE const uint32& operator[](int32 index) const
+	FORCE_INLINE const uint32& operator[](int32 index) const
 	{
 		return (&x)[index];
 	}
 
-	FORCEINLINE uint32& operator[](int32 index)
+	FORCE_INLINE uint32& operator[](int32 index)
 	{
 		return (&x)[index];
 	}
 
-	FORCEINLINE bool operator==(const UintVector4& other) const
+	FORCE_INLINE bool operator==(const UintVector4& other) const
 	{
 		return x == other.x && y == other.y && z == other.z && w == other.w;
 	}
 
-	FORCEINLINE bool operator!=(const UintVector4& other) const
+	FORCE_INLINE bool operator!=(const UintVector4& other) const
 	{
 		return x != other.x || y != other.y || z != other.z || w != other.w;
 	}

@@ -72,7 +72,7 @@ public:
         m_LastFrameTime += delta;
         if (m_LastFrameTime >= 1.0f) 
 		{
-            m_LastFPS = m_FrameCounter;
+            m_LastFPS       = m_FrameCounter;
             m_FrameCounter  = 0;
             m_LastFrameTime = 0.0f;
         }
@@ -150,5 +150,5 @@ protected:
     
     int32                           m_FrameCounter = 0;
     float                           m_LastFrameTime = 0.0f;
-    float                           m_LastFPS = 0.0f;
+    int32                           m_LastFPS = 0;
 };

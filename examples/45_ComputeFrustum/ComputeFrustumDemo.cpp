@@ -109,7 +109,7 @@ private:
 			ImGui::Checkbox("Compute", &m_UseGPU);
 			ImGui::Text("DrawCall:%d", m_DrawCall);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

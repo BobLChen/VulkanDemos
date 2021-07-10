@@ -170,7 +170,7 @@ private:
 			ImGui::Combo("Debug", &index, "None\0Normal\0\Tile\0");
 			m_Debug.x = index;
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

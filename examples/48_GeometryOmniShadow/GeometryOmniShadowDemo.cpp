@@ -168,7 +168,7 @@ private:
 			ImGui::SliderFloat("Light Range", &m_LightPosition.w, 100.0f, 500.0f);
 			
 			ImGui::Text("ShadowMap:%dx%d", m_RTColor->width, m_RTColor->height);
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

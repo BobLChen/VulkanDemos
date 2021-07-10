@@ -82,12 +82,12 @@ public:
 		return m_WindowMode;
 	}
 
-	FORCEINLINE xcb_connection_t* GetConnection() const
+	FORCE_INLINE xcb_connection_t* GetConnection() const
 	{
 		return m_Connection;
 	}
 
-	FORCEINLINE xcb_intern_atom_reply_t* GetAtomWmDeleteWindow() const
+	FORCE_INLINE xcb_intern_atom_reply_t* GetAtomWmDeleteWindow() const
 	{
 		return m_AtomWmDeleteWindow;
 	}

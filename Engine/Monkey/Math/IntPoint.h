@@ -24,227 +24,227 @@ public:
 
 	IntPoint(int32 inX, int32 inY);
 
-	FORCEINLINE const int32& operator()(int32 pointIndex) const;
+	FORCE_INLINE const int32& operator()(int32 pointIndex) const;
 
-	FORCEINLINE int32& operator()(int32 pointIndex);
+	FORCE_INLINE int32& operator()(int32 pointIndex);
 
-	FORCEINLINE int32& operator[](int32 index);
+	FORCE_INLINE int32& operator[](int32 index);
 
-	FORCEINLINE int32 operator[](int32 index) const;
+	FORCE_INLINE int32 operator[](int32 index) const;
 
-	FORCEINLINE IntPoint& operator=(const IntPoint& other);
+	FORCE_INLINE IntPoint& operator=(const IntPoint& other);
 
-	FORCEINLINE bool operator==(const IntPoint& other) const;
+	FORCE_INLINE bool operator==(const IntPoint& other) const;
 
-	FORCEINLINE bool operator!=(const IntPoint& other) const;
+	FORCE_INLINE bool operator!=(const IntPoint& other) const;
 
-	FORCEINLINE IntPoint& operator*=(int32 scale);
+	FORCE_INLINE IntPoint& operator*=(int32 scale);
 
-	FORCEINLINE IntPoint& operator/=(int32 divisor);
+	FORCE_INLINE IntPoint& operator/=(int32 divisor);
 
-	FORCEINLINE IntPoint& operator+=(const IntPoint& other);
+	FORCE_INLINE IntPoint& operator+=(const IntPoint& other);
 
-	FORCEINLINE IntPoint& operator-=(const IntPoint& other);
+	FORCE_INLINE IntPoint& operator-=(const IntPoint& other);
 
-	FORCEINLINE IntPoint& operator/=(const IntPoint& other);
+	FORCE_INLINE IntPoint& operator/=(const IntPoint& other);
 
-	FORCEINLINE IntPoint operator*(int32 scale) const;
+	FORCE_INLINE IntPoint operator*(int32 scale) const;
 
-	FORCEINLINE IntPoint operator/(int32 divisor) const;
+	FORCE_INLINE IntPoint operator/(int32 divisor) const;
 
-	FORCEINLINE IntPoint operator+(const IntPoint& other) const;
+	FORCE_INLINE IntPoint operator+(const IntPoint& other) const;
 
-	FORCEINLINE IntPoint operator-(const IntPoint& other) const;
+	FORCE_INLINE IntPoint operator-(const IntPoint& other) const;
 
-	FORCEINLINE IntPoint operator/(const IntPoint& other) const;
+	FORCE_INLINE IntPoint operator/(const IntPoint& other) const;
 
-	FORCEINLINE IntPoint ComponentMin(const IntPoint& other) const;
+	FORCE_INLINE IntPoint ComponentMin(const IntPoint& other) const;
 
-	FORCEINLINE IntPoint ComponentMax(const IntPoint& other) const;
+	FORCE_INLINE IntPoint ComponentMax(const IntPoint& other) const;
 
-	FORCEINLINE int32 GetMax() const;
+	FORCE_INLINE int32 GetMax() const;
 
-	FORCEINLINE int32 GetMin() const;
+	FORCE_INLINE int32 GetMin() const;
 
-	FORCEINLINE int32 Size() const;
+	FORCE_INLINE int32 Size() const;
 
-	FORCEINLINE int32 SizeSquared() const;
+	FORCE_INLINE int32 SizeSquared() const;
 
-	FORCEINLINE std::string ToString() const;
+	FORCE_INLINE std::string ToString() const;
 
-	static FORCEINLINE int32 Num();
+	static FORCE_INLINE int32 Num();
 
-	static FORCEINLINE IntPoint DivideAndRoundUp(IntPoint lhs, int32 divisor);
+	static FORCE_INLINE IntPoint DivideAndRoundUp(IntPoint lhs, int32 divisor);
 
-	static FORCEINLINE IntPoint DivideAndRoundUp(IntPoint lhs, IntPoint divisor);
+	static FORCE_INLINE IntPoint DivideAndRoundUp(IntPoint lhs, IntPoint divisor);
 
-	static FORCEINLINE IntPoint DivideAndRoundDown(IntPoint lhs, int32 divisor);
+	static FORCE_INLINE IntPoint DivideAndRoundDown(IntPoint lhs, int32 divisor);
 };
 
-FORCEINLINE IntPoint::IntPoint()
+FORCE_INLINE IntPoint::IntPoint()
 	: x(0)
 	, y(0)
 {
 
 }
 
-FORCEINLINE IntPoint::IntPoint(int32 inX, int32 inY)
+FORCE_INLINE IntPoint::IntPoint(int32 inX, int32 inY)
 	: x(inX)
 	, y(inY)
 {
 
 }
 
-FORCEINLINE const int32& IntPoint::operator()(int32 pointIndex) const
+FORCE_INLINE const int32& IntPoint::operator()(int32 pointIndex) const
 {
 	return (&x)[pointIndex];
 }
 
-FORCEINLINE int32& IntPoint::operator()(int32 pointIndex)
+FORCE_INLINE int32& IntPoint::operator()(int32 pointIndex)
 {
 	return (&x)[pointIndex];
 }
 
-FORCEINLINE int32 IntPoint::Num()
+FORCE_INLINE int32 IntPoint::Num()
 {
 	return 2;
 }
 
-FORCEINLINE bool IntPoint::operator==(const IntPoint& other) const
+FORCE_INLINE bool IntPoint::operator==(const IntPoint& other) const
 {
 	return x == other.x && y == other.y;
 }
 
-FORCEINLINE bool IntPoint::operator!=(const IntPoint& other) const
+FORCE_INLINE bool IntPoint::operator!=(const IntPoint& other) const
 {
 	return x != other.x || y != other.y;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator*=(int32 scale)
+FORCE_INLINE IntPoint& IntPoint::operator*=(int32 scale)
 {
 	x *= scale;
 	y *= scale;
 	return *this;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator/=(int32 divisor)
+FORCE_INLINE IntPoint& IntPoint::operator/=(int32 divisor)
 {
 	x /= divisor;
 	y /= divisor;
 	return *this;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator+=(const IntPoint& other)
+FORCE_INLINE IntPoint& IntPoint::operator+=(const IntPoint& other)
 {
 	x += other.x;
 	y += other.y;
 	return *this;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator-=(const IntPoint& other)
+FORCE_INLINE IntPoint& IntPoint::operator-=(const IntPoint& other)
 {
 	x -= other.x;
 	y -= other.y;
 	return *this;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator/=(const IntPoint& other)
+FORCE_INLINE IntPoint& IntPoint::operator/=(const IntPoint& other)
 {
 	x /= other.x;
 	y /= other.y;
 	return *this;
 }
 
-FORCEINLINE IntPoint& IntPoint::operator=(const IntPoint& other)
+FORCE_INLINE IntPoint& IntPoint::operator=(const IntPoint& other)
 {
 	x = other.x;
 	y = other.y;
 	return *this;
 }
 
-FORCEINLINE IntPoint IntPoint::operator*(int32 scale) const
+FORCE_INLINE IntPoint IntPoint::operator*(int32 scale) const
 {
 	return IntPoint(*this) *= scale;
 }
 
-FORCEINLINE IntPoint IntPoint::operator/(int32 divisor) const
+FORCE_INLINE IntPoint IntPoint::operator/(int32 divisor) const
 {
 	return IntPoint(*this) /= divisor;
 }
 
-FORCEINLINE int32& IntPoint::operator[](int32 index)
+FORCE_INLINE int32& IntPoint::operator[](int32 index)
 {
 	return ((index == 0) ? x : y);
 }
 
-FORCEINLINE int32 IntPoint::operator[](int32 index) const
+FORCE_INLINE int32 IntPoint::operator[](int32 index) const
 {
 	return ((index == 0) ? x : y);
 }
 
-FORCEINLINE IntPoint IntPoint::ComponentMin(const IntPoint& other) const
+FORCE_INLINE IntPoint IntPoint::ComponentMin(const IntPoint& other) const
 {
 	return IntPoint(std::min(x, other.x), std::min(y, other.y));
 }
 
-FORCEINLINE IntPoint IntPoint::ComponentMax(const IntPoint& other) const
+FORCE_INLINE IntPoint IntPoint::ComponentMax(const IntPoint& other) const
 {
 	return IntPoint(std::max(x, other.x), std::max(y, other.y));
 }
 
-FORCEINLINE IntPoint IntPoint::DivideAndRoundUp(IntPoint lhs, int32 divisor)
+FORCE_INLINE IntPoint IntPoint::DivideAndRoundUp(IntPoint lhs, int32 divisor)
 {
 	return IntPoint(MMath::DivideAndRoundUp(lhs.x, divisor), MMath::DivideAndRoundUp(lhs.y, divisor));
 }
 
-FORCEINLINE IntPoint IntPoint::DivideAndRoundUp(IntPoint lhs, IntPoint divisor)
+FORCE_INLINE IntPoint IntPoint::DivideAndRoundUp(IntPoint lhs, IntPoint divisor)
 {
 	return IntPoint(MMath::DivideAndRoundUp(lhs.x, divisor.x), MMath::DivideAndRoundUp(lhs.y, divisor.y));
 }
 
-FORCEINLINE IntPoint IntPoint::DivideAndRoundDown(IntPoint lhs, int32 divisor)
+FORCE_INLINE IntPoint IntPoint::DivideAndRoundDown(IntPoint lhs, int32 divisor)
 {
 	return IntPoint(MMath::DivideAndRoundDown(lhs.x, divisor), MMath::DivideAndRoundDown(lhs.y, divisor));
 }
 
-FORCEINLINE IntPoint IntPoint::operator+(const IntPoint& other) const
+FORCE_INLINE IntPoint IntPoint::operator+(const IntPoint& other) const
 {
 	return IntPoint(*this) += other;
 }
 
-FORCEINLINE IntPoint IntPoint::operator-(const IntPoint& other) const
+FORCE_INLINE IntPoint IntPoint::operator-(const IntPoint& other) const
 {
 	return IntPoint(*this) -= other;
 }
 
-FORCEINLINE IntPoint IntPoint::operator/(const IntPoint& other) const
+FORCE_INLINE IntPoint IntPoint::operator/(const IntPoint& other) const
 {
 	return IntPoint(*this) /= other;
 }
 
-FORCEINLINE int32 IntPoint::GetMax() const
+FORCE_INLINE int32 IntPoint::GetMax() const
 {
 	return std::max(x, y);
 }
 
-FORCEINLINE int32 IntPoint::GetMin() const
+FORCE_INLINE int32 IntPoint::GetMin() const
 {
 	return std::min(x, y);
 }
 
-FORCEINLINE int32 IntPoint::Size() const
+FORCE_INLINE int32 IntPoint::Size() const
 {
 	int64 x64 = (int64)x;
 	int64 y64 = (int64)x;
 	return int32(std::sqrt(float(x64 * x64 + y64 * y64)));
 }
 
-FORCEINLINE int32 IntPoint::SizeSquared() const
+FORCE_INLINE int32 IntPoint::SizeSquared() const
 {
 	return x * x + y * y;
 }
 
-FORCEINLINE std::string IntPoint::ToString() const
+FORCE_INLINE std::string IntPoint::ToString() const
 {
 	return StringUtils::Printf("X=%d Y=%d", x, y);
 }

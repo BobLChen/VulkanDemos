@@ -22,12 +22,12 @@ public:
 
 	VulkanFence(VulkanDevice* device, VulkanFenceManager* owner, bool createSignaled);
 
-	inline VkFence GetHandle() const
+	FORCE_INLINE VkFence GetHandle() const
 	{
 		return m_VkFence;
 	}
 
-	inline bool IsSignaled() const
+	FORCE_INLINE bool IsSignaled() const
 	{
 		return m_State == State::Signaled;
 	}
@@ -67,7 +67,7 @@ public:
 
 	void WaitAndReleaseFence(VulkanFence*& fence, uint64 timeInNanoseconds);
 
-	inline bool IsFenceSignaled(VulkanFence* fence)
+	FORCE_INLINE bool IsFenceSignaled(VulkanFence* fence)
 	{
 		if (fence->IsSignaled()) {
 			return true;
@@ -93,7 +93,7 @@ public:
 
 	virtual ~VulkanSemaphore();
 
-	inline VkSemaphore GetHandle() const
+	FORCE_INLINE VkSemaphore GetHandle() const
 	{
 		return m_VkSemaphore;
 	}

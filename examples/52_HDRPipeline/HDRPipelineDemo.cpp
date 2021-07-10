@@ -103,7 +103,7 @@ private:
 			ImGui::SliderFloat("Exposure",		&m_ParamData.intensity.y, 0.0f, 5.0f);
 			ImGui::SliderFloat("bias",			&m_ParamData.intensity.w, 0.0f, 5.0f);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

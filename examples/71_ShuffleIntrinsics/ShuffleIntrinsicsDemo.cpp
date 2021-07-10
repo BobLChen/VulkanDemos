@@ -17,6 +17,7 @@ public:
 	{
 		deviceExtensions.push_back(VK_EXT_SHADER_SUBGROUP_BALLOT_EXTENSION_NAME);
 		deviceExtensions.push_back(VK_EXT_SHADER_SUBGROUP_VOTE_EXTENSION_NAME);
+		deviceExtensions.push_back(VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME);
 	}
 
 	virtual ~ShuffleIntrinsicsDemo()

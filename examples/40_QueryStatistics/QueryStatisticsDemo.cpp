@@ -79,16 +79,16 @@ private:
 			m_ViewCamera.Update(time, delta);
 		}
 
+		SetupCommandBuffers(bufferIndex);
+
+		DemoBase::Present(bufferIndex);
+
 		vkGetQueryPoolResults(
 			m_Device, 
 			m_QueryPool, 
 			0, 1, sizeof(uint64) * QUERY_STATS_COUNT, m_QueryStats, sizeof(uint64), 
 			VK_QUERY_RESULT_64_BIT
 		);
-
-		SetupCommandBuffers(bufferIndex);
-
-		DemoBase::Present(bufferIndex);
 	}
 
 	bool UpdateUI(float time, float delta)
@@ -105,7 +105,7 @@ private:
 				ImGui::Text("%s : %d", m_StatNames[i], m_QueryStats[i]);
 			}
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

@@ -14,12 +14,12 @@ public:
     
     virtual ~VulkanQueue();
     
-    inline uint32 GetFamilyIndex() const
+    FORCE_INLINE uint32 GetFamilyIndex() const
     {
         return m_FamilyIndex;
     }
     
-	inline VkQueue GetHandle() const
+	FORCE_INLINE VkQueue GetHandle() const
     {
         return m_Queue;
     }

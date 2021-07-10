@@ -113,10 +113,10 @@ void ImageGUIContext::Init(const std::string& font)
 	ImGui::CreateContext();
 	ImGui::StyleColorsLight();
 
-	float windowWidth  = Engine::Get()->GetPlatformWindow()->GetWidth();
-	float windowHeight = Engine::Get()->GetPlatformWindow()->GetHeight();
-	float frameWidth   = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetWidth();
-	float frameHeight  = Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetHeight();
+	float windowWidth  = (float)Engine::Get()->GetPlatformWindow()->GetWidth();
+	float windowHeight = (float)Engine::Get()->GetPlatformWindow()->GetHeight();
+	float frameWidth   = (float)Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetWidth();
+	float frameHeight  = (float)Engine::Get()->GetVulkanRHI()->GetSwapChain()->GetHeight();
 
 	m_Scale        = frameWidth / windowWidth;
 	m_FontPath     = font;

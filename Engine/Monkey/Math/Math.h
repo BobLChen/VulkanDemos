@@ -71,33 +71,33 @@ public:
 	static const uint32 BitFlag[32];
 
 public:
-	static FORCEINLINE int32 RandHelper(int32 value)
+	static FORCE_INLINE int32 RandHelper(int32 value)
 	{
 		return value > 0 ? Min(TruncToInt(FRand() * value), value - 1) : 0;
 	}
 
-	static FORCEINLINE int32 RandRange(int32 inMin, int32 inMax)
+	static FORCE_INLINE int32 RandRange(int32 inMin, int32 inMax)
 	{
 		const int32 range = (inMax - inMin) + 1;
 		return inMin + RandHelper(range);
 	}
 
-	static FORCEINLINE float RandRange(float inMin, float inMax)
+	static FORCE_INLINE float RandRange(float inMin, float inMax)
 	{
 		return FRandRange(inMin, inMax);
 	}
 
-	static FORCEINLINE float FRandRange(float inMin, float inMax)
+	static FORCE_INLINE float FRandRange(float inMin, float inMax)
 	{
 		return inMin + (inMax - inMin) * FRand();
 	}
 
-	static FORCEINLINE bool RandBool()
+	static FORCE_INLINE bool RandBool()
 	{
 		return (RandRange(0, 1) == 1) ? true : false;
 	}
 
-	static FORCEINLINE void Inverse4x4(double* dst, const float* src)
+	static FORCE_INLINE void Inverse4x4(double* dst, const float* src)
 	{
 		const double s0 = (double)(src[0]);
 		const double s1 = (double)(src[1]);
@@ -144,80 +144,80 @@ public:
 		}
 	}
 
-	static FORCEINLINE float GetMappedRangeValueClamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
+	static FORCE_INLINE float GetMappedRangeValueClamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
 	{
 		const float clampedPct = Clamp<float>(GetRangePct(inputRange, value), 0.f, 1.f);
 		return GetRangeValue(outputRange, clampedPct);
 	}
 
-	static FORCEINLINE float GetMappedRangeValueUnclamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
+	static FORCE_INLINE float GetMappedRangeValueUnclamped(const Vector2& inputRange, const Vector2& outputRange, const float value)
 	{
 		return GetRangeValue(outputRange, GetRangePct(inputRange, value));
 	}
 
 	template< class U >
-	static FORCEINLINE bool IsWithin(const U& testValue, const U& minValue, const U& maxValue)
+	static FORCE_INLINE bool IsWithin(const U& testValue, const U& minValue, const U& maxValue)
 	{
 		return ((testValue >= minValue) && (testValue < maxValue));
 	}
 
 	template< class U >
-	static FORCEINLINE bool IsWithinInclusive(const U& testValue, const U& minValue, const U& maxValue)
+	static FORCE_INLINE bool IsWithinInclusive(const U& testValue, const U& minValue, const U& maxValue)
 	{
 		return ((testValue >= minValue) && (testValue <= maxValue));
 	}
 
-	static FORCEINLINE bool IsNearlyEqual(float a, float b, float errorTolerance = SMALL_NUMBER)
+	static FORCE_INLINE bool IsNearlyEqual(float a, float b, float errorTolerance = SMALL_NUMBER)
 	{
 		return Abs<float>(a - b) <= errorTolerance;
 	}
 
-	static FORCEINLINE bool IsNearlyEqual(double a, double b, double errorTolerance = SMALL_NUMBER)
+	static FORCE_INLINE bool IsNearlyEqual(double a, double b, double errorTolerance = SMALL_NUMBER)
 	{
 		return Abs<double>(a - b) <= errorTolerance;
 	}
 
-	static FORCEINLINE bool IsNearlyZero(float value, float errorTolerance = SMALL_NUMBER)
+	static FORCE_INLINE bool IsNearlyZero(float value, float errorTolerance = SMALL_NUMBER)
 	{
 		return Abs<float>(value) <= errorTolerance;
 	}
 
-	static FORCEINLINE bool IsNearlyZero(double value, double errorTolerance = SMALL_NUMBER)
+	static FORCE_INLINE bool IsNearlyZero(double value, double errorTolerance = SMALL_NUMBER)
 	{
 		return Abs<double>(value) <= errorTolerance;
 	}
 
 	template <typename T>
-	static FORCEINLINE bool IsPowerOfTwo(T value)
+	static FORCE_INLINE bool IsPowerOfTwo(T value)
 	{
 		return ((value & (value - 1)) == (T)0);
 	}
 
 	template< class T >
-	static FORCEINLINE T Max3(const T a, const T b, const T c)
+	static FORCE_INLINE T Max3(const T a, const T b, const T c)
 	{
 		return Max(Max(a, b), c);
 	}
 
 	template< class T >
-	static FORCEINLINE T Min3(const T a, const T b, const T c)
+	static FORCE_INLINE T Min3(const T a, const T b, const T c)
 	{
 		return Min(Min(a, b), c);
 	}
 
 	template< class T >
-	static FORCEINLINE T Square(const T a)
+	static FORCE_INLINE T Square(const T a)
 	{
 		return a * a;
 	}
 
 	template< class T >
-	static FORCEINLINE T Clamp(const T x, const T inMin, const T inMax)
+	static FORCE_INLINE T Clamp(const T x, const T inMin, const T inMax)
 	{
 		return x < inMin ? inMin : x < inMax ? x : inMax;
 	}
 
-	static FORCEINLINE float GridSnap(float location, float grid)
+	static FORCE_INLINE float GridSnap(float location, float grid)
 	{
 		if (grid == 0.0f) {
 			return location;
@@ -227,7 +227,7 @@ public:
 		}
 	}
 
-	static FORCEINLINE double GridSnap(double location, double grid)
+	static FORCE_INLINE double GridSnap(double location, double grid)
 	{
 		if (grid == 0.0) {
 			return location;
@@ -238,32 +238,32 @@ public:
 	}
 
 	template <class T>
-	static FORCEINLINE T DivideAndRoundUp(T dividend, T divisor)
+	static FORCE_INLINE T DivideAndRoundUp(T dividend, T divisor)
 	{
 		return (dividend + divisor - 1) / divisor;
 	}
 
 	template <class T>
-	static FORCEINLINE T DivideAndRoundDown(T dividend, T divisor)
+	static FORCE_INLINE T DivideAndRoundDown(T dividend, T divisor)
 	{
 		return dividend / divisor;
 	}
 
 	template <class T>
-	static FORCEINLINE T DivideAndRoundNearest(T dividend, T divisor)
+	static FORCE_INLINE T DivideAndRoundNearest(T dividend, T divisor)
 	{
 		return (dividend >= 0)
 			? (dividend + divisor / 2) / divisor
 			: (dividend - divisor / 2 + 1) / divisor;
 	}
 
-	static FORCEINLINE float Log2(float value)
+	static FORCE_INLINE float Log2(float value)
 	{
 		static const float logToLog2 = 1.f / Loge(2.f);
 		return Loge(value) * logToLog2;
 	}
 
-	static FORCEINLINE void SinCos(float* scalarSin, float* scalarCos, float value)
+	static FORCE_INLINE void SinCos(float* scalarSin, float* scalarCos, float value)
 	{
 		float quotient = (INV_PI * 0.5f) * value;
 		if (value >= 0.0f) {
@@ -298,7 +298,7 @@ public:
 
 #define FASTASIN_HALF_PI (1.5707963050f)
 
-	static FORCEINLINE float FastAsin(float value)
+	static FORCE_INLINE float FastAsin(float value)
 	{
 		bool nonnegative = (value >= 0.0f);
 		float x = MMath::Abs(value);
@@ -314,18 +314,18 @@ public:
 #undef FASTASIN_HALF_PI
 
 	template<class T>
-	static FORCEINLINE auto RadiansToDegrees(T const& radVal) -> decltype(radVal * (180.f / PI))
+	static FORCE_INLINE auto RadiansToDegrees(T const& radVal) -> decltype(radVal * (180.f / PI))
 	{
 		return radVal * (180.f / PI);
 	}
 
 	template<class T>
-	static FORCEINLINE auto DegreesToRadians(T const& degVal) -> decltype(degVal * (PI / 180.f))
+	static FORCE_INLINE auto DegreesToRadians(T const& degVal) -> decltype(degVal * (PI / 180.f))
 	{
 		return degVal * (PI / 180.f);
 	}
     
-    static FORCEINLINE void VectorMatrixMultiply(void* result, const void* matrix1, const void* matrix2)
+    static FORCE_INLINE void VectorMatrixMultiply(void* result, const void* matrix1, const void* matrix2)
     {
         typedef float Float4x4[4][4];
         const Float4x4& a = *((const Float4x4*) matrix1);
@@ -355,7 +355,7 @@ public:
         memcpy(result, &temp, 16 * sizeof(float));
     }
     
-    static FORCEINLINE void VectorMatrixInverse(void* dstMatrix, const void* srcMatrix)
+    static FORCE_INLINE void VectorMatrixInverse(void* dstMatrix, const void* srcMatrix)
     {
         typedef float Float4x4[4][4];
         const Float4x4& m = *((const Float4x4*)srcMatrix);
@@ -439,7 +439,7 @@ public:
         memcpy(dstMatrix, &result, 16 * sizeof(float));
     }
     
-    static FORCEINLINE void VectorTransformVector(void* result, const void* vec,  const void* matrix)
+    static FORCE_INLINE void VectorTransformVector(void* result, const void* vec,  const void* matrix)
     {
         typedef float Float4[4];
         typedef float Float4x4[4][4];
@@ -454,7 +454,7 @@ public:
         rVec4[3] = vec4[0] * m44[0][3] + vec4[1] * m44[1][3] + vec4[2] * m44[2][3] + vec4[3] * m44[3][3];
     }
     
-	static FORCEINLINE void VectorQuaternionMultiply(void* result, const void* quat1, const void* quat2)
+	static FORCE_INLINE void VectorQuaternionMultiply(void* result, const void* quat1, const void* quat2)
 	{
 		typedef float Float4[4];
 		const Float4& a = *((const Float4*)quat1);
@@ -478,7 +478,7 @@ public:
 		r[3] = t0 + t9 - t5;
 	}
 
-	static FORCEINLINE float FindDeltaAngleDegrees(float a1, float a2)
+	static FORCE_INLINE float FindDeltaAngleDegrees(float a1, float a2)
 	{
 		float delta = a2 - a1;
 
@@ -492,7 +492,7 @@ public:
 		return delta;
 	}
 
-	static FORCEINLINE float FindDeltaAngleRadians(float a1, float a2)
+	static FORCE_INLINE float FindDeltaAngleRadians(float a1, float a2)
 	{
 		float delta = a2 - a1;
 
@@ -506,7 +506,7 @@ public:
 		return delta;
 	}
 
-	static FORCEINLINE float UnwindRadians(float value)
+	static FORCE_INLINE float UnwindRadians(float value)
 	{
 		while (value > PI) {
 			value -= ((float)PI * 2.0f);
@@ -519,7 +519,7 @@ public:
 		return value;
 	}
 
-	static FORCEINLINE float UnwindDegrees(float value)
+	static FORCE_INLINE float UnwindDegrees(float value)
 	{
 		while (value > 180.f) {
 			value -= 360.f;
@@ -532,19 +532,19 @@ public:
 		return value;
 	}
 
-	static FORCEINLINE void CartesianToPolar(const float x, const float y, float& outRad, float& outAng)
+	static FORCE_INLINE void CartesianToPolar(const float x, const float y, float& outRad, float& outAng)
 	{
 		outRad = Sqrt(Square(x) + Square(y));
 		outAng = Atan2(y, x);
 	}
 	
-	static FORCEINLINE void PolarToCartesian(const float rad, const float ang, float& outX, float& outY)
+	static FORCE_INLINE void PolarToCartesian(const float rad, const float ang, float& outX, float& outY)
 	{
 		outX = rad * Cos(ang);
 		outY = rad * Sin(ang);
 	}
 
-	static FORCEINLINE float GetRangePct(float minValue, float maxValue, float value)
+	static FORCE_INLINE float GetRangePct(float minValue, float maxValue, float value)
 	{
 		const float divisor = maxValue - minValue;
 		if (MMath::IsNearlyZero(divisor)) {
@@ -555,25 +555,25 @@ public:
 	}
 
 	template< class T, class U >
-	static FORCEINLINE T Lerp(const T& a, const T& b, const U& alpha)
+	static FORCE_INLINE T Lerp(const T& a, const T& b, const U& alpha)
 	{
 		return (T)(a + alpha * (b - a));
 	}
 
 	template< class T >
-	static FORCEINLINE T LerpStable(const T& a, const T& b, double alpha)
+	static FORCE_INLINE T LerpStable(const T& a, const T& b, double alpha)
 	{
 		return (T)((a * (1.0 - alpha)) + (b * alpha));
 	}
 
 	template< class T >
-	static FORCEINLINE T LerpStable(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T LerpStable(const T& a, const T& b, float alpha)
 	{
 		return (T)((a * (1.0f - alpha)) + (b * alpha));
 	}
 
 	template< class T, class U >
-	static FORCEINLINE T BiLerp(const T& p00, const T& p10, const T& p01, const T& p11, const U& fracX, const U& fracY)
+	static FORCE_INLINE T BiLerp(const T& p00, const T& p10, const T& p01, const T& p11, const U& fracX, const U& fracY)
 	{
 		return Lerp(
 			Lerp(p00, p10, fracX),
@@ -583,7 +583,7 @@ public:
 	}
 
 	template< class T, class U >
-	static FORCEINLINE T CubicInterp(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
+	static FORCE_INLINE T CubicInterp(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
 	{
 		const float a2 = a * a;
 		const float a3 = a2 * a;
@@ -592,7 +592,7 @@ public:
 	}
 
 	template< class T, class U >
-	static FORCEINLINE T CubicInterpDerivative(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
+	static FORCE_INLINE T CubicInterpDerivative(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
 	{
 		T x =  6.f * p0 + 3.f * t0 + 3.f * t1 - 6.f * p1;
 		T y = -6.f * p0 - 4.f * t0 - 2.f * t1 + 6.f * p1;
@@ -602,7 +602,7 @@ public:
 	}
 
 	template< class T, class U >
-	static FORCEINLINE T CubicInterpSecondDerivative(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
+	static FORCE_INLINE T CubicInterpSecondDerivative(const T& p0, const T& t0, const T& p1, const T& t1, const U& a)
 	{
 		T x = 12.f * p0 + 6.f * t0 + 6.f * t1 - 12.f * p1;
 		T y = -6.f * p0 - 4.f * t0 - 2.f * t1 + 6.f  * p1;
@@ -611,21 +611,21 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpEaseIn(const T& a, const T& b, float alpha, float exp)
+	static FORCE_INLINE T InterpEaseIn(const T& a, const T& b, float alpha, float exp)
 	{
 		float const modifiedAlpha = Pow(alpha, exp);
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpEaseOut(const T& a, const T& b, float alpha, float exp)
+	static FORCE_INLINE T InterpEaseOut(const T& a, const T& b, float alpha, float exp)
 	{
 		float const modifiedAlpha = 1.f - Pow(1.f - alpha, exp);
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpEaseInOut(const T& a, const T& b, float alpha, float exp)
+	static FORCE_INLINE T InterpEaseInOut(const T& a, const T& b, float alpha, float exp)
 	{
 		return Lerp<T>(a, b, (alpha < 0.5f) ?
 			InterpEaseIn(0.f, 1.f, alpha * 2.f, exp) * 0.5f :
@@ -633,7 +633,7 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpStep(const T& a, const T& b, float alpha, int32 steps)
+	static FORCE_INLINE T InterpStep(const T& a, const T& b, float alpha, int32 steps)
 	{
 		if (steps <= 1 || alpha <= 0) {
 			return a;
@@ -650,21 +650,21 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpSinIn(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpSinIn(const T& a, const T& b, float alpha)
 	{
 		float const modifiedAlpha = -1.f * Cos(alpha * HALF_PI) + 1.f;
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpSinOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpSinOut(const T& a, const T& b, float alpha)
 	{
 		float const modifiedAlpha = Sin(alpha * HALF_PI);
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpSinInOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpSinInOut(const T& a, const T& b, float alpha)
 	{
 		return Lerp<T>(a, b, (alpha < 0.5f) ?
 			InterpSinIn(0.f, 1.f, alpha * 2.f) * 0.5f :
@@ -672,21 +672,21 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpExpoIn(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpExpoIn(const T& a, const T& b, float alpha)
 	{
 		float const modifiedAlpha = (alpha == 0.f) ? 0.f : Pow(2.f, 10.f * (alpha - 1.f));
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpExpoOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpExpoOut(const T& a, const T& b, float alpha)
 	{
 		float const modifiedAlpha = (alpha == 1.f) ? 1.f : -Pow(2.f, -10.f * alpha) + 1.f;
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpExpoInOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpExpoInOut(const T& a, const T& b, float alpha)
 	{
 		return Lerp<T>(a, b, (alpha < 0.5f) ?
 			InterpExpoIn(0.f, 1.f, alpha * 2.f) * 0.5f :
@@ -694,14 +694,14 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpCircularIn(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpCircularIn(const T& a, const T& b, float alpha)
 	{
 		float const modifiedAlpha = -1.f * (Sqrt(1.f - alpha * alpha) - 1.f);
 		return Lerp<T>(a, b, modifiedAlpha);
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpCircularOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpCircularOut(const T& a, const T& b, float alpha)
 	{
 		alpha -= 1.f;
 		float const modifiedAlpha = Sqrt(1.f - alpha * alpha);
@@ -709,7 +709,7 @@ public:
 	}
 
 	template< class T >
-	static FORCEINLINE T InterpCircularInOut(const T& a, const T& b, float alpha)
+	static FORCE_INLINE T InterpCircularInOut(const T& a, const T& b, float alpha)
 	{
 		return Lerp<T>(a, b, (alpha < 0.5f) ?
 			InterpCircularIn(0.f, 1.f, alpha * 2.f) * 0.5f :
@@ -717,7 +717,7 @@ public:
 	}
 
 	template<class U>
-	static FORCEINLINE U CubicCRSplineInterp(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
+	static FORCE_INLINE U CubicCRSplineInterp(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
 	{
 		float invT1MinusT0 = 1.0f / (t1 - t0);
 		U l01 = (p0 * ((t1 - t) * invT1MinusT0)) + (p1 * ((t - t0) * invT1MinusT0));
@@ -735,7 +735,7 @@ public:
 	}
 
 	template< class U >
-	static FORCEINLINE U CubicCRSplineInterpSafe(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
+	static FORCE_INLINE U CubicCRSplineInterpSafe(const U& p0, const U& p1, const U& p2, const U& p3, const float t0, const float t1, const float t2, const float t3, const float t)
 	{
 		float t1MinusT0 = (t1 - t0);
 		float t2MinusT1 = (t2 - t1);
@@ -762,52 +762,52 @@ public:
 		return  ((l012 * ((t2 - t) * invT2MinusT1)) + (l123 * ((t - t1) * invT2MinusT1)));
 	}
 
-	static FORCEINLINE float MakePulsatingValue(const double inCurrentTime, const float inPulsesPerSecond, const float inPhase = 0.0f)
+	static FORCE_INLINE float MakePulsatingValue(const double inCurrentTime, const float inPulsesPerSecond, const float inPhase = 0.0f)
 	{
 		return (float)(0.5f + 0.5f * MMath::Sin(((0.25f + inPhase) * PI * 2.0f) + ((float)inCurrentTime * PI * 2.0f) * inPulsesPerSecond));
 	}
 
-	static FORCEINLINE float RoundFromZero(float f)
+	static FORCE_INLINE float RoundFromZero(float f)
 	{
 		return (f < 0.0f) ? FloorToFloat(f) : CeilToFloat(f);
 	}
 
-	static FORCEINLINE double RoundFromZero(double f)
+	static FORCE_INLINE double RoundFromZero(double f)
 	{
 		return (f < 0.0) ? FloorToDouble(f) : CeilToDouble(f);
 	}
 
-	static FORCEINLINE float RoundToZero(float f)
+	static FORCE_INLINE float RoundToZero(float f)
 	{
 		return (f < 0.0f) ? CeilToFloat(f) : FloorToFloat(f);
 	}
 
-	static FORCEINLINE double RoundToZero(double f)
+	static FORCE_INLINE double RoundToZero(double f)
 	{
 		return (f < 0.0) ? CeilToDouble(f) : FloorToDouble(f);
 	}
 
-	static FORCEINLINE float RoundToNegativeInfinity(float f)
+	static FORCE_INLINE float RoundToNegativeInfinity(float f)
 	{
 		return FloorToFloat(f);
 	}
 
-	static FORCEINLINE double RoundToNegativeInfinity(double f)
+	static FORCE_INLINE double RoundToNegativeInfinity(double f)
 	{
 		return FloorToDouble(f);
 	}
 
-	static FORCEINLINE float RoundToPositiveInfinity(float f)
+	static FORCE_INLINE float RoundToPositiveInfinity(float f)
 	{
 		return CeilToFloat(f);
 	}
 
-	static FORCEINLINE double RoundToPositiveInfinity(double f)
+	static FORCE_INLINE double RoundToPositiveInfinity(double f)
 	{
 		return CeilToDouble(f);
 	}
 
-	static FORCEINLINE float SmoothStep(float a, float b, float X)
+	static FORCE_INLINE float SmoothStep(float a, float b, float X)
 	{
 		if (X < a) {
 			return 0.0f;
@@ -819,7 +819,7 @@ public:
 		return InterpFraction * InterpFraction * (3.0f - 2.0f * InterpFraction);
 	}
 
-	static FORCEINLINE bool ExtractBoolFromBitfield(uint8* ptr, uint32 index)
+	static FORCE_INLINE bool ExtractBoolFromBitfield(uint8* ptr, uint32 index)
 	{
 		uint8* bytePtr = ptr + index / 8;
 		uint8 mast = 1 << (index & 0x7);
@@ -827,7 +827,7 @@ public:
 		return (*bytePtr & mast) != 0;
 	}
 
-	static FORCEINLINE void SetBoolInBitField(uint8* ptr, uint32 index, bool bset)
+	static FORCE_INLINE void SetBoolInBitField(uint8* ptr, uint32 index, bool bset)
 	{
 		uint8* bytePtr = ptr + index / 8;
 		uint8 mast = 1 << (index & 0x7);
@@ -840,19 +840,19 @@ public:
 		}
 	}
 
-	static FORCEINLINE uint8 Quantize8UnsignedByte(float x)
+	static FORCE_INLINE uint8 Quantize8UnsignedByte(float x)
 	{
 		int32 Ret = (int32)(x * 255.999f);
 		return Ret;
 	}
 
-	static FORCEINLINE uint8 Quantize8SignedByte(float x)
+	static FORCE_INLINE uint8 Quantize8SignedByte(float x)
 	{
 		float y = x * 0.5f + 0.5f;
 		return Quantize8UnsignedByte(y);
 	}
 
-	static FORCEINLINE int32 GreatestCommonDivisor(int32 a, int32 b)
+	static FORCE_INLINE int32 GreatestCommonDivisor(int32 a, int32 b)
 	{
 		while (b != 0) {
 			int32 t = b;
@@ -862,7 +862,7 @@ public:
 		return a;
 	}
 
-	static FORCEINLINE int32 LeastCommonMultiplier(int32 a, int32 b)
+	static FORCE_INLINE int32 LeastCommonMultiplier(int32 a, int32 b)
 	{
 		int32 currentGcd = GreatestCommonDivisor(a, b);
 		return currentGcd == 0 ? 0 : (a / currentGcd) * b;

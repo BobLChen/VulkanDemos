@@ -97,7 +97,7 @@ private:
 			ImGui::SliderInt("Debug", &layer, 0, 5);
 			m_PeelParam.z = layer;
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 

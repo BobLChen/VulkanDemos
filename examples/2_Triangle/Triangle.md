@@ -132,7 +132,7 @@ static const char* G_DeviceExtensions[] =
 	nullptr
 };
 
-static inline void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
+static FORCE_INLINE void EnumerateInstanceExtensionProperties(const char* layerName, VulkanLayerExtension& outLayer)
 {
 	uint32 count = 0;
 	vkEnumerateInstanceExtensionProperties(layerName, &count, nullptr);
@@ -140,7 +140,7 @@ static inline void EnumerateInstanceExtensionProperties(const char* layerName, V
 	vkEnumerateInstanceExtensionProperties(layerName, &count, outLayer.extensionProps.data());
 }
 
-static inline void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const char* layerName, VulkanLayerExtension& outLayer)
+static FORCE_INLINE void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, const char* layerName, VulkanLayerExtension& outLayer)
 {
 	uint32 count = 0;
 	vkEnumerateDeviceExtensionProperties(device, layerName, &count, nullptr);
@@ -148,7 +148,7 @@ static inline void EnumerateDeviceExtensionProperties(VkPhysicalDevice device, c
 	vkEnumerateDeviceExtensionProperties(device, layerName, &count, outLayer.extensionProps.data());
 }
 
-static inline int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
+static FORCE_INLINE int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
 {
 	for (int32 i = 0; i < layers.size(); ++i) 
 	{
@@ -160,12 +160,12 @@ static inline int32 FindLayerIndexInList(const std::vector<VulkanLayerExtension>
 	return -1;
 }
 
-static inline bool FindLayerInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
+static FORCE_INLINE bool FindLayerInList(const std::vector<VulkanLayerExtension>& layers, const char* layerName)
 {
 	return FindLayerIndexInList(layers, layerName) != -1;
 }
 
-static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName, const char*& foundLayer)
+static FORCE_INLINE bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName, const char*& foundLayer)
 {
 	for (int32 i = 0; i < layers.size(); ++i) 
 	{
@@ -181,13 +181,13 @@ static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtensi
 	return false;
 }
 
-static inline bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName)
+static FORCE_INLINE bool FindLayerExtensionInList(const std::vector<VulkanLayerExtension>& layers, const char* extensionName)
 {
 	const char* dummy = nullptr;
 	return FindLayerExtensionInList(layers, extensionName, dummy);
 }
 
-static inline void TrimDuplicates(std::vector<const char*>& arr)
+static FORCE_INLINE void TrimDuplicates(std::vector<const char*>& arr)
 {
 	for (int32 i = (int32)arr.size() - 1; i >= 0; --i)
 	{
@@ -492,7 +492,7 @@ void VulkanDevice::GetDeviceExtensionsAndLayers(std::vector<const char*>& outDev
 
 ```c++
 template<class T>
-static FORCEINLINE void ZeroVulkanStruct(T& vkStruct, VkStructureType vkType)
+static FORCE_INLINE void ZeroVulkanStruct(T& vkStruct, VkStructureType vkType)
 {
 	vkStruct.sType = vkType;
 	memset(((uint8*)&vkStruct) + sizeof(VkStructureType), 0, sizeof(T) - sizeof(VkStructureType));

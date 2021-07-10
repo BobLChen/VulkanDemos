@@ -524,9 +524,13 @@ private:
     
 	void CreateDescriptorSet()
 	{
+		m_ModelBufferInfo.buffer = m_ModelBuffer->buffer;
+		m_ModelBufferInfo.offset = 0;
+		m_ModelBufferInfo.range  = sizeof(ModelBlock);
+
 		m_DescriptorSet0 = m_Shader0->AllocateDescriptorSet();
 		m_DescriptorSet0->WriteBuffer("uboViewProj", m_ViewProjBuffer);
-		m_DescriptorSet0->WriteBuffer("uboModel",    m_ModelBuffer);
+		m_DescriptorSet0->WriteBuffer("uboModel",    &m_ModelBufferInfo);
 
 		m_DescriptorSets.resize(m_AttachsColor.size());
 		for (int32 i = 0; i < m_DescriptorSets.size(); ++i)
@@ -683,6 +687,7 @@ private:
     
 	std::vector<uint8>              m_ModelDatas;
 	vk_demo::DVKBuffer*				m_ModelBuffer = nullptr;
+	VkDescriptorBufferInfo			m_ModelBufferInfo;
 
 	vk_demo::DVKBuffer*				m_ViewProjBuffer = nullptr;
 	ViewProjectionBlock				m_ViewProjData;

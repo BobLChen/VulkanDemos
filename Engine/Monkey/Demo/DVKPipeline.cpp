@@ -21,9 +21,9 @@ namespace vk_demo
 
 		VkPipelineVertexInputStateCreateInfo vertexInputState;
 		ZeroVulkanStruct(vertexInputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-		vertexInputState.vertexBindingDescriptionCount   = inputBindings.size();
+		vertexInputState.vertexBindingDescriptionCount   = (uint32_t)inputBindings.size();
 		vertexInputState.pVertexBindingDescriptions      = inputBindings.data();
-		vertexInputState.vertexAttributeDescriptionCount = vertexInputAttributs.size();
+		vertexInputState.vertexAttributeDescriptionCount = (uint32_t)vertexInputAttributs.size();
 		vertexInputState.pVertexAttributeDescriptions    = vertexInputAttributs.data();
 
 		VkPipelineColorBlendStateCreateInfo colorBlendState;
@@ -58,7 +58,7 @@ namespace vk_demo
 		pipelineCreateInfo.layout 				= pipelineLayout;
 		pipelineCreateInfo.renderPass 			= renderPass;
 		pipelineCreateInfo.subpass              = pipelineInfo.subpass;
-		pipelineCreateInfo.stageCount 			= shaderStages.size();
+		pipelineCreateInfo.stageCount 			= (uint32_t)shaderStages.size();
 		pipelineCreateInfo.pStages 				= shaderStages.data();
 		pipelineCreateInfo.pVertexInputState 	= &vertexInputState;
 		pipelineCreateInfo.pInputAssemblyState 	= &(pipelineInfo.inputAssemblyState);

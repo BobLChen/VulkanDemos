@@ -42,7 +42,7 @@ namespace vk_demo
 		
 		if (waitFlags.size() > 0) 
 		{
-			submitInfo.waitSemaphoreCount = waitSemaphores.size();
+			submitInfo.waitSemaphoreCount = (uint32_t)waitSemaphores.size();
 			submitInfo.pWaitSemaphores    = waitSemaphores.data();
 			submitInfo.pWaitDstStageMask  = waitFlags.data();
 		}

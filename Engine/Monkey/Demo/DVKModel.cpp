@@ -84,9 +84,9 @@ namespace vk_demo
 		}
 
         DVKPrimitive* primitive = new DVKPrimitive();
-        primitive->vertices = vertices;
-        primitive->indices  = indices;
-		primitive->vertexCount = vertices.size() / stride * 4;
+        primitive->vertices     = vertices;
+        primitive->indices      = indices;
+		primitive->vertexCount  = (int32)vertices.size() / stride * 4;
 		
         if (cmdBuffer)
         {
@@ -166,10 +166,10 @@ namespace vk_demo
 	void DVKModel::LoadBones(const aiScene* aiScene)
 	{
 		std::unordered_map<std::string, int32> boneIndexMap;
-		for (int32 i = 0; i < aiScene->mNumMeshes; ++i)
+		for (int32 i = 0; i < (int32)aiScene->mNumMeshes; ++i)
 		{
 			aiMesh* aimesh = aiScene->mMeshes[i];
-			for (int32 j = 0; j < aimesh->mNumBones; ++j)
+			for (int32 j = 0; j < (int32)aimesh->mNumBones; ++j)
 			{
 				aiBone* aibone   = aimesh->mBones[j];
 				std::string name = aibone->mName.C_Str();
@@ -178,7 +178,7 @@ namespace vk_demo
 				if (it == boneIndexMap.end())
 				{
 					// new bone
-					int32 index   = bones.size();
+					int32 index   = (int32)bones.size();
 					DVKBone* bone = new DVKBone();
 					bone->index   = index;
 					bone->parent  = -1;
@@ -198,7 +198,7 @@ namespace vk_demo
     {
         std::unordered_map<int32, int32> boneIndexMap;
         
-        for (int32 i = 0; i < aiMesh->mNumBones; ++i)
+        for (int32 i = 0; i < (int32)aiMesh->mNumBones; ++i)
         {
             aiBone* boneInfo = aiMesh->mBones[i];
             std::string boneName(boneInfo->mName.C_Str());
@@ -208,7 +208,7 @@ namespace vk_demo
 			int32 meshBoneIndex = 0;
 			auto it = boneIndexMap.find(boneIndex);
 			if (it == boneIndexMap.end()) {
-				meshBoneIndex = mesh->bones.size();
+				meshBoneIndex = (int32)mesh->bones.size();
 				mesh->bones.push_back(boneIndex);
 				boneIndexMap.insert(std::make_pair(boneIndex, meshBoneIndex));
 			}
@@ -259,7 +259,7 @@ namespace vk_demo
 			MMath::RandRange(0.0f, 1.0f)
 		);
         
-        for (int32 i = 0; i < aiMesh->mNumVertices; ++i)
+        for (int32 i = 0; i < (int32)aiMesh->mNumVertices; ++i)
         {
             for (int32 j = 0; j < attributes.size(); ++j)
             {
@@ -346,16 +346,16 @@ namespace vk_demo
 						int32 idx3 = skin.indices[3];
 						uint32 packIndex = (idx0 << 24) + (idx1 << 16) + (idx2 << 8) + idx3;
 
-						uint16 weight0 = skin.weights[0] * 65535;
-						uint16 weight1 = skin.weights[1] * 65535;
-						uint16 weight2 = skin.weights[2] * 65535;
-						uint16 weight3 = skin.weights[3] * 65535;
+						uint16 weight0 = uint16(skin.weights[0] * 65535);
+						uint16 weight1 = uint16(skin.weights[1] * 65535);
+						uint16 weight2 = uint16(skin.weights[2] * 65535);
+						uint16 weight3 = uint16(skin.weights[3] * 65535);
 						uint32 packWeight0 = (weight0 << 16) + weight1;
 						uint32 packWeight1 = (weight2 << 16) + weight3;
 
-						vertices.push_back(packIndex);
-						vertices.push_back(packWeight0);
-						vertices.push_back(packWeight1);
+						vertices.push_back((float)packIndex);
+						vertices.push_back((float)packWeight0);
+						vertices.push_back((float)packWeight1);
 					}
 					else
 					{
@@ -369,10 +369,10 @@ namespace vk_demo
                     if (mesh->isSkin)
                     {
 						DVKVertexSkin& skin = skinInfoMap[i];
-                        vertices.push_back(skin.indices[0]);
-                        vertices.push_back(skin.indices[1]);
-                        vertices.push_back(skin.indices[2]);
-                        vertices.push_back(skin.indices[3]);
+                        vertices.push_back((float)skin.indices[0]);
+                        vertices.push_back((float)skin.indices[1]);
+                        vertices.push_back((float)skin.indices[2]);
+                        vertices.push_back((float)skin.indices[3]);
                     }
                     else
                     {
@@ -417,7 +417,7 @@ namespace vk_demo
     
     void DVKModel::LoadIndices(std::vector<uint32>& indices, const aiMesh* aiMesh, const aiScene* aiScene)
     {
-        for (int32 i = 0; i < aiMesh->mNumFaces; ++i)
+        for (int32 i = 0; i < (int32)aiMesh->mNumFaces; ++i)
         {
             indices.push_back(aiMesh->mFaces[i].mIndices[0]);
             indices.push_back(aiMesh->mFaces[i].mIndices[1]);
@@ -427,7 +427,7 @@ namespace vk_demo
     
     void DVKModel::LoadPrimitives(std::vector<float>& vertices, std::vector<uint32>& indices, DVKMesh* mesh, const aiMesh* aiMesh, const aiScene* aiScene)
     {
-        int32 stride = vertices.size() / aiMesh->mNumVertices;
+        int32 stride = (int32)vertices.size() / aiMesh->mNumVertices;
 
         if (indices.size() > 65535)
         {
@@ -448,7 +448,7 @@ namespace vk_demo
                 if (it == indicesMap.end())
                 {
                     uint32 start = idx * stride;
-                    newIdx = primitive->vertices.size() / stride;
+                    newIdx = (uint32)primitive->vertices.size() / stride;
                     primitive->vertices.insert(primitive->vertices.end(), vertices.begin() + start, vertices.begin() + start + stride);
                     indicesMap.insert(std::make_pair(idx, newIdx));
                 }
@@ -493,8 +493,8 @@ namespace vk_demo
         for (int32 i = 0; i < mesh->primitives.size(); ++i)
         {
             DVKPrimitive* primitive = mesh->primitives[i];
-            primitive->vertexCount  = primitive->vertices.size() / stride;
-            primitive->triangleNum  = primitive->indices.size() / 3;
+            primitive->vertexCount  = (int32)primitive->vertices.size() / stride;
+            primitive->triangleNum  = (int32)primitive->indices.size() / 3;
             
             mesh->vertexCount   += primitive->vertexCount;
             mesh->triangleCount += primitive->triangleNum;
@@ -519,8 +519,8 @@ namespace vk_demo
         
         // load vertex data
         std::vector<float> vertices;
-        Vector3 mmin( MAX_int32,  MAX_int32,  MAX_int32);
-        Vector3 mmax(-MAX_int32, -MAX_int32, -MAX_int32);
+        Vector3 mmin( MAX_FLT,  MAX_FLT,  MAX_FLT);
+        Vector3 mmax(-MAX_FLT, -MAX_FLT, -MAX_FLT);
         LoadVertexDatas(skinInfoMap, vertices, mmax, mmin, mesh, aiMesh, aiScene);
         
         // load indices
@@ -551,7 +551,7 @@ namespace vk_demo
         
 		// mesh
         if (aiNode->mNumMeshes > 0) {
-			for (int i = 0; i < aiNode->mNumMeshes; ++i) 
+			for (uint32 i = 0; i < aiNode->mNumMeshes; ++i) 
 			{
 				DVKMesh* vkMesh  = LoadMesh(aiScene->mMeshes[aiNode->mMeshes[i]], aiScene);
 				vkMesh->linkNode = vkNode;
@@ -574,7 +574,7 @@ namespace vk_demo
 		}
 		
 		// children node
-        for (int32 i = 0; i < aiNode->mNumChildren; ++i) 
+        for (int32 i = 0; i < (int32)aiNode->mNumChildren; ++i) 
 		{
             DVKNode* childNode = LoadNode(aiNode->mChildren[i], aiScene);
 			childNode->parent  = vkNode;
@@ -594,15 +594,15 @@ namespace vk_demo
     
     void DVKModel::LoadAnim(const aiScene* aiScene)
     {
-        for (int32 i = 0; i < aiScene->mNumAnimations; ++i)
+        for (int32 i = 0; i < (int32)aiScene->mNumAnimations; ++i)
         {
             aiAnimation* aianimation = aiScene->mAnimations[i];
-			float timeTick = aianimation->mTicksPerSecond != 0 ? aianimation->mTicksPerSecond : 25.0f;
+			float timeTick = aianimation->mTicksPerSecond != 0 ? (float)aianimation->mTicksPerSecond : 25.0f;
 
 			animations.push_back(DVKAnimation());
 			DVKAnimation& dvkAnimation = animations.back();
             
-			for (int32 j = 0; j < aianimation->mNumChannels; ++j)
+			for (int32 j = 0; j < (int32)aianimation->mNumChannels; ++j)
             {
                 aiNodeAnim* nodeAnim = aianimation->mChannels[j];
 				std::string nodeName = nodeAnim->mNodeName.C_Str();
@@ -614,28 +614,28 @@ namespace vk_demo
 				animClip.duration = 0.0f;
 				
 				// position
-				for (int32 index = 0; index < nodeAnim->mNumPositionKeys; ++index)
+				for (int32 index = 0; index < (int32)nodeAnim->mNumPositionKeys; ++index)
 				{
 					aiVectorKey& aikey = nodeAnim->mPositionKeys[index];
-					animClip.positions.keys.push_back(aikey.mTime / timeTick);
+					animClip.positions.keys.push_back((float)aikey.mTime / timeTick);
 					animClip.positions.values.push_back(Vector3(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z));
 					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
 				}
 
 				// scale
-				for (int32 index = 0; index < nodeAnim->mNumScalingKeys; ++index)
+				for (int32 index = 0; index < (int32)nodeAnim->mNumScalingKeys; ++index)
 				{
 					aiVectorKey& aikey = nodeAnim->mScalingKeys[index];
-					animClip.scales.keys.push_back(aikey.mTime / timeTick);
+					animClip.scales.keys.push_back((float)aikey.mTime / timeTick);
 					animClip.scales.values.push_back(Vector3(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z));
 					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
 				}
 
 				// rotation
-				for (int32 index = 0; index < nodeAnim->mNumRotationKeys; ++index)
+				for (int32 index = 0; index < (int32)nodeAnim->mNumRotationKeys; ++index)
 				{
 					aiQuatKey& aikey = nodeAnim->mRotationKeys[index];
-					animClip.rotations.keys.push_back(aikey.mTime / timeTick);
+					animClip.rotations.keys.push_back((float)aikey.mTime / timeTick);
 					animClip.rotations.values.push_back(Quat(aikey.mValue.x, aikey.mValue.y, aikey.mValue.z, aikey.mValue.w));
 					animClip.duration = MMath::Max((float)aikey.mTime / timeTick, animClip.duration);
 				}

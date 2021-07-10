@@ -12,7 +12,7 @@ namespace vk_demo
         ringBuffer->device       = vulkanDevice->GetInstanceHandle();
         ringBuffer->bufferSize   = 8 * 1024 * 1024; // 8MB
         ringBuffer->bufferOffset = ringBuffer->bufferSize;
-        ringBuffer->minAlignment = vulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
+        ringBuffer->minAlignment = (uint32)vulkanDevice->GetLimits().minUniformBufferOffsetAlignment;
         ringBuffer->realBuffer   = vk_demo::DVKBuffer::CreateBuffer(
             vulkanDevice,
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -170,7 +170,7 @@ namespace vk_demo
             commandBuffer,
             bindPoint,
             GetPipelineLayout(),
-            0, GetDescriptorSets().size(), GetDescriptorSets().data(),
+            0, (uint32_t)GetDescriptorSets().size(), GetDescriptorSets().data(),
             dynamicOffsetCount, dynOffsets
         );
     }
@@ -192,7 +192,7 @@ namespace vk_demo
 
 		if (it->second.bufferInfo.buffer != buffer->buffer) 
 		{
-			it->second.dataSize          = buffer->size;
+			it->second.dataSize          = (uint32)buffer->size;
 			it->second.bufferInfo.buffer = buffer->buffer;
 			it->second.bufferInfo.offset = 0;
 			it->second.bufferInfo.range  = buffer->size;
@@ -224,7 +224,7 @@ namespace vk_demo
         memcpy(ringCPUData + ringOffset, dataPtr, bufferSize);
         
         // 记录Offset
-        dynamicOffsets[it->second.dynamicIndex] = ringOffset;
+        dynamicOffsets[it->second.dynamicIndex] = (uint32)ringOffset;
     }
     
     void DVKCompute::SetStorageTexture(const std::string& name, DVKTexture* texture)

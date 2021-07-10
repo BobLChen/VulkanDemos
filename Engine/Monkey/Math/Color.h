@@ -33,8 +33,8 @@ public:
 	static const LinearColor Blue;
 	static const LinearColor Yellow;
 
-	static float pow22OneOver255Table[256];
-	static float sRGBToLinearTable[256];
+	static double pow22OneOver255Table[256];
+	static double sRGBToLinearTable[256];
 
 public:
 	
@@ -58,31 +58,31 @@ public:
 
 	}
 
-	FORCEINLINE Color ToRGBE() const;
+	FORCE_INLINE Color ToRGBE() const;
 
-	FORCEINLINE LinearColor LinearRGBToHSV() const;
+	FORCE_INLINE LinearColor LinearRGBToHSV() const;
 
-	FORCEINLINE LinearColor HSVToLinearRGB() const;
+	FORCE_INLINE LinearColor HSVToLinearRGB() const;
 
-	FORCEINLINE Color Quantize() const;
+	FORCE_INLINE Color Quantize() const;
 
-	FORCEINLINE Color QuantizeRound() const;
+	FORCE_INLINE Color QuantizeRound() const;
 
-	FORCEINLINE Color ToFColor(const bool sRGB) const;
+	FORCE_INLINE Color ToFColor(const bool sRGB) const;
 
-	FORCEINLINE LinearColor Desaturate(float desaturation) const;
+	FORCE_INLINE LinearColor Desaturate(float desaturation) const;
 
-	FORCEINLINE float& Component(int32 index)
+	FORCE_INLINE float& Component(int32 index)
 	{
 		return (&r)[index];
 	}
 
-	FORCEINLINE const float& Component(int32 index) const
+	FORCE_INLINE const float& Component(int32 index) const
 	{
 		return (&r)[index];
 	}
 
-	FORCEINLINE LinearColor operator+(const LinearColor& rhs) const
+	FORCE_INLINE LinearColor operator+(const LinearColor& rhs) const
 	{
 		return LinearColor(
 			this->r + rhs.r,
@@ -92,7 +92,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator+=(const LinearColor& rhs)
+	FORCE_INLINE LinearColor& operator+=(const LinearColor& rhs)
 	{
 		r += rhs.r;
 		g += rhs.g;
@@ -102,7 +102,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor operator-(const LinearColor& rhs) const
+	FORCE_INLINE LinearColor operator-(const LinearColor& rhs) const
 	{
 		return LinearColor(
 			this->r - rhs.r,
@@ -112,7 +112,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator-=(const LinearColor& rhs)
+	FORCE_INLINE LinearColor& operator-=(const LinearColor& rhs)
 	{
 		r -= rhs.r;
 		g -= rhs.g;
@@ -122,7 +122,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor operator*(const LinearColor& rhs) const
+	FORCE_INLINE LinearColor operator*(const LinearColor& rhs) const
 	{
 		return LinearColor(
 			this->r * rhs.r,
@@ -132,7 +132,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator*=(const LinearColor& rhs)
+	FORCE_INLINE LinearColor& operator*=(const LinearColor& rhs)
 	{
 		r *= rhs.r;
 		g *= rhs.g;
@@ -142,7 +142,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor operator*(float scalar) const
+	FORCE_INLINE LinearColor operator*(float scalar) const
 	{
 		return LinearColor(
 			this->r * scalar,
@@ -152,7 +152,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator*=(float scalar)
+	FORCE_INLINE LinearColor& operator*=(float scalar)
 	{
 		r *= scalar;
 		g *= scalar;
@@ -162,7 +162,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor operator/(const LinearColor& rhs) const
+	FORCE_INLINE LinearColor operator/(const LinearColor& rhs) const
 	{
 		return LinearColor(
 			this->r / rhs.r,
@@ -172,7 +172,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator/=(const LinearColor& rhs)
+	FORCE_INLINE LinearColor& operator/=(const LinearColor& rhs)
 	{
 		r /= rhs.r;
 		g /= rhs.g;
@@ -182,7 +182,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor operator/(float scalar) const
+	FORCE_INLINE LinearColor operator/(float scalar) const
 	{
 		const float	invScalar = 1.0f / scalar;
 
@@ -194,7 +194,7 @@ public:
 		);
 	}
 
-	FORCEINLINE LinearColor& operator/=(float scalar)
+	FORCE_INLINE LinearColor& operator/=(float scalar)
 	{
 		const float	invScalar = 1.0f / scalar;
 
@@ -206,7 +206,7 @@ public:
 		return *this;
 	}
 
-	FORCEINLINE LinearColor GetClamped(float inMin = 0.0f, float inMax = 1.0f) const
+	FORCE_INLINE LinearColor GetClamped(float inMin = 0.0f, float inMax = 1.0f) const
 	{
 		LinearColor ret;
 
@@ -218,59 +218,59 @@ public:
 		return ret;
 	}
 
-	FORCEINLINE bool operator==(const LinearColor& other) const
+	FORCE_INLINE bool operator==(const LinearColor& other) const
 	{
 		return this->r == other.r && this->g == other.g && this->b == other.b && this->a == other.a;
 	}
 
-	FORCEINLINE bool operator!=(const LinearColor& Other) const
+	FORCE_INLINE bool operator!=(const LinearColor& Other) const
 	{
 		return this->r != Other.r || this->g != Other.g || this->b != Other.b || this->a != Other.a;
 	}
 
-	FORCEINLINE bool Equals(const LinearColor& other, float tolerance = KINDA_SMALL_NUMBER) const
+	FORCE_INLINE bool Equals(const LinearColor& other, float tolerance = KINDA_SMALL_NUMBER) const
 	{
 		return MMath::Abs(this->r - other.r) < tolerance && MMath::Abs(this->g - other.g) < tolerance && MMath::Abs(this->b - other.b) < tolerance && MMath::Abs(this->a - other.a) < tolerance;
 	}
 
-	FORCEINLINE LinearColor CopyWithNewOpacity(float newOpacicty) const
+	FORCE_INLINE LinearColor CopyWithNewOpacity(float newOpacicty) const
 	{
 		LinearColor newCopy = *this;
 		newCopy.a = newOpacicty;
 		return newCopy;
 	}
 
-	FORCEINLINE float ComputeLuminance() const
+	FORCE_INLINE float ComputeLuminance() const
 	{
 		return r * 0.3f + g * 0.59f + b * 0.11f;
 	}
 
-	FORCEINLINE float GetMax() const
+	FORCE_INLINE float GetMax() const
 	{
 		return MMath::Max(MMath::Max(MMath::Max(r, g), b), a);
 	}
 
-	FORCEINLINE bool IsAlmostBlack() const
+	FORCE_INLINE bool IsAlmostBlack() const
 	{
 		return MMath::Square(r) < DELTA && MMath::Square(g) < DELTA && MMath::Square(b) < DELTA;
 	}
 
-	FORCEINLINE float GetMin() const
+	FORCE_INLINE float GetMin() const
 	{
 		return MMath::Min(MMath::Min(MMath::Min(r, g), b), a);
 	}
 
-	FORCEINLINE float GetLuminance() const
+	FORCE_INLINE float GetLuminance() const
 	{
 		return r * 0.3f + g * 0.59f + b * 0.11f;
 	}
 
-	FORCEINLINE std::string ToString() const
+	FORCE_INLINE std::string ToString() const
 	{
 		return StringUtils::Printf("(r=%f,g=%f,b=%f,a=%f)", r, g, b, a);
 	}
 
-	static FORCEINLINE float Dist(const LinearColor &v1, const LinearColor &v2)
+	static FORCE_INLINE float Dist(const LinearColor &v1, const LinearColor &v2)
 	{
 		return MMath::Sqrt(MMath::Square(v2.r - v1.r) + MMath::Square(v2.g - v1.g) + MMath::Square(v2.b - v1.b) + MMath::Square(v2.a - v1.a));
 	}
@@ -333,27 +333,27 @@ public:
 		DWColor() = inColor;
 	}
 
-	FORCEINLINE uint32& DWColor()
+	FORCE_INLINE uint32& DWColor()
 	{ 
 		return *((uint32*)this);
 	}
 
-	FORCEINLINE const uint32& DWColor() const
+	FORCE_INLINE const uint32& DWColor() const
 	{ 
 		return *((uint32*)this);
 	}
 
-	FORCEINLINE bool operator==(const Color &C) const
+	FORCE_INLINE bool operator==(const Color &C) const
 	{
 		return DWColor() == C.DWColor();
 	}
 
-	FORCEINLINE bool operator!=(const Color& C) const
+	FORCE_INLINE bool operator!=(const Color& C) const
 	{
 		return DWColor() != C.DWColor();
 	}
 
-	FORCEINLINE void operator+=(const Color& C)
+	FORCE_INLINE void operator+=(const Color& C)
 	{
 		r = (uint8)MMath::Min((int32)r + (int32)C.r, 255);
 		g = (uint8)MMath::Min((int32)g + (int32)C.g, 255);
@@ -361,42 +361,42 @@ public:
 		a = (uint8)MMath::Min((int32)a + (int32)C.a, 255);
 	}
 
-	FORCEINLINE Color WithAlpha(uint8 alpha) const
+	FORCE_INLINE Color WithAlpha(uint8 alpha) const
 	{
 		return Color(r, g, b, alpha);
 	}
 
-	FORCEINLINE LinearColor ReinterpretAsLinear() const
+	FORCE_INLINE LinearColor ReinterpretAsLinear() const
 	{
 		return LinearColor(r / 255.f, g / 255.f, b / 255.f, a / 255.f);
 	}
 
-	FORCEINLINE std::string ToHex() const
+	FORCE_INLINE std::string ToHex() const
 	{
 		return StringUtils::Printf("%02X%02X%02X%02X", r, g, b, a);
 	}
 
-	FORCEINLINE std::string ToString() const
+	FORCE_INLINE std::string ToString() const
 	{
 		return StringUtils::Printf("(r=%i,g=%i,b=%i,a=%i)", r, g, b, a);
 	}
 
-	FORCEINLINE uint32 ToPackedARGB() const
+	FORCE_INLINE uint32 ToPackedARGB() const
 	{
 		return (a << 24) | (r << 16) | (g << 8) | (b << 0);
 	}
 
-	FORCEINLINE uint32 ToPackedABGR() const
+	FORCE_INLINE uint32 ToPackedABGR() const
 	{
 		return (a << 24) | (b << 16) | (g << 8) | (r << 0);
 	}
 
-	FORCEINLINE uint32 ToPackedRGBA() const
+	FORCE_INLINE uint32 ToPackedRGBA() const
 	{
 		return (r << 24) | (g << 16) | (b << 8) | (a << 0);
 	}
 
-	FORCEINLINE uint32 ToPackedBGRA() const
+	FORCE_INLINE uint32 ToPackedBGRA() const
 	{
 		return (b << 24) | (g << 16) | (r << 8) | (a << 0);
 	}
@@ -413,7 +413,7 @@ private:
 	explicit Color(const LinearColor& linearColor);
 };
 
-FORCEINLINE LinearColor operator*(float scalar, const LinearColor& Color)
+FORCE_INLINE LinearColor operator*(float scalar, const LinearColor& Color)
 {
 	return Color.operator*(scalar);
 }

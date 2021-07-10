@@ -72,7 +72,7 @@ public:
 		m_AppInstanceExtensions.push_back(name);
 	}
 
-	inline void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
+	FORCE_INLINE void SetPhysicalDeviceFeatures(VkPhysicalDeviceFeatures2* deviceFeatures)
 	{
 		m_PhysicalDeviceFeatures2 = deviceFeatures;
 	}

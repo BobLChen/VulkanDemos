@@ -74,12 +74,12 @@ void EngineLoop()
 	double nowT  = GenericPlatformTime::Seconds();
 	double delta = nowT - g_LastTime;
 	
-	g_AppModule->Loop(g_CurrTime, delta);
+	g_AppModule->Loop((float)g_CurrTime, (float)delta);
 
 	// reset between module and engine
 	InputManager::Reset();
 
-	g_GameEngine->Tick(g_CurrTime, delta);
+	g_GameEngine->Tick((float)g_CurrTime, (float)delta);
 	
 	g_LastTime = nowT;
 	g_CurrTime = g_CurrTime + delta;

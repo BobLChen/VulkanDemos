@@ -49,12 +49,12 @@ public:
 
 private:
 
-	FORCEINLINE void Lock()
+	FORCE_INLINE void Lock()
 	{
 		m_Mutex.lock();
 	}
 
-	FORCEINLINE void Unlock()
+	FORCE_INLINE void Unlock()
 	{
 		m_Mutex.unlock();
 	}

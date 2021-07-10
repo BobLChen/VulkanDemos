@@ -11,6 +11,11 @@ layout(isolines, equal_spacing, cw) in;
 
 layout (location = 0) out vec3 outColor;
 
+in gl_PerVertex 
+{
+    vec4  gl_Position;
+} gl_in[];
+
 void main()
 {
     vec4 p1 = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);

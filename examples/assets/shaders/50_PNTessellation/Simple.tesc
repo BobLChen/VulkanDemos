@@ -44,6 +44,16 @@ float Vij(int i, int j)
 	return 2.0 * dot(Pj_minus_Pi, Ni_plus_Nj) / dot(Pj_minus_Pi, Pj_minus_Pi);
 }
 
+in gl_PerVertex 
+{
+    vec4 gl_Position;
+} gl_in[];
+
+out gl_PerVertex 
+{
+    vec4 gl_Position;
+} gl_out[];
+
 void main()
 {
 	// get data

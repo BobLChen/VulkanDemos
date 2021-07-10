@@ -296,12 +296,12 @@ namespace vk_demo
         
         void EndRenderPass(VkCommandBuffer cmdBuffer);
 
-		inline VkRenderPass GetRenderPass() const
+		FORCE_INLINE VkRenderPass GetRenderPass() const
 		{
 			return renderPass->renderPass;
 		}
 
-		inline VkFramebuffer GetFrameBuffer() const
+		FORCE_INLINE VkFramebuffer GetFrameBuffer() const
 		{
 			return frameBuffer->frameBuffer;
 		}

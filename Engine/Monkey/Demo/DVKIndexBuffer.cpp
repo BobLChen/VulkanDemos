@@ -9,9 +9,9 @@ namespace vk_demo
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
 		DVKIndexBuffer* indexBuffer = new DVKIndexBuffer();
-		indexBuffer->device = device;
-		indexBuffer->indexCount = indices.size();
-		indexBuffer->indexType = VK_INDEX_TYPE_UINT32;
+		indexBuffer->device     = device;
+		indexBuffer->indexCount = (int32)indices.size();
+		indexBuffer->indexType  = VK_INDEX_TYPE_UINT32;
 
 		vk_demo::DVKBuffer* indexStaging = vk_demo::DVKBuffer::CreateBuffer(
 			vulkanDevice, 
@@ -48,9 +48,9 @@ namespace vk_demo
 		VkDevice device = vulkanDevice->GetInstanceHandle();
 
 		DVKIndexBuffer* indexBuffer = new DVKIndexBuffer();
-		indexBuffer->device = device;
-		indexBuffer->indexCount = indices.size();
-		indexBuffer->indexType = VK_INDEX_TYPE_UINT16;
+		indexBuffer->device     = device;
+		indexBuffer->indexCount = (int32)indices.size();
+		indexBuffer->indexType  = VK_INDEX_TYPE_UINT16;
 		
 		vk_demo::DVKBuffer* indexStaging = vk_demo::DVKBuffer::CreateBuffer(
 			vulkanDevice, 

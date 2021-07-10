@@ -44,7 +44,7 @@
 # 3) Add libassimp using the file lists (eliminates duplication of file names between
 #    source groups and library command)
 #
-cmake_minimum_required( VERSION 2.6 )
+cmake_minimum_required(VERSION 3.12.0)
 SET( HEADER_PATH ../include/assimp )
 
 if(NOT ANDROID AND ASSIMP_ANDROID_JNIIOSYSTEM)
@@ -936,7 +936,7 @@ SOURCE_GROUP( Contrib\\open3dgc FILES ${open3dgc_SRCS})
 # Check dependencies for glTF importer with Open3DGC-compression.
 # RT-extensions is used in "contrib/Open3DGC/o3dgcTimer.h" for collecting statistics. Pointed file
 # has implementation for different platforms: WIN32, __MACH__ and other ("else" block).
-FIND_PACKAGE(RT QUIET)
+# FIND_PACKAGE(RT QUIET)
 IF (RT_FOUND OR MSVC)
   SET( ASSIMP_IMPORTER_GLTF_USE_OPEN3DGC 1 )
   ADD_DEFINITIONS( -DASSIMP_IMPORTER_GLTF_USE_OPEN3DGC=1 )

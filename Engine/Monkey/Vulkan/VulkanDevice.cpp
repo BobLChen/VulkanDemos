@@ -60,7 +60,7 @@ void VulkanDevice::CreateDevice()
 		deviceInfo.pEnabledFeatures = &m_PhysicalDeviceFeatures;
 	}
 
-    MLOG("Found %lu Queue Families", m_QueueFamilyProps.size());
+    MLOG("Found %d Queue Families", (int32)m_QueueFamilyProps.size());
     
 	std::vector<VkDeviceQueueCreateInfo> queueFamilyInfos;
 	
@@ -171,7 +171,7 @@ void VulkanDevice::CreateDevice()
 
 void VulkanDevice::SetupFormats()
 {
-	for (uint32 index = 0; index < VK_FORMAT_RANGE_SIZE; ++index)
+	for (uint32 index = 0; index < PF_MAX; ++index)
 	{
 		const VkFormat format = (VkFormat)index;
 		memset(&m_FormatProperties[index], 0, sizeof(VkFormat));
@@ -439,7 +439,7 @@ bool VulkanDevice::IsFormatSupported(VkFormat format)
 		return (prop.bufferFeatures != 0) || (prop.linearTilingFeatures != 0) || (prop.optimalTilingFeatures != 0);
 	};
 
-	if (format >= 0 && format < VK_FORMAT_RANGE_SIZE)
+	if (format >= 0 && format < PF_MAX)
 	{
 		const VkFormatProperties& prop = m_FormatProperties[format];
 		return ArePropertiesSupported(prop);

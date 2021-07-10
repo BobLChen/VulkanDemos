@@ -10,25 +10,25 @@ struct WindowSizeLimits
 {
 public:
 
-	inline WindowSizeLimits& SetMinWidth(float value)
+	FORCE_INLINE WindowSizeLimits& SetMinWidth(float value)
 	{ 
 		minWidth = value;
 		return *this;
 	}
 
-	inline WindowSizeLimits& SetMinHeight(float value)
+	FORCE_INLINE WindowSizeLimits& SetMinHeight(float value)
 	{ 
 		minHeight = value;
 		return *this;
 	}
 
-	inline WindowSizeLimits& SetMaxWidth(float value)
+	FORCE_INLINE WindowSizeLimits& SetMaxWidth(float value)
 	{ 
 		maxWidth = value;
 		return *this;
 	}
 
-	inline WindowSizeLimits& SetMaxHeight(float value)
+	FORCE_INLINE WindowSizeLimits& SetMaxHeight(float value)
 	{ 
 		maxHeight = value;
 		return *this;

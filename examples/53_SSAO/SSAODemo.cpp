@@ -111,7 +111,7 @@ private:
 			ImGui::SliderFloat("Rejection Falloff",			&m_RejectionFalloff,		1.0f,   10.0f);
 			ImGui::SliderFloat("Accentuation",				&m_Accentuation,			0.0f,   1.0f);
 
-			ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / m_LastFPS, m_LastFPS);
+			ImGui::Text("%.3f ms/frame (%d FPS)", 1000.0f / m_LastFPS, m_LastFPS);
 			ImGui::End();
 		}
 
