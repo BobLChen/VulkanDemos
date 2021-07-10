@@ -36,13 +36,7 @@ static const char* G_ValidationLayersInstance[] =
 	"VK_LAYER_LUNARG_swapchain",
 	"VK_LAYER_GOOGLE_unique_objects",
 #elif PLATFORM_LINUX
-	"VK_LAYER_GOOGLE_threading",
-	"VK_LAYER_LUNARG_parameter_validation",
-	"VK_LAYER_LUNARG_object_tracker",
-	"VK_LAYER_LUNARG_core_validation",
-	"VK_LAYER_GOOGLE_unique_objects",
-#elif PLATFORM_ANDROID
-	
+	"VK_LAYER_KHRONOS_validation",
 #endif
 	nullptr
 };
@@ -67,14 +61,7 @@ static const char* G_ValidationLayersDevice[] =
 	// "VK_LAYER_LUNARG_core_validation",
 	// "VK_LAYER_GOOGLE_unique_objects",
 #elif PLATFORM_LINUX
-	"VK_LAYER_GOOGLE_threading",
-	"VK_LAYER_LUNARG_parameter_validation",
-	"VK_LAYER_LUNARG_object_tracker",
-	"VK_LAYER_LUNARG_core_validation",
-	"VK_LAYER_GOOGLE_unique_objects",
-	"VK_LAYER_LUNARG_core_validation",
-#elif PLATFORM_ANDROID
-
+	"VK_LAYER_KHRONOS_validation",
 #endif
 	nullptr
 };

@@ -228,8 +228,14 @@ enum TBuiltInVariable {
     EbvViewIndex,
     EbvDeviceIndex,
 
+    EbvShadingRateKHR,
+    EbvPrimitiveShadingRateKHR,
+
     EbvFragSizeEXT,
     EbvFragInvocationCountEXT,
+
+    EbvSecondaryFragDataEXT,
+    EbvSecondaryFragColorEXT,
 
     EbvViewportMaskNV,
     EbvSecondaryPositionNV,
@@ -433,6 +439,9 @@ __inline const char* GetBuiltInVariableString(TBuiltInVariable v)
     case EbvFragSizeEXT:                return "FragSizeEXT";
     case EbvFragInvocationCountEXT:     return "FragInvocationCountEXT";
 
+    case EbvSecondaryFragDataEXT:       return "SecondaryFragDataEXT";
+    case EbvSecondaryFragColorEXT:      return "SecondaryFragColorEXT";
+
     case EbvViewportMaskNV:             return "ViewportMaskNV";
     case EbvSecondaryPositionNV:        return "SecondaryPositionNV";
     case EbvSecondaryViewportMaskNV:    return "SecondaryViewportMaskNV";
@@ -473,6 +482,9 @@ __inline const char* GetBuiltInVariableString(TBuiltInVariable v)
     case EbvSMCount:                    return "SMCountNV";
     case EbvWarpID:                     return "WarpIDNV";
     case EbvSMID:                       return "SMIDNV";
+
+    case EbvShadingRateKHR:             return "ShadingRateKHR";
+    case EbvPrimitiveShadingRateKHR:    return "PrimitiveShadingRateKHR";
 
     default:                      return "unknown built-in variable";
     }

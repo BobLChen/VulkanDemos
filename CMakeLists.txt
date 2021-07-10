@@ -26,7 +26,7 @@ elseif (APPLE)
 		external/vulkan/macos/include/
 	)
 elseif (UNIX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPLATFORM_LINUX=1")
+	add_definitions(-DPLATFORM_LINUX=1)
 	include_directories(
 		external/vulkan/linux/include/
 	)
