@@ -11,7 +11,7 @@
 ```shell
 mkdir build_ios
 cd build_ios
-# VulkanTutorials/build_ios
+# VulkanDemos/build_ios
 ```
 
 2、创建Xcode工程
@@ -23,7 +23,7 @@ cmake .. -G Xcode -DCMAKE_TOOLCHAIN_FILE=../cmake/ios.toolchain.cmake -DIOS_PLAT
 3、打开Xcode工程，修改配置。PS:有部分配置需要自己修改，我找了几天都没法搞定这个事情。
 
 ```shell
-open VulkanTutorials.xcodeproj
+open VulkanDemos.xcodeproj
 ```
 
 - 修改构建对象以及调试设备，注意Metal只能在真机调试，因为Vulkan是通过MoltenVK对Metal的一个包装，底层还是用的Metal，因此Vulkan也只能真机调试。

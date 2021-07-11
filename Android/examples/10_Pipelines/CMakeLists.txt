@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.6.0)
+cmake_minimum_required(VERSION 3.10.0)
 
 set(ANDROID TRUE CACHE BOOL "")
 
 set(NAME 10_Pipelines)
-set(BASE_DIR ../../../../VulkanTutorials)
+set(BASE_DIR ../../../../VulkanDemos)
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DNOMINMAX=1 -DMONKEY_DEBUG=1 -DPLATFORM_ANDROID=1")

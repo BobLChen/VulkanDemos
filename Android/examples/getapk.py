@@ -15,7 +15,7 @@ if __name__ == "__main__":
         for fileName in fileNames:
             filepath = os.path.join(parentDir, fileName)
             filepath = filepath.replace("\\", "/")
-            if filepath.endswith(".apk"):
+            if filepath.endswith(".apk") and "debug" in filepath:
                 filelist.append(filepath)
                 pass
             pass
@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     for filepath in filelist:
         srcPath = filepath
-        dstPath = os.getcwd() + "/" + "bin/" + os.path.split(srcPath)[1]
+        dstPath = os.getcwd() + "/" + "apks/" + os.path.split(srcPath)[1]
         srcPath = srcPath.replace("\\", "/")
         dstPath = dstPath.replace("\\", "/")
         shutil.copyfile(srcPath, dstPath)

@@ -26,7 +26,7 @@ https://www.cocos.com/docs/native/v3/coordinate-system/zh.htmlwww.cocos.com
 
 ### Vulkan三角形示例
 
-我们先来看一下一个案例，来对比一下不同之处。以下是Vulkan里面的一个三角形的数据定义：[顶点定义代码地址](https://github.com/BobLChen/VulkanTutorials/blob/master/examples/2_Triangle/Triangle.cpp#L472)
+我们先来看一下一个案例，来对比一下不同之处。以下是Vulkan里面的一个三角形的数据定义：[顶点定义代码地址](https://github.com/BobLChen/VulkanDemos/blob/master/examples/2_Triangle/Triangle.cpp#L472)
 
 ```
 // 前3为坐标点，后3为顶点色。

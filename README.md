@@ -30,7 +30,7 @@ Vulkan Samples
 
 ## Window环境搭建
 
-- 参考文档:https://github.com/BobLChen/VulkanTutorials/blob/master/document/BUILD_Windows.md
+- 参考文档:https://github.com/BobLChen/VulkanDemos/blob/master/document/BUILD_Windows.md
 
 ## Ubuntu环境搭建
 

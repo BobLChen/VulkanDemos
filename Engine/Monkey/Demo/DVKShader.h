@@ -5,6 +5,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include "Configuration/Platform.h"
+
 #include "DVKUtils.h"
 #include "DVKBuffer.h"
 #include "DVKTexture.h"
@@ -239,6 +241,16 @@ namespace vk_demo
 					poolSizes.push_back(poolSize);
 				}
 			}
+
+#ifdef PLATFORM_ANDROID
+			{
+				// TODO:fix it
+				VkDescriptorPoolSize poolSize1 = {};
+				poolSize1.type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				poolSize1.descriptorCount = 128;
+				poolSizes.push_back(poolSize1);
+			}
+#endif
 
 			VkDescriptorPoolCreateInfo descriptorPoolInfo;
 			ZeroVulkanStruct(descriptorPoolInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
