@@ -11,17 +11,17 @@ class ThreadManager
 {
 public:
 
-	void AddThread(RunnableThread* thread);
+    void AddThread(RunnableThread* thread);
 
-	void RemoveThread(RunnableThread* thread);
+    void RemoveThread(RunnableThread* thread);
 
-	const std::string& GetThreadName(uint64 threadID);
+    const std::string& GetThreadName(uint64 threadID);
 
-	static ThreadManager& Get();
+    static ThreadManager& Get();
 
 private:
 
-	std::map<uint64, RunnableThread*>	m_Threads;
-	std::mutex							m_Mutex;
+    std::map<uint64, RunnableThread*>   m_Threads;
+    std::mutex                          m_Mutex;
 
 };

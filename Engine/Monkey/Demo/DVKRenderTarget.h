@@ -32,12 +32,12 @@ namespace vk_demo
             VkAttachmentLoadOp  loadAction = VK_ATTACHMENT_LOAD_OP_CLEAR;
             VkAttachmentStoreOp storeAction = VK_ATTACHMENT_STORE_OP_STORE;
         };
-        
+
         ColorEntry              colorRenderTargets[MaxSimultaneousRenderTargets];
         DepthStencilEntry       depthStencilRenderTarget;
         int32                   numColorRenderTargets;
-		bool					multiview = false;
-        
+        bool                    multiview = false;
+
         // Color, no depth
         explicit DVKRenderPassInfo(DVKTexture* colorRT, VkAttachmentLoadOp colorLoadAction, VkAttachmentStoreOp colorStoreAction, DVKTexture* resolveRT)
         {
@@ -58,11 +58,11 @@ namespace vk_demo
 
         // Color And Depth
         explicit DVKRenderPassInfo(
-            DVKTexture* colorRT, 
-            VkAttachmentLoadOp colorLoadAction, 
+            DVKTexture* colorRT,
+            VkAttachmentLoadOp colorLoadAction,
             VkAttachmentStoreOp colorStoreAction,
             DVKTexture* depthRT,
-            VkAttachmentLoadOp depthLoadAction, 
+            VkAttachmentLoadOp depthLoadAction,
             VkAttachmentStoreOp depthStoreAction
         )
         {
@@ -80,7 +80,7 @@ namespace vk_demo
 
             memset(&colorRenderTargets[numColorRenderTargets], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRenderTargets));
         }
-        
+
         // MRTs, No Depth
         explicit DVKRenderPassInfo(int32 numColorRTs, DVKTexture* colorRT[], VkAttachmentLoadOp colorLoadAction, VkAttachmentStoreOp colorStoreAction)
         {
@@ -99,19 +99,20 @@ namespace vk_demo
             depthStencilRenderTarget.loadAction         = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             depthStencilRenderTarget.storeAction        = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
-            if (numColorRTs < MaxSimultaneousRenderTargets) {
+            if (numColorRTs < MaxSimultaneousRenderTargets)
+            {
                 memset(&colorRenderTargets[numColorRenderTargets], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRenderTargets));
             }
         }
 
         // MRTs And Depth
         explicit DVKRenderPassInfo(
-            int32 numColorRTs, 
-            DVKTexture* colorRT[], 
-            VkAttachmentLoadOp colorLoadAction, 
+            int32 numColorRTs,
+            DVKTexture* colorRT[],
+            VkAttachmentLoadOp colorLoadAction,
             VkAttachmentStoreOp colorStoreAction,
             DVKTexture* depthRT,
-            VkAttachmentLoadOp depthLoadAction, 
+            VkAttachmentLoadOp depthLoadAction,
             VkAttachmentStoreOp depthStoreAction
         )
         {
@@ -130,7 +131,8 @@ namespace vk_demo
             depthStencilRenderTarget.loadAction         = depthLoadAction;
             depthStencilRenderTarget.storeAction        = depthStoreAction;
 
-            if (numColorRTs < MaxSimultaneousRenderTargets) {
+            if (numColorRTs < MaxSimultaneousRenderTargets)
+            {
                 memset(&colorRenderTargets[numColorRenderTargets], 0, sizeof(ColorEntry) * (MaxSimultaneousRenderTargets - numColorRenderTargets));
             }
         }
@@ -155,7 +157,7 @@ namespace vk_demo
         DVKRenderTargetLayout(const DVKRenderPassInfo& renderPassInfo);
 
         uint16 SetupSubpasses(VkSubpassDescription* outDescs, uint32 maxDescs, VkSubpassDependency* outDeps, uint32 maxDeps, uint32& outNumDependencies) const;
-        
+
     public:
         VkAttachmentReference   colorReferences[MaxSimultaneousRenderTargets];
         VkAttachmentReference   depthStencilReference;
@@ -172,8 +174,8 @@ namespace vk_demo
         VkSampleCountFlagBits   numSamples = VK_SAMPLE_COUNT_1_BIT;
         uint8                   numUsedClearValues = 0;
 
-        VkExtent3D	            extent3D;
-		bool					multiview = false;
+        VkExtent3D              extent3D;
+        bool                    multiview = false;
     };
 
     class DVKRenderPass
@@ -191,10 +193,10 @@ namespace vk_demo
         }
 
     public:
-        DVKRenderTargetLayout	layout;
-        VkRenderPass		    renderPass = VK_NULL_HANDLE;
-        uint32				    numUsedClearValues = 0;
-        VkDevice		        device = VK_NULL_HANDLE;
+        DVKRenderTargetLayout   layout;
+        VkRenderPass            renderPass = VK_NULL_HANDLE;
+        uint32                  numUsedClearValues = 0;
+        VkDevice                device = VK_NULL_HANDLE;
     };
 
     class DVKFrameBuffer
@@ -222,26 +224,28 @@ namespace vk_demo
 
         ImageViews          attachmentTextureViews;
         VkImage             colorRenderTargetImages[MaxSimultaneousRenderTargets];
-	    VkImage             depthStencilRenderTargetImage = VK_NULL_HANDLE;
+        VkImage             depthStencilRenderTargetImage = VK_NULL_HANDLE;
 
         VkExtent2D          extent2D;
     };
-    
+
     class DVKRenderTarget
     {
     private:
         DVKRenderTarget(const DVKRenderPassInfo& inRenderPassInfo)
             : rtLayout(inRenderPassInfo)
             , renderPassInfo(inRenderPassInfo)
-			, clearColor(0, 0, 0, 1)
+            , clearColor(0, 0, 0, 1)
         {
             for (int32 i = 0; i < inRenderPassInfo.numColorRenderTargets; ++i)
             {
                 VkClearValue clearValue = {};
-                clearValue.color        = { { clearColor.x, clearColor.y, clearColor.z, clearColor.w } };
+                clearValue.color        = {
+                    { clearColor.x, clearColor.y, clearColor.z, clearColor.w }
+                };
                 clearValues.push_back(clearValue);
             }
-            
+
             if (inRenderPassInfo.depthStencilRenderTarget.depthStencilTarget)
             {
                 VkClearValue clearValue = {};
@@ -249,81 +253,83 @@ namespace vk_demo
                 clearValues.push_back(clearValue);
             }
 
-			colorLayout = ImageLayoutBarrier::PixelShaderRead;
-			depthLayout = ImageLayoutBarrier::PixelShaderRead;
+            colorLayout = ImageLayoutBarrier::PixelShaderRead;
+            depthLayout = ImageLayoutBarrier::PixelShaderRead;
         }
-        
-		DVKRenderTarget(const DVKRenderPassInfo& inRenderPassInfo, Vector4 inClearColor)
-			: rtLayout(inRenderPassInfo)
-			, renderPassInfo(inRenderPassInfo)
-			, clearColor(inClearColor)
-		{
-			for (int32 i = 0; i < inRenderPassInfo.numColorRenderTargets; ++i)
-			{
-				VkClearValue clearValue = {};
-				clearValue.color        = { { clearColor.x, clearColor.y, clearColor.z, clearColor.w } };
-				clearValues.push_back(clearValue);
-			}
 
-			if (inRenderPassInfo.depthStencilRenderTarget.depthStencilTarget)
-			{
-				VkClearValue clearValue = {};
-				clearValue.depthStencil = { 1.0f, 0 };
-				clearValues.push_back(clearValue);
-			}
+        DVKRenderTarget(const DVKRenderPassInfo& inRenderPassInfo, Vector4 inClearColor)
+            : rtLayout(inRenderPassInfo)
+            , renderPassInfo(inRenderPassInfo)
+            , clearColor(inClearColor)
+        {
+            for (int32 i = 0; i < inRenderPassInfo.numColorRenderTargets; ++i)
+            {
+                VkClearValue clearValue = {};
+                clearValue.color        = {
+                    { clearColor.x, clearColor.y, clearColor.z, clearColor.w }
+                };
+                clearValues.push_back(clearValue);
+            }
 
-			colorLayout = ImageLayoutBarrier::PixelShaderRead;
-			depthLayout = ImageLayoutBarrier::PixelShaderRead;
-		}
+            if (inRenderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+            {
+                VkClearValue clearValue = {};
+                clearValue.depthStencil = { 1.0f, 0 };
+                clearValues.push_back(clearValue);
+            }
+
+            colorLayout = ImageLayoutBarrier::PixelShaderRead;
+            depthLayout = ImageLayoutBarrier::PixelShaderRead;
+        }
 
     public:
         ~DVKRenderTarget()
         {
-            if (renderPass) 
-			{
+            if (renderPass)
+            {
                 delete renderPass;
                 renderPass = nullptr;
             }
-            
-            if (frameBuffer) 
-			{
+
+            if (frameBuffer)
+            {
                 delete frameBuffer;
                 frameBuffer = nullptr;
             }
         }
-        
+
         void BeginRenderPass(VkCommandBuffer cmdBuffer);
-        
+
         void EndRenderPass(VkCommandBuffer cmdBuffer);
 
-		FORCE_INLINE VkRenderPass GetRenderPass() const
-		{
-			return renderPass->renderPass;
-		}
+        FORCE_INLINE VkRenderPass GetRenderPass() const
+        {
+            return renderPass->renderPass;
+        }
 
-		FORCE_INLINE VkFramebuffer GetFrameBuffer() const
-		{
-			return frameBuffer->frameBuffer;
-		}
-        
+        FORCE_INLINE VkFramebuffer GetFrameBuffer() const
+        {
+            return frameBuffer->frameBuffer;
+        }
+
         static DVKRenderTarget* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo);
-        
-		static DVKRenderTarget* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo, Vector4 clearColor);
+
+        static DVKRenderTarget* Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo, Vector4 clearColor);
 
     public:
         DVKRenderTargetLayout       rtLayout;
         DVKRenderPassInfo           renderPassInfo;
-		Vector4						clearColor;
-		
+        Vector4                     clearColor;
+
         DVKRenderPass*              renderPass = nullptr;
         DVKFrameBuffer*             frameBuffer = nullptr;
-        
+
         VkDevice                    device = VK_NULL_HANDLE;
         VkExtent2D                  extent2D;
         std::vector<VkClearValue>   clearValues;
 
-		ImageLayoutBarrier			colorLayout;
-		ImageLayoutBarrier			depthLayout;
+        ImageLayoutBarrier          colorLayout;
+        ImageLayoutBarrier          depthLayout;
     };
 
-};
+}

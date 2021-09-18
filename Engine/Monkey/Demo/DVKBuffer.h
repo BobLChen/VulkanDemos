@@ -14,60 +14,63 @@ class VulkanDevice;
 
 namespace vk_demo
 {
-	
-	class DVKBuffer
-	{
-	private:
-		DVKBuffer()
-		{
 
-		}
-	public:
-		~DVKBuffer()
-		{
-			if (buffer != VK_NULL_HANDLE) {
-				vkDestroyBuffer(device, buffer, nullptr);
-				buffer = VK_NULL_HANDLE;
-			}
-			if (memory != VK_NULL_HANDLE) {
-				vkFreeMemory(device, memory, nullptr);
-				memory = VK_NULL_HANDLE;
-			}
-		}
-	public:
+    class DVKBuffer
+    {
+    private:
+        DVKBuffer()
+        {
 
-		VkDevice				device = VK_NULL_HANDLE;
+        }
+    public:
+        ~DVKBuffer()
+        {
+            if (buffer != VK_NULL_HANDLE)
+            {
+                vkDestroyBuffer(device, buffer, nullptr);
+                buffer = VK_NULL_HANDLE;
+            }
+            if (memory != VK_NULL_HANDLE)
+            {
+                vkFreeMemory(device, memory, nullptr);
+                memory = VK_NULL_HANDLE;
+            }
+        }
+    public:
 
-		VkBuffer				buffer = VK_NULL_HANDLE;
-		VkDeviceMemory			memory = VK_NULL_HANDLE;
+        VkDevice                device = VK_NULL_HANDLE;
 
-		VkDescriptorBufferInfo	descriptor;
+        VkBuffer                buffer = VK_NULL_HANDLE;
+        VkDeviceMemory          memory = VK_NULL_HANDLE;
 
-		VkDeviceSize			size = 0;
-		VkDeviceSize			alignment = 0;
+        VkDescriptorBufferInfo  descriptor;
 
-		void*					mapped = nullptr;
+        VkDeviceSize            size = 0;
+        VkDeviceSize            alignment = 0;
 
-		VkBufferUsageFlags		usageFlags;
-		VkMemoryPropertyFlags	memoryPropertyFlags;
+        void*                   mapped = nullptr;
 
-	public:
+        VkBufferUsageFlags      usageFlags;
+        VkMemoryPropertyFlags   memoryPropertyFlags;
 
-		static DVKBuffer* CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data = nullptr);
+    public:
 
-		VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+        static DVKBuffer* CreateBuffer(std::shared_ptr<VulkanDevice> device, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void *data = nullptr);
 
-		void UnMap();
+        VkResult Map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-		VkResult Bind(VkDeviceSize offset = 0);
+        void UnMap();
 
-		void SetupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+        VkResult Bind(VkDeviceSize offset = 0);
 
-		void CopyFrom(void* data, VkDeviceSize size);
+        void SetupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-		VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+        void CopyFrom(void* data, VkDeviceSize size);
 
-		VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-	};
+        VkResult Flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
-};
+        VkResult Invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+
+    };
+
+}

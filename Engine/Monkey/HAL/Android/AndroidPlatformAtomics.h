@@ -4,7 +4,7 @@
 
 struct AndroidPlatformAtomics : public ClangPlatformAtomics
 {
-    
+
 };
 
 typedef AndroidPlatformAtomics PlatformAtomics;
