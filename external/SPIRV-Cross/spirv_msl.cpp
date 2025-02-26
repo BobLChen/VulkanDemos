@@ -1155,7 +1155,7 @@ void CompilerMSL::extract_global_variables_from_functions()
 	// Local vars that are declared in the main function and accessed directly by a function
 	auto &entry_func = get<SPIRFunction>(ir.default_entry_point);
 	for (auto &var : entry_func.local_variables)
-		if (get<SPIRVariable>(var).storage != StorageClassFunction)
+		if (get<SPIRVariable>(var).storage != spv::StorageClassFunction)
 			global_var_ids.insert(var);
 
 	std::set<uint32_t> added_arg_ids;
@@ -1281,7 +1281,8 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 	function_global_vars[func_id] = added_arg_ids;
 
 	// Add the global variables as arguments to the function
-	if (func_id != ir.default_entry_point)
+	//if (func_id != ir.default_entry_point)
+	if (FunctionID(func_id) != ir.default_entry_point)
 	{
 		bool added_in = false;
 		bool added_out = false;
@@ -1323,7 +1324,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				type_id = get<SPIRVariable>(arg_id).basetype;
 				uint32_t next_id = ir.increase_bound_by(1);
 				func.add_parameter(type_id, next_id, true);
-				set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
+				set<SPIRVariable>(next_id, type_id, spv::StorageClassFunction, 0, arg_id);
 
 				set_name(next_id, name);
 			}
@@ -1354,7 +1355,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 						ptr.parent_type = mbr_type_id;
 
 						func.add_parameter(mbr_type_id, var_id, true);
-						set<SPIRVariable>(var_id, ptr_type_id, StorageClassFunction);
+						set<SPIRVariable>(var_id, ptr_type_id, spv::StorageClassFunction);
 						ir.meta[var_id].decoration = ir.meta[type_id].members[mbr_idx];
 					}
 					mbr_idx++;
@@ -1364,7 +1365,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			{
 				uint32_t next_id = ir.increase_bound_by(1);
 				func.add_parameter(type_id, next_id, true);
-				set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
+				set<SPIRVariable>(next_id, type_id, spv::StorageClassFunction, 0, arg_id);
 
 				// Ensure the existing variable has a valid name and the new variable has all the same meta info
 				set_name(arg_id, ensure_valid_name(to_name(arg_id), "v"));
@@ -1379,7 +1380,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 void CompilerMSL::mark_packable_structs()
 {
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
-		if (var.storage != StorageClassFunction && !is_hidden_variable(var))
+		if (var.storage != spv::StorageClassFunction && !is_hidden_variable(var))
 		{
 			auto &type = this->get<SPIRType>(var.basetype);
 			if (type.pointer &&
@@ -1609,7 +1610,7 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 
 	// If a builtin, force it to have the proper name.
 	if (is_builtin)
-		set_name(var.self, builtin_to_glsl(builtin, StorageClassFunction));
+		set_name(var.self, builtin_to_glsl(builtin, spv::StorageClassFunction));
 
 	// Only flatten/unflatten IO composites for non-tessellation cases where arrays are not stripped.
 	if (!strip_array)
@@ -2001,7 +2002,7 @@ void CompilerMSL::add_tess_level_input_to_interface_block(const std::string &ib_
 	BuiltIn builtin = BuiltIn(get_decoration(var.self, DecorationBuiltIn));
 
 	// Force the variable to have the proper name.
-	set_name(var.self, builtin_to_glsl(builtin, StorageClassFunction));
+	set_name(var.self, builtin_to_glsl(builtin, spv::StorageClassFunction));
 
 	if (get_entry_point().flags.get(ExecutionModeTriangles))
 	{
@@ -2466,11 +2467,11 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 		auto &ib_ptr_ptr_type = set<SPIRType>(ib_ptr_ptr_type_id, ib_ptr_type);
 		ib_ptr_ptr_type.parent_type = ib_ptr_type_id;
 		ib_ptr_ptr_type.type_alias = ib_type.self;
-		ib_ptr_ptr_type.storage = StorageClassFunction;
+		ib_ptr_ptr_type.storage = spv::StorageClassFunction;
 		ir.meta[ib_ptr_ptr_type_id] = ir.meta[ib_type.self];
 
 		ib_ptr_var_id = next_id;
-		set<SPIRVariable>(ib_ptr_var_id, ib_ptr_ptr_type_id, StorageClassFunction, 0);
+		set<SPIRVariable>(ib_ptr_var_id, ib_ptr_ptr_type_id, spv::StorageClassFunction, 0);
 		set_name(ib_ptr_var_id, storage == StorageClassInput ? input_wg_var_name : "gl_out");
 	}
 	else
@@ -6518,9 +6519,9 @@ void CompilerMSL::emit_array_copy(const string &lhs, uint32_t rhs_id, StorageCla
 {
 	// Allow Metal to use the array<T> template to make arrays a value type.
 	// This, however, cannot be used for threadgroup address specifiers, so consider the custom array copy as fallback.
-	bool lhs_thread = (lhs_storage == StorageClassOutput || lhs_storage == StorageClassFunction ||
+	bool lhs_thread = (lhs_storage == StorageClassOutput || lhs_storage == spv::StorageClassFunction ||
 	                   lhs_storage == StorageClassGeneric || lhs_storage == StorageClassPrivate);
-	bool rhs_thread = (rhs_storage == StorageClassInput || rhs_storage == StorageClassFunction ||
+	bool rhs_thread = (rhs_storage == StorageClassInput || rhs_storage == spv::StorageClassFunction ||
 	                   rhs_storage == StorageClassGeneric || rhs_storage == StorageClassPrivate);
 
 	// If threadgroup storage qualifiers are *not* used:
@@ -8785,7 +8786,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 			addr_space = "constant";
 		break;
 
-	case StorageClassFunction:
+	case spv::StorageClassFunction:
 	case StorageClassGeneric:
 		break;
 
@@ -9786,7 +9787,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 	bool opaque_handle = storage == StorageClassUniformConstant;
 
 	if (!builtin && !opaque_handle && !is_pointer &&
-	    (storage == StorageClassFunction || storage == StorageClassGeneric))
+	    (storage == spv::StorageClassFunction || storage == StorageClassGeneric))
 	{
 		// If the argument is a pure value and not an opaque type, we will pass by value.
 		if (!address_space.empty())

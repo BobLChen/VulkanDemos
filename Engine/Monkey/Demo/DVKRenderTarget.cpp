@@ -36,7 +36,7 @@ namespace vk_demo
 
             colorReferences[numColorAttachments].attachment = numAttachmentDescriptions;
             colorReferences[numColorAttachments].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-            
+
             if (numSamples != VK_SAMPLE_COUNT_1_BIT)
             {
                 descriptions[numAttachmentDescriptions + 1] = descriptions[numAttachmentDescriptions];
@@ -58,10 +58,10 @@ namespace vk_demo
             DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
             VkAttachmentDescription& attchmentDescription = descriptions[numAttachmentDescriptions];
 
-			extent3D.width  = texture->width;
-			extent3D.height = texture->height;
-			extent3D.depth  = texture->depth;
-			numSamples      = texture->numSamples;
+            extent3D.width  = texture->width;
+            extent3D.height = texture->height;
+            extent3D.depth  = texture->depth;
+            numSamples      = texture->numSamples;
 
             attchmentDescription.samples        = texture->numSamples;
             attchmentDescription.format         = texture->format;
@@ -79,20 +79,20 @@ namespace vk_demo
             hasDepthStencil            = true;
         }
 
-		multiview = renderPassInfo.multiview;
+        multiview = renderPassInfo.multiview;
         numUsedClearValues = numAttachmentDescriptions;
     }
-    
+
     uint16 DVKRenderTargetLayout::SetupSubpasses(VkSubpassDescription* outDescs, uint32 maxDescs, VkSubpassDependency* outDeps, uint32 maxDeps, uint32& outNumDependencies) const
     {
         memset(outDescs, 0, sizeof(outDescs[0]) * maxDescs);
 
         outDescs[0].pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
         outDescs[0].colorAttachmentCount    = numColorAttachments;
-        outDescs[0].pColorAttachments       = numColorAttachments > 0 ? colorReferences        : nullptr;
-        outDescs[0].pResolveAttachments     = hasResolveAttachments   ? resolveReferences      : nullptr;
-        outDescs[0].pDepthStencilAttachment = hasDepthStencil         ? &depthStencilReference : nullptr;
-        
+        outDescs[0].pColorAttachments       = numColorAttachments > 0 ? colorReferences : nullptr;
+        outDescs[0].pResolveAttachments     = hasResolveAttachments ? resolveReferences : nullptr;
+        outDescs[0].pDepthStencilAttachment = hasDepthStencil ? &depthStencilReference : nullptr;
+
         outNumDependencies = 0;
         return 1;
     }
@@ -116,26 +116,26 @@ namespace vk_demo
         renderPassCreateInfo.pSubpasses      = subpassDesc;
         renderPassCreateInfo.dependencyCount = numDependencies;
         renderPassCreateInfo.pDependencies   = subpassDep;
-        
-		if (rtLayout.extent3D.depth > 1 && rtLayout.multiview)
-		{
-			uint32 MultiviewMask = (0b1 << rtLayout.extent3D.depth) - 1;
 
-			const uint32_t ViewMask[2]     = { MultiviewMask, MultiviewMask };
-			const uint32_t CorrelationMask = MultiviewMask;
+        if (rtLayout.extent3D.depth > 1 && rtLayout.multiview)
+        {
+            uint32 MultiviewMask = (0b1 << rtLayout.extent3D.depth) - 1;
 
-			VkRenderPassMultiviewCreateInfo multiviewCreateInfo;
-			ZeroVulkanStruct(multiviewCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
-			multiviewCreateInfo.pNext                = nullptr;
-			multiviewCreateInfo.subpassCount         = numSubpasses;
-			multiviewCreateInfo.pViewMasks           = ViewMask;
-			multiviewCreateInfo.dependencyCount      = 0;
-			multiviewCreateInfo.pViewOffsets         = nullptr;
-			multiviewCreateInfo.correlationMaskCount = 1;
-			multiviewCreateInfo.pCorrelationMasks    = &CorrelationMask;
+            const uint32_t ViewMask[2]     = { MultiviewMask, MultiviewMask };
+            const uint32_t CorrelationMask = MultiviewMask;
 
-			renderPassCreateInfo.pNext = &multiviewCreateInfo;
-		}
+            VkRenderPassMultiviewCreateInfo multiviewCreateInfo;
+            ZeroVulkanStruct(multiviewCreateInfo, VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO);
+            multiviewCreateInfo.pNext                = nullptr;
+            multiviewCreateInfo.subpassCount         = numSubpasses;
+            multiviewCreateInfo.pViewMasks           = ViewMask;
+            multiviewCreateInfo.dependencyCount      = 0;
+            multiviewCreateInfo.pViewOffsets         = nullptr;
+            multiviewCreateInfo.correlationMaskCount = 1;
+            multiviewCreateInfo.pCorrelationMasks    = &CorrelationMask;
+
+            renderPassCreateInfo.pNext = &multiviewCreateInfo;
+        }
 
         VERIFYVULKANRESULT(vkCreateRenderPass(inDevice, &renderPassCreateInfo, VULKAN_CPU_ALLOCATOR, &renderPass));
     }
@@ -176,34 +176,34 @@ namespace vk_demo
         extent2D.width  = rtLayout.extent3D.width;
         extent2D.height = rtLayout.extent3D.height;
     }
-    
+
     void DVKRenderTarget::BeginRenderPass(VkCommandBuffer commandBuffer)
     {
-		for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
-		{
-			DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
-			VkImage image = texture->image;
-			VkImageSubresourceRange subResRange = { };
-			subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-			subResRange.baseMipLevel   = 0;
-			subResRange.levelCount     = 1;
-			subResRange.layerCount     = texture->depth;
-			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
-		}
+        for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
+        {
+            DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
+            VkImage image = texture->image;
+            VkImageSubresourceRange subResRange = { };
+            subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            subResRange.baseMipLevel   = 0;
+            subResRange.levelCount     = 1;
+            subResRange.layerCount     = texture->depth;
+            subResRange.baseArrayLayer = 0;
+            ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::ColorAttachment, subResRange);
+        }
 
-		if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
-		{
-			DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
-			VkImage image = texture->image;
-			VkImageSubresourceRange subResRange = { };
-			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-			subResRange.baseMipLevel   = 0;
-			subResRange.levelCount     = 1;
-			subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
-			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
-		}
+        if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+        {
+            DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
+            VkImage image = texture->image;
+            VkImageSubresourceRange subResRange = { };
+            subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            subResRange.baseMipLevel   = 0;
+            subResRange.levelCount     = 1;
+            subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
+            subResRange.baseArrayLayer = 0;
+            ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::Undefined, ImageLayoutBarrier::DepthStencilAttachment, subResRange);
+        }
 
         VkViewport viewport = {};
         viewport.x        = 0;
@@ -212,13 +212,13 @@ namespace vk_demo
         viewport.height   = -(float)extent2D.height;    // flip y axis
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        
+
         VkRect2D scissor = {};
         scissor.extent.width  = extent2D.width;
         scissor.extent.height = extent2D.height;
         scissor.offset.x = 0;
         scissor.offset.y = 0;
-        
+
         VkRenderPassBeginInfo renderPassBeginInfo;
         ZeroVulkanStruct(renderPassBeginInfo, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
         renderPassBeginInfo.renderPass               = renderPass->renderPass;
@@ -230,66 +230,66 @@ namespace vk_demo
         renderPassBeginInfo.clearValueCount          = (uint32_t)clearValues.size();
         renderPassBeginInfo.pClearValues             = clearValues.data();
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        
+
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer,  0, 1, &scissor);
     }
-    
+
     void DVKRenderTarget::EndRenderPass(VkCommandBuffer commandBuffer)
     {
         vkCmdEndRenderPass(commandBuffer);
 
-		for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
-		{
-			DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
-			VkImage image = texture->image;
-			VkImageSubresourceRange subResRange = { };
-			subResRange.aspectMask	   = VK_IMAGE_ASPECT_COLOR_BIT;
-			subResRange.baseMipLevel   = 0;
-			subResRange.levelCount     = 1;
-			subResRange.layerCount	   = texture->depth;
-			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, colorLayout, subResRange);
-		}
+        for (int32 index = 0; index < renderPassInfo.numColorRenderTargets; ++index)
+        {
+            DVKTexture* texture = renderPassInfo.colorRenderTargets[index].renderTarget;
+            VkImage image = texture->image;
+            VkImageSubresourceRange subResRange = { };
+            subResRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            subResRange.baseMipLevel   = 0;
+            subResRange.levelCount     = 1;
+            subResRange.layerCount     = texture->depth;
+            subResRange.baseArrayLayer = 0;
+            ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::ColorAttachment, colorLayout, subResRange);
+        }
 
-		if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
-		{
-			DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
-			VkImage image = texture->image;
-			VkImageSubresourceRange subResRange = { };
-			subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-			subResRange.baseMipLevel   = 0;
-			subResRange.levelCount     = 1;
-			subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
-			subResRange.baseArrayLayer = 0;
-			ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, depthLayout, subResRange);
-		}
+        if (renderPassInfo.depthStencilRenderTarget.depthStencilTarget)
+        {
+            DVKTexture* texture = renderPassInfo.depthStencilRenderTarget.depthStencilTarget;
+            VkImage image = texture->image;
+            VkImageSubresourceRange subResRange = { };
+            subResRange.aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            subResRange.baseMipLevel   = 0;
+            subResRange.levelCount     = 1;
+            subResRange.layerCount     = renderPassInfo.depthStencilRenderTarget.depthStencilTarget->depth;
+            subResRange.baseArrayLayer = 0;
+            ImagePipelineBarrier(commandBuffer, image, ImageLayoutBarrier::DepthStencilAttachment, depthLayout, subResRange);
+        }
     }
-    
+
     DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo)
     {
         VkDevice device = vulkanDevice->GetInstanceHandle();
-        
+
         DVKRenderTarget* renderTarget = new DVKRenderTarget(inRenderPassInfo);
         renderTarget->device          = device;
         renderTarget->renderPass      = new DVKRenderPass(device, renderTarget->rtLayout);
         renderTarget->frameBuffer     = new DVKFrameBuffer(device, renderTarget->rtLayout, *(renderTarget->renderPass), inRenderPassInfo);
         renderTarget->extent2D        = renderTarget->frameBuffer->extent2D;
-        
+
         return renderTarget;
     }
 
-	DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo, Vector4 clearColor)
-	{
-		VkDevice device = vulkanDevice->GetInstanceHandle();
+    DVKRenderTarget* DVKRenderTarget::Create(std::shared_ptr<VulkanDevice> vulkanDevice, const DVKRenderPassInfo& inRenderPassInfo, Vector4 clearColor)
+    {
+        VkDevice device = vulkanDevice->GetInstanceHandle();
 
-		DVKRenderTarget* renderTarget = new DVKRenderTarget(inRenderPassInfo, clearColor);
-		renderTarget->device          = device;
-		renderTarget->renderPass      = new DVKRenderPass(device, renderTarget->rtLayout);
-		renderTarget->frameBuffer     = new DVKFrameBuffer(device, renderTarget->rtLayout, *(renderTarget->renderPass), inRenderPassInfo);
-		renderTarget->extent2D        = renderTarget->frameBuffer->extent2D;
+        DVKRenderTarget* renderTarget = new DVKRenderTarget(inRenderPassInfo, clearColor);
+        renderTarget->device          = device;
+        renderTarget->renderPass      = new DVKRenderPass(device, renderTarget->rtLayout);
+        renderTarget->frameBuffer     = new DVKFrameBuffer(device, renderTarget->rtLayout, *(renderTarget->renderPass), inRenderPassInfo);
+        renderTarget->extent2D        = renderTarget->frameBuffer->extent2D;
 
-		return renderTarget;
-	}
-    
-};
+        return renderTarget;
+    }
+
+}

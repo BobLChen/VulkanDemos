@@ -4,7 +4,7 @@
 
 struct IOSPlatformAtomics : public ClangPlatformAtomics
 {
-    
+
 };
 
 typedef IOSPlatformAtomics PlatformAtomics;

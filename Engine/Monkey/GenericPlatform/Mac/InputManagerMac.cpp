@@ -2,8 +2,7 @@
 
 void InputManager::Init()
 {
-    
-    
+
     s_KeyboardTypesMap[0x1D] = KeyboardType::KEY_0;
     s_KeyboardTypesMap[0x12] = KeyboardType::KEY_1;
     s_KeyboardTypesMap[0x13] = KeyboardType::KEY_2;
@@ -40,7 +39,7 @@ void InputManager::Init()
     s_KeyboardTypesMap[0x07] = KeyboardType::KEY_X;
     s_KeyboardTypesMap[0x10] = KeyboardType::KEY_Y;
     s_KeyboardTypesMap[0x06] = KeyboardType::KEY_Z;
-    
+
     s_KeyboardTypesMap[0x27] = KeyboardType::KEY_APOSTROPHE;
     s_KeyboardTypesMap[0x2A] = KeyboardType::KEY_BACKSLASH;
     s_KeyboardTypesMap[0x2B] = KeyboardType::KEY_COMMA;
@@ -53,7 +52,7 @@ void InputManager::Init()
     s_KeyboardTypesMap[0x29] = KeyboardType::KEY_SEMICOLON;
     s_KeyboardTypesMap[0x2C] = KeyboardType::KEY_SLASH;
     s_KeyboardTypesMap[0x0A] = KeyboardType::KEY_WORLD_1;
-    
+
     s_KeyboardTypesMap[0x33] = KeyboardType::KEY_BACKSPACE;
     s_KeyboardTypesMap[0x39] = KeyboardType::KEY_CAPS_LOCK;
     s_KeyboardTypesMap[0x75] = KeyboardType::KEY_DELETE;
@@ -100,7 +99,7 @@ void InputManager::Init()
     s_KeyboardTypesMap[0x31] = KeyboardType::KEY_SPACE;
     s_KeyboardTypesMap[0x30] = KeyboardType::KEY_TAB;
     s_KeyboardTypesMap[0x7E] = KeyboardType::KEY_UP;
-    
+
     s_KeyboardTypesMap[0x52] = KeyboardType::KEY_KP_0;
     s_KeyboardTypesMap[0x53] = KeyboardType::KEY_KP_1;
     s_KeyboardTypesMap[0x54] = KeyboardType::KEY_KP_2;
@@ -119,4 +118,3 @@ void InputManager::Init()
     s_KeyboardTypesMap[0x43] = KeyboardType::KEY_KP_MULTIPLY;
     s_KeyboardTypesMap[0x4E] = KeyboardType::KEY_KP_SUBTRACT;
 }
-

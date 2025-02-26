@@ -44,7 +44,7 @@
 # 3) Add libassimp using the file lists (eliminates duplication of file names between
 #    source groups and library command)
 #
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.10.0)
 SET( HEADER_PATH ../include/assimp )
 
 if(NOT ANDROID AND ASSIMP_ANDROID_JNIIOSYSTEM)
@@ -874,8 +874,8 @@ SET( ziplib_SRCS
   ../contrib/zip/src/zip.h
 )
 
-# TODO if cmake required version has been updated to >3.12.0, collapse this to the second case only
-if(${CMAKE_VERSION} VERSION_LESS "3.12.0")
+# TODO if cmake required version has been updated to >3.14.0, collapse this to the second case only
+if(${CMAKE_VERSION} VERSION_LESS "3.14.0")
 	add_definitions(-DMINIZ_USE_UNALIGNED_LOADS_AND_STORES=0)
 else()
 	add_compile_definitions(MINIZ_USE_UNALIGNED_LOADS_AND_STORES=0)

@@ -4,7 +4,7 @@
 
 struct LinuxPlatformAtomics : public ClangPlatformAtomics
 {
-    
+
 };
 
 typedef LinuxPlatformAtomics PlatformAtomics;

@@ -8,66 +8,66 @@
 class ThreadEvent
 {
 public:
-	enum TriggerType
-	{
-		TRIGGERED_NONE,
-		TRIGGERED_ONE,
-		TRIGGERED_ALL,
-	};
+    enum TriggerType
+    {
+        TRIGGERED_NONE,
+        TRIGGERED_ONE,
+        TRIGGERED_ALL,
+    };
 
 public:
 
-	ThreadEvent(bool isManualReset = false);
+    ThreadEvent(bool isManualReset = false);
 
-	virtual ~ThreadEvent();
+    virtual ~ThreadEvent();
 
-	void Trigger();
+    void Trigger();
 
-	void Reset();
+    void Reset();
 
-	bool Wait(uint32 waitTime = (uint32)-1);
+    bool Wait(uint32 waitTime = (uint32) - 1);
 
-	bool IsInitialized()
-	{
-		return m_Initialized;
-	}
+    bool IsInitialized()
+    {
+        return m_Initialized;
+    }
 
-	bool IsManualReset()
-	{
-		return m_IsManualReset;
-	}
+    bool IsManualReset()
+    {
+        return m_IsManualReset;
+    }
 
-	int32 WaitingThreads()
-	{
-		return m_WaitingThreads;
-	}
+    int32 WaitingThreads()
+    {
+        return m_WaitingThreads;
+    }
 
-	bool Wait()
-	{
-		return Wait((uint32)-1);
-	}
-
-private:
-
-	FORCE_INLINE void Lock()
-	{
-		m_Mutex.lock();
-	}
-
-	FORCE_INLINE void Unlock()
-	{
-		m_Mutex.unlock();
-	}
+    bool Wait()
+    {
+        return Wait((uint32) - 1);
+    }
 
 private:
 
-	bool					m_Initialized;
-	bool					m_IsManualReset;
+    FORCE_INLINE void Lock()
+    {
+        m_Mutex.lock();
+    }
 
-	volatile TriggerType	m_Triggered;
-	volatile int32			m_WaitingThreads;
+    FORCE_INLINE void Unlock()
+    {
+        m_Mutex.unlock();
+    }
 
-	std::mutex				m_Mutex;
-	std::condition_variable	m_Condition;
+private:
+
+    bool                    m_Initialized;
+    bool                    m_IsManualReset;
+
+    volatile TriggerType    m_Triggered;
+    volatile int32          m_WaitingThreads;
+
+    std::mutex              m_Mutex;
+    std::condition_variable m_Condition;
 
 };

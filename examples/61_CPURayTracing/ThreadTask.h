@@ -4,18 +4,18 @@ class ThreadTask
 {
 public:
 
-	ThreadTask()
-	{
+    ThreadTask()
+    {
 
-	}
+    }
 
-	virtual ~ThreadTask() 
-	{
+    virtual ~ThreadTask()
+    {
 
-	}
+    }
 
-	virtual void DoThreadedWork() = 0;
+    virtual void DoThreadedWork() = 0;
 
-	virtual void Abandon() = 0;
+    virtual void Abandon() = 0;
 
 };

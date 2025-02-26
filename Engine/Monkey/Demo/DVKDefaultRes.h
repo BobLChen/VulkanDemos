@@ -14,29 +14,29 @@
 
 namespace vk_demo
 {
-    
+
     class DVKDefaultRes
     {
     private:
         DVKDefaultRes()
         {
-            
+
         }
-        
+
         virtual ~DVKDefaultRes()
         {
-            
+
         }
     public:
-        
+
         static void Init(std::shared_ptr<VulkanDevice> vulkanDevice, DVKCommandBuffer* cmdBuffer);
-        
+
         static void Destroy();
-        
+
     public:
         static DVKTexture*  texture2D;
         static DVKModel*    fullQuad;
-        
+
     };
-    
-};
+
+}

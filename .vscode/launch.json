@@ -4,34 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        // {
-        //     "name": "Debug 0_SuperDemo",
-        //     "type": "cppdbg",
-        //     "request": "launch",
-        //     "program": "${workspaceFolder}/build/Debug/examples/0_SuperDemo",
-        //     "args": [],
-        //     "stopAtEntry": false,
-        //     "cwd": "${workspaceFolder}",
-        //     "environment": [
-        //         {
-        //             "name": "LD_LIBRARY_PATH",
-        //             "value": "${workspaceFolder}/external/vulkan/linux/lib"
-        //         },
-        //         {
-        //             "name": "VK_LAYER_PATH",
-        //             "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-        //         }
-        //     ],
-        //     "externalConsole": true,
-        //     "MIMode": "gdb",
-        //     "setupCommands": [
-        //         {
-        //             "description": "Enable pretty-printing for gdb",
-        //             "text": "-enable-pretty-printing",
-        //             "ignoreFailures": true
-        //         }
-        //     ],
-        // },
         {
             "name": "Debug 2_Triangle",
             "type": "cppdbg",
@@ -40,16 +12,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -68,16 +30,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -96,16 +48,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -124,16 +66,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -152,16 +84,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -180,16 +102,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -208,16 +120,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -236,16 +138,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -264,16 +156,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -292,16 +174,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -320,16 +192,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -348,16 +210,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -376,16 +228,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -404,16 +246,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -432,16 +264,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -460,16 +282,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -488,16 +300,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -516,16 +318,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -544,16 +336,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -572,16 +354,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -600,16 +372,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -628,16 +390,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -656,16 +408,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -684,16 +426,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -711,16 +443,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -738,16 +460,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -765,16 +477,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -792,16 +494,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -819,16 +511,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -846,16 +528,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -873,16 +545,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -900,16 +562,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -927,16 +579,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -955,16 +597,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -982,16 +614,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1009,16 +631,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1036,16 +648,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1064,16 +666,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1092,16 +684,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1120,16 +702,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1148,16 +720,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1176,16 +738,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1204,16 +756,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1232,16 +774,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1260,16 +792,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1288,16 +810,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1316,16 +828,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1344,16 +846,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1372,16 +864,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1400,16 +882,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1428,16 +900,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1456,16 +918,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1484,16 +936,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1512,16 +954,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1540,16 +972,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1568,16 +990,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1596,16 +1008,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1624,16 +1026,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1652,16 +1044,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1680,16 +1062,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1708,16 +1080,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1736,16 +1098,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1764,16 +1116,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1792,16 +1134,6 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
-                }
-            ],
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [
@@ -1820,16 +1152,132 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
                 {
-                    "name": "LD_LIBRARY_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/lib"
-                },
-                {
-                    "name": "VK_LAYER_PATH",
-                    "value": "${workspaceFolder}/external/vulkan/linux/etc/explicit_layer.d"
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
                 }
             ],
+        },
+        {
+            "name": "Debug 67_RTXRayTracingMonteCarlo",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/67_RTXRayTracingMonteCarlo",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 68_RTXPathTracing",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/68_RTXPathTracing",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 69_TileBasedForwardRendering",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/69_TileBasedForwardRendering",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 70_SDFFont",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/70_SDFFont",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 71_ShuffleIntrinsics",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/71_ShuffleIntrinsics",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 72_MeshLOD",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/72_MeshLOD",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+        },
+        {
+            "name": "Debug 72_MeshLOD",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Debug/examples/72_MeshLOD",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
             "externalConsole": true,
             "MIMode": "gdb",
             "setupCommands": [

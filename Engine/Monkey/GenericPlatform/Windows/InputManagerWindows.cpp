@@ -2,7 +2,7 @@
 
 void InputManager::Init()
 {
-	s_KeyboardTypesMap[0x00B] = KeyboardType::KEY_0;
+    s_KeyboardTypesMap[0x00B] = KeyboardType::KEY_0;
     s_KeyboardTypesMap[0x002] = KeyboardType::KEY_1;
     s_KeyboardTypesMap[0x003] = KeyboardType::KEY_2;
     s_KeyboardTypesMap[0x004] = KeyboardType::KEY_3;

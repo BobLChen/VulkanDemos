@@ -5,7 +5,7 @@
 
 void InputManager::Init()
 {
-	s_KeyboardTypesMap[XK_Escape]         = KeyboardType::KEY_ESCAPE;
+    s_KeyboardTypesMap[XK_Escape]         = KeyboardType::KEY_ESCAPE;
     s_KeyboardTypesMap[XK_Tab]            = KeyboardType::KEY_TAB;
     s_KeyboardTypesMap[XK_Shift_L]        = KeyboardType::KEY_LEFT_SHIFT;
     s_KeyboardTypesMap[XK_Shift_R]        = KeyboardType::KEY_RIGHT_SHIFT;

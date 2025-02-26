@@ -11,26 +11,26 @@ class TaskThread : public Runnable
 {
 public:
 
-	TaskThread();
+    TaskThread();
 
-	virtual ~TaskThread();
+    virtual ~TaskThread();
 
-	virtual bool Create(TaskThreadPool* pool);
+    virtual bool Create(TaskThreadPool* pool);
 
-	virtual bool KillThread();
+    virtual bool KillThread();
 
-	void DoWork(ThreadTask* task);
-
-protected:
-
-	virtual int32 Run() override;
+    void DoWork(ThreadTask* task);
 
 protected:
 
-	ThreadEvent*			m_DoWorkEvent;
-	volatile bool			m_TimeToDie;
-	ThreadTask* volatile	m_Task;
-	TaskThreadPool*			m_OwningThreadPool;
-	RunnableThread*			m_Thread;
+    virtual int32 Run() override;
+
+protected:
+
+    ThreadEvent*            m_DoWorkEvent;
+    volatile bool           m_TimeToDie;
+    ThreadTask* volatile    m_Task;
+    TaskThreadPool*         m_OwningThreadPool;
+    RunnableThread*         m_Thread;
 
 };

@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.14.0)
 
-project(VulkanTutorials)
+project(VulkanDemos)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
@@ -26,7 +26,7 @@ elseif (APPLE)
 		external/vulkan/macos/include/
 	)
 elseif (UNIX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPLATFORM_LINUX=1")
+	add_definitions(-DPLATFORM_LINUX=1)
 	include_directories(
 		external/vulkan/linux/include/
 	)

@@ -4,107 +4,111 @@
 
 namespace vk_demo
 {
-	DVKCommandBuffer::~DVKCommandBuffer()
-	{
-		VkDevice device = vulkanDevice->GetInstanceHandle();
+    DVKCommandBuffer::~DVKCommandBuffer()
+    {
+        VkDevice device = vulkanDevice->GetInstanceHandle();
 
-		if (cmdBuffer != VK_NULL_HANDLE) 
-		{
-			vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
-			cmdBuffer = VK_NULL_HANDLE;
-		}
+        if (cmdBuffer != VK_NULL_HANDLE)
+        {
+            vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
+            cmdBuffer = VK_NULL_HANDLE;
+        }
 
-		if (fence != VK_NULL_HANDLE) 
-		{
-			vkDestroyFence(device, fence, nullptr);
-			fence = VK_NULL_HANDLE;
-		}
+        if (fence != VK_NULL_HANDLE)
+        {
+            vkDestroyFence(device, fence, nullptr);
+            fence = VK_NULL_HANDLE;
+        }
 
-		queue = nullptr;
-		vulkanDevice = nullptr;
-	}
+        queue = nullptr;
+        vulkanDevice = nullptr;
+    }
 
-	DVKCommandBuffer::DVKCommandBuffer()
-	{
+    DVKCommandBuffer::DVKCommandBuffer()
+    {
 
-	}
+    }
 
-	void DVKCommandBuffer::Submit(VkSemaphore* signalSemaphore)
-	{
-		End();
+    void DVKCommandBuffer::Submit(VkSemaphore* signalSemaphore)
+    {
+        End();
 
-		VkSubmitInfo submitInfo;
-		ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
-		submitInfo.commandBufferCount   = 1;
-		submitInfo.pCommandBuffers      = &cmdBuffer;
-		submitInfo.signalSemaphoreCount = signalSemaphore ? 1 : 0;
-		submitInfo.pSignalSemaphores    = signalSemaphore;
-		
-		if (waitFlags.size() > 0) 
-		{
-			submitInfo.waitSemaphoreCount = (uint32_t)waitSemaphores.size();
-			submitInfo.pWaitSemaphores    = waitSemaphores.data();
-			submitInfo.pWaitDstStageMask  = waitFlags.data();
-		}
+        VkSubmitInfo submitInfo;
+        ZeroVulkanStruct(submitInfo, VK_STRUCTURE_TYPE_SUBMIT_INFO);
+        submitInfo.commandBufferCount   = 1;
+        submitInfo.pCommandBuffers      = &cmdBuffer;
+        submitInfo.signalSemaphoreCount = signalSemaphore ? 1 : 0;
+        submitInfo.pSignalSemaphores    = signalSemaphore;
 
-		vkResetFences(vulkanDevice->GetInstanceHandle(), 1, &fence);
-		vkQueueSubmit(queue->GetHandle(), 1, &submitInfo, fence);
-		vkWaitForFences(vulkanDevice->GetInstanceHandle(), 1, &fence, true, MAX_uint64);
-	}
+        if (waitFlags.size() > 0)
+        {
+            submitInfo.waitSemaphoreCount = (uint32_t)waitSemaphores.size();
+            submitInfo.pWaitSemaphores    = waitSemaphores.data();
+            submitInfo.pWaitDstStageMask  = waitFlags.data();
+        }
 
-	void DVKCommandBuffer::Begin()
-	{
-		if (isBegun) {
-			return;
-		}
-		isBegun = true;
+        vkResetFences(vulkanDevice->GetInstanceHandle(), 1, &fence);
+        vkQueueSubmit(queue->GetHandle(), 1, &submitInfo, fence);
+        vkWaitForFences(vulkanDevice->GetInstanceHandle(), 1, &fence, true, MAX_uint64);
+    }
 
-		VkCommandBufferBeginInfo cmdBufBeginInfo;
-		ZeroVulkanStruct(cmdBufBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
-		cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    void DVKCommandBuffer::Begin()
+    {
+        if (isBegun)
+        {
+            return;
+        }
+        isBegun = true;
 
-		vkBeginCommandBuffer(cmdBuffer, &cmdBufBeginInfo);
-	}
+        VkCommandBufferBeginInfo cmdBufBeginInfo;
+        ZeroVulkanStruct(cmdBufBeginInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+        cmdBufBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-	void DVKCommandBuffer::End()
-	{
-		if (!isBegun) {
-			return;
-		}
+        vkBeginCommandBuffer(cmdBuffer, &cmdBufBeginInfo);
+    }
 
-		isBegun = false;
-		vkEndCommandBuffer(cmdBuffer);
-	}
+    void DVKCommandBuffer::End()
+    {
+        if (!isBegun)
+        {
+            return;
+        }
 
-	DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level, std::shared_ptr<VulkanQueue> inQueue)
-	{
-		VkDevice device = vulkanDevice->GetInstanceHandle();
+        isBegun = false;
+        vkEndCommandBuffer(cmdBuffer);
+    }
 
-		DVKCommandBuffer* cmdBuffer = new DVKCommandBuffer();
-		cmdBuffer->vulkanDevice = vulkanDevice;
-		cmdBuffer->commandPool  = commandPool;
-		cmdBuffer->isBegun      = false;
+    DVKCommandBuffer* DVKCommandBuffer::Create(std::shared_ptr<VulkanDevice> vulkanDevice, VkCommandPool commandPool, VkCommandBufferLevel level, std::shared_ptr<VulkanQueue> inQueue)
+    {
+        VkDevice device = vulkanDevice->GetInstanceHandle();
 
-		if (inQueue) {
-			cmdBuffer->queue = inQueue;
-		}
-		else {
-			cmdBuffer->queue = vulkanDevice->GetGraphicsQueue();
-		}
+        DVKCommandBuffer* cmdBuffer = new DVKCommandBuffer();
+        cmdBuffer->vulkanDevice = vulkanDevice;
+        cmdBuffer->commandPool  = commandPool;
+        cmdBuffer->isBegun      = false;
 
-		VkCommandBufferAllocateInfo cmdBufferAllocateInfo;
-		ZeroVulkanStruct(cmdBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
-		cmdBufferAllocateInfo.commandPool = commandPool;
-		cmdBufferAllocateInfo.level       = level;
-		cmdBufferAllocateInfo.commandBufferCount = 1;
-		vkAllocateCommandBuffers(device, &cmdBufferAllocateInfo, &(cmdBuffer->cmdBuffer));
+        if (inQueue)
+        {
+            cmdBuffer->queue = inQueue;
+        }
+        else
+        {
+            cmdBuffer->queue = vulkanDevice->GetGraphicsQueue();
+        }
 
-		VkFenceCreateInfo fenceCreateInfo;
-		ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-		fenceCreateInfo.flags = 0;
-		vkCreateFence(device, &fenceCreateInfo, nullptr, &(cmdBuffer->fence));
+        VkCommandBufferAllocateInfo cmdBufferAllocateInfo;
+        ZeroVulkanStruct(cmdBufferAllocateInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+        cmdBufferAllocateInfo.commandPool = commandPool;
+        cmdBufferAllocateInfo.level       = level;
+        cmdBufferAllocateInfo.commandBufferCount = 1;
+        vkAllocateCommandBuffers(device, &cmdBufferAllocateInfo, &(cmdBuffer->cmdBuffer));
 
-		return cmdBuffer;
-	}
+        VkFenceCreateInfo fenceCreateInfo;
+        ZeroVulkanStruct(fenceCreateInfo, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+        fenceCreateInfo.flags = 0;
+        vkCreateFence(device, &fenceCreateInfo, nullptr, &(cmdBuffer->fence));
+
+        return cmdBuffer;
+    }
 
 }

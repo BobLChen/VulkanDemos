@@ -13,39 +13,39 @@ class TaskThreadPool
 {
 public:
 
-	TaskThreadPool();
+    TaskThreadPool();
 
-	virtual ~TaskThreadPool();
+    virtual ~TaskThreadPool();
 
-	virtual bool Create(uint32 numThreads);
+    virtual bool Create(uint32 numThreads);
 
-	virtual void Destroy();
+    virtual void Destroy();
 
-	virtual void AddTask(ThreadTask* task);
+    virtual void AddTask(ThreadTask* task);
 
-	virtual bool RetractTask(ThreadTask* task);
+    virtual bool RetractTask(ThreadTask* task);
 
-	virtual ThreadTask* ReturnToPoolOrGetNextJob(TaskThread* thread);
+    virtual ThreadTask* ReturnToPoolOrGetNextJob(TaskThread* thread);
 
-	static TaskThreadPool* Allocate();
+    static TaskThreadPool* Allocate();
 
-	int32 GetNumQueuedJobs() const
-	{
-		return m_QueuedTask.size();
-	}
+    int32 GetNumQueuedJobs() const
+    {
+        return m_QueuedTask.size();
+    }
 
-	int32 GetNumThreads() const
-	{
-		return m_AllThreads.size();
-	}
+    int32 GetNumThreads() const
+    {
+        return m_AllThreads.size();
+    }
 
 protected:
 
-	std::vector<ThreadTask*>		m_QueuedTask;
-	std::vector<TaskThread*>		m_QueuedThreads;
-	std::vector<TaskThread*>		m_AllThreads;
+    std::vector<ThreadTask*>        m_QueuedTask;
+    std::vector<TaskThread*>        m_QueuedThreads;
+    std::vector<TaskThread*>        m_AllThreads;
 
-	std::mutex						m_SynchMutex;
-	bool							m_TimeToDie = false;
+    std::mutex                      m_SynchMutex;
+    bool                            m_TimeToDie = false;
 
 };

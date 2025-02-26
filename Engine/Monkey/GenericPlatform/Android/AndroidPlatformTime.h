@@ -10,18 +10,18 @@ public:
 
     static double InitTiming();
 
-	static FORCE_INLINE double Seconds()
-	{
-		struct timeval tv;
-		gettimeofday(&tv, 0);
-		return ((double)tv.tv_sec) + (((double)tv.tv_usec) / 1000000.0);
-	}
+    static FORCE_INLINE double Seconds()
+    {
+        struct timeval tv;
+        gettimeofday(&tv, 0);
+        return ((double)tv.tv_sec) + (((double)tv.tv_usec) / 1000000.0);
+    }
 
     static double GetSecondsPerCycle()
-	{
-		return s_SecondsPerCycle;
-	}
-    
+    {
+        return s_SecondsPerCycle;
+    }
+
 protected:
 
     static double s_SecondsPerCycle;

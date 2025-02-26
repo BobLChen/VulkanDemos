@@ -24,27 +24,31 @@ static void InitAppEngine()
     g_GameEngine = std::make_shared<Engine>();
     g_AppModule  = CreateAppMode(g_CmdLine);
 
-    if (g_AppModule == nullptr) {
+    if (g_AppModule == nullptr)
+    {
         MLOGE("Failed create app.")
     }
-    
+
     int32 errorLevel = EnginePreInit(g_CmdLine);
-    if (errorLevel != 0) {
+    if (errorLevel != 0)
+    {
         MLOGE("Failed init engine.");
     }
-    
+
     errorLevel = EngineInit();
-    if (errorLevel != 0) {
+    if (errorLevel != 0)
+    {
         MLOGE("Failed init engine.");
     }
 }
 
-static void ProcessCommand(struct android_app *app, int32_t cmd) 
+static void ProcessCommand(struct android_app *app, int32_t cmd)
 {
-    switch (cmd) {
-        case APP_CMD_INIT_WINDOW: 
+    switch (cmd)
+    {
+        case APP_CMD_INIT_WINDOW:
         {
-            if (app->window) 
+            if (app->window)
             {
                 InitAppEngine();
                 initialized = true;
@@ -52,13 +56,13 @@ static void ProcessCommand(struct android_app *app, int32_t cmd)
             MLOG("APP_CMD_INIT_WINDOW");
             break;
         }
-        case APP_CMD_GAINED_FOCUS: 
+        case APP_CMD_GAINED_FOCUS:
         {
             active = true;
             MLOG("APP_CMD_GAINED_FOCUS");
             break;
         }
-        case APP_CMD_LOST_FOCUS: 
+        case APP_CMD_LOST_FOCUS:
         {
             active = false;
             MLOG("APP_CMD_LOST_FOCUS");
@@ -74,18 +78,18 @@ void android_main(android_app* app)
     g_AndroidApp = app;
     g_AndroidApp->onAppCmd = ProcessCommand;
 
-    while (true) 
+    while (true)
     {
         int events = -1;
         struct android_poll_source *source = nullptr;
-        while (ALooper_pollAll(active ? 0 : -1, NULL, &events, (void **)&source) >= 0) 
+        while (ALooper_pollAll(active ? 0 : -1, NULL, &events, (void**)&source) >= 0)
         {
-            if (source) 
+            if (source)
             {
                 source->process(app, source);
             }
 
-            if (app->destroyRequested != 0) 
+            if (app->destroyRequested != 0)
             {
                 return;
             }
@@ -96,6 +100,6 @@ void android_main(android_app* app)
             EngineLoop();
         }
     }
-    
+
     MLOG("................................ Android Window inited ................................");
 }

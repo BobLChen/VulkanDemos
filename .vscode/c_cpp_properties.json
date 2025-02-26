@@ -1,7 +1,7 @@
 {
     "configurations": [
         {
-            "name": "Linux-VulkanTutorials",
+            "name": "Linux-VulkanDemos",
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/Engine/Monkey/**",
